@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 864" role="img" aria-labelledby="sd-seq-title sd-seq-desc" class="diagram" data-size="fit" id="signaldock-sequence-root">
+<title id="sd-seq-title">Event collection through ACK application</title><desc id="sd-seq-desc">The host app receives collection success after Room commits, then the SDK sends a batch, receives an ACK after server commit, validates the full ACK, and applies it in a separate Room commit.</desc>
+<defs>
+      <style>
+      #signaldock-sequence-root { --paper:#fff;--paper-2:#f3f7f8;--ink:#162a43;--muted:#536579;--soft:#627588;--rule:#d8e0e6;--rule-solid:#bbc9d2;--accent:#087f8c;--accent-tint:#eaf5f5;--link:#315f96;--sans:system-ui,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;--serif:Georgia,"Times New Roman",AppleMyungjo,serif;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Apple SD Gothic Neo",monospace }
+      #signaldock-sequence-root { color: var(--ink); font-family: var(--sans); }
+      #signaldock-sequence-root a { color:var(--link);text-underline-offset:4px }
+      #signaldock-sequence-root a:hover { color:var(--accent) }
+      #signaldock-sequence-root a:focus-visible, #signaldock-sequence-root summary:focus-visible, #signaldock-sequence-root .diagram-container:focus-visible { outline:3px solid var(--accent);outline-offset:4px }
+      #signaldock-sequence-root ::selection { background:#d4eeee }
+      #signaldock-sequence-root .skip-link { position:absolute;left:12px;top:-80px;background:white;padding:12px;z-index:4 }
+      #signaldock-sequence-root .skip-link:focus { top:12px }
+      #signaldock-sequence-root .masthead { display:flex;align-items:center;justify-content:space-between;gap:20px;padding-bottom:16px;border-bottom:1px solid var(--ink) }
+      #signaldock-sequence-root .brandmark { font:600 15px var(--sans);letter-spacing:-.03em }
+      #signaldock-sequence-root .brandmark b { color:var(--accent) }
+      #signaldock-sequence-root .status { font-size:12px;line-height:1.5;color:var(--muted) }
+      #signaldock-sequence-root .status strong { color:var(--accent);font-weight:600 }
+      #signaldock-sequence-root .hero { display:grid;grid-template-columns:.9fr 1.1fr;gap:64px;align-items:start;padding:30px 0 20px }
+      #signaldock-sequence-root .lead { font-size:clamp(21px,2.3vw,30px);font-weight:600;line-height:1.4;letter-spacing:-.045em;margin:0 0 12px }
+      #signaldock-sequence-root .purpose { color:var(--muted);font-size:14px;margin:0 }
+      #signaldock-sequence-root .pitch { border-left:3px solid var(--accent);padding-left:24px }
+      #signaldock-sequence-root .pitch h2 { font-size:13px;letter-spacing:0;margin:0 0 8px }
+      #signaldock-sequence-root .pitch p { font-size:14px;line-height:1.8;margin:0 }
+      #signaldock-sequence-root .pitch strong { font-weight:600 }
+      #signaldock-sequence-root .nav { display:flex;flex-wrap:wrap;gap:8px 22px;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:12px 0;margin:6px 0 20px;font-size:13px }
+      #signaldock-sequence-root .nav a { color:var(--muted);text-decoration:none }
+      #signaldock-sequence-root .nav a:hover { color:var(--accent);text-decoration:underline }
+      #signaldock-sequence-root .figure-head { display:flex;justify-content:space-between;gap:20px;align-items:baseline }
+      #signaldock-sequence-root .figure-head h2 { font-size:18px;margin:0 }
+      #signaldock-sequence-root .figure-head p { margin:0;font-size:12px;color:var(--muted) }
+      #signaldock-sequence-root figure { margin:0;min-width:0;max-width:100% }
+      #signaldock-sequence-root .diagram-container { width:100%;max-width:100%;min-width:0;overflow-x:auto;overscroll-behavior-x:contain }
+      #signaldock-sequence-root text { font-family:var(--sans);fill:var(--ink) }
+      #signaldock-sequence-root .node-label { font-size:16px;font-weight:600 }
+      #signaldock-sequence-root .node-sub { font-size:12px;fill:var(--muted) }
+      #signaldock-sequence-root .type-tag { font:500 10px var(--mono);fill:var(--muted);letter-spacing:.05em }
+      #signaldock-sequence-root .zone-label { font:500 12px var(--mono);fill:var(--muted);letter-spacing:.04em }
+      #signaldock-sequence-root .message-label { font:400 12px var(--mono);fill:var(--muted) }
+      #signaldock-sequence-root .note-label { font-size:12px;font-weight:600;fill:var(--accent) }
+      #signaldock-sequence-root .legend-label { font-size:12px;fill:var(--muted) }
+      #signaldock-sequence-root figcaption { font-size:12px;color:var(--muted);line-height:1.7;margin:4px 0 16px }
+      #signaldock-sequence-root .mobile-hint { display:none }
+      #signaldock-sequence-root .supporting-strip { display:grid;grid-template-columns:1.2fr 1fr;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);margin-top:14px }
+      #signaldock-sequence-root .supporting-strip>div { padding:16px 20px 16px 0 }
+      #signaldock-sequence-root .supporting-strip>div+div { border-left:1px solid var(--rule);padding-left:24px }
+      #signaldock-sequence-root .supporting-strip h3 { font-size:13px;margin:0 0 6px }
+      #signaldock-sequence-root .supporting-strip p { font-size:12px;color:var(--muted);line-height:1.8;margin:0 }
+      #signaldock-sequence-root .chapter { padding-top:50px;margin-top:24px;border-top:1px solid var(--ink);scroll-margin-top:20px }
+      #signaldock-sequence-root .chapter-heading { display:grid;grid-template-columns:64px 1fr;gap:16px;align-items:start;margin-bottom:24px }
+      #signaldock-sequence-root .chapter-no { font:400 36px/1.1 var(--serif);color:var(--accent) }
+      #signaldock-sequence-root .chapter-heading h2 { font-size:28px;line-height:1.3;margin:0 0 8px;letter-spacing:-.04em }
+      #signaldock-sequence-root .chapter-heading p { font-size:14px;color:var(--muted);margin:0;max-width:900px }
+      #signaldock-sequence-root .two-col { display:grid;grid-template-columns:1.12fr 1fr;gap:40px }
+      #signaldock-sequence-root .ledger { margin:0 }
+      #signaldock-sequence-root .ledger>div { padding:14px 0;border-bottom:1px solid var(--rule) }
+      #signaldock-sequence-root .ledger dt { font-size:14px;font-weight:600;margin-bottom:5px }
+      #signaldock-sequence-root .ledger dd { font-size:14px;margin:0;color:var(--muted) }
+      #signaldock-sequence-root .callout { background:var(--paper-2);border-left:3px solid var(--accent);padding:20px 24px;font-size:14px }
+      #signaldock-sequence-root .callout h3 { font-size:15px;margin:0 0 8px }
+      #signaldock-sequence-root .callout p { margin:8px 0 }
+      #signaldock-sequence-root .callout p:first-child { margin-top:0 }
+      #signaldock-sequence-root .code { font:12px/1.8 var(--mono);overflow-wrap:anywhere }
+      #signaldock-sequence-root code { font-family:var(--mono);font-size:.9em;overflow-wrap:anywhere }
+      #signaldock-sequence-root table { width:100%;border-collapse:collapse;text-align:left;font-size:14px;line-height:1.75 }
+      #signaldock-sequence-root caption { text-align:left;font-weight:600;margin-bottom:12px }
+      #signaldock-sequence-root th { font-size:12px;color:var(--muted);font-weight:500;padding:10px 16px 10px 0;border-bottom:1px solid var(--ink) }
+      #signaldock-sequence-root td { padding:16px 20px 16px 0;vertical-align:top;border-bottom:1px solid var(--rule) }
+      #signaldock-sequence-root td:first-child { font-weight:600;width:25% }
+      #signaldock-sequence-root td p { margin:0 }
+      #signaldock-sequence-root td small { display:block;color:var(--muted);font-size:12px;margin-top:4px }
+      #signaldock-sequence-root .retry-rule { display:grid;grid-template-columns:.9fr 1.3fr;gap:32px;padding:22px 24px;background:var(--paper-2);margin:24px 0 }
+      #signaldock-sequence-root .retry-rule .formula { font:500 22px/1.5 var(--mono);letter-spacing:-.03em;color:var(--accent);margin:0 }
+      #signaldock-sequence-root .retry-rule p { font-size:14px;margin:0 }
+      #signaldock-sequence-root .qa { display:grid;grid-template-columns:1fr 1fr;column-gap:44px }
+      #signaldock-sequence-root .qa>div { padding:18px 0;border-bottom:1px solid var(--rule) }
+      #signaldock-sequence-root .qa h3 { font-size:15px;line-height:1.5;margin:0 0 8px;letter-spacing:-.02em }
+      #signaldock-sequence-root .qa p { font-size:14px;color:var(--muted);margin:0 }
+      #signaldock-sequence-root .qa>div:last-child { grid-column:1/-1 }
+      #signaldock-sequence-root .evidence-status { font-size:12px;display:inline-block;border:1px solid var(--rule-solid);padding:2px 8px;border-radius:2px;white-space:nowrap }
+      #signaldock-sequence-root .evidence-table td:first-child { width:22% }
+      #signaldock-sequence-root .evidence-table td:last-child { width:12% }
+      #signaldock-sequence-root .scope { display:grid;grid-template-columns:1fr 1fr;gap:36px;margin:24px 0 }
+      #signaldock-sequence-root .scope h3 { font-size:14px;margin:0 0 8px }
+      #signaldock-sequence-root .scope p { font-size:14px;margin:0;color:var(--muted) }
+      #signaldock-sequence-root .sources { display:grid;grid-template-columns:1fr 1fr;gap:8px 32px;margin:16px 0 0;padding:0;list-style:none }
+      #signaldock-sequence-root .sources a { font-size:13px }
+      #signaldock-sequence-root .sources small { display:block;font-size:12px;color:var(--muted) }
+      #signaldock-sequence-root .footer-back { text-decoration:none;white-space:nowrap }
+      #signaldock-sequence-root .print-note { display:none }
+      #signaldock-sequence-root .hero { gap:32px }
+      #signaldock-sequence-root .mobile-hint { display:block;font-size:12px;color:var(--muted);margin:6px 0 }
+      #signaldock-sequence-root .figure-head { display:block }
+      #signaldock-sequence-root .figure-head p { margin-top:4px }
+      #signaldock-sequence-root .masthead { align-items:flex-start }
+      #signaldock-sequence-root .status { text-align:right;max-width:190px }
+      #signaldock-sequence-root .hero, #signaldock-sequence-root .two-col, #signaldock-sequence-root .supporting-strip, #signaldock-sequence-root .retry-rule, #signaldock-sequence-root .scope, #signaldock-sequence-root .qa, #signaldock-sequence-root .sources { grid-template-columns:1fr }
+      #signaldock-sequence-root .hero { padding-top:24px;gap:24px }
+      #signaldock-sequence-root .pitch { padding-left:18px }
+      #signaldock-sequence-root .pitch p { font-size:14px }
+      #signaldock-sequence-root .nav { gap:10px 16px }
+      #signaldock-sequence-root .supporting-strip>div+div { border-left:0;border-top:1px solid var(--rule);padding-left:0 }
+      #signaldock-sequence-root .chapter { padding-top:28px;margin-top:32px }
+      #signaldock-sequence-root .chapter-heading { grid-template-columns:40px 1fr;gap:12px }
+      #signaldock-sequence-root .chapter-no { font-size:28px }
+      #signaldock-sequence-root .chapter-heading h2 { font-size:23px }
+      #signaldock-sequence-root .two-col { gap:24px }
+      #signaldock-sequence-root .qa>div:last-child { grid-column:auto }
+      #signaldock-sequence-root .retry-rule { gap:12px;padding:18px }
+      #signaldock-sequence-root .retry-rule .formula { font-size:18px }
+      #signaldock-sequence-root .scope { gap:20px }
+      #signaldock-sequence-root .evidence-table td:first-child { width:25% }
+      #signaldock-sequence-root table { font-size:12px;word-break:normal;overflow-wrap:anywhere }
+      #signaldock-sequence-root th, #signaldock-sequence-root td { padding-right:10px }
+      #signaldock-sequence-root .evidence-status { font-size:10px;padding:1px 4px }
+      #signaldock-sequence-root .figure-head h2 { font-size:16px }
+      #signaldock-sequence-root .footer-back { display:block;margin-top:12px }
+      #signaldock-sequence-root .purpose { font-size:13px }
+      #signaldock-sequence-root @page { size:A4 landscape;margin:12mm }
+      #signaldock-sequence-root .skip-link, #signaldock-sequence-root .nav, #signaldock-sequence-root .mobile-hint, #signaldock-sequence-root .footer-back { display:none }
+      #signaldock-sequence-root .hero { grid-template-columns:.8fr 1.2fr;gap:24px;padding:18px 0 12px }
+      #signaldock-sequence-root .lead { font-size:21px }
+      #signaldock-sequence-root .pitch p { font-size:11px;line-height:1.65 }
+      #signaldock-sequence-root .pitch h2 { font-size:11px }
+      #signaldock-sequence-root .purpose { font-size:10px }
+      #signaldock-sequence-root .status { font-size:10px }
+      #signaldock-sequence-root .figure-head h2 { font-size:14px }
+      #signaldock-sequence-root .figure-head p, #signaldock-sequence-root figcaption { font-size:10px }
+      #signaldock-sequence-root .diagram-container { overflow-x:visible }
+      #signaldock-sequence-root .supporting-strip { margin-top:8px }
+      #signaldock-sequence-root .supporting-strip>div { padding:10px 12px 10px 0 }
+      #signaldock-sequence-root .supporting-strip h3 { font-size:10px }
+      #signaldock-sequence-root .supporting-strip p { font-size:9px;line-height:1.5 }
+      #signaldock-sequence-root .cover { break-after:page }
+      #signaldock-sequence-root .chapter { padding-top:20px;margin-top:20px }
+      #signaldock-sequence-root .chapter-heading { margin-bottom:12px;grid-template-columns:40px 1fr;gap:12px }
+      #signaldock-sequence-root .chapter-heading h2 { font-size:21px }
+      #signaldock-sequence-root .chapter-heading p { font-size:11px }
+      #signaldock-sequence-root .chapter-no { font-size:28px }
+      #signaldock-sequence-root .two-col { gap:24px }
+      #signaldock-sequence-root .ledger dt, #signaldock-sequence-root .ledger dd, #signaldock-sequence-root .callout, #signaldock-sequence-root .callout h3, #signaldock-sequence-root td, #signaldock-sequence-root .qa h3, #signaldock-sequence-root .qa p, #signaldock-sequence-root .scope h3, #signaldock-sequence-root .scope p, #signaldock-sequence-root .retry-rule p { font-size:11px }
+      #signaldock-sequence-root .ledger>div { padding:9px 0 }
+      #signaldock-sequence-root .callout { padding:14px 18px }
+      #signaldock-sequence-root .retry-rule { padding:14px 18px;margin:16px 0 }
+      #signaldock-sequence-root .retry-rule .formula { font-size:16px }
+      #signaldock-sequence-root .qa { column-gap:30px }
+      #signaldock-sequence-root .qa>div { padding:12px 0 }
+      #signaldock-sequence-root .sources a { font-size:11px }
+      #signaldock-sequence-root .sources small, #signaldock-sequence-root footer { font-size:10px }
+      #signaldock-sequence-root .print-note { display:block;font-size:10px;color:var(--muted);margin:0 0 8px }
+      #signaldock-sequence-root figure, #signaldock-sequence-root table, #signaldock-sequence-root tr, #signaldock-sequence-root .qa>div, #signaldock-sequence-root .ledger>div, #signaldock-sequence-root .callout, #signaldock-sequence-root .scope { break-inside:avoid }
+      #signaldock-sequence-root a { color:var(--ink);text-decoration:none }
+      #signaldock-sequence-root th { font-size:10px }
+      #signaldock-sequence-root .sequence-figure { max-width:970px;margin:auto }
+      #signaldock-sequence-root .evidence-status { font-size:10px }
+      #signaldock-sequence-root .scope { margin:16px 0 }
+      #signaldock-sequence-root .chapter#interview, #signaldock-sequence-root .chapter#evidence { break-before:page }
+      #signaldock-sequence-root .masthead { padding-bottom:10px }
+      #signaldock-sequence-root .hero { padding:12px 0;grid-template-columns:.75fr 1.25fr;gap:22px }
+      #signaldock-sequence-root .hero h1 { font-size:32px;margin-bottom:8px }
+      #signaldock-sequence-root .hero .lead { font-size:18px;line-height:1.3;margin-bottom:8px }
+      #signaldock-sequence-root .hero .eyebrow { font-size:9px;margin-bottom:6px }
+      #signaldock-sequence-root .hero .purpose { font-size:9px;line-height:1.5 }
+      #signaldock-sequence-root .pitch { padding-left:16px }
+      #signaldock-sequence-root .pitch h2 { font-size:10px;margin-bottom:5px }
+      #signaldock-sequence-root .pitch p { font-size:10px;line-height:1.6 }
+      #signaldock-sequence-root .cover .figure-head p { font-size:9px }
+      #overview figure { max-width:880px;margin:auto }
+      #overview figcaption { font-size:9px;margin-bottom:8px }
+      #signaldock-sequence-root .supporting-strip>div { padding-top:8px;padding-bottom:8px }
+      #signaldock-sequence-root .supporting-strip h3 { margin-bottom:4px }
+      #signaldock-sequence-root .supporting-strip p { font-size:8.5px;line-height:1.5 }
+      #signaldock-sequence-root .sequence-figure { max-width:800px }
+      #signaldock-sequence-root .chapter-heading { break-inside:avoid;break-after:avoid }
+      #signaldock-sequence-root .chapter#operation { margin-top:0;padding-top:16px }
+      #signaldock-sequence-root .chapter#sources { break-before:auto }</style>
+<marker id="signaldock-sequence-sd-seq-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#536579"/></marker>
+<marker id="signaldock-sequence-sd-seq-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#087f8c"/></marker>
+<marker id="signaldock-sequence-sd-seq-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#315f96"/></marker>
+</defs><rect width="1280" height="864" fill="#ffffff"/><line x1="128" y1="120" x2="128" y2="784" stroke="#bbc9d2" stroke-width="1" stroke-dasharray="3,4"/><line x1="368" y1="120" x2="368" y2="784" stroke="#bbc9d2" stroke-width="1" stroke-dasharray="3,4"/><line x1="608" y1="120" x2="608" y2="784" stroke="#bbc9d2" stroke-width="1" stroke-dasharray="3,4"/><line x1="848" y1="120" x2="848" y2="784" stroke="#bbc9d2" stroke-width="1" stroke-dasharray="3,4"/><line x1="1088" y1="120" x2="1088" y2="784" stroke="#bbc9d2" stroke-width="1" stroke-dasharray="3,4"/><rect x="604" y="224" width="8" height="48" fill="#f3f7f8" stroke="#bbc9d2" stroke-width="0.8"/><rect x="604" y="384" width="8" height="48" fill="#f3f7f8" stroke="#bbc9d2" stroke-width="0.8"/><rect x="844" y="496" width="8" height="144" fill="#f3f7f8" stroke="#bbc9d2" stroke-width="0.8"/><rect x="1084" y="544" width="8" height="48" fill="#f3f7f8" stroke="#bbc9d2" stroke-width="0.8"/><rect x="604" y="696" width="8" height="48" fill="#f3f7f8" stroke="#bbc9d2" stroke-width="0.8"/><line class="connector" x1="128" y1="176" x2="368" y2="176" stroke="#536579" stroke-width="1.4" marker-end="url(#signaldock-sequence-sd-seq-arrow)"/><g class="arrow-label"><rect x="208.0" y="144" width="80" height="24" rx="2" fill="#ffffff"/><text x="248" y="161" class="message-label" text-anchor="middle">TRACK</text></g><line class="connector" x1="368" y1="224" x2="604" y2="224" stroke="#536579" stroke-width="1.4" marker-end="url(#signaldock-sequence-sd-seq-arrow)"/><g class="arrow-label"><rect x="444.0" y="192" width="88" height="24" rx="2" fill="#ffffff"/><text x="488" y="209" class="message-label" text-anchor="middle">INSERT</text></g><line class="connector" x1="604" y1="272" x2="368" y2="272" stroke="#536579" stroke-width="1.4" stroke-dasharray="5,4" marker-end="url(#signaldock-sequence-sd-seq-arrow)"/><g class="arrow-label"><rect x="432.0" y="240" width="112" height="24" rx="2" fill="#ffffff"/><text x="488" y="257" class="message-label" text-anchor="middle">COMMIT ①</text></g><line class="connector" x1="368" y1="320" x2="128" y2="320" stroke="#087f8c" stroke-width="1.4" marker-end="url(#signaldock-sequence-sd-seq-accent)"/><g class="arrow-label"><rect x="196.0" y="288" width="104" height="24" rx="2" fill="#ffffff"/><text x="248" y="305" class="message-label" text-anchor="middle">LOCAL OK</text></g><line class="connector" x1="368" y1="384" x2="604" y2="384" stroke="#536579" stroke-width="1.4" marker-end="url(#signaldock-sequence-sd-seq-arrow)"/><g class="arrow-label"><rect x="416.0" y="352" width="144" height="24" rx="2" fill="#ffffff"/><text x="488" y="369" class="message-label" text-anchor="middle">SELECT BATCH</text></g><line class="connector" x1="604" y1="432" x2="368" y2="432" stroke="#536579" stroke-width="1.4" stroke-dasharray="5,4" marker-end="url(#signaldock-sequence-sd-seq-arrow)"/><g class="arrow-label"><rect x="436.0" y="400" width="104" height="24" rx="2" fill="#ffffff"/><text x="488" y="417" class="message-label" text-anchor="middle">SNAPSHOT</text></g><line class="connector" x1="368" y1="496" x2="848" y2="496" stroke="#315f96" stroke-width="1.4" marker-end="url(#signaldock-sequence-sd-seq-link)"/><g class="arrow-label"><rect x="664.0" y="464" width="128" height="24" rx="2" fill="#ffffff"/><text x="728" y="481" class="message-label" text-anchor="middle">JSON BATCH</text></g><line class="connector" x1="848" y1="544" x2="1084" y2="544" stroke="#536579" stroke-width="1.4" marker-end="url(#signaldock-sequence-sd-seq-arrow)"/><g class="arrow-label"><rect x="888.0" y="512" width="160" height="24" rx="2" fill="#ffffff"/><text x="968" y="529" class="message-label" text-anchor="middle">INSERT / CHECK</text></g><line class="connector" x1="1084" y1="592" x2="848" y2="592" stroke="#536579" stroke-width="1.4" stroke-dasharray="5,4" marker-end="url(#signaldock-sequence-sd-seq-arrow)"/><g class="arrow-label"><rect x="912.0" y="560" width="112" height="24" rx="2" fill="#ffffff"/><text x="968" y="577" class="message-label" text-anchor="middle">COMMIT ②</text></g><line class="connector" x1="848" y1="640" x2="368" y2="640" stroke="#315f96" stroke-width="1.4" stroke-dasharray="5,4" marker-end="url(#signaldock-sequence-sd-seq-link)"/><g class="arrow-label"><rect x="672.0" y="608" width="112" height="24" rx="2" fill="#ffffff"/><text x="728" y="625" class="message-label" text-anchor="middle">ITEM ACK</text></g><line class="connector" x1="368" y1="696" x2="604" y2="696" stroke="#536579" stroke-width="1.4" marker-end="url(#signaldock-sequence-sd-seq-arrow)"/><g class="arrow-label"><rect x="432.0" y="664" width="112" height="24" rx="2" fill="#ffffff"/><text x="488" y="681" class="message-label" text-anchor="middle">APPLY ACK</text></g><line class="connector" x1="604" y1="744" x2="368" y2="744" stroke="#536579" stroke-width="1.4" stroke-dasharray="5,4" marker-end="url(#signaldock-sequence-sd-seq-arrow)"/><g class="arrow-label"><rect x="432.0" y="712" width="112" height="24" rx="2" fill="#ffffff"/><text x="488" y="729" class="message-label" text-anchor="middle">COMMIT ③</text></g><g class="component" data-name="Host app"><rect x="40" y="40" width="176" height="80" rx="6" fill="#ffffff"/><rect x="40" y="40" width="176" height="80" rx="6" fill="#ffffff" stroke="#536579" stroke-width="1.2"/><rect x="52" y="48" width="48" height="16" rx="2" fill="#ffffff" stroke="#536579" stroke-width="0.7"/><text x="76" y="60" class="type-tag" text-anchor="middle">APP</text><text x="128.0" y="88" class="node-label" text-anchor="middle">Host app</text><text x="128.0" y="108" class="node-sub" text-anchor="middle">Explicit track calls</text></g><g class="component" data-name="SDK runtime"><rect x="280" y="40" width="176" height="80" rx="6" fill="#ffffff"/><rect x="280" y="40" width="176" height="80" rx="6" fill="#ffffff" stroke="#536579" stroke-width="1.2"/><rect x="292" y="48" width="48" height="16" rx="2" fill="#ffffff" stroke="#536579" stroke-width="0.7"/><text x="316" y="60" class="type-tag" text-anchor="middle">SDK</text><text x="368.0" y="88" class="node-label" text-anchor="middle">SDK runtime</text><text x="368.0" y="108" class="node-sub" text-anchor="middle">Collection · sender</text></g><g class="component" data-name="Room"><rect x="520" y="40" width="176" height="80" rx="6" fill="#ffffff"/><rect x="520" y="40" width="176" height="80" rx="6" fill="#ffffff" stroke="#536579" stroke-width="1.2"/><rect x="532" y="48" width="48" height="16" rx="2" fill="#ffffff" stroke="#536579" stroke-width="0.7"/><text x="556" y="60" class="type-tag" text-anchor="middle">DB</text><text x="608.0" y="88" class="node-label" text-anchor="middle">Room</text><text x="608.0" y="108" class="node-sub" text-anchor="middle">Durable device storage</text></g><g class="component" data-name="Ktor"><rect x="760" y="40" width="176" height="80" rx="6" fill="#ffffff"/><rect x="760" y="40" width="176" height="80" rx="6" fill="#ffffff" stroke="#536579" stroke-width="1.2"/><rect x="772" y="48" width="48" height="16" rx="2" fill="#ffffff" stroke="#536579" stroke-width="0.7"/><text x="796" y="60" class="type-tag" text-anchor="middle">API</text><text x="848.0" y="88" class="node-label" text-anchor="middle">Ktor</text><text x="848.0" y="108" class="node-sub" text-anchor="middle">Validation · receipt API</text></g><g class="component" data-name="PostgreSQL"><rect x="1000" y="40" width="176" height="80" rx="6" fill="#ffffff"/><rect x="1000" y="40" width="176" height="80" rx="6" fill="#ffffff" stroke="#536579" stroke-width="1.2"/><rect x="1012" y="48" width="48" height="16" rx="2" fill="#ffffff" stroke="#536579" stroke-width="0.7"/><text x="1036" y="60" class="type-tag" text-anchor="middle">DB</text><text x="1088.0" y="88" class="node-label" text-anchor="middle">PostgreSQL</text><text x="1088.0" y="108" class="node-sub" text-anchor="middle">Durable server storage</text></g><text x="1120" y="464" class="node-sub" text-anchor="start">During HTTP:</text><text x="1120" y="484" class="node-sub" text-anchor="start">no Room tx</text><text x="884" y="704" class="note-label" text-anchor="start">Validate full ACK, then apply</text><text x="884" y="728" class="node-sub" text-anchor="start">Ambiguous ACK: keep full batch</text><line x1="40" y1="800" x2="1240" y2="800" stroke="#d8e0e6"/><text x="40" y="826" class="legend-label" text-anchor="start">①  Collection success</text><text x="344" y="826" class="legend-label" text-anchor="start">②  Server receipt confirmed</text><text x="696" y="826" class="legend-label" text-anchor="start">③  ACK applied locally · reset retry failure count</text></svg>

@@ -1,0 +1,25 @@
+# Local user/workspace state
+.DS_Store
+.idea/
+.vscode/
+local.properties
+.env
+.env.*
+!.env.example
+*.log
+
+# Personal discovery conversation and resume notes
+.scratch/signaldock-portfolio/discovery.md
+
+# Build/runtime outputs
+.gradle/
+**/build/
+node_modules/
+dist/
+coverage/
+*.apk
+*.aab
+*.aar
+*.zip
+*.jks
+*.keystore
