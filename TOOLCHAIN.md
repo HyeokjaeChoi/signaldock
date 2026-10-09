@@ -13,7 +13,6 @@ tracking issue per component).
 | Component | Pinned | Why |
 |---|---|---|
 | JDK | 17 (Ubuntu `openjdk-17-jdk-headless`) | AGP 8.13 requires JDK 17 (developer.android.com) |
-| Gradle | 8.14.5 | >= AGP 8.13.2 minimum; inside Kotlin 2.4.x supported range (<= 9.7.0) |
 | Kotlin | 2.4.21 | Latest stable; supports Gradle 7.6.3-9.7.0 and AGP 8.5.2-9.3.1 (kotlinlang.org) |
 | kotlinx.serialization | 1.11.0 | Latest stable; compiler plugin applied in contract-check build |
 | openapi-generator-cli | 7.26.0 | Latest stable; used by `scripts/codegen.sh` |
@@ -30,6 +29,7 @@ The 8.x line is the stable, documented path for this project.
 | Component | Pinned | Verified in |
 |---|---|---|
 | AGP | 8.13.2 (latest stable 8.x) | #3 (SDK module compile) |
+| Gradle | 8.14.5 (AGP 8.13.2 pair) | #3 (SDK module compile) — no Gradle run yet; pinned from official release metadata |
 | KSP | — no 2.4.x release as of 2026-10-09 | #3/#4 (Room/KSP modules) |
 | Room | 2.8.5 | #3 |
 | WorkManager | 2.12.0 | #4 |

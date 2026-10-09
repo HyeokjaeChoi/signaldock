@@ -518,7 +518,7 @@ import java.io.IOException
                 for(element in jsonElement.getAsJsonArray()) {
                 {{#items}}
                 {{#isNumber}}
-                    require(jsonElement.getAsJsonPrimitive().isNumber) {
+                    require(element.getAsJsonPrimitive().isNumber) {
                         String.format("Expected json element to be of type Number in the JSON string but got `%s`", jsonElement.toString())
                     }
                 {{/isNumber}}
