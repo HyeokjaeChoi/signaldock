@@ -23,3 +23,6 @@ coverage/
 *.zip
 *.jks
 *.keystore
+
+# Pinned toolchain binaries (documented in TOOLCHAIN.md; download, don't track)
+.tools/
