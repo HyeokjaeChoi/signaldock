@@ -5,7 +5,8 @@ version was chosen and what actually verified it.
 
 "Build-verified" means a real build/codegen/test ran with the pinned version.
 "Doc-pinned" means the version comes from official release metadata and will be
-build-verified when its module is implemented (see issue #).
+build-verified when its module is implemented (see the table below for the
+tracking issue per component).
 
 ## Build-verified in issue #1
 

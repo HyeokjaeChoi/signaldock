@@ -16,6 +16,9 @@ if [ ! -f "$JAR" ]; then
   exit 1
 fi
 
+# Use the pinned JDK when JAVA_HOME is set; otherwise fall back to PATH java.
+JAVA_BIN="${JAVA_HOME:+$JAVA_HOME/bin/}java"
+
 OUT="${1:-$ROOT/generated}"
 KOTLIN_OUT="$OUT/kotlin"
 TS_OUT="$OUT/typescript"
@@ -32,7 +35,7 @@ TEMPLATES="$ROOT/openapi/templates"
 # kotlinx_serialization per ADR-0002; dateLibrary=string keeps occurredAt as a
 # String so RFC3339 UTC/ms validation lives in a small adapter (Q81-83),
 # since OpenAPI date-time alone does not enforce those constraints.
-java -jar "$JAR" generate \
+"$JAVA_BIN" -jar "$JAR" generate \
   -g kotlin \
   -i "$SPEC" \
   -o "$KOTLIN_OUT" \
@@ -41,7 +44,7 @@ java -jar "$JAR" generate \
   --global-property models,modelDocs=false,modelTests=false,apis=false,apiDocs=false,apiTests=false,supportingFiles=
 
 # TypeScript models for the React dashboard (typescript-fetch per ADR-0002).
-java -jar "$JAR" generate \
+"$JAVA_BIN" -jar "$JAR" generate \
   -g typescript-fetch \
   -i "$SPEC" \
   -o "$TS_OUT" \
@@ -59,3 +62,10 @@ rm -rf "$KOTLIN_OUT/gradle"
 rm -rf "$TS_OUT/.openapi-generator-ignore"
 find "$TS_OUT" -maxdepth 1 -name "*.md" -delete
 find "$TS_OUT" -maxdepth 1 -name "*.json" -not -name "package.json" -delete
+
+# Rebuild the FILES metadata to match the actual remaining files: the
+# generator's list goes stale after the cleanup above, which would make
+# drift checks compare against a phantom file set.
+for out in "$KOTLIN_OUT" "$TS_OUT"; do
+  (cd "$out" && find . -type f ! -path "./.openapi-generator/FILES" ! -path "./.openapi-generator/VERSION" | sed 's|^\./||' | sort > .openapi-generator/FILES)
+done
