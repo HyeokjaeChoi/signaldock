@@ -1,0 +1,1 @@
+{"compilerOptions":{"module":"NodeNext","moduleResolution":"NodeNext","noEmit":false,"outDir":".tmp-contract-check","rootDir":".."},"extends":"./tsconfig.json","include":["src/contract-check.ts","../generated/typescript/**/*"]}

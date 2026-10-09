@@ -5,7 +5,8 @@
 #    (verification never rewrites the checkout).
 # 2. Checks oasdiff finds no unrecorded change against the v1 baseline.
 # 3. Compiles generated Kotlin DTOs and runs the fixture round-trip tests.
-# 4. Type-checks the generated TypeScript models.
+# 4. Installs pinned dashboard deps (npm ci from the committed lockfile),
+#    type-checks the dashboard, and runs the executable TS round-trip assertions.
 # 5. Evaluates the independent sdk/ and server/ Gradle builds.
 set -euo pipefail
 
@@ -37,13 +38,13 @@ echo "=== 2. oasdiff baseline ==="
 # Fails on any change vs the checked-in v1 baseline: when the contract
 # changes deliberately, update fixtures/contract/contract-v1.baseline.yaml
 # in the same PR.
-"$ROOT/.tools/oasdiff" diff --fail-on-diff "$ROOT/fixtures/contract/contract-v1.baseline.yaml" "$ROOT/openapi/contract-v1.yaml"
+"$ROOT/.tools/oasdiff" diff -o "$ROOT/fixtures/contract/contract-v1.baseline.yaml" "$ROOT/openapi/contract-v1.yaml"
 
 echo "=== 3. kotlin compile + tests (contract-check build) ==="
 (cd "$ROOT/contract-check" && ./gradlew test --no-daemon)
 
-echo "=== 4. typescript typecheck (dashboard) ==="
-(cd "$ROOT/dashboard" && npm run typecheck)
+echo "=== 4. typescript contract check (dashboard) ==="
+(cd "$ROOT/dashboard" && npm ci && npm run typecheck && npm run contract-check)
 
 echo "=== 5. independent sdk/ and server/ builds ==="
 (cd "$ROOT/sdk" && ./gradlew help --no-daemon -q)
