@@ -35,3 +35,9 @@ A contract sample must run assertions. A sample that only compiles is not a chec
 Mark request schemas `additionalProperties: false`. Free-form keys inside `properties` are exempt.
 
 Reviewers read the contract and the generator templates. The drift check in `scripts/verify-contract.sh` proves that the generated outputs match the contract, so reviewers do not read generated diffs. This replaces the statement in the Q91 paragraph that reviewers read source contracts and generated outputs together.
+
+## Amendment: intentional baseline update (2026-10-11, PR #12 and issue 10)
+
+An intentional contract change updates `fixtures/contract/contract-v1.baseline.yaml` in the same PR as `openapi/contract-v1.yaml`. The baseline then marks the accepted contract, and `oasdiff diff --fail-on-diff` in `scripts/verify-contract.sh` catches any later unrecorded change.
+
+The comparison with the prior baseline happens in that PR: run `oasdiff breaking` and `oasdiff changelog` with the baseline from `main` as the base and the new contract as the revision, and record the commands and outputs in the issue file. The PR description states that the baseline was updated on purpose. A breaking result increments the contract version (Q65), except before the first SDK release (spec section 9, item 4), when the PR description must say so.

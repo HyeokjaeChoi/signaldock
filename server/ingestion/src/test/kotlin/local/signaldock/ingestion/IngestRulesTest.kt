@@ -59,6 +59,27 @@ class IngestRulesTest {
         assertEquals("CONFLICT", receipts[3].code)
     }
 
+    @Test
+    fun `whitespace fixture members are rejected in names and keys, near misses accepted`() {
+        val text = java.io.File("../../fixtures/validation/whitespace-set.json").readText()
+        val (members, nearMisses) = text.substringAfter("\"members\"").split("\"nearMisses\"").map { part ->
+            Regex("U\\+([0-9A-F]{4})").findAll(part).map { it.groupValues[1].toInt(16).toChar() }.toList()
+        }
+        assertEquals(25, members.size)
+        for (c in members) {
+            val hex = "U+%04X".format(c.code)
+            for (value in listOf("$c", "${c}a", "a$c")) {
+                assertEquals("INVALID_TEXT", validate(name = value).rejectionCode, hex)
+                assertEquals("INVALID_PROPERTIES", validate(properties = mapOf(value to PropertyValue.Flag(true))).rejectionCode, hex)
+            }
+        }
+        assertEquals(4, nearMisses.size)
+        for (c in nearMisses) {
+            val value = "${c}a$c"
+            assertNotNull(validate(name = value, properties = mapOf(value to PropertyValue.Flag(true))).event, "U+%04X".format(c.code))
+        }
+    }
+
     private fun validate(
         id: String = eventId,
         name: String = "product_viewed",

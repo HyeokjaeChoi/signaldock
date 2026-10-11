@@ -82,12 +82,20 @@ class TrackTest {
         assertEquals(InvalidReason.FORBIDDEN_CHARACTER, sdk.invalid("ok") { property("k", "v\uD83D") })
     }
 
-    private val whitespaceSet: List<Char> =
-        ((0x09..0x0D) + 0x20 + 0x85 + 0xA0 + 0x1680 + (0x2000..0x200A) + 0x2028 + 0x2029 + 0x202F + 0x205F + 0x3000).map { it.toChar() }
+    // Shared with the server test: fixtures/validation/whitespace-set.json (module dir is sdk/sdk-android).
+    private val fixtureText = java.io.File("../../fixtures/validation/whitespace-set.json").readText()
+    private val fixtureSets: List<List<Char>> =
+        fixtureText.substringAfter("\"members\"").split("\"nearMisses\"").map { part ->
+            Regex("U\\+([0-9A-F]{4})").findAll(part).map { it.groupValues[1].toInt(16).toChar() }.toList()
+        }
+    private val whitespaceSet: List<Char> = fixtureSets[0]
+    private val nearMisses: List<Char> = fixtureSets[1]
 
     @Test
     fun `every character of the fixed whitespace set is rejected, others are accepted`() = runBlocking {
         val sdk = newSdk()
+        assertEquals(25, whitespaceSet.size)
+        assertEquals(4, nearMisses.size)
         for (c in whitespaceSet) {
             val hex = "U+%04X".format(c.code)
             assertEquals(hex, InvalidReason.EMPTY_NAME, sdk.invalid("$c"))
@@ -98,7 +106,7 @@ class TrackTest {
             assertEquals(hex, InvalidReason.LEADING_OR_TRAILING_WHITESPACE, sdk.invalid("ok") { property("k$c", 1) })
         }
         // not in the set: accepted even at the edges (Kotlin isWhitespace() would reject U+001C)
-        for (c in listOf('\u001C', '\u200B', '\uFEFF', '\u180E')) {
+        for (c in nearMisses) {
             assertTrue("U+%04X".format(c.code), sdk.track("${c}a$c") { property("${c}k", 1) } is TrackResult.Success)
         }
     }
