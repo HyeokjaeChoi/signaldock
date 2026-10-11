@@ -30,8 +30,12 @@ androidx-test-core = "1.7.0"
 
 # Server (doc-pinned; server build verified in issue #2)
 ktor = "3.6.0"
-jooq = "3.21.9"
+jooq = "3.19.39"
 flyway = "13.10.0"
+hikari = "7.0.2"
+postgresql = "42.7.8"
+testcontainers = "2.0.5"
+slf4j = "2.0.17"
 
 # Dashboard (doc-pinned; TS compile of generated models verified in issue #1)
 typescript = "7.0.2"
@@ -46,6 +50,19 @@ kotlin-metadata-jvm = { module = "org.jetbrains.kotlin:kotlin-metadata-jvm", ver
 junit = { module = "junit:junit", version.ref = "junit" }
 androidx-test-core = { module = "androidx.test:core", version.ref = "androidx-test-core" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
+ktor-server-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
+ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+hikari = { module = "com.zaxxer:HikariCP", version.ref = "hikari" }
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
+flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
+flyway-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
+jooq = { module = "org.jooq:jooq", version.ref = "jooq" }
+jooq-codegen = { module = "org.jooq:jooq-codegen", version.ref = "jooq" }
+testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
+testcontainers-junit = { module = "org.testcontainers:testcontainers-junit-jupiter", version.ref = "testcontainers" }
+slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

@@ -30,6 +30,7 @@ Lockfiles are committed. Verification runs `npm ci`.
 | oasdiff | v1.33.0 | Latest release; `scripts/verify-contract.sh` runs `oasdiff diff --fail-on-diff` on the baseline and the contract |
 | TypeScript | 7.0.2 | Latest stable via npm; compiles generated `typescript-fetch` models |
 | Node | 24.20.0 | Environment version at verification time |
+| jOOQ | 3.19.39 | server build, tests, and jOOQ drift check passed in issue 02; Java 17 reason in ADR-0004 |
 
 AGP 9.x was deliberately NOT chosen: it is a breaking major migration
 (built-in Kotlin conflicts with the KGP plugin, kapt removal, DSL changes).
@@ -48,7 +49,6 @@ The 8.x line is the stable, documented path for this project.
 | OkHttp | 5.5.0 | #4 |
 | Compose BOM | 2026.09.00 | #5 |
 | Ktor | 3.6.0 | #2 |
-| jOOQ | 3.21.9 | #2 |
 | Flyway | 13.10.0 | #2 |
 | compileSdk 36 / targetSdk 36 / minSdk 24 | minSdk 24 per spec agreement | #3 |
 
