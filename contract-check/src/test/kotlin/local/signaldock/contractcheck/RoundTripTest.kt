@@ -68,12 +68,15 @@ class RoundTripTest {
         val raw = fixture("batch-ack.json")
         val ack = json.decodeFromString<BatchAckResponse>(raw)
 
-        assertEquals(3, ack.results.size)
+        assertEquals(4, ack.results.size)
         assertEquals(0, ack.results[0].index)
         assertEquals(ItemAck.Status.ACCEPTED, ack.results[0].status)
         assertEquals(ItemAck.Status.DUPLICATE, ack.results[1].status)
         assertEquals(ItemAck.Status.REJECTED, ack.results[2].status)
         assertEquals("UNKNOWN_FIELD", ack.results[2].code)
+        // rejected invalid-ID item has no eventId
+        assertEquals(ItemAck.Status.REJECTED, ack.results[3].status)
+        assertEquals(null, ack.results[3].eventId)
 
         val reserialized = json.parseToJsonElement(json.encodeToString(BatchAckResponse.serializer(), ack))
         assertEquals(json.parseToJsonElement(raw), reserialized)

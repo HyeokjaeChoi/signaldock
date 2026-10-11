@@ -29,9 +29,9 @@ export interface ItemAck {
      */
     status: ItemAckStatusEnum;
     /**
-     * Event ID echoed for valid IDs.
+     * Event ID echoed. Present for valid IDs.
      */
-    eventId: string;
+    eventId?: string;
     /**
      * Machine-readable reason for `rejected` items.
      */
@@ -60,7 +60,6 @@ export type ItemAckStatusEnum = typeof ItemAckStatusEnum[keyof typeof ItemAckSta
 export function instanceOfItemAck(value: object): value is ItemAck {
     if (!('index' in value) || value['index'] === undefined) return false;
     if (!('status' in value) || value['status'] === undefined) return false;
-    if (!('eventId' in value) || value['eventId'] === undefined) return false;
     return true;
 }
 
@@ -76,7 +75,7 @@ export function ItemAckFromJSONTyped(json: any, ignoreDiscriminator: boolean): I
         
         'index': json['index'],
         'status': json['status'],
-        'eventId': json['eventId'],
+        'eventId': json['eventId'] == null ? undefined : json['eventId'],
         'code': json['code'] == null ? undefined : json['code'],
         'message': json['message'] == null ? undefined : json['message'],
     };

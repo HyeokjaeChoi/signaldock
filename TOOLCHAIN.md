@@ -15,7 +15,7 @@ oasdiff, and openapi-generator-cli into `.tools/`. It checks the hash of each
 download and skips tools that are already installed. It works on macOS and
 Linux, on arm64 and x64.
 
-If a pinned tool is missing, a script stops with a setup message. It never uses a tool from PATH.
+If a tool that `scripts/setup-toolchain.sh` installs is missing, a script stops with a setup message. Scripts use the installed oasdiff and openapi-generator-cli. They use the bundled JDK unless `JAVA_HOME` is set. Node and npm come from PATH; 24.20.0 is the verified Node version.
 
 Lockfiles are committed. Verification runs `npm ci`.
 

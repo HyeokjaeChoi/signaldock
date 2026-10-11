@@ -3,7 +3,7 @@
 Status: ready-for-agent
 Type: task
 Blocked by: None
-Execution: Not started; prefer a low-cost model, with no restriction to a specific model
+Execution: Implemented; awaiting PR review (see the 2026-10-09 implementation comment)
 
 ## Scope and completion criteria
 

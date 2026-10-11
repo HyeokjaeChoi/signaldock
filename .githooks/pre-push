@@ -36,6 +36,10 @@ while read -r _ local_sha _ remote_sha; do
     fi
     range="$base..$local_sha"
   else
+    if ! git cat-file -e "$remote_sha^{commit}" 2>/dev/null; then
+      code_changed=1 # remote commit not fetched: fail closed
+      continue
+    fi
     range="$remote_sha..$local_sha"
   fi
   changed="$(git diff --name-only "$range" -- . ':!*.md' ':!docs/' ':!.scratch/')"

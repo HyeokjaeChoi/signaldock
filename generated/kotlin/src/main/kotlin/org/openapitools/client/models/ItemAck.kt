@@ -33,7 +33,7 @@ import kotlinx.serialization.Contextual
  *
  * @param index Zero-based index into the request events array.
  * @param status Per-item receipt status. `duplicate` also covers resends of an already stored event (Q69). `rejected` is a permanent, per-event rejection. 
- * @param eventId Event ID echoed for valid IDs.
+ * @param eventId Event ID echoed. Present for valid IDs.
  * @param code Machine-readable reason for `rejected` items.
  * @param message Human-readable detail for `rejected` items.
  */
@@ -49,9 +49,9 @@ data class ItemAck (
     @SerialName(value = "status")
     val status: ItemAck.Status,
 
-    /* Event ID echoed for valid IDs. */
+    /* Event ID echoed. Present for valid IDs. */
     @SerialName(value = "eventId")
-    val eventId: kotlin.String,
+    val eventId: kotlin.String? = null,
 
     /* Machine-readable reason for `rejected` items. */
     @SerialName(value = "code")

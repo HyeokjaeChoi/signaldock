@@ -119,7 +119,7 @@ components:
             $ref: '#/components/schemas/ItemAck'
     ItemAck:
       type: object
-      required: [index, status, eventId]
+      required: [index, status]
       properties:
         index:
           type: integer
@@ -134,14 +134,13 @@ components:
             per-event rejection.
         eventId:
           type: string
-          description: Event ID echoed for valid IDs.
+          description: Event ID echoed. Present for valid IDs.
         code:
           type: string
           description: Machine-readable reason for `rejected` items.
         message:
           type: string
           description: Human-readable detail for `rejected` items.
-      additionalProperties: false
     ErrorResponse:
       type: object
       required: [code, message]
@@ -153,4 +152,3 @@ components:
             CONTRACT_VERSION_UNSUPPORTED, UNKNOWN_FIELD, MALFORMED_REQUEST.
         message:
           type: string
-      additionalProperties: false
