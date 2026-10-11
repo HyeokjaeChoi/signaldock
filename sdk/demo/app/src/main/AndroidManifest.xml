@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The SDK manifest declares no permissions; the host app owns INTERNET. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Release is HTTPS only. The debug source set adds a cleartext rule for the emulator host. -->
+    <application
+        android:name=".DemoApplication"
+        android:allowBackup="false"
+        android:label="SignalDock Demo"
+        android:theme="@android:style/Theme.Material.NoActionBar"
+        android:usesCleartextTraffic="false">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

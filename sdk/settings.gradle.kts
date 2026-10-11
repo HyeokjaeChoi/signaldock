@@ -23,3 +23,6 @@ dependencyResolutionManagement {
 }
 rootProject.name = "signaldock-sdk"
 include(":sdk-android")
+// Demo app (ADR-0005 "Demo app: feature modules and unidirectional data flow").
+// Intermediate projects :demo, :demo:feature and :demo:core have no build file.
+include(":demo:app", ":demo:feature:shop", ":demo:feature:diagnostics", ":demo:core:ui", ":demo:core:data")
