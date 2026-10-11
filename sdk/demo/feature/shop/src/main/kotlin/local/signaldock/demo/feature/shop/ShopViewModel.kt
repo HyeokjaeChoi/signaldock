@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import local.signaldock.TrackResult
 import local.signaldock.demo.core.data.DemoEvent
@@ -97,7 +98,7 @@ class ShopViewModel(
     private fun track(event: DemoEvent) {
         viewModelScope.launch {
             val result = client.track(event)
-            _state.value = _state.value.copy(lastTrack = TrackOutcome(event.name, result))
+            _state.update { it.copy(lastTrack = TrackOutcome(event.name, result)) }
         }
     }
 
