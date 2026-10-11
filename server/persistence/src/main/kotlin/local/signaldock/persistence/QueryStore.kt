@@ -88,7 +88,17 @@ public class QueryStore(private val database: Database) {
             readOnly()
             // Inline literals keep the SELECT and GROUP BY expressions identical for PostgreSQL.
             val unit = DSL.inline(if (q.bucket == Bucket.HOUR) "hour" else "day")
-            val start = DSL.field("date_trunc({0}, {1}, {2})", SQLDataType.TIMESTAMPWITHTIMEZONE, unit, EVENTS.RECEIVED_AT, DSL.inline(q.zone.id))
+            val zone = DSL.inline(q.zone.id)
+            val start = if (q.bucket == Bucket.HOUR) {
+                // date_trunc(hour, ts, zone) merges both occurrences of a repeated local hour at a DST fall-back.
+                // Subtracting the local remainder from the instant keeps them apart.
+                DSL.field(
+                    "{0} - (({0} AT TIME ZONE {1}) - date_trunc('hour', {0} AT TIME ZONE {1}))",
+                    SQLDataType.TIMESTAMPWITHTIMEZONE, EVENTS.RECEIVED_AT, zone,
+                )
+            } else {
+                DSL.field("date_trunc({0}, {1}, {2})", SQLDataType.TIMESTAMPWITHTIMEZONE, unit, EVENTS.RECEIVED_AT, zone)
+            }
             val count = DSL.count()
             query {
                 select(start, count)

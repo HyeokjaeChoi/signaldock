@@ -192,6 +192,30 @@ class QueryStoreTest {
     }
 
     @Test
+    fun `hour buckets keep both repeated local hours at a DST fall-back`() = runBlocking {
+        // New York falls back on 2026-11-01: 01:00-02:00 local occurs twice (05:00Z EDT, then 06:00Z EST).
+        val ny = ZoneId.of("America/New_York")
+        insert(1, "2026-11-01T04:59:59Z")
+        insert(2, "2026-11-01T05:10:00Z")
+        insert(3, "2026-11-01T05:50:00.123Z")
+        insert(4, "2026-11-01T06:05:00Z")
+        insert(5, "2026-11-01T06:06:00Z")
+        insert(6, "2026-11-01T06:07:00Z")
+        insert(7, "2026-11-01T07:00:00Z")
+        val query = TimeCountQuery(period("2026-11-01T04:00:00Z", "2026-11-01T08:00:00Z"), noFilter, Bucket.HOUR, ny)
+        val hours = fillBuckets(bucketStarts(query.period, Bucket.HOUR, ny), store.countByTime(query))
+        assertEquals(
+            listOf(
+                "2026-11-01T04:00:00Z" to 1L,
+                "2026-11-01T05:00:00Z" to 2L,
+                "2026-11-01T06:00:00Z" to 3L,
+                "2026-11-01T07:00:00Z" to 1L,
+            ),
+            hours.map { it.start.toString() to it.count },
+        )
+    }
+
+    @Test
     fun `details return stored properties and a missing event is null`() = runBlocking {
         insert(1, "2026-10-12T00:00:00.123Z", properties = """{"price":1.50,"sku":"a\"b","ok":true}""")
         val event = assertNotNull(store.find(id(1)))
