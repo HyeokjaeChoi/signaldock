@@ -8,9 +8,10 @@ kotlinx-serialization = "1.11.0"
 openapi-generator = "7.26.0"
 oasdiff = "1.33.0"
 
-# KSP has no 2.4.x release as of 2026-10-09; pinned when the Room/KSP
-# modules are built (issues #3/#4). KSP must share Kotlin's major.minor.
-# ksp = "<tbd>"
+# KSP has no 2.4.x release as of 2026-10-09 (latest is 2.3.12; KSP 2.3+ is
+# versioned independently of Kotlin). Pinned in issue 03 and verified with
+# Kotlin 2.4.21 + Room 2.8.5 (see docs/adr/0003-sdk-storage-decisions.md).
+ksp = "2.3.12"
 
 # Android (doc-pinned; full AGP compilation verified in later issues)
 compileSdk = "36"
@@ -21,6 +22,11 @@ workmanager = "2.12.0"
 retrofit = "3.0.0"
 okhttp = "5.5.0"
 compose-bom = "2026.09.00"
+coroutines = "1.11.0"
+# SDK JVM tests (no emulator)
+robolectric = "4.17"
+junit = "4.13.2"
+androidx-test-core = "1.7.0"
 
 # Server (doc-pinned; server build verified in issue #2)
 ktor = "3.6.0"
@@ -31,9 +37,18 @@ flyway = "13.10.0"
 typescript = "7.0.2"
 
 [libraries]
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+junit = { module = "junit:junit", version.ref = "junit" }
+androidx-test-core = { module = "androidx.test:core", version.ref = "androidx-test-core" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 android-library = { id = "com.android.library", version.ref = "agp" }

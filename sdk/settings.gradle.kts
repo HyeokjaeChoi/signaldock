@@ -22,3 +22,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "signaldock-sdk"
+include(":sdk-android")
