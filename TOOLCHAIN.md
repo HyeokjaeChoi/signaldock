@@ -15,6 +15,10 @@ oasdiff, and openapi-generator-cli into `.tools/`. It checks the hash of each
 download and skips tools that are already installed. It works on macOS and
 Linux, on arm64 and x64.
 
+If a pinned tool is missing, a script stops with a setup message. It never uses a tool from PATH.
+
+Lockfiles are committed. Verification runs `npm ci`.
+
 ## Build-verified in issue #1
 
 | Component | Pinned | Why |

@@ -25,3 +25,13 @@ In Q91, the user agreed to track both OpenAPI and jOOQ generated sources in Git.
 In Q105, the user agreed that an ingestion request without a contract version header must be rejected in full with HTTP 400 and an explicit contract error, with nothing stored. The SDK preserves the queue and follows Q58 recovery checks. A missing header is not automatically interpreted as contract 1. Q106 fixed the header name as `SignalDock-Contract-Version`. Its first-release value is `1`, separate from the event's `sdkVersion`.
 
 In Q107, the user agreed to require the same contract version header for Dashboard business query APIs. A missing header is rejected with HTTP 400, and unsupported versions are not automatically interpreted. Health checks and static files are exempt. The first release implements only contract 1; handlers for older versions are not created automatically. UI recovery behavior for Dashboard contract errors will be decided separately.
+
+## Amendment: contract verification (2026-10-11, PR #9)
+
+Compare the contract with the prior baseline stored in Git (`fixtures/contract/contract-v1.baseline.yaml`). Never compare the contract with itself.
+
+A contract sample must run assertions. A sample that only compiles is not a check.
+
+Mark request schemas `additionalProperties: false`. Free-form keys inside `properties` are exempt.
+
+Reviewers read the contract and the generator templates. The drift check in `scripts/verify-contract.sh` proves that the generated outputs match the contract, so reviewers do not read generated diffs. This replaces the statement in the Q91 paragraph that reviewers read source contracts and generated outputs together.

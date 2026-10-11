@@ -47,28 +47,8 @@ Before exploring code or designing the domain, read `docs/agents/domain.md`.
 Run once per clone: `git config core.hooksPath .githooks`.
 The pre-commit hook runs `scripts/check-repo-rules.sh`. The pre-push hook also runs `scripts/verify-contract.sh` when code changed.
 
-## Code review
+## Roles
 
-Review rules live in `docs/review/`, one file per area:
-
-| Area | File |
-| --- | --- |
-| Repository-wide, "Do not suggest" | `docs/review/repo.md` |
-| `sdk/` | `docs/review/sdk.md` |
-| `server/` | `docs/review/server.md` |
-| Contract and codegen | `docs/review/contract.md` |
-| Scripts, toolchain, verification | `docs/review/verification.md` |
-
-Before you edit or review files in an area, read its file. CodeRabbit loads them through `.coderabbit.yaml`, which also owns each file's path scope.
-
-### Adding review knowledge
-
-When a review finding settles a rule, record it in the first place that fits:
-
-1. A machine can check it: add the check to `scripts/check-repo-rules.sh` or `scripts/verify-contract.sh`. Do not also write it as prose.
-2. It is a judgment call for one area: add one bullet to that area's file in `docs/review/`. End the bullet with the source PR, for example `(PR #9)`.
-3. It is a design decision that crosses areas: write an ADR in `docs/adr/`.
-
-Do not add review rules to this file. If an area file grows past about 60 lines, split it by sub-area, add a row to the table, and map it in `.coderabbit.yaml`.
-
-Record a settled rule in `docs/review/` in the same PR. CodeRabbit learnings wait 30 days as pending. `.github/workflows/learnings-sync.yml` opens a PR for any learning that a merged PR did not record. After that PR merges, reject the learning in the Learnings page.
+- Implementer (local agents): before you edit files in an area, read the sections that `docs/design-index.md` lists for it. Build what the design sources say. If you must make a new decision, record it in an ADR in the same PR and name it in the PR description. Do not write review rules.
+- Reviewer (CodeRabbit): it reviews with no session context against the design sources. Its configuration is `.coderabbit.yaml`. When you answer a review finding, do one of these: fix the code; fix the design source in the same PR; add a check to `scripts/check-repo-rules.sh` or `scripts/verify-contract.sh`; or reject the finding and cite the design source section. Learnings only calibrate CodeRabbit. Do not rely on them for design facts.
+- PR descriptions state what changed, which design sections it follows, and the exact verification commands and results. Never label a step verified without a run.
