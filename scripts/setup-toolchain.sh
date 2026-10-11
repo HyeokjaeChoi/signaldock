@@ -64,6 +64,7 @@ trap 'rm -rf "$TMP"' EXIT
 if [ -x "$JDK_DIR/bin/java" ]; then
   echo "skip: JDK already at $JDK_DIR"
 else
+  [ -e "$JDK_DIR" ] && { echo "error: $JDK_DIR exists but has no bin/java; remove it and run this script again" >&2; exit 1; }
   curl -fsSL -o "$TMP/jdk.tar.gz" "$JDK_URL"
   check "$TMP/jdk.tar.gz" 256 "$JDK_SHA"
   mkdir "$TMP/jdk"
