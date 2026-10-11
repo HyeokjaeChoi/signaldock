@@ -45,6 +45,8 @@ private const val MAX_BATCH_BYTES = 256 * 1024
 private const val MAX_EVENT_BYTES = 16 * 1024
 private const val MAX_EVENTS = 50
 private const val MAX_JSON_NESTING_DEPTH = 8
+private const val MAX_NUMERIC_INTEGER_DIGITS = 131_072
+private const val MAX_NUMERIC_FRACTIONAL_DIGITS = 16_383
 private val MAX_SAFE_INTEGER = BigDecimal("9007199254740991")
 private val SUPPORTED_CONTRACT_VERSIONS = setOf("1")
 
@@ -213,7 +215,14 @@ private fun validNumber(raw: String): Boolean = try {
     val number = BigDecimal(raw)
     val normalized = number.stripTrailingZeros()
     if (normalized.scale() <= 0) number.abs() <= MAX_SAFE_INTEGER
-    else number.toDouble().isFinite()
+    else {
+        val double = number.toDouble()
+        val integerDigits = normalized.precision() - normalized.scale()
+        double.isFinite() &&
+            BigDecimal.valueOf(double).compareTo(number) == 0 &&
+            normalized.scale() <= MAX_NUMERIC_FRACTIONAL_DIGITS &&
+            integerDigits <= MAX_NUMERIC_INTEGER_DIGITS
+    }
 } catch (_: NumberFormatException) {
     false
 }

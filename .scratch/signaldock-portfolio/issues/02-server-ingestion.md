@@ -44,3 +44,61 @@ Verification commands and results:
 - `JAVA_HOME=$PWD/.tools/jdk-17.0.20.1+1 GRADLE_USER_HOME=$PWD/.tools/gradle-home npm_config_cache=$PWD/.tools/npm-cache scripts/verify-contract.sh` — passed; codegen drift, the intentionally updated OpenAPI baseline, 5 Kotlin round-trip tests, TypeScript type/contract checks, and independent SDK/server Gradle builds passed; ended with `ALL CONTRACT CHECKS PASSED`.
 - ADR-0002 and ADR-0004 were not changed because this work implements and exposes existing contract and runtime decisions; it does not add a new contract rule or change a runtime decision.
 - Commit — not run as requested.
+
+### Contract change against the previous baseline
+
+2026-10-11: Compared the current contract with the baseline from `origin/main`. The checked-in baseline was not reverted.
+
+Exact commands:
+
+```sh
+git show origin/main:fixtures/contract/contract-v1.baseline.yaml > /tmp/prev-baseline.yaml
+.tools/oasdiff breaking /tmp/prev-baseline.yaml openapi/contract-v1.yaml
+.tools/oasdiff changelog /tmp/prev-baseline.yaml openapi/contract-v1.yaml
+```
+
+`breaking` output:
+
+```text
+No breaking changes to report, but the specs are different.
+Run 'oasdiff diff' to see structural differences.
+```
+
+`changelog` output:
+
+```text
+6 changes: 0 error, 0 warning, 6 info
+info	[api-security-component-added]
+	in components/securitySchemes
+		the component security scheme `collectionKey` was added
+
+info	[api-security-added] at openapi/contract-v1.yaml
+	in API POST /v1/events:batch
+		the endpoint scheme security `collectionKey` was added to the API
+
+info	[new-optional-request-parameter] at openapi/contract-v1.yaml
+	in API POST /v1/events:batch
+		added the new optional `header` request parameter `content-encoding`
+
+info	[response-non-success-status-added] at openapi/contract-v1.yaml
+	in API POST /v1/events:batch
+		added the non-success response with the status `401`
+
+info	[response-non-success-status-added] at openapi/contract-v1.yaml
+	in API POST /v1/events:batch
+		added the non-success response with the status `415`
+
+info	[response-non-success-status-added] at openapi/contract-v1.yaml
+	in API POST /v1/events:batch
+		added the non-success response with the status `503`
+
+
+```
+
+2026-10-11: Rejected property decimals that cannot round-trip through a finite IEEE `Double`, or exceed PostgreSQL `numeric` integer/fraction digit limits. Before the fix, the focused validation test failed because `1e-20000` was accepted. After the fix, the focused validation and PostgreSQL integration tests passed; the integration test stored the valid sibling and returned `INVALID_PROPERTIES` for the bad item.
+
+Final verification commands and results:
+
+- `(cd server && JAVA_HOME=$PWD/../.tools/jdk-17.0.20.1+1 GRADLE_USER_HOME=$PWD/../.tools/gradle-home ./gradlew test verifyJooq --no-daemon)` — passed; all 20 server tests passed, Flyway applied `V1` to PostgreSQL 17.6, and jOOQ 3.19.39 regenerated all 7 expected files without drift.
+- `JAVA_HOME=$PWD/.tools/jdk-17.0.20.1+1 GRADLE_USER_HOME=$PWD/.tools/gradle-home npm_config_cache=$PWD/.tools/npm-cache scripts/verify-contract.sh` — passed; codegen drift, baseline, 5 Kotlin fixture tests, TypeScript type/contract checks, and independent SDK/server builds passed; ended with `ALL CONTRACT CHECKS PASSED`.
+- Commit — not run as requested.

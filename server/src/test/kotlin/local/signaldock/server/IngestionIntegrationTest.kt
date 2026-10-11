@@ -66,6 +66,21 @@ class IngestionIntegrationTest {
     }
 
     @Test
+    fun `stores a valid sibling and rejects a number outside the storage range`() = runBlocking {
+        val valid = event("30d66f95-2435-4e56-b52a-70b1c8bba4f1")
+        val invalid = event(
+            "30d66f95-2435-4e56-b52a-70b1c8bba4f2",
+            properties = """{"price":1e-20000}""",
+        )
+
+        val response = Ingestion(database).ingest(parse(batch("$valid,$invalid")))
+
+        assertEquals(listOf(ItemAck.Status.ACCEPTED, ItemAck.Status.REJECTED), response.results.map { it.status })
+        assertEquals("INVALID_PROPERTIES", response.results[1].code)
+        assertEquals(1, countRows())
+    }
+
+    @Test
     fun `same content repeats once while different content group stores nothing`() = runBlocking {
         val ingestion = Ingestion(database)
         val sameId = "50cc1adb-d543-4121-b0e1-ee505e41dd4b"

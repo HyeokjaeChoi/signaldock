@@ -71,6 +71,15 @@ class IngestValidationTest {
         assertEquals("INVALID_OCCURRED_AT", parsed.items.single().rejectionCode)
     }
 
+    @Test
+    fun `rejects decimals outside the finite IEEE double range`() {
+        val underflow = parse(batch(event(properties = """{"n":1e-20000}""")))
+        val overflow = parse(batch(event(properties = """{"n":1e20000}""")))
+
+        assertEquals("INVALID_PROPERTIES", underflow.items.single().rejectionCode)
+        assertEquals("INVALID_PROPERTIES", overflow.items.single().rejectionCode)
+    }
+
     private fun batch(events: String) = """{"installationId":"47c4d89f-352a-41da-9b31-529ea756515a","events":[$events]}"""
 
     private fun parse(source: String) = parseBatch(source.encodeToByteArray(), "1")
