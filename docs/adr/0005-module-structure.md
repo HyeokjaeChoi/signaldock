@@ -24,13 +24,13 @@ Public API types stay in `local.signaldock`. Implementation types stay `internal
 
 Reasons:
 
-- The SDK must ship one AAR. Fusing several Gradle modules into one AAR needs the Android fused library plugin. It is Preview and needs AGP 9 ([fused library](https://developer.android.com/build/publish-library/fused-library)).
+- The SDK must ship one AAR. Fusing several Gradle modules into one AAR needs the Android fused library plugin. It is still Preview in AGP 9.x and does not package transitive dependencies ([fused library](https://developer.android.com/build/publish-library/fused-library)).
 - Kotlin `internal` is per module ([visibility](https://kotlinlang.org/docs/visibility-modifiers.html)). Splitting would force the generated transport DTOs and implementation types to become public, which conflicts with architecture.md "Components and responsibilities".
 - Google's modularization guide makes modularization optional unless a project needs reuse, strict visibility control, or Play Feature Delivery ([modularization](https://developer.android.com/topic/modularization)).
 
 Unidirectional data flow does not apply to the SDK. The SDK has no Compose or ViewModel dependency.
 
-Revisit this when the fused library plugin is stable on the pinned AGP.
+Revisit this when the fused library plugin becomes stable.
 
 ## Demo app: feature modules and unidirectional data flow
 
