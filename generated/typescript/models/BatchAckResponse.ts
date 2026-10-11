@@ -1,8 +1,8 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
- * SignalDock Ingestion API
- * Contract version 1 of the SignalDock event ingestion API. The transport contract version travels in the required `SignalDock-Contract-Version` header, separately from the SDK release version. This document is the contract source; Kotlin (SDK/server) and TypeScript (Dashboard) models are generated from it. Generated sources are tracked in Git (Q91). 
+ * SignalDock API
+ * Contract version 1 of the SignalDock event ingestion API and the Dashboard query API. The transport contract version travels in the required `SignalDock-Contract-Version` header, separately from the SDK release version. This document is the contract source; Kotlin (SDK/server) and TypeScript (Dashboard) models are generated from it. Generated sources are tracked in Git (Q91). 
  *
  * The version of the OpenAPI document: 1.0.0
  * 

@@ -4,6 +4,14 @@ models/BatchIngestRequest.ts
 models/ErrorResponse.ts
 models/EventIngest.ts
 models/EventIngestPropertiesValue.ts
+models/EventNameCount.ts
+models/EventNameCounts.ts
+models/EventReceiptDetail.ts
+models/EventReceiptPage.ts
+models/EventReceiptSummary.ts
+models/EventTimeBucket.ts
+models/EventTimeCounts.ts
 models/ItemAck.ts
+models/PropertyValue.ts
 models/index.ts
 runtime.ts

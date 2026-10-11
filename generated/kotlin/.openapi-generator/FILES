@@ -3,4 +3,12 @@ src/main/kotlin/org/openapitools/client/models/BatchIngestRequest.kt
 src/main/kotlin/org/openapitools/client/models/ErrorResponse.kt
 src/main/kotlin/org/openapitools/client/models/EventIngest.kt
 src/main/kotlin/org/openapitools/client/models/EventIngestPropertiesValue.kt
+src/main/kotlin/org/openapitools/client/models/EventNameCount.kt
+src/main/kotlin/org/openapitools/client/models/EventNameCounts.kt
+src/main/kotlin/org/openapitools/client/models/EventReceiptDetail.kt
+src/main/kotlin/org/openapitools/client/models/EventReceiptPage.kt
+src/main/kotlin/org/openapitools/client/models/EventReceiptSummary.kt
+src/main/kotlin/org/openapitools/client/models/EventTimeBucket.kt
+src/main/kotlin/org/openapitools/client/models/EventTimeCounts.kt
 src/main/kotlin/org/openapitools/client/models/ItemAck.kt
+src/main/kotlin/org/openapitools/client/models/PropertyValue.kt

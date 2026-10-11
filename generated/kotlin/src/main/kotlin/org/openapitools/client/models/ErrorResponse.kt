@@ -31,14 +31,14 @@ import kotlinx.serialization.Contextual
 /**
  * 
  *
- * @param code Machine-readable error code, e.g. CONTRACT_HEADER_MISSING, CONTRACT_VERSION_UNSUPPORTED, UNKNOWN_FIELD, MALFORMED_REQUEST. 
+ * @param code Machine-readable error code, e.g. CONTRACT_HEADER_MISSING, CONTRACT_VERSION_UNSUPPORTED, UNKNOWN_FIELD, MALFORMED_REQUEST, INVALID_PARAMETER, INVALID_CURSOR, PERIOD_TOO_LONG, EVENT_NOT_FOUND. 
  * @param message 
  */
 @Serializable
 
 internal data class ErrorResponse (
 
-    /* Machine-readable error code, e.g. CONTRACT_HEADER_MISSING, CONTRACT_VERSION_UNSUPPORTED, UNKNOWN_FIELD, MALFORMED_REQUEST.  */
+    /* Machine-readable error code, e.g. CONTRACT_HEADER_MISSING, CONTRACT_VERSION_UNSUPPORTED, UNKNOWN_FIELD, MALFORMED_REQUEST, INVALID_PARAMETER, INVALID_CURSOR, PERIOD_TOO_LONG, EVENT_NOT_FOUND.  */
     @SerialName(value = "code")
     val code: kotlin.String,
 

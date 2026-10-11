@@ -1,8 +1,8 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
- * SignalDock Ingestion API
- * Contract version 1 of the SignalDock event ingestion API. The transport contract version travels in the required `SignalDock-Contract-Version` header, separately from the SDK release version. This document is the contract source; Kotlin (SDK/server) and TypeScript (Dashboard) models are generated from it. Generated sources are tracked in Git (Q91). 
+ * SignalDock API
+ * Contract version 1 of the SignalDock event ingestion API and the Dashboard query API. The transport contract version travels in the required `SignalDock-Contract-Version` header, separately from the SDK release version. This document is the contract source; Kotlin (SDK/server) and TypeScript (Dashboard) models are generated from it. Generated sources are tracked in Git (Q91). 
  *
  * The version of the OpenAPI document: 1.0.0
  * 
@@ -20,7 +20,7 @@ import { mapValues } from '../runtime';
  */
 export interface ErrorResponse {
     /**
-     * Machine-readable error code, e.g. CONTRACT_HEADER_MISSING, CONTRACT_VERSION_UNSUPPORTED, UNKNOWN_FIELD, MALFORMED_REQUEST.
+     * Machine-readable error code, e.g. CONTRACT_HEADER_MISSING, CONTRACT_VERSION_UNSUPPORTED, UNKNOWN_FIELD, MALFORMED_REQUEST, INVALID_PARAMETER, INVALID_CURSOR, PERIOD_TOO_LONG, EVENT_NOT_FOUND.
      * 
      */
     code: string;
