@@ -33,9 +33,9 @@ import kotlinx.serialization.Contextual
  * 
  *
  * @param eventId Event ID. Unchanged across resends; the server uses it with content comparison for duplicate detection (Q69). 
- * @param name Business event name defined by the client app.
+ * @param name Business event name defined by the client app. Leading or trailing whitespace, or an empty or whitespace-only value, is rejected; internal whitespace is kept. Whitespace is exactly U+0009..U+000D, U+0020, U+0085, U+00A0, U+1680, U+2000..U+200A, U+2028, U+2029, U+202F, U+205F, U+3000 (Q64; fixtures/validation/whitespace-set.json). Other characters, such as U+001C, U+180E, U+200B, and U+FEFF, are not whitespace. 
  * @param occurredAt UTC RFC 3339 timestamp with millisecond precision (Q81). Numeric offsets are accepted and interpreted as the same UTC instant (Q82); local times without offsets are rejected. Values not representable in milliseconds are rejected (Q83). 
- * @param properties Flat event properties. Keys map to scalar string, number, or boolean values only; no null values and no nesting (Q33-35). 
+ * @param properties Flat event properties. Keys map to scalar string, number, or boolean values only; no null values and no nesting (Q33-35). Keys follow the event name whitespace rule: no leading or trailing whitespace, not empty or whitespace-only. The whitespace set is U+0009..U+000D, U+0020, U+0085, U+00A0, U+1680, U+2000..U+200A, U+2028, U+2029, U+202F, U+205F, U+3000 (Q64; fixtures/validation/whitespace-set.json). 
  * @param sdkVersion SDK release version at collection time, kept unchanged on resend (Q66).
  * @param contractVersion Transport contract version stored with the queue entry (Q66).
  */
@@ -47,7 +47,7 @@ internal data class EventIngest (
     @SerialName(value = "eventId")
     val eventId: kotlin.String,
 
-    /* Business event name defined by the client app. */
+    /* Business event name defined by the client app. Leading or trailing whitespace, or an empty or whitespace-only value, is rejected; internal whitespace is kept. Whitespace is exactly U+0009..U+000D, U+0020, U+0085, U+00A0, U+1680, U+2000..U+200A, U+2028, U+2029, U+202F, U+205F, U+3000 (Q64; fixtures/validation/whitespace-set.json). Other characters, such as U+001C, U+180E, U+200B, and U+FEFF, are not whitespace.  */
     @SerialName(value = "name")
     val name: kotlin.String,
 
@@ -55,7 +55,7 @@ internal data class EventIngest (
     @SerialName(value = "occurredAt")
     val occurredAt: kotlin.String,
 
-    /* Flat event properties. Keys map to scalar string, number, or boolean values only; no null values and no nesting (Q33-35).  */
+    /* Flat event properties. Keys map to scalar string, number, or boolean values only; no null values and no nesting (Q33-35). Keys follow the event name whitespace rule: no leading or trailing whitespace, not empty or whitespace-only. The whitespace set is U+0009..U+000D, U+0020, U+0085, U+00A0, U+1680, U+2000..U+200A, U+2028, U+2029, U+202F, U+205F, U+3000 (Q64; fixtures/validation/whitespace-set.json).  */
     @Contextual @SerialName(value = "properties")
     val properties: kotlin.collections.Map<kotlin.String, EventIngestPropertiesValue>,
 

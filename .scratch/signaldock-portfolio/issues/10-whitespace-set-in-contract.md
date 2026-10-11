@@ -3,7 +3,7 @@
 Status: ready-for-agent
 Type: task
 Blocked by: 02, 03
-Execution: Not started
+Execution: Done on branch impl/10-whitespace-contract (not pushed)
 
 ## Scope and completion criteria
 
@@ -23,3 +23,11 @@ Done when:
 ## Comments
 
 2026-10-11: Created while aligning issue 02 and issue 03. The SDK used `Char.isWhitespace()`; it now uses the server's explicit list.
+
+2026-10-11: Implemented.
+- `openapi/contract-v1.yaml`: descriptions of `EventIngest.name` and `EventIngest.properties` (keys) state the set. Description text only. `generated/` regenerated via `scripts/codegen.sh` (only doc comments in `EventIngest.kt` and `EventIngest.ts` changed). `fixtures/contract/contract-v1.baseline.yaml` updated on purpose.
+- `oasdiff breaking <baseline from main> openapi/contract-v1.yaml` output: `No breaking changes to report, but the specs are different.` (exit 0). `oasdiff diff` shows only the two description changes.
+- `fixtures/validation/whitespace-set.json`: 25 members and 4 near misses (U+001C, U+200B, U+FEFF, U+180E).
+- SDK: `TrackTest` now reads the fixture (no inline list). Server: new `IngestRulesTest` case reads the same file. Both check each member as leading, trailing, and alone, in the name and in a property key, and check near misses are accepted. Production code is unchanged; no mismatch found.
+- Placement: tests live in the SDK and `:ingestion` test suites, not in `contract-check`. `contract-check` compiles only the generated DTOs and has no dependency on the SDK or server validation code. A fixture change or a rule change on either side fails that side's test, and `verify-contract.sh` does not run SDK/server tests (CI runs those builds).
+- Results: `sdk/gradlew -p sdk :sdk-android:testDebugUnitTest --no-daemon` BUILD SUCCESSFUL; `(cd server && ./gradlew test verifyJooq --no-daemon)` BUILD SUCCESSFUL; `scripts/verify-contract.sh` ALL CONTRACT CHECKS PASSED.
