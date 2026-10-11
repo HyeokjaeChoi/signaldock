@@ -8,11 +8,18 @@ version was chosen and what actually verified it.
 build-verified when its module is implemented (see the table below for the
 tracking issue per component).
 
+## Setup
+
+Run `scripts/setup-toolchain.sh` once per clone. It installs the pinned JDK,
+oasdiff, and openapi-generator-cli into `.tools/`. It checks the hash of each
+download and skips tools that are already installed. It works on macOS and
+Linux, on arm64 and x64.
+
 ## Build-verified in issue #1
 
 | Component | Pinned | Why |
 |---|---|---|
-| JDK | 17 (Ubuntu `openjdk-17-jdk-headless`) | AGP 8.13 requires JDK 17 (developer.android.com) |
+| JDK | Eclipse Temurin 17.0.20.1+1, in `.tools/jdk-17.0.20.1+1` | AGP 8.13 requires JDK 17 (developer.android.com) |
 | Kotlin | 2.4.21 | Latest stable; supports Gradle 7.6.3-9.7.0 and AGP 8.5.2-9.3.1 (kotlinlang.org) |
 | kotlinx.serialization | 1.11.0 | Latest stable; compiler plugin applied in contract-check build |
 | openapi-generator-cli | 7.26.0 | Latest stable; used by `scripts/codegen.sh` |
