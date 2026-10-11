@@ -1,8 +1,7 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 #
 # Review rules live in docs/review/*.md (source of truth, versioned with code).
-# CodeRabbit learnings are an inbox: promote them into docs/review/ or
-# scripts/check-repo-rules.sh, then delete them. See AGENTS.md "Code review".
+# CodeRabbit learnings are an inbox, not a rule store. See AGENTS.md "Code review".
 
 reviews:
   profile: chill
@@ -53,6 +52,9 @@ reviews:
 knowledge_base:
   learnings:
     scope: local
+    # New learnings wait 30 days as pending. The learnings-sync workflow promotes
+    # them into docs/review/; then reject them in app.coderabbit.ai/learnings.
+    approval_delay: 30
   code_guidelines:
     enabled: true
     filePatterns:

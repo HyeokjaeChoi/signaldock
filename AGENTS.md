@@ -71,4 +71,4 @@ When a review finding settles a rule, record it in the first place that fits:
 
 Do not add review rules to this file. If an area file grows past about 60 lines, split it by sub-area, add a row to the table, and map it in `.coderabbit.yaml`.
 
-CodeRabbit learnings are an inbox, not the source of truth. When you reject or accept a CodeRabbit finding, reply with the rule file that settles it. Promote learnings into `docs/review/` or a check, then delete them.
+Record a settled rule in `docs/review/` in the same PR. CodeRabbit learnings wait 30 days as pending. `.github/workflows/learnings-sync.yml` opens a PR for any learning that a merged PR did not record. After that PR merges, reject the learning in the Learnings page.
