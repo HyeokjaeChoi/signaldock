@@ -38,7 +38,7 @@ echo "=== 2. oasdiff baseline ==="
 # Fails on any change vs the checked-in v1 baseline: when the contract
 # changes deliberately, update fixtures/contract/contract-v1.baseline.yaml
 # in the same PR.
-"$ROOT/.tools/oasdiff" diff -o "$ROOT/fixtures/contract/contract-v1.baseline.yaml" "$ROOT/openapi/contract-v1.yaml"
+"$ROOT/.tools/oasdiff" diff --fail-on-diff "$ROOT/fixtures/contract/contract-v1.baseline.yaml" "$ROOT/openapi/contract-v1.yaml"
 
 echo "=== 3. kotlin compile + tests (contract-check build) ==="
 (cd "$ROOT/contract-check" && ./gradlew test --no-daemon)
