@@ -14,6 +14,7 @@ sourceSets {
 
 dependencies {
     api(project(":ingestion"))
+    api(project(":query"))
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.hikari)

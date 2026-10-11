@@ -18,6 +18,7 @@ sourceSets {
 dependencies {
     implementation(project(":ingestion"))
     implementation(project(":persistence"))
+    implementation(project(":query"))
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.netty)
     implementation(libs.kotlinx.serialization.json)

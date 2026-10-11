@@ -51,15 +51,16 @@ Feature modules do not depend on each other. Each screen follows the [UI layer g
 
 ## Server: layered Gradle modules
 
-The server build (`server/`) splits into three Gradle modules, following the multi-module option in the [Ktor application structure](https://ktor.io/docs/server-application-structure.html):
+The server build (`server/`) splits into four Gradle modules, following the multi-module option in the [Ktor application structure](https://ktor.io/docs/server-application-structure.html):
 
 | Module | Owns | Depends on |
 |---|---|---|
-| `:app` | Ktor setup, routes, HTTP status mapping, generated transport DTOs | `:ingestion`, `:persistence` |
+| `:app` | Ktor setup, routes, HTTP status mapping, generated transport DTOs | `:ingestion`, `:query`, `:persistence` |
 | `:ingestion` | request validation rules, receipt and duplicate decisions, domain types | none |
-| `:persistence` | Flyway migrations, jOOQ generated code, transactions, timeouts | `:ingestion` |
+| `:query` | Dashboard query parameter validation, period and page limits, cursor and bucket rules (issue 14, ADR-0007) | `:ingestion` (for `PropertyValue` only) |
+| `:persistence` | Flyway migrations, jOOQ generated code, transactions, timeouts, ingestion and query SQL | `:ingestion`, `:query` |
 
-`:ingestion` does not compile against jOOQ, Flyway, Ktor, or the generated DTOs. architecture.md "Contracts, generated sources, and JSON" requires public API types, jOOQ records, and DTOs to stay separate by role. The generated DTOs are `internal` and stay in `:app`. Later features (Dashboard query APIs) add their own modules in the same pattern.
+`:ingestion` and `:query` do not compile against jOOQ, Flyway, Ktor, JDBC, serialization, or the generated DTOs. architecture.md "Contracts, generated sources, and JSON" requires public API types, jOOQ records, and DTOs to stay separate by role. The generated DTOs are `internal` and stay in `:app`. Later features add their own modules in the same pattern.
 
 There is no official layout for Ktor with jOOQ and Flyway. This split is common practice. It is used because the boundaries are then enforced by the compiler instead of by package names.
 

@@ -20,4 +20,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "signaldock-server"
 // Layered modules: ADR-0005, section "Server: layered Gradle modules".
-include(":app", ":ingestion", ":persistence")
+include(":app", ":ingestion", ":persistence", ":query")

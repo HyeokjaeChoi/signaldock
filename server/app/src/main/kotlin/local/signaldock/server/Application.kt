@@ -22,11 +22,11 @@ import kotlinx.serialization.json.Json
 import org.openapitools.client.models.BatchAckResponse
 import org.openapitools.client.models.ErrorResponse
 import java.io.ByteArrayOutputStream
-import java.security.MessageDigest
 import local.signaldock.ingestion.RequestFailure
 import local.signaldock.persistence.Database
 import local.signaldock.persistence.DatabaseObserver
 import local.signaldock.persistence.DatabaseUnavailable
+import local.signaldock.query.parseProjectZone
 
 /** Callback is a test seam for response loss after a real commit; production uses the default. */
 internal fun Application.ingestionModule(
@@ -42,15 +42,8 @@ internal fun Application.ingestionModule(
             val budget = database.budget()
             try {
                 withTimeout(budget.remainingMs()) {
-                    val version = call.request.headers.getAll("SignalDock-Contract-Version")
-                    if (version == null) throw RequestFailure("CONTRACT_HEADER_MISSING")
-                    if (version != listOf("1")) throw RequestFailure("CONTRACT_VERSION_UNSUPPORTED")
-                    val requestContractVersion = version.single()
-                    val provided = call.request.headers.getAll(HttpHeaders.Authorization)
-                    val authorized = provided?.singleOrNull()?.let {
-                        MessageDigest.isEqual(it.toByteArray(Charsets.UTF_8), "Bearer $collectionKey".toByteArray(Charsets.UTF_8))
-                    } ?: false
-                    if (!authorized) throw RequestFailure("COLLECTION_KEY_INVALID")
+                    val requestContractVersion = call.requireContractVersion()
+                    call.requireCollectionKey(collectionKey)
                     if (!call.request.contentType().match(ContentType.Application.Json)) {
                         throw RequestFailure("CONTENT_TYPE_UNSUPPORTED")
                     }
@@ -97,6 +90,7 @@ fun main() {
         database.migrate()
         embeddedServer(Netty, host = "127.0.0.1", port = System.getenv("PORT")?.toInt() ?: 8080) {
             ingestionModule(database, key)
+            queryModule(database, key, parseProjectZone(System.getenv("SIGNALDOCK_TIME_ZONE") ?: "Asia/Seoul"))
             monitor.subscribe(ApplicationStopped) { database.close() }
         }.start(wait = true)
     } finally {
