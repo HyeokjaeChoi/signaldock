@@ -14,6 +14,8 @@ paths:
     post:
       operationId: ingestEventBatch
       summary: Ingest a batch of business events
+      security:
+        - collectionKey: []
       parameters:
         - name: SignalDock-Contract-Version
           in: header
@@ -24,8 +26,20 @@ paths:
           description: >
             Transport contract version (Q65, Q106). A missing header is
             rejected with HTTP 400 and nothing is stored (Q105).
+        - name: Content-Encoding
+          in: header
+          required: false
+          schema:
+            type: string
+            enum: [identity]
+          description: >
+            The request body must be unencoded. Omit this header or send
+            `identity`; other content encodings are rejected with HTTP 415.
       requestBody:
         required: true
+        description: >
+          JSON is the only supported request media type. Other Content-Type
+          values are rejected with HTTP 415.
         content:
           application/json:
             schema:
@@ -43,7 +57,16 @@ paths:
         '400':
           description: >
             Rejected in full: missing contract header, unsupported contract
-            version, unknown fields, or malformed request. Nothing is stored.
+            version, a missing or mismatched item contractVersion, unknown
+            fields, or malformed request. Nothing is stored.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: >
+            The Bearer collection key is missing, repeated, malformed, or
+            invalid. Nothing is stored.
           content:
             application/json:
               schema:
@@ -55,7 +78,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '415':
+          description: >
+            The request Content-Type is not application/json, or its
+            Content-Encoding is not identity. Nothing is stored.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: >
+            Retryable temporary failure. The client keeps the same event IDs
+            because the storage outcome can be uncertain.
+          headers:
+            Retry-After:
+              description: Positive delay in seconds before the next retry.
+              schema:
+                type: string
+                pattern: '^[1-9][0-9]*$'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
+  securitySchemes:
+    collectionKey:
+      type: http
+      scheme: bearer
+      description: >
+        Collection key used for local evaluation. This is an access check,
+        not end-user authentication or a public-service security boundary.
   schemas:
     BatchIngestRequest:
       type: object

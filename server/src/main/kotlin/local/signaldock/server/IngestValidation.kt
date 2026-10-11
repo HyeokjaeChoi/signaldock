@@ -46,6 +46,7 @@ private const val MAX_EVENT_BYTES = 16 * 1024
 private const val MAX_EVENTS = 50
 private const val MAX_JSON_NESTING_DEPTH = 8
 private val MAX_SAFE_INTEGER = BigDecimal("9007199254740991")
+private val SUPPORTED_CONTRACT_VERSIONS = setOf("1")
 
 private val json = Json {
     ignoreUnknownKeys = false
@@ -60,7 +61,7 @@ private val json = Json {
  * set: U+0009..U+000D, U+0020, U+0085, U+00A0, U+1680, U+2000..U+200A, U+2028,
  * U+2029, U+202F, U+205F, and U+3000. Values are never trimmed or normalized.
  */
-fun parseBatch(body: ByteArray): ValidatedBatch {
+fun parseBatch(body: ByteArray, requestContractVersion: String): ValidatedBatch {
     if (body.size > MAX_BATCH_BYTES) throw RequestFailure("BATCH_TOO_LARGE", 413)
     val source = decodeUtf8(body)
     val root = try {
@@ -82,13 +83,24 @@ fun parseBatch(body: ByteArray): ValidatedBatch {
     // Do this only after the scanner has verified every field name. kotlinx.serialization
     // does not retain duplicate keys, so it must never be the preflight authority.
     eventNodes.forEach { node ->
-        val eventObject = node.asObjectOrNull() ?: return@forEach
+        val eventObject = node.asObjectOrNull()
+            ?: throw RequestFailure("CONTRACT_VERSION_MISSING")
         val fields = eventObject.fields
         if (fields.groupingBy { it.name }.eachCount().any { it.value != 1 }) {
             throw RequestFailure("MALFORMED_REQUEST")
         }
         val unknown = fields.firstOrNull { it.name !in EVENT_FIELDS }
         if (unknown != null) throw RequestFailure("UNKNOWN_FIELD")
+        val itemContractVersion = fields.singleOrNull { it.name == "contractVersion" }
+            ?.value
+            ?.stringValue
+            ?: throw RequestFailure("CONTRACT_VERSION_MISSING")
+        if (itemContractVersion !in SUPPORTED_CONTRACT_VERSIONS) {
+            throw RequestFailure("CONTRACT_VERSION_UNSUPPORTED")
+        }
+        if (itemContractVersion != requestContractVersion) {
+            throw RequestFailure("CONTRACT_VERSION_MISMATCH")
+        }
     }
 
     val document = try {
@@ -158,7 +170,6 @@ private fun validateItem(
     } catch (_: SerializationException) {
         return invalid(index, rawEventId, "INVALID_EVENT")
     }
-    if (dto.contractVersion != EventIngest.ContractVersion._1) return invalid(index, rawEventId, "CONTRACT_VERSION_UNSUPPORTED")
     if (!validText(dto.name, keyOrName = true) || !validText(dto.sdkVersion, keyOrName = false)) {
         return invalid(index, rawEventId, "INVALID_TEXT")
     }

@@ -181,6 +181,104 @@ class IngestionIntegrationTest {
         assertEquals(0, runBlocking { countRows() })
     }
 
+    @Test
+    fun `route rejects mixed item contract versions before storage`() = testApplication {
+        application { ingestionModule(database, "test-key") }
+        val contractOne = event("eb755b76-0902-4c6a-aa15-389dfb75036d")
+        val contractTwo = event("eb755b76-0902-4c6a-aa15-389dfb75036e", contractVersion = "2")
+
+        val response = client.post("/v1/events:batch") {
+            header("SignalDock-Contract-Version", "1")
+            header(HttpHeaders.Authorization, "Bearer test-key")
+            header(HttpHeaders.ContentType, ContentType.Application.Json)
+            setBody(batch("$contractOne,$contractTwo"))
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+        assertTrue(response.bodyAsText().contains("CONTRACT_VERSION_UNSUPPORTED"))
+        assertEquals(0, runBlocking { countRows() })
+    }
+
+    @Test
+    fun `route returns 401 ErrorResponse for an invalid collection key`() = testApplication {
+        application { ingestionModule(database, "test-key") }
+
+        val response = client.post("/v1/events:batch") {
+            header("SignalDock-Contract-Version", "1")
+            header(HttpHeaders.Authorization, "Bearer wrong-key")
+            header(HttpHeaders.ContentType, ContentType.Application.Json)
+            setBody(batch(event("eb755b76-0902-4c6a-aa15-389dfb75036f")))
+        }
+
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+        assertTrue(response.headers[HttpHeaders.ContentType]?.startsWith("application/json") == true)
+        assertTrue(response.bodyAsText().contains("COLLECTION_KEY_INVALID"))
+        assertEquals(0, runBlocking { countRows() })
+    }
+
+    @Test
+    fun `route returns 415 ErrorResponse for unsupported media boundaries`() = testApplication {
+        application { ingestionModule(database, "test-key") }
+        val requestBody = batch(event("eb755b76-0902-4c6a-aa15-389dfb750370"))
+
+        val unsupportedType = client.post("/v1/events:batch") {
+            header("SignalDock-Contract-Version", "1")
+            header(HttpHeaders.Authorization, "Bearer test-key")
+            header(HttpHeaders.ContentType, ContentType.Text.Plain)
+            setBody(requestBody)
+        }
+        val unsupportedEncoding = client.post("/v1/events:batch") {
+            header("SignalDock-Contract-Version", "1")
+            header(HttpHeaders.Authorization, "Bearer test-key")
+            header(HttpHeaders.ContentType, ContentType.Application.Json)
+            header(HttpHeaders.ContentEncoding, "gzip")
+            setBody(requestBody)
+        }
+
+        assertEquals(HttpStatusCode.UnsupportedMediaType, unsupportedType.status)
+        assertTrue(unsupportedType.bodyAsText().contains("CONTENT_TYPE_UNSUPPORTED"))
+        assertEquals(HttpStatusCode.UnsupportedMediaType, unsupportedEncoding.status)
+        assertTrue(unsupportedEncoding.bodyAsText().contains("CONTENT_ENCODING_UNSUPPORTED"))
+        assertEquals(0, runBlocking { countRows() })
+    }
+
+    @Test
+    fun `route returns retryable 503 ErrorResponse with Retry-After`() = testApplication {
+        database.close()
+        database = newDatabase(DatabaseLimits(concurrency = 1, poolSize = 2, requestMs = 2_000,
+            admissionMs = 100, connectionMs = 250, lockMs = 100, statementMs = 300, cleanupMs = 250, responseMs = 100))
+        database.migrate()
+        application { ingestionModule(database, "test-key") }
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
+
+        coroutineScope {
+            val holder = async(Dispatchers.Default) {
+                database.transaction {
+                    entered.countDown()
+                    check(release.await(5, TimeUnit.SECONDS))
+                }
+            }
+            assertTrue(entered.await(1, TimeUnit.SECONDS))
+            try {
+                val response = client.post("/v1/events:batch") {
+                    header("SignalDock-Contract-Version", "1")
+                    header(HttpHeaders.Authorization, "Bearer test-key")
+                    header(HttpHeaders.ContentType, ContentType.Application.Json)
+                    setBody(batch(event("eb755b76-0902-4c6a-aa15-389dfb750371")))
+                }
+
+                assertEquals(HttpStatusCode.ServiceUnavailable, response.status)
+                assertEquals("1", response.headers[HttpHeaders.RetryAfter])
+                assertTrue(response.bodyAsText().contains("TEMPORARILY_UNAVAILABLE"))
+            } finally {
+                release.countDown()
+                holder.await()
+            }
+        }
+        assertEquals(0, runBlocking { countRows() })
+    }
+
     private suspend fun countRows(): Int = database.transaction { query { fetchCount(EVENTS) } }
 
     private fun newDatabase(limits: DatabaseLimits = DatabaseLimits()) =
@@ -188,13 +286,14 @@ class IngestionIntegrationTest {
 
     private fun batch(events: String) = """{"installationId":"47c4d89f-352a-41da-9b31-529ea756515a","events":[$events]}"""
 
-    private fun parse(source: String) = parseBatch(source.encodeToByteArray())
+    private fun parse(source: String) = parseBatch(source.encodeToByteArray(), "1")
 
     private fun event(
         id: String,
         name: String = "product_viewed",
         properties: String = """{"price":1}""",
-    ) = """{"eventId":"$id","name":"$name","occurredAt":"2026-10-09T21:30:00.123Z","properties":$properties,"sdkVersion":"0.1.0","contractVersion":"1"}"""
+        contractVersion: String = "1",
+    ) = """{"eventId":"$id","name":"$name","occurredAt":"2026-10-09T21:30:00.123Z","properties":$properties,"sdkVersion":"0.1.0","contractVersion":"$contractVersion"}"""
 
     private fun simulateResponseWrite(@Suppress("UNUSED_PARAMETER") response: Any): Nothing =
         throw ResponseLost()

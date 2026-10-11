@@ -33,3 +33,14 @@ Verification commands and results:
 - `cd server && JAVA_HOME=$PWD/../.tools/jdk-17.0.20.1+1 GRADLE_USER_HOME=$PWD/../.tools/gradle-home ./gradlew test --tests local.signaldock.server.IngestValidationTest --no-daemon` after the fix — passed; all 7 validation tests passed.
 - `cd server && JAVA_HOME=$PWD/../.tools/jdk-17.0.20.1+1 GRADLE_USER_HOME=$PWD/../.tools/gradle-home ./gradlew test verifyJooq --no-daemon` — passed on the final code; all 15 server tests passed, Flyway applied `V1` to PostgreSQL 17.6, and `verifyJooq` regenerated the expected 7 files without drift.
 - Commit — not run as requested.
+
+2026-10-11: Fixed the adversarial review findings for request-level contract-version rejection and documented HTTP boundaries.
+
+- Added raw per-item `contractVersion` inspection before generated DTO decoding. A missing, unsupported, or request-header-mismatched item version now raises a request-level `RequestFailure`, so no sibling event is stored. The mixed contract-1/contract-2 HTTP integration test failed before the fix with `expected: <400 Bad Request> but was: <200 OK>`, then passed with HTTP 400 and zero rows after the fix.
+- Added the Bearer collection-key security scheme, the identity-only `Content-Encoding` boundary, and 401, 415, and retryable 503 `ErrorResponse` responses to `openapi/contract-v1.yaml`. The 503 response documents a positive `Retry-After` header. Added server route tests for 401, unsupported Content-Type and Content-Encoding as 415, and admission overload as 503 with `Retry-After: 1`.
+- Ran `scripts/codegen.sh`; generated Kotlin transport models remain `internal` through `nonPublicApi=true`. Copied `openapi/contract-v1.yaml` to `fixtures/contract/contract-v1.baseline.yaml` on purpose because this is an intentional contract change.
+- Removed duplicate `coroutines` and `kotlinx-coroutines-test` entries left in `gradle/libs.versions.toml` by the rebase. Before this prerequisite fix, Gradle stopped while parsing the version catalog and did not run tests.
+- `JAVA_HOME=$PWD/.tools/jdk-17.0.20.1+1 GRADLE_USER_HOME=$PWD/.tools/gradle-home npm_config_cache=$PWD/.tools/npm-cache sh -c '(cd server && ./gradlew test verifyJooq --no-daemon)'` — passed; all 19 server tests passed, Flyway applied `V1` to PostgreSQL 17.6, and clean jOOQ regeneration matched all 7 tracked files.
+- `JAVA_HOME=$PWD/.tools/jdk-17.0.20.1+1 GRADLE_USER_HOME=$PWD/.tools/gradle-home npm_config_cache=$PWD/.tools/npm-cache scripts/verify-contract.sh` — passed; codegen drift, the intentionally updated OpenAPI baseline, 5 Kotlin round-trip tests, TypeScript type/contract checks, and independent SDK/server Gradle builds passed; ended with `ALL CONTRACT CHECKS PASSED`.
+- ADR-0002 and ADR-0004 were not changed because this work implements and exposes existing contract and runtime decisions; it does not add a new contract rule or change a runtime decision.
+- Commit — not run as requested.

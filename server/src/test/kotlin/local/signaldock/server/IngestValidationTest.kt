@@ -73,7 +73,7 @@ class IngestValidationTest {
 
     private fun batch(events: String) = """{"installationId":"47c4d89f-352a-41da-9b31-529ea756515a","events":[$events]}"""
 
-    private fun parse(source: String) = parseBatch(source.encodeToByteArray())
+    private fun parse(source: String) = parseBatch(source.encodeToByteArray(), "1")
 
     private fun event(
         id: String = "0f96a970-a1c4-4b78-9934-fca05faeab20",

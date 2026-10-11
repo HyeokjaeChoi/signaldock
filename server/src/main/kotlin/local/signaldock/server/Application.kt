@@ -41,6 +41,7 @@ internal fun Application.ingestionModule(
                     val version = call.request.headers.getAll("SignalDock-Contract-Version")
                     if (version == null) throw RequestFailure("CONTRACT_HEADER_MISSING")
                     if (version != listOf("1")) throw RequestFailure("CONTRACT_VERSION_UNSUPPORTED")
+                    val requestContractVersion = version.single()
                     val provided = call.request.headers.getAll(HttpHeaders.Authorization)
                     val authorized = provided?.singleOrNull()?.let {
                         MessageDigest.isEqual(it.toByteArray(Charsets.UTF_8), "Bearer $collectionKey".toByteArray(Charsets.UTF_8))
@@ -61,7 +62,7 @@ internal fun Application.ingestionModule(
                         body.write(buffer, 0, count)
                         if (body.size() > 262144) throw RequestFailure("PAYLOAD_TOO_LARGE", 413)
                     }
-                    val ack = ingestion.ingest(parseBatch(body.toByteArray()), budget)
+                    val ack = ingestion.ingest(parseBatch(body.toByteArray(), requestContractVersion), budget)
                     afterCommit(ack)
                     call.respondText(Json.encodeToString(ack), ContentType.Application.Json)
                 }
