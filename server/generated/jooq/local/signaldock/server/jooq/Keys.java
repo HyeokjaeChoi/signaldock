@@ -13,7 +13,7 @@ import org.jooq.impl.DSL;
 import org.jooq.impl.Internal;
 
 
-@SuppressWarnings({ "all", "unchecked", "rawtypes" })
+@SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class Keys {
 
     // -------------------------------------------------------------------------

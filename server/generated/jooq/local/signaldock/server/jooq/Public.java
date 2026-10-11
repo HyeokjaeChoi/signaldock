@@ -11,10 +11,11 @@ import local.signaldock.server.jooq.tables.Events;
 
 import org.jooq.Catalog;
 import org.jooq.Table;
+import org.jooq.impl.DSL;
 import org.jooq.impl.SchemaImpl;
 
 
-@SuppressWarnings({ "all", "unchecked", "rawtypes" })
+@SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class Public extends SchemaImpl {
 
     private static final long serialVersionUID = 1L;
@@ -24,7 +25,7 @@ public class Public extends SchemaImpl {
     public final Events EVENTS = Events.EVENTS;
 
     private Public() {
-        super("public", null);
+        super(DSL.name("public"), null, DSL.comment(""));
     }
 
 

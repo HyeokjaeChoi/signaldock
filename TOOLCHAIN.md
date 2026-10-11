@@ -1,4 +1,4 @@
-# Toolchain pins (issue #1)
+# Toolchain pins (issues #1 and #11)
 
 Single source of truth: `gradle/libs.versions.toml`. This file records why each
 version was chosen and what actually verified it.
@@ -23,27 +23,37 @@ Lockfiles are committed. Verification runs `npm ci`.
 
 | Component | Pinned | Why |
 |---|---|---|
-| JDK | Eclipse Temurin 17.0.20.1+1, in `.tools/jdk-17.0.20.1+1` | AGP 8.13 requires JDK 17 (developer.android.com) |
-| Kotlin | 2.4.21 | Latest stable; supports Gradle 7.6.3-9.7.0 and AGP 8.5.2-9.3.1 (kotlinlang.org) |
+| JDK | Eclipse Temurin 21.0.12.1+1, in `.tools/jdk-21.0.12.1+1` | jOOQ 3.21 needs Java 21; Robolectric SDK 36 needs JDK 21. Verified: `scripts/setup-toolchain.sh` (SHA-256 from the Adoptium API, 2026-10-11) and every Gradle run below. Source: https://api.adoptium.net/v3/assets/latest/21/hotspot?image_type=jdk&vendor=eclipse |
+| Kotlin | 2.4.21 | Latest stable; supports Gradle 7.6.3-9.7.0 and AGP 8.5.2-9.3.1 (kotlinlang.org); also ran with AGP 9.3.3 in issue #11 |
 | kotlinx.serialization | 1.11.0 | Latest stable; compiler plugin applied in contract-check build |
 | openapi-generator-cli | 7.26.0 | Latest stable; used by `scripts/codegen.sh` |
 | oasdiff | v1.33.0 | Latest release; `scripts/verify-contract.sh` runs `oasdiff diff --fail-on-diff` on the baseline and the contract |
 | TypeScript | 7.0.2 | Latest stable via npm; compiles generated `typescript-fetch` models |
 | Node | 24.20.0 | Environment version at verification time |
-| jOOQ | 3.19.39 | server build, tests, and jOOQ drift check passed in issue 02; Java 17 reason in ADR-0004 |
+| jOOQ | 3.21.9 | Latest 3.21.x on Maven Central (https://repo1.maven.org/maven2/org/jooq/jooq/maven-metadata.xml). `cd server && ./gradlew test verifyJooq --no-daemon` passed on JDK 21 after `generateJooq` refreshed the tracked sources (generator output changes for jOOQ 3.21: 7 files, 15 insertions, 14 deletions) |
+| AGP | 9.3.3 | Latest 9.3.x on Google Maven (https://dl.google.com/dl/android/maven2/com/android/tools/build/gradle/maven-metadata.xml); requires Gradle 9.5.0+ (https://developer.android.com/build/releases/about-agp). `sdk/gradlew -p sdk :sdk-android:testDebugUnitTest :sdk-android:assembleRelease --no-daemon` passed (35 tests, 0 failures) |
+| Gradle | 9.7.0, all three wrappers, `distributionSha256Sum` pinned | Exists on services.gradle.org; SHA-256 from https://services.gradle.org/distributions/gradle-9.7.0-bin.zip.sha256. Wrappers regenerated with `./gradlew wrapper --gradle-version 9.7.0 --gradle-distribution-sha256-sum <sha>`; all verification commands ran on it |
+| KSP / Room | 2.3.12 / 2.8.5 | Kotlin 2.4.21 + AGP 9.3.3 built-in Kotlin: same `sdk` command above (Room schema export and DAO generation ran) |
+| Robolectric | 4.17 at `sdk=36` | Same `sdk` command. Test JVM gets `--add-exports=java.base/jdk.internal.access=ALL-UNNAMED`; without it all 34 Robolectric tests fail on JDK 21 with "Failed to interact with raw FileDescriptor internals" |
+| SDK `aarMetadata.minCompileSdk` | 36 | Deliberate: the SDK is built and tested at compileSdk 36, so consumers must compile with API 36 or newer. Lowering it is unverified |
+| SDK Java/Kotlin bytecode target | 17 | Stays below the JDK 21 that runs the build; AGP desugaring covers minSdk 24 |
 
-AGP 9.x was deliberately NOT chosen: it is a breaking major migration
-(built-in Kotlin conflicts with the KGP plugin, kapt removal, DSL changes).
-The 8.x line is the stable, documented path for this project.
+Why AGP 9.3.3, Gradle 9.7.0, and JDK 21 (issue #11, replaces the earlier choice of
+AGP 8.13.2 / Gradle 8.14.5 / JDK 17): the project is greenfield, so the AGP 9
+migration cost does not apply. It brings built-in Kotlin (no
+`org.jetbrains.kotlin.android` plugin; the SDK uses `kotlin { compilerOptions {} }`),
+and Robolectric can run at SDK 36 and jOOQ 3.21 (needs Java 21). Kotlin 2.4 needs
+R8 9.1.29 or newer (https://developer.android.com/build/kotlin-support); AGP bundles R8, so a current
+AGP is the way to meet it. The R8 version inside AGP 9.3.3 was not read from a
+build output (see ADR-0003 item 9). `android.builtInKotlin` and `android.newDsl` are
+not turned off. Because of the new DSL, generated Kotlin sources are added with
+`androidComponents.onVariants { variant.sources.kotlin }`; the old `sourceSets` accessor fails with a ClassCastException.
 
 ## Doc-pinned (build verification deferred to the noted issue)
 
 | Component | Pinned | Verified in |
 |---|---|---|
-| AGP | 8.13.2 (latest stable 8.x) | #3 (SDK module compile) |
-| Gradle | 8.14.5 (AGP 8.13.2 pair) | #3 (SDK module compile) — no Gradle run yet; pinned from official release metadata |
 | KSP | — no 2.4.x release as of 2026-10-09 | #3/#4 (Room/KSP modules) |
-| Room | 2.8.5 | #3 |
 | WorkManager | 2.12.0 | #4 |
 | Retrofit | 3.0.0 | #4 |
 | OkHttp | 5.5.0 | #4 |

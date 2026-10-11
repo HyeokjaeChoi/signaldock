@@ -7,7 +7,7 @@ package local.signaldock.server.jooq;
 import local.signaldock.server.jooq.tables.Events;
 
 
-@SuppressWarnings({ "all", "unchecked", "rawtypes" })
+@SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class Tables {
 
     public static final Events EVENTS = Events.EVENTS;

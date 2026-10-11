@@ -1,8 +1,8 @@
 [versions]
 # Toolchain (verified by build in issue #1 unless noted)
-jdk = "17"
-gradle = "8.14.5"
-agp = "8.13.2"
+jdk = "21"
+gradle = "9.7.0"
+agp = "9.3.3"
 kotlin = "2.4.21"
 kotlinx-serialization = "1.11.0"
 openapi-generator = "7.26.0"
@@ -30,7 +30,7 @@ androidx-test-core = "1.7.0"
 
 # Server (doc-pinned; server build verified in issue #2)
 ktor = "3.6.0"
-jooq = "3.19.39"
+jooq = "3.21.9"
 flyway = "13.10.0"
 hikari = "7.0.2"
 postgresql = "42.7.8"
@@ -67,6 +67,5 @@ slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 android-library = { id = "com.android.library", version.ref = "agp" }

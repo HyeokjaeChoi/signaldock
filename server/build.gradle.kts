@@ -6,7 +6,7 @@ plugins {
 
 repositories { mavenCentral() }
 
-kotlin { jvmToolchain(17) }
+kotlin { jvmToolchain(21) }
 
 application { mainClass.set("local.signaldock.server.ApplicationKt") }
 

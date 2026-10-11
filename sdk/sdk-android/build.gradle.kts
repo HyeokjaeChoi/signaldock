@@ -2,7 +2,6 @@
 // implementation in `local.signaldock.internal`. No DI framework (Q87).
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
 }
@@ -13,6 +12,8 @@ android {
 
     defaultConfig {
         minSdk = libs.versions.minSdk.get().toInt()
+        // Consumers must compile against API 36 or newer (this SDK is built and tested at 36).
+        aarMetadata.minCompileSdk = libs.versions.compileSdk.get().toInt()
     }
 
     compileOptions {
@@ -20,16 +21,26 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    // Generated models are `internal` (codegen nonPublicApi=true); PublicApiTest guards this.
-    sourceSets.getByName("main").kotlin.srcDir("../../generated/kotlin/src/main/kotlin")
-
     testOptions {
         unitTests.isIncludeAndroidResources = true
+        // Robolectric SDK 36 runs on JDK 21 and reads FileDescriptor internals.
+        unitTests.all { it.jvmArgs("--add-exports=java.base/jdk.internal.access=ALL-UNNAMED") }
     }
 }
 
+// Built-in Kotlin (AGP 9): no kotlin-android plugin. Bytecode target 17 stays below
+// the JDK 21 that runs the build, and AGP desugaring covers minSdk 24.
 kotlin {
-    jvmToolchain(17)
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
+}
+
+// Generated models are `internal` (codegen nonPublicApi=true); PublicApiTest guards this.
+androidComponents {
+    onVariants { variant ->
+        variant.sources.kotlin?.addStaticSourceDirectory("../../generated/kotlin/src/main/kotlin")
+    }
 }
 
 ksp {

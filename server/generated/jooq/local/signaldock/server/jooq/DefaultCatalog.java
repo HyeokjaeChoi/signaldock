@@ -12,7 +12,7 @@ import org.jooq.Schema;
 import org.jooq.impl.CatalogImpl;
 
 
-@SuppressWarnings({ "all", "unchecked", "rawtypes" })
+@SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class DefaultCatalog extends CatalogImpl {
 
     private static final long serialVersionUID = 1L;
@@ -32,5 +32,5 @@ public class DefaultCatalog extends CatalogImpl {
         );
     }
 
-    private static final String REQUIRE_RUNTIME_JOOQ_VERSION = Constants.VERSION_3_19;
+    private static final String REQUIRE_RUNTIME_JOOQ_VERSION = Constants.VERSION_3_21;
 }
