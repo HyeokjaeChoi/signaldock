@@ -26,6 +26,8 @@ The implementation worker reported that it only inspected documentation and the 
 The worker reported the work as implemented. It is awaiting PR review.
 
 ### Pinned toolchain (gradle/libs.versions.toml, TOOLCHAIN.md)
+
+These were the pins when issue 01 closed. Issue 11 (2026-10-11) replaced them with JDK 21, AGP 9.3.3, and Gradle 9.7.0. `TOOLCHAIN.md` holds the current pins.
 - JDK 17 (Temurin 17.0.20.1), Gradle 8.14.5, Kotlin 2.4.21, kotlinx.serialization 1.11.0
 - openapi-generator 7.26.0, oasdiff v1.33.0, TypeScript 7.0.2, Node 24.20.0
 - AGP 8.13.2 (latest stable 8.x; 9.x skipped as breaking migration), KSP deferred (no 2.4.x release yet)
