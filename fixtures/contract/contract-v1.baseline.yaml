@@ -229,7 +229,8 @@ paths:
         COUNT / GROUP BY over stored rows with receivedAt in [from, to) and
         the same filters as the list. Buckets start at project timezone hour
         or day boundaries. Empty buckets inside the range are returned with
-        count 0. At most 720 buckets.
+        count 0. At most 720 buckets: a request that produces more than 720
+        buckets returns 400 PERIOD_TOO_LONG.
       security:
         - collectionKey: []
       parameters:

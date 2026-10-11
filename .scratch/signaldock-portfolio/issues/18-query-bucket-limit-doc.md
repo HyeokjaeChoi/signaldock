@@ -3,7 +3,7 @@
 Status: ready-for-agent
 Type: task
 Blocked by: None
-Execution: Not started
+Execution: Done
 
 ## Scope and completion criteria
 
@@ -14,3 +14,14 @@ Done when `scripts/verify-contract.sh` passes with the new description.
 ## Comments
 
 2026-10-12: Recorded from the PR #32 review (Minor, merge not held, AGENTS.md "Review workflow" 5).
+
+2026-10-12: Done.
+
+- `openapi/contract-v1.yaml`: the `countReceivedEventsByTime` description now says a request that produces more than 720 buckets returns 400 `PERIOD_TOO_LONG`.
+- `scripts/codegen.sh` ran with JAVA_HOME=`.tools/jdk-21.0.12.1+1`; `generated/` did not change (descriptions are not in the models).
+- `fixtures/contract/contract-v1.baseline.yaml` updated on purpose (ADR-0002 amendment), copied from the new contract.
+- Base = `git show main:fixtures/contract/contract-v1.baseline.yaml` (main has no query endpoints yet, so the by-name, by-time, events and events/{eventId} endpoints show as added):
+  - `.tools/oasdiff breaking <base> openapi/contract-v1.yaml` -> "No breaking changes to report, but the specs are different." (exit 0)
+  - `.tools/oasdiff changelog <base> openapi/contract-v1.yaml` -> `4 changes: 0 error, 0 warning, 4 info`, all `endpoint-added`: GET /v1/event-counts/by-name, GET /v1/event-counts/by-time, GET /v1/events, GET /v1/events/{eventId}.
+- Base = the branch baseline before this update (isolates this change): `oasdiff breaking` -> no breaking changes; `oasdiff changelog` -> "No changes to report, but the specs are different."; `oasdiff diff` -> only `GET /v1/event-counts/by-time` `description` changed (new sentence "a request that produces more than 720 buckets returns 400 PERIOD_TOO_LONG").
+- `scripts/verify-contract.sh` -> `ALL CONTRACT CHECKS PASSED`.
