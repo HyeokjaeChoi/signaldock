@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- No backup attributes here: the SDK never changes the host app's backup
+     settings (ADR-0001). SDK data lives under noBackupFilesDir. -->
+<manifest />

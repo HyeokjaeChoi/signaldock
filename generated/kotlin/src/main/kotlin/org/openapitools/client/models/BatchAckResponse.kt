@@ -36,7 +36,7 @@ import kotlinx.serialization.Contextual
  */
 @Serializable
 
-data class BatchAckResponse (
+internal data class BatchAckResponse (
 
     /* One result per request item, each index exactly once. */
     @SerialName(value = "results")

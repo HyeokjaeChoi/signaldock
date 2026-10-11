@@ -39,7 +39,7 @@ import kotlinx.serialization.Contextual
  */
 @Serializable
 
-data class ItemAck (
+internal data class ItemAck (
 
     /* Zero-based index into the request events array. */
     @SerialName(value = "index")
@@ -69,7 +69,7 @@ data class ItemAck (
      * Values: ACCEPTED,DUPLICATE,REJECTED
      */
     @Serializable
-    enum class Status(val value: kotlin.String) {
+    internal enum class Status(val value: kotlin.String) {
         @SerialName(value = "accepted") ACCEPTED("accepted"),
         @SerialName(value = "duplicate") DUPLICATE("duplicate"),
         @SerialName(value = "rejected") REJECTED("rejected");

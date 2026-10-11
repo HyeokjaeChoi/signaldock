@@ -41,7 +41,7 @@ import kotlinx.serialization.Contextual
  */
 @Serializable
 
-data class EventIngest (
+internal data class EventIngest (
 
     /* Event ID. Unchanged across resends; the server uses it with content comparison for duplicate detection (Q69).  */
     @SerialName(value = "eventId")
@@ -75,7 +75,7 @@ data class EventIngest (
      * Values: _1
      */
     @Serializable
-    enum class ContractVersion(val value: kotlin.String) {
+    internal enum class ContractVersion(val value: kotlin.String) {
         @SerialName(value = "1") _1("1");
     }
 

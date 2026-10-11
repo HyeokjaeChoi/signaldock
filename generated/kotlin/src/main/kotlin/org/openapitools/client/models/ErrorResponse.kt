@@ -36,7 +36,7 @@ import kotlinx.serialization.Contextual
  */
 @Serializable
 
-data class ErrorResponse (
+internal data class ErrorResponse (
 
     /* Machine-readable error code, e.g. CONTRACT_HEADER_MISSING, CONTRACT_VERSION_UNSUPPORTED, UNKNOWN_FIELD, MALFORMED_REQUEST.  */
     @SerialName(value = "code")
