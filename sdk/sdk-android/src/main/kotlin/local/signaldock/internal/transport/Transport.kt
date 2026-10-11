@@ -1,4 +1,4 @@
-package local.signaldock.internal
+package local.signaldock.internal.transport
 
 import kotlinx.serialization.json.Json
 import org.openapitools.client.models.BatchIngestRequest

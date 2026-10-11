@@ -2,11 +2,11 @@ package local.signaldock
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
-import local.signaldock.internal.Clock
-import local.signaldock.internal.IdGenerator
-import local.signaldock.internal.Logger
-import local.signaldock.internal.QueueLimits
-import local.signaldock.internal.createSdk
+import local.signaldock.internal.init.Clock
+import local.signaldock.internal.init.IdGenerator
+import local.signaldock.internal.init.Logger
+import local.signaldock.internal.storage.QueueLimits
+import local.signaldock.internal.init.createSdk
 import java.util.concurrent.atomic.AtomicLong
 
 internal val context: Context get() = ApplicationProvider.getApplicationContext()

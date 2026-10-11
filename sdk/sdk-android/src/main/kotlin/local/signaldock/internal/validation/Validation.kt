@@ -1,4 +1,4 @@
-package local.signaldock.internal
+package local.signaldock.internal.validation
 
 import local.signaldock.InvalidReason
 import local.signaldock.SignalDockConfig

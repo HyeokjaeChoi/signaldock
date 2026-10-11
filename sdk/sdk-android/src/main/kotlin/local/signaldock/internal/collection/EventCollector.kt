@@ -1,4 +1,4 @@
-package local.signaldock.internal
+package local.signaldock.internal.collection
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
@@ -6,6 +6,18 @@ import kotlinx.coroutines.ensureActive
 import local.signaldock.EventBuilder
 import local.signaldock.InvalidReason
 import local.signaldock.TrackResult
+import local.signaldock.internal.init.Clock
+import local.signaldock.internal.init.IdGenerator
+import local.signaldock.internal.init.Logger
+import local.signaldock.internal.storage.AddOutcome
+import local.signaldock.internal.storage.EventEntity
+import local.signaldock.internal.storage.EventSink
+import local.signaldock.internal.storage.QueueLimits
+import local.signaldock.internal.transport.CONTRACT_VERSION
+import local.signaldock.internal.transport.SDK_VERSION
+import local.signaldock.internal.transport.singleEventRequestBytes
+import local.signaldock.internal.transport.transportJson
+import local.signaldock.internal.validation.checkText
 import org.openapitools.client.models.EventIngest
 import java.io.IOException
 import java.text.SimpleDateFormat
@@ -13,15 +25,6 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 import android.database.sqlite.SQLiteException
-
-/** Storage boundary for the queue (Q88). Room implementation below; fakes in tests. */
-internal interface EventSink {
-    suspend fun add(event: EventEntity, limits: QueueLimits): AddOutcome
-}
-
-internal class RoomEventSink(private val dao: QueueDao) : EventSink {
-    override suspend fun add(event: EventEntity, limits: QueueLimits) = dao.addWithinLimits(event, limits)
-}
 
 internal class EventCollector(
     private val installationId: String,

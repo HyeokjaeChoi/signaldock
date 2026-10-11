@@ -8,7 +8,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.boolean
-import local.signaldock.internal.QueueLimits
+import local.signaldock.internal.storage.QueueLimits
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -52,7 +52,7 @@ class TrackTest {
 
     @Test
     fun `event ids are random UUIDv4`() = runBlocking {
-        val sdk = newSdk(ids = local.signaldock.internal.RandomUuidV4)
+        val sdk = newSdk(ids = local.signaldock.internal.init.RandomUuidV4)
         val ids = (1..20).map { (sdk.track("e") as TrackResult.Success).eventId }
         assertEquals(20, ids.toSet().size)
         assertTrue(ids.all { uuidV4.matches(it) })
@@ -180,11 +180,11 @@ class TrackTest {
 
     @Test
     fun `queue limited by total transport bytes`() = runBlocking {
-        val probe = newSdk(ids = local.signaldock.internal.RandomUuidV4)
+        val probe = newSdk(ids = local.signaldock.internal.init.RandomUuidV4)
         probe.track("e")
         val size = probe.dao.oldest(1).single().sizeBytes
         // fresh directory per test via Robolectric, but reuse is fine: use a new limit on a new queue
-        val sdk = newSdk(limits = QueueLimits(maxQueueBytes = size * 3L + 1), ids = local.signaldock.internal.RandomUuidV4)
+        val sdk = newSdk(limits = QueueLimits(maxQueueBytes = size * 3L + 1), ids = local.signaldock.internal.init.RandomUuidV4)
         // the probe event already occupies the shared queue (same DB file): 1 + 2 more fit, the 4th does not
         assertTrue(sdk.track("e") is TrackResult.Success)
         assertTrue(sdk.track("e") is TrackResult.Success)

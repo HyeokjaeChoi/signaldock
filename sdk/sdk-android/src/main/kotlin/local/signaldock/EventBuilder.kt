@@ -1,6 +1,7 @@
 package local.signaldock
 
-import local.signaldock.internal.MAX_SAFE_INTEGER
+import local.signaldock.internal.validation.MAX_SAFE_INTEGER
+import local.signaldock.internal.validation.checkText
 import org.openapitools.client.models.EventIngestPropertiesValue
 import java.math.BigDecimal
 import kotlin.math.abs
@@ -45,9 +46,9 @@ public class EventBuilder internal constructor() {
     private fun put(key: String, value: EventIngestPropertiesValue, stringValue: String? = null) {
         if (error != null) return
         // Key rules are the same as name rules (Q64, Q84, Q85); string values only get Q85.
-        local.signaldock.internal.checkText(key, isName = true)?.let { return fail(it, key) }
+        checkText(key, isName = true)?.let { return fail(it, key) }
         if (stringValue != null) {
-            local.signaldock.internal.checkText(stringValue, isName = false)?.let { return fail(it, key) }
+            checkText(stringValue, isName = false)?.let { return fail(it, key) }
         }
         if (properties.containsKey(key)) return fail(InvalidReason.DUPLICATE_KEY, key)
         properties[key] = value
