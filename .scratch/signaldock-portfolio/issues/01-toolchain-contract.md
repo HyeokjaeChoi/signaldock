@@ -21,9 +21,9 @@ The implementation worker reported that it only inspected documentation and the 
 
 2026-10-09 user correction: The model name was an example, not a requirement to use that specific model. Prefer a low-cost model and do not treat the failure of that one model as a blocker for all implementation. Product code and build/codegen/test remain not started.
 
-## Implementation (2026-10-09)
+2026-10-09 implementation:
 
-Status: ready-for-agent → implemented, awaiting PR review.
+The worker reported the work as implemented. It is awaiting PR review.
 
 ### Pinned toolchain (gradle/libs.versions.toml, TOOLCHAIN.md)
 - JDK 17 (Temurin 17.0.20.1), Gradle 8.14.5, Kotlin 2.4.21, kotlinx.serialization 1.11.0

@@ -16,8 +16,17 @@ if [ ! -f "$JAR" ]; then
   exit 1
 fi
 
-# Use the pinned JDK when JAVA_HOME is set; otherwise fall back to PATH java.
-JAVA_BIN="${JAVA_HOME:+$JAVA_HOME/bin/}java"
+# Pinned JDK (see TOOLCHAIN.md): JAVA_HOME, else the bundled copy. No PATH java.
+if [ -z "${JAVA_HOME:-}" ]; then
+  if [ -x "$TOOLS/jdk-17.0.20.1+1/bin/java" ]; then
+    JAVA_HOME="$TOOLS/jdk-17.0.20.1+1"
+  else
+    echo "error: JAVA_HOME is not set and no bundled JDK at $TOOLS/jdk-17.0.20.1+1" >&2
+    echo "Run scripts/setup-toolchain.sh (see TOOLCHAIN.md) or set JAVA_HOME." >&2
+    exit 1
+  fi
+fi
+JAVA_BIN="$JAVA_HOME/bin/java"
 
 OUT="${1:-$ROOT/generated}"
 KOTLIN_OUT="$OUT/kotlin"

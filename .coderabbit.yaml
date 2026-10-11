@@ -13,6 +13,8 @@ reviews:
     - "!**/gradle/wrapper/**"
     - "!dashboard/package-lock.json"
   pre_merge_checks:
+    docstrings:
+      mode: "off" # docstring coverage is not a project rule
     custom_checks:
       - name: Verification evidence
         mode: warning

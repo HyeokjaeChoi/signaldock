@@ -13,11 +13,16 @@ while read -r _ local_sha _ remote_sha; do
   [ "$local_sha" = "$zero" ] && continue # branch delete
   if [ "$remote_sha" = "$zero" ]; then
     base="$(git merge-base "$local_sha" origin/main 2>/dev/null || true)"
-    range="${base:+$base..}$local_sha"
+    if [ -z "$base" ]; then
+      code_changed=1 # no merge base: fail closed
+      continue
+    fi
+    range="$base..$local_sha"
   else
     range="$remote_sha..$local_sha"
   fi
-  if git diff --name-only "$range" -- . ':!*.md' ':!docs/' ':!.scratch/' | grep -q .; then
+  changed="$(git diff --name-only "$range" -- . ':!*.md' ':!docs/' ':!.scratch/')"
+  if [ -n "$changed" ]; then
     code_changed=1
   fi
 done
