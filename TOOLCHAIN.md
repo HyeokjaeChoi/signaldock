@@ -27,7 +27,7 @@ Lockfiles are committed. Verification runs `npm ci`.
 | Kotlin | 2.4.21 | Latest stable; supports Gradle 7.6.3-9.7.0 and AGP 8.5.2-9.3.1 (kotlinlang.org) |
 | kotlinx.serialization | 1.11.0 | Latest stable; compiler plugin applied in contract-check build |
 | openapi-generator-cli | 7.26.0 | Latest stable; used by `scripts/codegen.sh` |
-| oasdiff | v1.33.0 | Latest release; self-diff of contract-v1.yaml returns `{}` exit 0 |
+| oasdiff | v1.33.0 | Latest release; `scripts/verify-contract.sh` runs `oasdiff diff --fail-on-diff` on the baseline and the contract |
 | TypeScript | 7.0.2 | Latest stable via npm; compiles generated `typescript-fetch` models |
 | Node | 24.20.0 | Environment version at verification time |
 
@@ -54,7 +54,7 @@ The 8.x line is the stable, documented path for this project.
 
 ## Evidence locations
 
-- Contract source: `openapi/contract-v1.yaml` (prior-schema fixture baseline for oasdiff)
+- Contract source: `openapi/contract-v1.yaml` (oasdiff compares it with `fixtures/contract/contract-v1.baseline.yaml`)
 - Generated models (tracked per Q91): `generated/kotlin/`, `generated/typescript/`
 - Round-trip fixtures: `fixtures/roundtrip/`
 - Verification build: `contract-check/` (compiles generated Kotlin, runs fixture tests)

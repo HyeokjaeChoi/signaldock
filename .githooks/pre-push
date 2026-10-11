@@ -5,9 +5,26 @@
 set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"
+zero=0000000000000000000000000000000000000000
+refs="$(cat)" # stdin is read once
+
+# Verification runs on the working tree, so it must match the pushed commits.
+head_sha="$(git rev-parse HEAD)"
+dirty=0
+git diff --quiet || dirty=1
+git diff --cached --quiet || dirty=1
+while read -r _ local_sha _ _; do
+  [ -z "$local_sha" ] && continue
+  [ "$local_sha" = "$zero" ] && continue # branch delete
+  if [ "$local_sha" != "$head_sha" ] || [ "$dirty" = 1 ]; then
+    echo "pre-push: the pushed commit is not the checked-out HEAD, or tracked files have changes." >&2
+    echo "pre-push: push the checked-out branch from a clean tree, or use --no-verify and say so in the PR." >&2
+    exit 1
+  fi
+done <<<"$refs"
+
 "$ROOT/scripts/check-repo-rules.sh"
 
-zero=0000000000000000000000000000000000000000
 code_changed=0
 while read -r _ local_sha _ remote_sha; do
   [ "$local_sha" = "$zero" ] && continue # branch delete
@@ -25,7 +42,7 @@ while read -r _ local_sha _ remote_sha; do
   if [ -n "$changed" ]; then
     code_changed=1
   fi
-done
+done <<<"$refs"
 
 if [ "$code_changed" = 1 ]; then
   echo "pre-push: code changed, running scripts/verify-contract.sh" >&2

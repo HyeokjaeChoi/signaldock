@@ -32,15 +32,15 @@ The worker reported the work as implemented. It is awaiting PR review.
 - Doc-pinned for later issues: Room 2.8.5, WorkManager 2.12.0, Retrofit 3.0.0, OkHttp 5.5.0, Compose BOM 2026.09.00, Ktor 3.6.0, jOOQ 3.21.9, Flyway 13.10.0
 
 ### Contract
-- `openapi/contract-v1.yaml`: ingestion API, `SignalDock-Contract-Version` header, per-item ACK, error model. Prior-schema fixture baseline for oasdiff.
+- `openapi/contract-v1.yaml`: ingestion API, `SignalDock-Contract-Version` header, per-item ACK, error model. `fixtures/contract/contract-v1.baseline.yaml` is the prior-schema baseline for oasdiff.
 - Pinned template override `openapi/templates/oneof_class.mustache` fixes two upstream bugs: (1) oneOf number branch never matched JSON numbers (BigDecimal not flagged primitive); (2) `BigDecimal.serializer()` does not exist.
 
 ### Execution evidence
 - `scripts/codegen.sh`: generates Kotlin (kotlinx_serialization) + TypeScript (typescript-fetch) models into `generated/` (tracked per Q91).
 - Kotlin models compile with kotlinc 2.4.21 + serialization plugin (25 classes).
-- `contract-check` round-trip tests: 5/5 pass. Fixtures cover unicode, numeric offsets (+09:00), BigDecimal precision (1.0, 1e0), null/nested rejection. Note: `-0.0` normalizes to `0.0`, consistent with Q62 (-0 == 0).
+- `contract-check` round-trip tests: 5/5 pass. Fixtures cover unicode, numeric offsets (+09:00), BigDecimal values written with a decimal point (1.0, 0.0), null/nested rejection. Note: `-0.0` normalizes to `0.0`, consistent with Q62 (-0 == 0).
 - TypeScript models compile with tsc 7.0.2 (strict); union type `boolean | number | string` verified.
-- oasdiff self-diff: `{}` (no breaking changes).
+- oasdiff: `scripts/verify-contract.sh` runs `oasdiff diff --fail-on-diff fixtures/contract/contract-v1.baseline.yaml openapi/contract-v1.yaml`. No unrecorded change.
 - Independent builds: `sdk/`, `server/`, `contract-check/` each have own settings + wrapper 8.14.5 + shared version catalog.
 
 ### Environment limitation
