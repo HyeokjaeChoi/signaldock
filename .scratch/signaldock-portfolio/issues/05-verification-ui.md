@@ -14,3 +14,5 @@ Preserve the applicable contracts in the [agreed spec](../spec.md) and [final re
 ## Comments
 
 2026-10-09: Created after the full Q127 agreement.
+
+2026-10-12: Split into issue 14 (query API), issue 15 (Dashboard and Docker Compose), and issue 16 (demo app). This issue is done when all three are done.
