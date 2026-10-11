@@ -26,9 +26,13 @@ reviews:
       - name: Review rule location
         mode: warning
         instructions: >-
-          Pass if any new review rule is added to docs/review/*.md, an ADR in
-          docs/adr/, or a check in scripts/check-repo-rules.sh. Fail if the PR
-          adds review rules or "decided review rules" to AGENTS.md.
+          A review rule is a judgment about code, such as "never fall back to
+          PATH java" or "retries reuse the same eventId". Pass if new review
+          rules are added only to docs/review/*.md, an ADR in docs/adr/, or a
+          check in scripts/check-repo-rules.sh. AGENTS.md may list the rule
+          files and describe how to record rules and answer reviews; that is
+          process, not a review rule. Fail only if the PR adds a review rule
+          to AGENTS.md.
       - name: Contract change discipline
         mode: warning
         instructions: >-
