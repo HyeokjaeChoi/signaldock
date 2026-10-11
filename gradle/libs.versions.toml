@@ -20,7 +20,8 @@ targetSdk = "36"
 room = "2.8.5"
 workmanager = "2.12.0"
 retrofit = "3.0.0"
-okhttp = "5.5.0"
+# 5.5.0 AAR requires compileSdk 37; 5.4.0 builds at 36 (ADR-0006 decision 1).
+okhttp = "5.4.0"
 compose-bom = "2026.09.00"
 coroutines = "1.11.0"
 # SDK JVM tests (no emulator)
@@ -45,6 +46,11 @@ kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutine
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+androidx-work-runtime = { module = "androidx.work:work-runtime", version.ref = "workmanager" }
+androidx-work-testing = { module = "androidx.work:work-testing", version.ref = "workmanager" }
+retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+okhttp-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver3", version.ref = "okhttp" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 kotlin-metadata-jvm = { module = "org.jetbrains.kotlin:kotlin-metadata-jvm", version.ref = "kotlin" }
 junit = { module = "junit:junit", version.ref = "junit" }
