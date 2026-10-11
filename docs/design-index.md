@@ -32,6 +32,8 @@ Spec (`.scratch/signaldock-portfolio/spec.md`):
 
 ## `server/`
 
+Modules: `server/app`, `server/ingestion`, `server/persistence`. The tracked jOOQ output is `server/persistence/generated/jooq`.
+
 Architecture (`architecture.md`):
 - Collection, delivery, and ACK
 - Lost ACKs and event deduplication

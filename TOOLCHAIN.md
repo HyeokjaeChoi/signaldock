@@ -68,5 +68,5 @@ not turned off. Because of the new DSL, generated Kotlin sources are added with
 - Generated models (tracked per Q91): `generated/kotlin/`, `generated/typescript/`
 - Round-trip fixtures: `fixtures/roundtrip/`
 - Verification build: `contract-check/` (compiles generated Kotlin, runs fixture tests)
-- Independent builds: `sdk/`, `server/` (own settings + wrappers, shared catalog)
+- Independent builds: `sdk/`, `server/` (own settings + wrappers, shared catalog). `server/` has the modules `:app`, `:ingestion`, `:persistence`; `cd server && ./gradlew test verifyJooq` runs all of them
 - Root scripts: `scripts/codegen.sh`, `scripts/verify-contract.sh`

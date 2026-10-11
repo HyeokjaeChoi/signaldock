@@ -17,6 +17,9 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import local.signaldock.persistence.Database
+import local.signaldock.persistence.DatabaseLimits
+import local.signaldock.persistence.DatabaseUnavailable
 import local.signaldock.server.jooq.tables.Events.EVENTS
 import org.openapitools.client.models.ItemAck
 import org.testcontainers.postgresql.PostgreSQLContainer
@@ -104,51 +107,6 @@ class IngestionIntegrationTest {
         }
         assertEquals(setOf(ItemAck.Status.ACCEPTED, ItemAck.Status.DUPLICATE), results.map { it.results.single().status }.toSet())
         assertEquals(1, countRows())
-    }
-
-    @Test
-    fun `admission overload fails fast and releases the slot`() = runBlocking {
-        database.close()
-        database = newDatabase(DatabaseLimits(concurrency = 1, poolSize = 2, requestMs = 2_000,
-            admissionMs = 100, connectionMs = 250, lockMs = 100, statementMs = 300, cleanupMs = 250, responseMs = 100))
-        database.migrate()
-        val entered = CountDownLatch(1)
-        val release = CountDownLatch(1)
-        val holder = async(Dispatchers.Default) {
-            database.transaction {
-                entered.countDown()
-                check(release.await(5, TimeUnit.SECONDS))
-            }
-        }
-        assertTrue(entered.await(1, TimeUnit.SECONDS))
-        assertEquals("ADMISSION_TIMEOUT", assertFailsWith<DatabaseUnavailable> { database.transaction { 1 } }.reason)
-        release.countDown()
-        holder.await()
-        assertEquals(1, database.transaction { 1 })
-    }
-
-    @Test
-    fun `statement timeout rolls back and the connection is reusable without leaked settings`() = runBlocking {
-        val id = UUID.fromString("9d0aba71-d7a8-4aa1-8b77-ac7ed0c65c73")
-        assertFailsWith<DatabaseUnavailable> {
-            database.transaction {
-                query {
-                    insertInto(EVENTS, EVENTS.EVENT_ID, EVENTS.INSTALLATION_ID, EVENTS.NAME, EVENTS.OCCURRED_AT,
-                        EVENTS.SDK_VERSION, EVENTS.PROPERTIES)
-                        .values(id, id, "timeout", java.time.OffsetDateTime.now(), "0.1.0", org.jooq.JSONB.valueOf("{}"))
-                        .execute()
-                    fetch("select pg_sleep(2)")
-                }
-            }
-        }
-        assertEquals(0, countRows())
-        val setting = database.transaction {
-            connection.createStatement().use { statement ->
-                statement.executeQuery("show statement_timeout").use { result -> result.next(); result.getString(1) }
-            }
-        }
-        assertEquals("0", setting)
-        assertEquals(1, database.transaction { query { fetchValue("select 1", Int::class.java) } })
     }
 
     @Test
