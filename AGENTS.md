@@ -25,6 +25,10 @@ Model names mentioned by the user are examples. Do not require a fixed model or 
 The main agent splits the work, tracks progress, and reviews results.
 If one example model fails, try another suitable model before stopping implementation.
 
+## Local setup
+
+If `AGENTS.local.md` exists, read it. It holds personal setup for one machine, such as which agent does which work. It is not committed.
+
 ## Agent skills
 
 ### Issue tracker
