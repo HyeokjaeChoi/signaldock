@@ -38,7 +38,7 @@ These were the pins when issue 01 closed. Issue 11 (2026-10-11) replaced them wi
 - Pinned template override `openapi/templates/oneof_class.mustache` fixes two upstream bugs: (1) oneOf number branch never matched JSON numbers (BigDecimal not flagged primitive); (2) `BigDecimal.serializer()` does not exist.
 
 ### Execution evidence
-Each claim names its command, date, and result. Source: commit 5c264cd (2026-10-09 text), PR #9 description Test report (2026-10-11, commit 681b6df), and PR #9 merge history. A claim with no recorded command is marked "not verified (command not recorded)".
+A claim names its command, date, and result only when a source records the command. Otherwise it is marked "not verified (command not recorded)". Source: commit 5c264cd (2026-10-09 text), PR #9 description Test report (2026-10-11, commit 681b6df), and PR #9 merge history. A claim with no recorded command is marked "not verified (command not recorded)".
 
 #### 2026-10-09 claims (commit 5c264cd; no command recorded for any of them)
 - `scripts/codegen.sh` generates Kotlin (kotlinx_serialization) + TypeScript (typescript-fetch) models into `generated/` (tracked per Q91). Run on 2026-10-09: not verified (command not recorded). Drift check passed on 2026-10-11 (see below).
@@ -66,7 +66,7 @@ Each claim names its command, date, and result. Source: commit 5c264cd (2026-10-
 - Not run on 2026-10-11: AGP, Room, Ktor, and other doc-pinned versions in `TOOLCHAIN.md` (PR #9 "Not run").
 
 ### Environment limitation
-2026-10-09 (commit 5c264cd): Gradle daemon could not run in the sandbox (IPv4/IPv6 localhost conflict + egress proxy). Direct kotlinc and tsc runs were used instead. Command for the failure and for the kotlinc/tsc runs: not verified (command not recorded). No Gradle run is recorded for 2026-10-09.
+2026-10-09 (commit 5c264cd): Gradle daemon could not run in the sandbox (IPv4/IPv6 localhost conflict + egress proxy). Commit 5c264cd says direct kotlinc and tsc runs were used instead. No command, tool output, or result for those runs is recorded, so they are not verified (command not recorded). No Gradle run is recorded for 2026-10-09.
 
 2026-10-11 (PR #9 Test report): `./gradlew test --no-daemon` (contract-check) and `./gradlew help` (sdk, server) ran on macOS, not the 2026-10-09 sandbox. The report does not say the daemon problem was resolved. Do not read the 2026-10-09 limitation as applying to 2026-10-11.
 
