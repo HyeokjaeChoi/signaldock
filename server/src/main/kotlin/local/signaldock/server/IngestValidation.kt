@@ -7,6 +7,7 @@ import java.nio.charset.CodingErrorAction
 import java.nio.charset.StandardCharsets
 import java.time.Instant
 import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 import kotlinx.serialization.SerializationException
@@ -43,6 +44,7 @@ data class StoredEvent(
 private const val MAX_BATCH_BYTES = 256 * 1024
 private const val MAX_EVENT_BYTES = 16 * 1024
 private const val MAX_EVENTS = 50
+private const val MAX_JSON_NESTING_DEPTH = 8
 private val MAX_SAFE_INTEGER = BigDecimal("9007199254740991")
 
 private val json = Json {
@@ -208,7 +210,7 @@ private fun validNumber(raw: String): Boolean = try {
 private fun parseMillisInstant(value: String): Instant? = try {
     if (!RFC3339_OFFSET.matches(value)) return null
     val instant = OffsetDateTime.parse(value, DateTimeFormatter.ISO_OFFSET_DATE_TIME).toInstant()
-    if (instant.nano % 1_000_000 != 0) null else instant
+    if (instant.nano % 1_000_000 != 0 || instant.atOffset(ZoneOffset.UTC).year !in 1..9999) null else instant
 } catch (_: Exception) {
     null
 }
@@ -290,18 +292,18 @@ private class StrictJsonScanner(private val input: String) {
 
     fun parseDocument(): JsonNode {
         skipWhitespace()
-        val result = value()
+        val result = value(depth = 0)
         skipWhitespace()
         if (position != input.length) fail()
         return result
     }
 
-    private fun value(): JsonNode {
+    private fun value(depth: Int): JsonNode {
         skipWhitespace()
         val start = position
         return when (peek()) {
-            '{' -> objectNode(start)
-            '[' -> arrayNode(start)
+            '{' -> if (depth > MAX_JSON_NESTING_DEPTH) fail() else objectNode(start, depth)
+            '[' -> if (depth > MAX_JSON_NESTING_DEPTH) fail() else arrayNode(start, depth)
             '"' -> stringNode(start)
             't' -> literal("true", start)
             'f' -> literal("false", start)
@@ -311,7 +313,7 @@ private class StrictJsonScanner(private val input: String) {
         }
     }
 
-    private fun objectNode(start: Int): JsonNode {
+    private fun objectNode(start: Int, depth: Int): JsonNode {
         take('{')
         skipWhitespace()
         val fields = mutableListOf<JsonField>()
@@ -319,7 +321,7 @@ private class StrictJsonScanner(private val input: String) {
             skipWhitespace()
             val key = stringNode(position)
             skipWhitespace(); take(':')
-            fields += JsonField(key.value, value())
+            fields += JsonField(key.value, value(depth + 1))
             skipWhitespace()
             if (peek() == '}') break
             take(',')
@@ -328,11 +330,11 @@ private class StrictJsonScanner(private val input: String) {
         return JsonObjectNode(start, position, fields)
     }
 
-    private fun arrayNode(start: Int): JsonNode {
+    private fun arrayNode(start: Int, depth: Int): JsonNode {
         take('['); skipWhitespace()
         val values = mutableListOf<JsonNode>()
         if (peek() != ']') while (true) {
-            values += value(); skipWhitespace()
+            values += value(depth + 1); skipWhitespace()
             if (peek() == ']') break
             take(',')
         }

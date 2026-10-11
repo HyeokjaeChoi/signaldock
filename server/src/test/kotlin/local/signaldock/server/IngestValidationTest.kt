@@ -55,6 +55,22 @@ class IngestValidationTest {
         assertEquals(413, error.httpStatus)
     }
 
+    @Test
+    fun `rejects excessive JSON nesting as a malformed request`() {
+        val deeplyNested = "[".repeat(256 * 1024)
+
+        val error = assertFailsWith<RequestFailure> { parse(deeplyNested) }
+
+        assertEquals("MALFORMED_REQUEST", error.code)
+    }
+
+    @Test
+    fun `rejects occurredAt outside the supported UTC year range per item`() {
+        val parsed = parse(batch(event(occurredAt = "+300000-01-01T00:00:00.000Z")))
+
+        assertEquals("INVALID_OCCURRED_AT", parsed.items.single().rejectionCode)
+    }
+
     private fun batch(events: String) = """{"installationId":"47c4d89f-352a-41da-9b31-529ea756515a","events":[$events]}"""
 
     private fun parse(source: String) = parseBatch(source.encodeToByteArray())

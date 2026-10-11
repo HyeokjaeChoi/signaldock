@@ -25,7 +25,7 @@ import java.io.ByteArrayOutputStream
 import java.security.MessageDigest
 
 /** Callback is a test seam for response loss after a real commit; production uses the default. */
-fun Application.ingestionModule(
+internal fun Application.ingestionModule(
     database: Database,
     collectionKey: String,
     afterCommit: suspend (BatchAckResponse) -> Unit = {},

@@ -25,3 +25,11 @@ Verification commands and results:
 - `git switch -c impl/02-server-ingestion` — failed before changing Git state: the sandbox returned `Operation not permitted` while creating the common repository ref lock.
 - `git add .scratch/signaldock-portfolio/issues/02-server-ingestion.md docs/adr/0004-server-runtime-and-receipt-boundaries.md gradle/libs.versions.toml server` — failed before staging: the sandbox returned `Operation not permitted` while creating the worktree index lock.
 - Commit — not run because branch creation could not write the common Git metadata. Push and PR creation were not run as requested.
+
+2026-10-11: Verified and fixed two ingestion validation review findings.
+
+- `cd server && JAVA_HOME=$PWD/../.tools/jdk-17.0.20.1+1 GRADLE_USER_HOME=$PWD/../.tools/gradle-home ./gradlew test --tests local.signaldock.server.IngestValidationTest --no-daemon` before the fix — failed as expected; the 256 KiB nested-array case produced `StackOverflowError`, and the `+300000` year case passed validation instead of returning `INVALID_OCCURRED_AT`.
+- The strict JSON scanner now rejects a container deeper than depth 8 as `MALFORMED_REQUEST`. The `occurredAt` validator now rejects an `Instant` whose UTC year is outside `1..9999` as per-item `INVALID_OCCURRED_AT`.
+- `cd server && JAVA_HOME=$PWD/../.tools/jdk-17.0.20.1+1 GRADLE_USER_HOME=$PWD/../.tools/gradle-home ./gradlew test --tests local.signaldock.server.IngestValidationTest --no-daemon` after the fix — passed; all 7 validation tests passed.
+- `cd server && JAVA_HOME=$PWD/../.tools/jdk-17.0.20.1+1 GRADLE_USER_HOME=$PWD/../.tools/gradle-home ./gradlew test verifyJooq --no-daemon` — passed on the final code; all 15 server tests passed, Flyway applied `V1` to PostgreSQL 17.6, and `verifyJooq` regenerated the expected 7 files without drift.
+- Commit — not run as requested.

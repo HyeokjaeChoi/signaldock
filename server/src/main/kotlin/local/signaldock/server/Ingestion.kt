@@ -8,7 +8,7 @@ import org.openapitools.client.models.BatchAckResponse
 import org.openapitools.client.models.ItemAck
 import java.time.ZoneOffset
 
-class Ingestion(private val database: Database) {
+internal class Ingestion(private val database: Database) {
     suspend fun ingest(batch: ValidatedBatch, budget: RequestBudget = database.budget()): BatchAckResponse =
         database.transaction(budget) {
             val results = arrayOfNulls<ItemAck>(batch.items.size)
