@@ -15,6 +15,7 @@ local.properties
 .gradle/
 **/build/
 node_modules/
+.tmp-contract-check/
 dist/
 coverage/
 *.apk
@@ -23,3 +24,6 @@ coverage/
 *.zip
 *.jks
 *.keystore
+
+# Pinned toolchain binaries (documented in TOOLCHAIN.md; download, don't track)
+.tools/

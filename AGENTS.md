@@ -41,3 +41,14 @@ Before evaluating or changing an issue's status, read `docs/agents/triage-labels
 
 Start with one domain context.
 Before exploring code or designing the domain, read `docs/agents/domain.md`.
+
+## Setup
+
+Run once per clone: `git config core.hooksPath .githooks`.
+The pre-commit hook runs `scripts/check-repo-rules.sh`. The pre-push hook also runs `scripts/verify-contract.sh` when code changed.
+
+## Roles
+
+- Implementer (local agents): before you edit files in an area, read the sections that `docs/design-index.md` lists for it. Build what the design sources say. If you must make a new decision, record it in an ADR in the same PR and name it in the PR description. Do not write review rules.
+- Reviewer (CodeRabbit): it reviews with no session context against the design sources. Its configuration is `.coderabbit.yaml`. When you answer a review finding, do one of these: fix the code; fix the design source in the same PR; add a check to `scripts/check-repo-rules.sh` or `scripts/verify-contract.sh`; or reject the finding and cite the design source section. Learnings only calibrate CodeRabbit. Do not rely on them for design facts.
+- PR descriptions state what changed, which design sections it follows, and the exact verification commands and results. Never label a step verified without a run.

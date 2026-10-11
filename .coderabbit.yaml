@@ -1,0 +1,129 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+#
+# Design sources are the rule sources: architecture.md, docs/adr/, and the spec.
+# docs/design-index.md maps each area to its sections.
+# CodeRabbit learnings only calibrate the reviewer. They hold no design facts.
+
+reviews:
+  profile: chill
+  auto_review:
+    drafts: true # PR #9 was skipped while it was a draft
+  path_filters:
+    - "!generated/**" # never hand-edited; review openapi/ and templates instead
+    - "!**/gradle/wrapper/**"
+    - "!dashboard/package-lock.json"
+  path_instructions:
+    - path: "sdk/**"
+      instructions: >-
+        Judge this change against the sections that docs/design-index.md
+        lists for the area `sdk/`. The design sources win over general best
+        practice. If the code and the design sources disagree, flag it. Do
+        not suggest anything listed under "Rejected alternatives".
+    - path: "server/**"
+      instructions: >-
+        Judge this change against the sections that docs/design-index.md
+        lists for the area `server/`. The design sources win over general best
+        practice. If the code and the design sources disagree, flag it. Do
+        not suggest anything listed under "Rejected alternatives".
+    - path: "openapi/**"
+      instructions: >-
+        Judge this change against the sections that docs/design-index.md
+        lists for the area `openapi/`, `fixtures/`, `generated/`, `contract-check/`. The design sources win over general best
+        practice. If the code and the design sources disagree, flag it. Do
+        not suggest anything listed under "Rejected alternatives".
+    - path: "fixtures/**"
+      instructions: >-
+        Judge this change against the sections that docs/design-index.md
+        lists for the area `openapi/`, `fixtures/`, `generated/`, `contract-check/`. The design sources win over general best
+        practice. If the code and the design sources disagree, flag it. Do
+        not suggest anything listed under "Rejected alternatives".
+    - path: "contract-check/**"
+      instructions: >-
+        Judge this change against the sections that docs/design-index.md
+        lists for the area `openapi/`, `fixtures/`, `generated/`, `contract-check/`. The design sources win over general best
+        practice. If the code and the design sources disagree, flag it. Do
+        not suggest anything listed under "Rejected alternatives".
+    - path: "dashboard/**"
+      instructions: >-
+        Judge this change against the sections that docs/design-index.md
+        lists for the area `dashboard/`. The design sources win over general best
+        practice. If the code and the design sources disagree, flag it. Do
+        not suggest anything listed under "Rejected alternatives".
+    - path: "scripts/**"
+      instructions: >-
+        Judge this change against the sections that docs/design-index.md
+        lists for the area `scripts/`, `.githooks/`, `.github/workflows/`, `gradle/`. The design sources win over general best
+        practice. If the code and the design sources disagree, flag it. Do
+        not suggest anything listed under "Rejected alternatives".
+    - path: ".githooks/**"
+      instructions: >-
+        Judge this change against the sections that docs/design-index.md
+        lists for the area `scripts/`, `.githooks/`, `.github/workflows/`, `gradle/`. The design sources win over general best
+        practice. If the code and the design sources disagree, flag it. Do
+        not suggest anything listed under "Rejected alternatives".
+    - path: ".github/workflows/**"
+      instructions: >-
+        Judge this change against the sections that docs/design-index.md
+        lists for the area `scripts/`, `.githooks/`, `.github/workflows/`, `gradle/`. The design sources win over general best
+        practice. If the code and the design sources disagree, flag it. Do
+        not suggest anything listed under "Rejected alternatives".
+    - path: "gradle/**"
+      instructions: >-
+        Judge this change against the sections that docs/design-index.md
+        lists for the area `scripts/`, `.githooks/`, `.github/workflows/`, `gradle/`. The design sources win over general best
+        practice. If the code and the design sources disagree, flag it. Do
+        not suggest anything listed under "Rejected alternatives".
+  pre_merge_checks:
+    docstrings:
+      mode: "off" # docstring coverage is not a project rule
+    custom_checks:
+      - name: Verification evidence
+        mode: warning
+        instructions: >-
+          Pass if every item the PR description reports as verified, passed, or
+          tested names the command that ran and where it ran. Fail if an item
+          claims verification without a run, or if a step that could not run
+          (missing tool, sandbox) is not stated as not run.
+      - name: Design source changes
+        mode: warning
+        instructions: >-
+          Pass if the PR does not change architecture.md, docs/adr/, or
+          .scratch/signaldock-portfolio/spec.md. If it does, pass only when
+          the PR description names each changed decision and its reason.
+          Review those changes as decision changes, not as documentation
+          edits.
+      - name: Contract change discipline
+        mode: warning
+        instructions: >-
+          Pass if openapi/contract-v1.yaml is unchanged. If it changed, pass
+          only when generated/ is regenerated in the same PR and the
+          description states whether fixtures/contract/contract-v1.baseline.yaml
+          was updated on purpose.
+  tools:
+    shellcheck:
+      enabled: true
+    actionlint:
+      enabled: true
+    gitleaks:
+      enabled: true
+    detekt:
+      enabled: true
+
+knowledge_base:
+  learnings:
+    scope: local
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - files: docs/design-index.md
+        applyTo: "**"
+      - files: architecture.md
+        applyTo: "**"
+      - files: docs/adr/*.md
+        applyTo: "**"
+      - files: .scratch/signaldock-portfolio/spec.md
+        applyTo: "**"
+      - files: TOOLCHAIN.md
+        applyTo: "**"
+      - files: GLOSSARY.md
+        applyTo: "**"

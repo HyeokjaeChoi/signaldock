@@ -1,0 +1,156 @@
+openapi: 3.0.3
+info:
+  title: SignalDock Ingestion API
+  version: 1.0.0
+  description: |
+    Contract version 1 of the SignalDock event ingestion API.
+    The transport contract version travels in the required
+    `SignalDock-Contract-Version` header, separately from the SDK
+    release version. This document is the contract source; Kotlin
+    (SDK/server) and TypeScript (Dashboard) models are generated
+    from it. Generated sources are tracked in Git (Q91).
+paths:
+  /v1/events:batch:
+    post:
+      operationId: ingestEventBatch
+      summary: Ingest a batch of business events
+      parameters:
+        - name: SignalDock-Contract-Version
+          in: header
+          required: true
+          schema:
+            type: string
+            enum: ["1"]
+          description: >
+            Transport contract version (Q65, Q106). A missing header is
+            rejected with HTTP 400 and nothing is stored (Q105).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchIngestRequest'
+      responses:
+        '200':
+          description: >
+            Batch receipt result. Every request item appears exactly once
+            with its index and status (Q59). The SDK validates the whole
+            response against the immutable request-time list before applying it.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchAckResponse'
+        '400':
+          description: >
+            Rejected in full: missing contract header, unsupported contract
+            version, unknown fields, or malformed request. Nothing is stored.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: >
+            Batch or single event exceeds the size contract (Q60).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    BatchIngestRequest:
+      type: object
+      additionalProperties: false
+      required: [installationId, events]
+      properties:
+        installationId:
+          type: string
+          description: Installation ID shared by events from one app installation.
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventIngest'
+          minItems: 1
+    EventIngest:
+      type: object
+      required: [eventId, name, occurredAt, properties, sdkVersion, contractVersion]
+      properties:
+        eventId:
+          type: string
+          description: >
+            Event ID. Unchanged across resends; the server uses it with
+            content comparison for duplicate detection (Q69).
+        name:
+          type: string
+          description: Business event name defined by the client app.
+        occurredAt:
+          type: string
+          format: date-time
+          description: >
+            UTC RFC 3339 timestamp with millisecond precision (Q81).
+            Numeric offsets are accepted and interpreted as the same UTC
+            instant (Q82); local times without offsets are rejected.
+            Values not representable in milliseconds are rejected (Q83).
+        properties:
+          type: object
+          description: >
+            Flat event properties. Keys map to scalar string, number, or
+            boolean values only; no null values and no nesting (Q33-35).
+          additionalProperties:
+            oneOf:
+              - type: string
+              - type: number
+              - type: boolean
+        sdkVersion:
+          type: string
+          description: SDK release version at collection time, kept unchanged on resend (Q66).
+        contractVersion:
+          type: string
+          enum: ["1"]
+          description: Transport contract version stored with the queue entry (Q66).
+      additionalProperties: false
+    BatchAckResponse:
+      type: object
+      required: [results]
+      properties:
+        results:
+          type: array
+          description: One result per request item, each index exactly once.
+          items:
+            $ref: '#/components/schemas/ItemAck'
+    ItemAck:
+      type: object
+      required: [index, status, eventId]
+      properties:
+        index:
+          type: integer
+          minimum: 0
+          description: Zero-based index into the request events array.
+        status:
+          type: string
+          enum: [accepted, duplicate, rejected]
+          description: >
+            Per-item receipt status. `duplicate` also covers resends of an
+            already stored event (Q69). `rejected` is a permanent,
+            per-event rejection.
+        eventId:
+          type: string
+          description: Event ID echoed for valid IDs.
+        code:
+          type: string
+          description: Machine-readable reason for `rejected` items.
+        message:
+          type: string
+          description: Human-readable detail for `rejected` items.
+      additionalProperties: false
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: >
+            Machine-readable error code, e.g. CONTRACT_HEADER_MISSING,
+            CONTRACT_VERSION_UNSUPPORTED, UNKNOWN_FIELD, MALFORMED_REQUEST.
+        message:
+          type: string
+      additionalProperties: false

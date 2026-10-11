@@ -1,0 +1,6 @@
+src/main/kotlin/org/openapitools/client/models/BatchAckResponse.kt
+src/main/kotlin/org/openapitools/client/models/BatchIngestRequest.kt
+src/main/kotlin/org/openapitools/client/models/ErrorResponse.kt
+src/main/kotlin/org/openapitools/client/models/EventIngest.kt
+src/main/kotlin/org/openapitools/client/models/EventIngestPropertiesValue.kt
+src/main/kotlin/org/openapitools/client/models/ItemAck.kt

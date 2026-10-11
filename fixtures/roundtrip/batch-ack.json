@@ -1,0 +1,1 @@
+{"results":[{"eventId":"evt-0001-aaaa-bbbb-cccc-000000000001","index":0,"status":"accepted"},{"eventId":"evt-0001-aaaa-bbbb-cccc-000000000002","index":1,"status":"duplicate"},{"code":"UNKNOWN_FIELD","eventId":"evt-0001-aaaa-bbbb-cccc-000000000003","index":2,"message":"property 'nested' is not a flat scalar","status":"rejected"}]}
