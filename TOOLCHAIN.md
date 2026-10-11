@@ -49,14 +49,19 @@ build output (see ADR-0003 item 9). `android.builtInKotlin` and `android.newDsl`
 not turned off. Because of the new DSL, generated Kotlin sources are added with
 `androidComponents.onVariants { variant.sources.kotlin }`; the old `sourceSets` accessor fails with a ClassCastException.
 
+## Build-verified in issue #4
+
+| Component | Pinned | Why |
+|---|---|---|
+| WorkManager | 2.12.0 | `work-runtime` and `work-testing`; `sdk/gradlew -p sdk :sdk-android:testDebugUnitTest` ran Worker and unique-work tests under Robolectric |
+| Retrofit | 3.0.0 | Real requests against MockWebServer (`TransportTest`) |
+| OkHttp | 5.4.0 (was doc-pinned at 5.5.0) | The `okhttp-android` 5.5.0 AAR declares `minCompileSdk=37`; the SDK builds at compileSdk 36, and AGP fails `checkDebugUnitTestAarMetadata`. 5.4.0 passes. `mockwebserver3` uses the same version. See ADR-0006 decision 1 |
+
 ## Doc-pinned (build verification deferred to the noted issue)
 
 | Component | Pinned | Verified in |
 |---|---|---|
 | KSP | — no 2.4.x release as of 2026-10-09 | #3/#4 (Room/KSP modules) |
-| WorkManager | 2.12.0 | #4 |
-| Retrofit | 3.0.0 | #4 |
-| OkHttp | 5.5.0 | #4 |
 | Compose BOM | 2026.09.00 | #5 |
 | Ktor | 3.6.0 | #2 |
 | Flyway | 13.10.0 | #2 |
