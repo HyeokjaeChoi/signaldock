@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "b13aea4f5f7c6d46e3dfcb4b3e10d23a",
+    "identityHash": "3b16e1ffaca47bf53a3cff43d8313977",
     "entities": [
       {
         "tableName": "events",
@@ -107,7 +107,7 @@
       },
       {
         "tableName": "retry_state",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `failureCount` INTEGER NOT NULL, `nextAttemptAtMillis` INTEGER, `lastAckAtMillis` INTEGER, `lastAckAccepted` INTEGER NOT NULL, `lastAckDuplicate` INTEGER NOT NULL, `lastAckRejected` INTEGER NOT NULL, `lastErrorKind` TEXT, `lastErrorHttpStatus` INTEGER, `lastErrorAtMillis` INTEGER, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `failureCount` INTEGER NOT NULL, `nextAttemptAtMillis` INTEGER, `lastAckAtMillis` INTEGER, `lastAckAccepted` INTEGER NOT NULL, `lastAckDuplicate` INTEGER NOT NULL, `lastAckRejected` INTEGER NOT NULL, `lastErrorKind` TEXT, `lastErrorHttpStatus` INTEGER, `lastErrorAtMillis` INTEGER, `hold` INTEGER NOT NULL, `maxBatchEvents` INTEGER, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -163,6 +163,17 @@
             "fieldPath": "lastErrorAtMillis",
             "columnName": "lastErrorAtMillis",
             "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "hold",
+            "columnName": "hold",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxBatchEvents",
+            "columnName": "maxBatchEvents",
+            "affinity": "INTEGER"
           }
         ],
         "primaryKey": {
@@ -175,7 +186,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'b13aea4f5f7c6d46e3dfcb4b3e10d23a')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3b16e1ffaca47bf53a3cff43d8313977')"
     ]
   }
 }

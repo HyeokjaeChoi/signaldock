@@ -3,6 +3,7 @@ package local.signaldock
 import android.content.Context
 import local.signaldock.internal.collection.EventCollector
 import local.signaldock.internal.init.InitCoordinator
+import local.signaldock.internal.scheduling.DeliveryCoordinator
 import local.signaldock.internal.storage.QueueDao
 import local.signaldock.internal.transport.SDK_VERSION
 
@@ -13,6 +14,7 @@ import local.signaldock.internal.transport.SDK_VERSION
 public class SignalDock internal constructor(
     private val collector: EventCollector,
     internal val dao: QueueDao,
+    internal val delivery: DeliveryCoordinator,
 ) {
     /**
      * Returns [TrackResult.Success] after the event is committed to Room. This is not server

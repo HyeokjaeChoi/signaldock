@@ -48,6 +48,10 @@ internal data class RetryStateEntity(
     val lastErrorKind: String? = null,
     val lastErrorHttpStatus: Int? = null,
     val lastErrorAtMillis: Long? = null,
+    /** Normal sending is stopped (auth, configuration or contract error). One probe batch per recheck. */
+    val hold: Boolean = false,
+    /** Batch event cap after a 413 split; null means the default. See ADR-0006. */
+    val maxBatchEvents: Int? = null,
 )
 
 internal data class QueueUsage(
@@ -94,6 +98,10 @@ internal abstract class QueueDao {
     @Query("SELECT * FROM events ORDER BY seq LIMIT :limit")
     abstract suspend fun oldest(limit: Int): List<EventEntity>
 
+    /** Oldest events of one batch group. A request has one contract header and one installationId. */
+    @Query("SELECT * FROM events WHERE contractVersion = :contractVersion AND installationId = :installationId ORDER BY seq LIMIT :limit")
+    abstract suspend fun oldestOfGroup(contractVersion: String, installationId: String, limit: Int): List<EventEntity>
+
     @Query("DELETE FROM events WHERE eventId IN (:ids)")
     abstract suspend fun deleteByIds(ids: List<String>): Int
 
@@ -109,6 +117,21 @@ internal abstract class QueueDao {
         insertRejections(rejections)
         trimRejections()
         deleteByIds(rejections.map { it.eventId })
+    }
+
+    /**
+     * ACK application (architecture "Collection, delivery, and ACK"): queue removal, permanent
+     * rejection diagnostics and the retry state reset commit together or not at all.
+     * [removeIds] holds every event of the batch that the valid ACK settles, rejected ones included.
+     */
+    @Transaction
+    open suspend fun applyAck(removeIds: List<String>, rejections: List<RejectionEntity>, state: RetryStateEntity) {
+        if (rejections.isNotEmpty()) {
+            insertRejections(rejections)
+            trimRejections()
+        }
+        deleteByIds(removeIds)
+        saveRetryState(state)
     }
 
     @Query("SELECT * FROM rejections ORDER BY id DESC")
