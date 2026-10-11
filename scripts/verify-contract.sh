@@ -15,10 +15,10 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # Pinned JDK (see TOOLCHAIN.md): use the bundled copy only when it exists;
 # otherwise require JAVA_HOME to be set already.
 if [ -z "${JAVA_HOME:-}" ]; then
-  if [ -x "$ROOT/.tools/jdk-17.0.20.1+1/bin/java" ]; then
-    export JAVA_HOME="$ROOT/.tools/jdk-17.0.20.1+1"
+  if [ -x "$ROOT/.tools/jdk-21.0.12.1+1/bin/java" ]; then
+    export JAVA_HOME="$ROOT/.tools/jdk-21.0.12.1+1"
   else
-    echo "error: JAVA_HOME is not set and no bundled JDK at $ROOT/.tools/jdk-17.0.20.1+1" >&2
+    echo "error: JAVA_HOME is not set and no bundled JDK at $ROOT/.tools/jdk-21.0.12.1+1" >&2
     echo "Download the pinned JDK (see TOOLCHAIN.md) or set JAVA_HOME." >&2
     exit 1
   fi

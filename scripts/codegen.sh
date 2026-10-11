@@ -18,10 +18,10 @@ fi
 
 # Pinned JDK (see TOOLCHAIN.md): JAVA_HOME, else the bundled copy. No PATH java.
 if [ -z "${JAVA_HOME:-}" ]; then
-  if [ -x "$TOOLS/jdk-17.0.20.1+1/bin/java" ]; then
-    JAVA_HOME="$TOOLS/jdk-17.0.20.1+1"
+  if [ -x "$TOOLS/jdk-21.0.12.1+1/bin/java" ]; then
+    JAVA_HOME="$TOOLS/jdk-21.0.12.1+1"
   else
-    echo "error: JAVA_HOME is not set and no bundled JDK at $TOOLS/jdk-17.0.20.1+1" >&2
+    echo "error: JAVA_HOME is not set and no bundled JDK at $TOOLS/jdk-21.0.12.1+1" >&2
     echo "Run scripts/setup-toolchain.sh (see TOOLCHAIN.md) or set JAVA_HOME." >&2
     exit 1
   fi

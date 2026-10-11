@@ -14,7 +14,7 @@ import org.jooq.Record1;
 import org.jooq.impl.UpdatableRecordImpl;
 
 
-@SuppressWarnings({ "all", "unchecked", "rawtypes" })
+@SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
 
     private static final long serialVersionUID = 1L;
@@ -102,6 +102,6 @@ public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
         setSdkVersion(sdkVersion);
         setProperties(properties);
         setReceivedAt(receivedAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }
