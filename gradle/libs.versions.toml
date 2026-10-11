@@ -1,0 +1,39 @@
+[versions]
+# Toolchain (verified by build in issue #1 unless noted)
+jdk = "17"
+gradle = "8.14.5"
+agp = "8.13.2"
+kotlin = "2.4.21"
+kotlinx-serialization = "1.11.0"
+openapi-generator = "7.26.0"
+oasdiff = "1.33.0"
+
+# KSP has no 2.4.x release as of 2026-10-09; pinned when the Room/KSP
+# modules are built (issues #3/#4). KSP must share Kotlin's major.minor.
+# ksp = "<tbd>"
+
+# Android (doc-pinned; full AGP compilation verified in later issues)
+compileSdk = "36"
+minSdk = "24"
+targetSdk = "36"
+room = "2.8.5"
+workmanager = "2.12.0"
+retrofit = "3.0.0"
+okhttp = "5.5.0"
+compose-bom = "2026.09.00"
+
+# Server (doc-pinned; server build verified in issue #2)
+ktor = "3.6.0"
+jooq = "3.21.9"
+flyway = "13.10.0"
+
+# Dashboard (doc-pinned; TS compile of generated models verified in issue #1)
+typescript = "7.0.2"
+
+[libraries]
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+android-library = { id = "com.android.library", version.ref = "agp" }

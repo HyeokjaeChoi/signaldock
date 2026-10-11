@@ -41,3 +41,22 @@ Before evaluating or changing an issue's status, read `docs/agents/triage-labels
 
 Start with one domain context.
 Before exploring code or designing the domain, read `docs/agents/domain.md`.
+
+## Setup
+
+Run once per clone: `git config core.hooksPath .githooks`.
+The pre-commit hook runs `scripts/check-repo-rules.sh`. The pre-push hook also runs `scripts/verify-contract.sh` when code changed.
+
+## Roles
+
+- Implementer (local agents): before you edit files in an area, read the sections that `docs/design-index.md` lists for it. Build what the design sources say. If you must make a new decision, record it in an ADR in the same PR and name it in the PR description. Do not write review rules.
+- Reviewer (CodeRabbit): it reviews with no session context against the design sources. Its configuration is `.coderabbit.yaml`. When you answer a review finding, do one of these: fix the code; fix the design source in the same PR; add a check to `scripts/check-repo-rules.sh` or `scripts/verify-contract.sh`; or reject the finding and cite the design source section. Learnings only calibrate CodeRabbit. Do not rely on them for design facts.
+- PR descriptions state what changed, which design sections it follows, and the exact verification commands and results. Never label a step verified without a run.
+
+## Review workflow
+
+1. Keep one purpose per PR. If a review asks for work outside that purpose, such as new hooks, CI, or review setup, put it in a separate PR.
+2. Before you open a PR, run `coderabbit review --base main --deep --agent` and fix its findings. The PR review then confirms the work.
+3. Collect all findings of one review round and fix them together. Push once, then request one `@coderabbitai full review`.
+4. If the same kind of finding comes back, add a check to `scripts/check-repo-rules.sh` or `scripts/verify-contract.sh` instead of fixing it by hand again.
+5. Merge criterion: a PR is ready to merge when no Critical or Major finding is open and all checks pass. Record each open Minor or lower finding as a local issue (see `docs/agents/issue-tracker.md`), link it in the PR, and do not hold the merge for it.
