@@ -145,7 +145,9 @@ private fun decodeCursor(raw: String, order: SortOrder): ListCursor {
     val parts = text.split('.')
     if (parts.size != 3 || parts[0] != order.name.first().toString() || !Regex("-?[0-9]{1,15}").matches(parts[1])) throw bad()
     val id = try { parseUuid("cursor", parts[2]) } catch (_: QueryFailure) { throw bad() }
-    return ListCursor(Instant.ofEpochMilli(parts[1].toLong()), id)
+    val at = Instant.ofEpochMilli(parts[1].toLong())
+    if (at.atOffset(ZoneOffset.UTC).year !in 1..9999) throw bad()
+    return ListCursor(at, id)
 }
 
 private fun parsePeriod(params: Map<String, List<String>>, zone: ZoneId): Period {

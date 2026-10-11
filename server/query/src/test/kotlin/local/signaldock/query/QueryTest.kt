@@ -98,6 +98,8 @@ class QueryTest {
         assertEquals("INVALID_CURSOR", code { parseListQuery(day("cursor" to text, "sort" to "receivedAt_asc"), seoul) })
         assertEquals("INVALID_CURSOR", code { parseListQuery(day("cursor" to "***"), seoul) })
         assertEquals("INVALID_CURSOR", code { parseListQuery(day("cursor" to "AAAA"), seoul) })
+        val farFuture = java.util.Base64.getUrlEncoder().encodeToString("N.999999999999999.$id".toByteArray())
+        assertEquals("INVALID_CURSOR", code { parseListQuery(day("cursor" to farFuture), seoul) })
     }
 
     @Test
