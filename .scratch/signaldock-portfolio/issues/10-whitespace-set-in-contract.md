@@ -31,3 +31,10 @@ Done when:
 - SDK: `TrackTest` now reads the fixture (no inline list). Server: new `IngestRulesTest` case reads the same file. Both check each member as leading, trailing, and alone, in the name and in a property key, and check near misses are accepted. Production code is unchanged; no mismatch found.
 - Placement: tests live in the SDK and `:ingestion` test suites, not in `contract-check`. `contract-check` compiles only the generated DTOs and has no dependency on the SDK or server validation code. A fixture change or a rule change on either side fails that side's test, and `verify-contract.sh` does not run SDK/server tests (CI runs those builds).
 - Results: `sdk/gradlew -p sdk :sdk-android:testDebugUnitTest --no-daemon` BUILD SUCCESSFUL; `(cd server && ./gradlew test verifyJooq --no-daemon)` BUILD SUCCESSFUL; `scripts/verify-contract.sh` ALL CONTRACT CHECKS PASSED.
+
+- `.tools/oasdiff changelog <baseline from main> openapi/contract-v1.yaml` output (ADR-0002 amendment \"intentional baseline update\"):
+
+```text
+No changes to report, but the specs are different.
+Run 'oasdiff diff' to see structural differences.
+```
