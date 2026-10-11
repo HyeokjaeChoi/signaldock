@@ -24,16 +24,20 @@ public class SignalDock internal constructor(
 
     /** Read-only snapshot of the device queue, recent permanent rejections, ACK and retry state. */
     public suspend fun diagnostics(): Diagnostics {
-        val usage = dao.usage()
-        val retry = dao.retryState()
+        val snap = dao.diagnosticsSnapshot()
+        val retry = snap.retry
         return Diagnostics(
             sdkVersion = SDK_VERSION,
-            queuedEvents = usage.count,
-            queuedBytes = usage.bytes,
-            oldestPendingEpochMillis = usage.oldestCreatedAtMillis,
-            recentRejections = dao.recentRejections().map { RejectionDiagnostic(it.eventId, it.code, it.rejectedAtMillis) },
+            queuedEvents = snap.usage.count,
+            queuedBytes = snap.usage.bytes,
+            oldestPendingEpochMillis = snap.usage.oldestCreatedAtMillis,
+            recentRejections = snap.rejections.map { RejectionDiagnostic(it.eventId, it.code, it.rejectedAtMillis) },
             lastAck = retry?.lastAckAtMillis?.let {
                 AckDiagnostic(it, retry.lastAckAccepted, retry.lastAckDuplicate, retry.lastAckRejected)
+            },
+            lastDeliveryError = retry?.lastErrorAtMillis?.let { at ->
+                runCatching { DeliveryErrorKind.valueOf(retry.lastErrorKind.orEmpty()) }.getOrNull()
+                    ?.let { DeliveryErrorDiagnostic(it, retry.lastErrorHttpStatus, at) }
             },
             retryFailureCount = retry?.failureCount ?: 0,
             nextAttemptEpochMillis = retry?.nextAttemptAtMillis,

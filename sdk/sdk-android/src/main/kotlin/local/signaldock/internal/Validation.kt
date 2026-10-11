@@ -6,15 +6,25 @@ import local.signaldock.SignalDockConfig
 internal const val MAX_SAFE_INTEGER: Long = 9_007_199_254_740_991L // 2^53 - 1
 
 /**
+ * Fixed whitespace set (Q64), identical to the server's: U+0009..U+000D, U+0020, U+0085, U+00A0,
+ * U+1680, U+2000..U+200A, U+2028, U+2029, U+202F, U+205F, U+3000. Not Char.isWhitespace(), which
+ * differs (e.g. it includes U+001C..U+001F).
+ */
+internal fun isNameWhitespace(c: Char): Boolean = when (c.code) {
+    in 0x09..0x0D, 0x20, 0x85, 0xA0, 0x1680, in 0x2000..0x200A, 0x2028, 0x2029, 0x202F, 0x205F, 0x3000 -> true
+    else -> false
+}
+
+/**
  * Validates a name, property key (isName = true) or string value (isName = false).
  * Names and keys: non-empty, no leading or trailing whitespace; no trimming (Q64) and
  * no Unicode normalization (Q84). All text: no NUL and no lone surrogates (Q85).
- * Whitespace set: Kotlin Char.isWhitespace() (ADR-0003).
+ * Whitespace set: the explicit list in [isNameWhitespace] (ADR-0003); same as the server.
  */
 internal fun checkText(s: String, isName: Boolean): InvalidReason? {
     if (isName) {
-        if (s.isEmpty() || s.isBlank()) return InvalidReason.EMPTY_NAME
-        if (s.first().isWhitespace() || s.last().isWhitespace()) return InvalidReason.LEADING_OR_TRAILING_WHITESPACE
+        if (s.isEmpty() || s.all(::isNameWhitespace)) return InvalidReason.EMPTY_NAME
+        if (isNameWhitespace(s.first()) || isNameWhitespace(s.last())) return InvalidReason.LEADING_OR_TRAILING_WHITESPACE
     }
     var i = 0
     while (i < s.length) {

@@ -37,7 +37,7 @@ import kotlinx.serialization.Contextual
  */
 @Serializable
 
-data class BatchIngestRequest (
+internal data class BatchIngestRequest (
 
     /* Installation ID shared by events from one app installation. */
     @SerialName(value = "installationId")

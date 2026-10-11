@@ -40,3 +40,13 @@ Not run: emulator/device tests; a real process restart (the 1,000-event test re-
 - `JAVA_HOME=.tools/jdk-17.0.20.1+1 sdk/gradlew -p sdk :sdk-android:testDebugUnitTest :sdk-android:assembleRelease --no-daemon`: BUILD SUCCESSFUL; 31 tests, 0 failures (LifecycleTest 11, StorageTest 7, TrackTest 13). `assembleRelease` ran without minification.
 - `scripts/verify-contract.sh`: ALL CONTRACT CHECKS PASSED.
 - Not run: R8-shrunk consumer build (distribution issue).
+
+2026-10-11: Adversarial review round fixes (third commit on `impl/03-sdk-storage`).
+- Size limit: one canonical `singleEventRequestBytes` (a single-event `BatchIngestRequest` with installationId, wrapper and escaping, UTF-8) is used for the 16 KiB limit and the 16 MiB queue total. Boundary tests: exactly 16 KiB passes, +1 fails.
+- Transport DTOs: `scripts/codegen.sh` now sets `nonPublicApi=true`; `generated/kotlin` regenerated (models `internal`); generated TypeScript unchanged. `PublicApiTest` asserts every top-level `org.openapitools` class in the compiled SDK is Kotlin-internal (kotlin-metadata-jvm). contract-check still compiles and passes.
+- Diagnostics: typed content-free `lastDeliveryError` (kind, HTTP status, time) in `retry_state` (schema stays v1, unreleased; recorded in ADR-0003); test that it survives reopening the DB.
+- Diagnostics snapshot: `diagnostics()` uses one `@Transaction` DAO read; test runs a concurrent writer and checks queued + rejected is constant.
+- Whitespace set: explicit server-aligned list replaces `Char.isWhitespace()`; test iterates the full set (leading, trailing, whitespace-only, keys) and checks U+001C, U+200B, U+FEFF, U+180E are accepted.
+- `JAVA_HOME=.tools/jdk-17.0.20.1+1 sdk/gradlew -p sdk :sdk-android:testDebugUnitTest :sdk-android:assembleRelease --no-daemon`: BUILD SUCCESSFUL; 35 tests, 0 failures (LifecycleTest 11, PublicApiTest 1, StorageTest 9, TrackTest 14).
+- `scripts/verify-contract.sh`: ALL CONTRACT CHECKS PASSED (drift check, oasdiff, contract-check tests, TypeScript check, sdk/server Gradle evaluation).
+- Not run: the server's own build against the `internal` models (the server code is on another branch).

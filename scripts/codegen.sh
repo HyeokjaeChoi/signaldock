@@ -44,12 +44,14 @@ TEMPLATES="$ROOT/openapi/templates"
 # kotlinx_serialization per ADR-0002; dateLibrary=string keeps occurredAt as a
 # String so RFC3339 UTC/ms validation lives in a small adapter (Q81-83),
 # since OpenAPI date-time alone does not enforce those constraints.
+# nonPublicApi=true makes the models `internal`, so a consumer that compiles
+# them (the SDK) does not expose transport DTOs in its public API (issue 03).
 "$JAVA_BIN" -jar "$JAR" generate \
   -g kotlin \
   -i "$SPEC" \
   -o "$KOTLIN_OUT" \
   -t "$TEMPLATES" \
-  --additional-properties=dateLibrary=string,serializationLibrary=kotlinx_serialization,enumPropertyNaming=UPPERCASE,generateOneOfAnyOfWrappers=true \
+  --additional-properties=dateLibrary=string,serializationLibrary=kotlinx_serialization,enumPropertyNaming=UPPERCASE,generateOneOfAnyOfWrappers=true,nonPublicApi=true \
   --global-property models,modelDocs=false,modelTests=false,apis=false,apiDocs=false,apiTests=false,supportingFiles=
 
 # TypeScript models for the React dashboard (typescript-fetch per ADR-0002).

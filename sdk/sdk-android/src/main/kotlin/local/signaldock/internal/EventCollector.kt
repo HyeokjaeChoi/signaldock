@@ -3,7 +3,6 @@ package local.signaldock.internal
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
-import kotlinx.serialization.json.Json
 import local.signaldock.EventBuilder
 import local.signaldock.InvalidReason
 import local.signaldock.TrackResult
@@ -47,8 +46,8 @@ internal class EventCollector(
             sdkVersion = SDK_VERSION,
             contractVersion = EventIngest.ContractVersion._1,
         )
-        val payload = json.encodeToString(EventIngest.serializer(), event)
-        val size = payload.toByteArray(Charsets.UTF_8).size
+        val payload = transportJson.encodeToString(EventIngest.serializer(), event)
+        val size = singleEventRequestBytes(installationId, event)
         if (size > limits.maxEventBytes) return TrackResult.Invalid(InvalidReason.EVENT_TOO_LARGE, null)
 
         // Cancelled before storage starts: nothing stored, no warning (spec section 3).
@@ -81,7 +80,6 @@ internal class EventCollector(
     }
 
     private companion object {
-        val json = Json
         /** UTC RFC 3339 with exactly 3 fraction digits (Q81). java.time needs API 26; minSdk is 24. */
         fun formatUtcMillis(ms: Long): String =
             SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)

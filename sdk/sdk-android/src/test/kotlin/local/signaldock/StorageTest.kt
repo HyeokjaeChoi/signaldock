@@ -1,12 +1,13 @@
 package local.signaldock
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import local.signaldock.internal.InstallationIdStore
 import local.signaldock.internal.RandomUuidV4
 import local.signaldock.internal.RejectionEntity
 import local.signaldock.internal.RetryStateEntity
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -98,9 +99,9 @@ class StorageTest {
     @Test
     fun `diagnostics reports queue, last ACK and next retry`() = runBlocking {
         val sdk = newSdk(nowMillis = 5_000)
-        assertEquals(Diagnostics("0.1.0", 0, 0, null, emptyList(), null, 0, null), sdk.diagnostics())
+        assertEquals(Diagnostics("0.1.0", 0, 0, null, emptyList(), null, null, 0, null), sdk.diagnostics())
         sdk.track("e")
-        sdk.dao.saveRetryState(RetryStateEntity(failureCount = 3, nextAttemptAtMillis = 9_000, lastAckAtMillis = 7_000, lastAckAccepted = 2, lastAckDuplicate = 1, lastAckRejected = 4))
+        sdk.dao.saveRetryState(RetryStateEntity(failureCount = 3, nextAttemptAtMillis = 9_000, lastAckAtMillis = 7_000, lastAckAccepted = 2, lastAckDuplicate = 1, lastAckRejected = 4, lastErrorKind = "TIMEOUT", lastErrorHttpStatus = null, lastErrorAtMillis = 8_000))
         val d = sdk.diagnostics()
         assertEquals(1, d.queuedEvents)
         assertTrue(d.queuedBytes > 0)
@@ -108,6 +109,40 @@ class StorageTest {
         assertEquals(3, d.retryFailureCount)
         assertEquals(9_000L, d.nextAttemptEpochMillis)
         assertEquals(AckDiagnostic(7_000, 2, 1, 4), d.lastAck)
-        assertNotEquals(null, d.lastAck)
+        assertEquals(DeliveryErrorDiagnostic(DeliveryErrorKind.TIMEOUT, null, 8_000), d.lastDeliveryError)
+    }
+
+    @Test
+    fun `last delivery error survives re-opening the database`() = runBlocking {
+        val first = newSdk(ids = RandomUuidV4)
+        first.dao.saveRetryState(RetryStateEntity(failureCount = 2, nextAttemptAtMillis = 99, lastErrorKind = "RATE_LIMITED", lastErrorHttpStatus = 429, lastErrorAtMillis = 50))
+        val second = newSdk(ids = RandomUuidV4)
+        val d = second.diagnostics()
+        assertEquals(DeliveryErrorDiagnostic(DeliveryErrorKind.RATE_LIMITED, 429, 50), d.lastDeliveryError)
+        assertEquals(2, d.retryFailureCount)
+        assertEquals(99L, d.nextAttemptEpochMillis)
+    }
+
+    @Test
+    fun `diagnostics is one consistent snapshot while a writer moves events to rejections`() = runBlocking {
+        val sdk = newSdk()
+        repeat(50) { sdk.track("e") }
+        val ids = sdk.dao.oldest(100).map { it.eventId }
+        val writer = async(Dispatchers.Default) {
+            ids.forEachIndexed { i, id ->
+                sdk.dao.rejectPermanently(listOf(RejectionEntity(eventId = id, code = "C", rejectedAtMillis = i.toLong())))
+            }
+        }
+        // Each rejection moves one item from the queue to the rejections in one transaction,
+        // so queued + rejected is always 50 in a single snapshot. Three separate reads could see 51.
+        var reads = 0
+        while (!writer.isCompleted) {
+            val d = sdk.diagnostics()
+            assertEquals(50, d.queuedEvents + d.recentRejections.size)
+            reads++
+        }
+        writer.await()
+        assertTrue(reads > 0)
+        assertEquals(50, sdk.diagnostics().recentRejections.size)
     }
 }

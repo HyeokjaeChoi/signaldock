@@ -33,7 +33,9 @@ class TrackTest {
         val row = sdk.dao.oldest(10).single()
         assertEquals(id, row.eventId)
         assertEquals("1", row.contractVersion)
-        assertEquals(row.payloadJson.toByteArray().size, row.sizeBytes)
+        // size = the event as sent: a single-event batch request, wrapper included
+        val request = "{\"installationId\":\"${row.installationId}\",\"events\":[${row.payloadJson}]}"
+        assertEquals(request.toByteArray().size, row.sizeBytes)
         val o = Json.parseToJsonElement(row.payloadJson).jsonObject
         assertEquals(id, o["eventId"]!!.jsonPrimitive.content)
         assertEquals("product_viewed", o["name"]!!.jsonPrimitive.content)
@@ -78,6 +80,27 @@ class TrackTest {
         assertEquals(InvalidReason.FORBIDDEN_CHARACTER, sdk.invalid("ok") { property("k\u0000", 1) })
         assertEquals(InvalidReason.FORBIDDEN_CHARACTER, sdk.invalid("ok") { property("k", "v\u0000") })
         assertEquals(InvalidReason.FORBIDDEN_CHARACTER, sdk.invalid("ok") { property("k", "v\uD83D") })
+    }
+
+    private val whitespaceSet: List<Char> =
+        ((0x09..0x0D) + 0x20 + 0x85 + 0xA0 + 0x1680 + (0x2000..0x200A) + 0x2028 + 0x2029 + 0x202F + 0x205F + 0x3000).map { it.toChar() }
+
+    @Test
+    fun `every character of the fixed whitespace set is rejected, others are accepted`() = runBlocking {
+        val sdk = newSdk()
+        for (c in whitespaceSet) {
+            val hex = "U+%04X".format(c.code)
+            assertEquals(hex, InvalidReason.EMPTY_NAME, sdk.invalid("$c"))
+            assertEquals(hex, InvalidReason.EMPTY_NAME, sdk.invalid("ok") { property("$c$c", 1) })
+            assertEquals(hex, InvalidReason.LEADING_OR_TRAILING_WHITESPACE, sdk.invalid("${c}a"))
+            assertEquals(hex, InvalidReason.LEADING_OR_TRAILING_WHITESPACE, sdk.invalid("a$c"))
+            assertEquals(hex, InvalidReason.LEADING_OR_TRAILING_WHITESPACE, sdk.invalid("ok") { property("${c}k", 1) })
+            assertEquals(hex, InvalidReason.LEADING_OR_TRAILING_WHITESPACE, sdk.invalid("ok") { property("k$c", 1) })
+        }
+        // not in the set: accepted even at the edges (Kotlin isWhitespace() would reject U+001C)
+        for (c in listOf('\u001C', '\u200B', '\uFEFF', '\u180E')) {
+            assertTrue("U+%04X".format(c.code), sdk.track("${c}a$c") { property("${c}k", 1) } is TrackResult.Success)
+        }
     }
 
     @Test

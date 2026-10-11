@@ -46,19 +46,19 @@ import kotlinx.serialization.json.encodeToJsonElement
  *
  */
 @Serializable(with = EventIngestPropertiesValueSerializer::class)
-sealed interface EventIngestPropertiesValue {
+internal sealed interface EventIngestPropertiesValue {
     @JvmInline
-    value class StringValue(val value: kotlin.String) : EventIngestPropertiesValue
+    value class StringValue(internal val value: kotlin.String) : EventIngestPropertiesValue
 
     @JvmInline
-    value class BigDecimalValue(val value: java.math.BigDecimal) : EventIngestPropertiesValue
+    value class BigDecimalValue(internal val value: java.math.BigDecimal) : EventIngestPropertiesValue
 
     @JvmInline
-    value class BooleanValue(val value: kotlin.Boolean) : EventIngestPropertiesValue
+    value class BooleanValue(internal val value: kotlin.Boolean) : EventIngestPropertiesValue
 
 }
 
-object EventIngestPropertiesValueSerializer : KSerializer<EventIngestPropertiesValue> {
+internal object EventIngestPropertiesValueSerializer : KSerializer<EventIngestPropertiesValue> {
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("EventIngestPropertiesValue")
 
     override fun serialize(encoder: Encoder, value: EventIngestPropertiesValue) {

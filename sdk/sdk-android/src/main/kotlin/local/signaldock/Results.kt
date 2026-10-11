@@ -73,6 +73,18 @@ public data class AckDiagnostic(
     val rejected: Int,
 )
 
+/** Final delivery failure classes (architecture "Retry and transport boundaries"). */
+public enum class DeliveryErrorKind {
+    NETWORK, TIMEOUT, RATE_LIMITED, SERVER_ERROR, AUTH_OR_CONFIGURATION, CONTRACT, PAYLOAD_TOO_LARGE, INVALID_ACK,
+}
+
+/** Last final delivery error. Content-free: a kind, an optional HTTP status and a time. */
+public data class DeliveryErrorDiagnostic(
+    val kind: DeliveryErrorKind,
+    val httpStatus: Int?,
+    val atEpochMillis: Long,
+)
+
 /** Read-only snapshot of the device queue. It says nothing about server state. */
 public data class Diagnostics(
     val sdkVersion: String,
@@ -81,6 +93,7 @@ public data class Diagnostics(
     val oldestPendingEpochMillis: Long?,
     val recentRejections: List<RejectionDiagnostic>,
     val lastAck: AckDiagnostic?,
+    val lastDeliveryError: DeliveryErrorDiagnostic?,
     val retryFailureCount: Int,
     val nextAttemptEpochMillis: Long?,
 )

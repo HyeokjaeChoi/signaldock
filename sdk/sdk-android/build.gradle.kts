@@ -20,6 +20,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    // Generated models are `internal` (codegen nonPublicApi=true); PublicApiTest guards this.
     sourceSets.getByName("main").kotlin.srcDir("../../generated/kotlin/src/main/kotlin")
 
     testOptions {
@@ -43,6 +44,7 @@ dependencies {
     ksp(libs.androidx.room.compiler)
 
     testImplementation(libs.junit)
+    testImplementation(libs.kotlin.metadata.jvm)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.kotlinx.coroutines.test)

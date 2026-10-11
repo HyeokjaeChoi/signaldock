@@ -12,7 +12,10 @@ import androidx.room.Query
 import androidx.room.RoomDatabase
 import androidx.room.Transaction
 
-/** Queue item. [payloadJson] is the transport JSON of one event (contract [contractVersion]). */
+/**
+ * Queue item. [payloadJson] is the transport JSON of one event (contract [contractVersion]).
+ * [sizeBytes] is the canonical size of that event as sent: see [singleEventRequestBytes].
+ */
 @Entity(tableName = "events", indices = [Index(value = ["eventId"], unique = true)])
 internal data class EventEntity(
     @PrimaryKey(autoGenerate = true) val seq: Long = 0,
@@ -43,12 +46,22 @@ internal data class RetryStateEntity(
     val lastAckAccepted: Int = 0,
     val lastAckDuplicate: Int = 0,
     val lastAckRejected: Int = 0,
+    /** [local.signaldock.DeliveryErrorKind] name; content-free. */
+    val lastErrorKind: String? = null,
+    val lastErrorHttpStatus: Int? = null,
+    val lastErrorAtMillis: Long? = null,
 )
 
 internal data class QueueUsage(
     @ColumnInfo(name = "count") val count: Int,
     @ColumnInfo(name = "bytes") val bytes: Long,
     @ColumnInfo(name = "oldest") val oldestCreatedAtMillis: Long?,
+)
+
+internal data class DiagnosticsSnapshot(
+    val usage: QueueUsage,
+    val retry: RetryStateEntity?,
+    val rejections: List<RejectionEntity>,
 )
 
 internal const val MAX_REJECTIONS = 100
@@ -105,6 +118,11 @@ internal abstract class QueueDao {
 
     @Query("SELECT * FROM retry_state WHERE id = 1")
     abstract suspend fun retryState(): RetryStateEntity?
+
+    /** Usage, retry state and rejections in one transaction: one consistent snapshot. */
+    @Transaction
+    open suspend fun diagnosticsSnapshot(): DiagnosticsSnapshot =
+        DiagnosticsSnapshot(usage(), retryState(), recentRejections())
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun saveRetryState(state: RetryStateEntity)
