@@ -17,6 +17,8 @@ Architecture (`architecture.md`):
 ADRs:
 - ADR-0001 (`docs/adr/0001-installation-scoped-identity.md`)
 - ADR-0002 (`docs/adr/0002-openapi-json-contract.md`)
+- ADR-0003 (`docs/adr/0003-sdk-storage-decisions.md`)
+- ADR-0005 (`docs/adr/0005-module-structure.md`), section "SDK" (packages per concern)
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 1. Goal and scope
@@ -38,6 +40,8 @@ Architecture (`architecture.md`):
 
 ADRs:
 - ADR-0002
+- ADR-0004 (`docs/adr/0004-server-runtime-and-receipt-boundaries.md`)
+- ADR-0005, section "Server" (`:app`, `:ingestion`, `:persistence`)
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 2. Agreed stack and boundaries
@@ -59,6 +63,17 @@ Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 8, B. Errors, ACKs, and data representation
 - 8, C. Small modules and local execution
 - 9. Technical conditions to check on entry into implementation
+
+## `demo/` (Android demo app, issue 05)
+
+Architecture (`architecture.md`):
+- Components and responsibilities
+
+ADRs:
+- ADR-0005, section "Demo app" (feature modules, unidirectional data flow)
+
+Spec (`.scratch/signaldock-portfolio/spec.md`):
+- 6. User screens and distribution, Demo and diagnostics
 
 ## `dashboard/`
 
@@ -99,6 +114,7 @@ This section only points to where each decision is recorded.
 Do not suggest these alternatives.
 
 - Shared Kotlin DTO artifact: ADR-0002.
+- Several SDK publication modules or a fused AAR: ADR-0005, section "SDK".
 - DI framework in the SDK: spec section "8. Additional implementation policies and individual agreements", "C. Small modules and local execution" (Q87).
 - Redis for idempotency: architecture "Lost ACKs and event deduplication"; spec Q69.
 - Aggregate tables or counters: architecture "DB time budgets and queries"; spec Q70.
