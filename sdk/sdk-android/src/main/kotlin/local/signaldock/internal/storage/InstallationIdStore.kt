@@ -1,37 +1,12 @@
-package local.signaldock.internal
+package local.signaldock.internal.storage
 
-import android.util.Log
-import local.signaldock.LogLevel
+import local.signaldock.internal.init.IdGenerator
+import local.signaldock.internal.init.Logger
+import local.signaldock.internal.init.RandomUuidV4
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.util.UUID
-
-internal const val SDK_VERSION = "0.1.0"
-internal const val CONTRACT_VERSION = "1"
-
-/**
- * Messages passed here must never contain event content, event names, installation IDs,
- * credentials, HTTP bodies or raw exception messages (Q115). Callers log fixed text only.
- */
-internal interface Logger {
-    fun debug(msg: String)
-    fun warn(msg: String)
-    fun error(msg: String)
-}
-
-internal class AndroidLogger(private val level: LogLevel) : Logger {
-    override fun debug(msg: String) { if (level <= LogLevel.DEBUG) Log.d(TAG, msg) }
-    override fun warn(msg: String) { if (level <= LogLevel.WARN) Log.w(TAG, msg) }
-    override fun error(msg: String) { if (level <= LogLevel.ERROR) Log.e(TAG, msg) }
-    private companion object { const val TAG = "SignalDock" }
-}
-
-internal fun interface Clock { fun nowMillis(): Long }
-
-internal fun interface IdGenerator { fun newId(): String }
-
-internal val RandomUuidV4 = IdGenerator { UUID.randomUUID().toString() }
 
 /**
  * Installation ID in a file under the SDK directory in noBackupFilesDir (ADR-0001).

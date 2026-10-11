@@ -1,4 +1,4 @@
-package local.signaldock.internal
+package local.signaldock.internal.init
 
 import android.content.Context
 import kotlinx.coroutines.CancellationException
@@ -13,6 +13,12 @@ import local.signaldock.InitError
 import local.signaldock.InitResult
 import local.signaldock.SignalDock
 import local.signaldock.SignalDockConfig
+import local.signaldock.internal.EventCollector
+import local.signaldock.internal.SignalDockDatabase
+import local.signaldock.internal.storage.InstallationIdStore
+import local.signaldock.internal.storage.QueueLimits
+import local.signaldock.internal.storage.RoomEventSink
+import local.signaldock.internal.validation.validateConfig
 import java.io.File
 import java.io.IOException
 

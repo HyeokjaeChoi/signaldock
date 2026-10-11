@@ -3,10 +3,10 @@ package local.signaldock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
-import local.signaldock.internal.InstallationIdStore
-import local.signaldock.internal.RandomUuidV4
-import local.signaldock.internal.RejectionEntity
-import local.signaldock.internal.RetryStateEntity
+import local.signaldock.internal.storage.InstallationIdStore
+import local.signaldock.internal.init.RandomUuidV4
+import local.signaldock.internal.storage.RejectionEntity
+import local.signaldock.internal.storage.RetryStateEntity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

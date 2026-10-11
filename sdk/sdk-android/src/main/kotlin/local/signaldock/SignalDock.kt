@@ -2,9 +2,9 @@ package local.signaldock
 
 import android.content.Context
 import local.signaldock.internal.EventCollector
-import local.signaldock.internal.InitCoordinator
-import local.signaldock.internal.QueueDao
-import local.signaldock.internal.SDK_VERSION
+import local.signaldock.internal.init.InitCoordinator
+import local.signaldock.internal.storage.QueueDao
+import local.signaldock.internal.transport.SDK_VERSION
 
 /**
  * The SDK instance. Get it from [initialize]; call [track] only on a successful result (Q111).
