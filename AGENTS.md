@@ -49,24 +49,26 @@ The pre-commit hook runs `scripts/check-repo-rules.sh`. The pre-push hook also r
 
 ## Code review
 
-Review rules live outside this file, one file per area:
+Review rules live in `docs/review/`, one file per area:
 
 | Area | File |
 | --- | --- |
-| Repository-wide, "Do not suggest" | `.github/copilot-instructions.md` |
-| `sdk/` | `.github/instructions/sdk.instructions.md` |
-| `server/` | `.github/instructions/server.instructions.md` |
-| Contract and codegen | `.github/instructions/contract.instructions.md` |
-| Scripts, toolchain, verification | `.github/instructions/verification.instructions.md` |
+| Repository-wide, "Do not suggest" | `docs/review/repo.md` |
+| `sdk/` | `docs/review/sdk.md` |
+| `server/` | `docs/review/server.md` |
+| Contract and codegen | `docs/review/contract.md` |
+| Scripts, toolchain, verification | `docs/review/verification.md` |
 
-Before you edit or review files in an area, read its file. Copilot and CodeRabbit load these files on their own.
+Before you edit or review files in an area, read its file. CodeRabbit loads them through `.coderabbit.yaml`, which also owns each file's path scope.
 
 ### Adding review knowledge
 
 When a review finding settles a rule, record it in the first place that fits:
 
 1. A machine can check it: add the check to `scripts/check-repo-rules.sh` or `scripts/verify-contract.sh`. Do not also write it as prose.
-2. It is a judgment call for one area: add one bullet to that area's file. End the bullet with the source PR, for example `(PR #9)`.
+2. It is a judgment call for one area: add one bullet to that area's file in `docs/review/`. End the bullet with the source PR, for example `(PR #9)`.
 3. It is a design decision that crosses areas: write an ADR in `docs/adr/`.
 
-Do not add review rules to this file. If an area file grows past about 60 lines, split it by sub-area and add a row to the table.
+Do not add review rules to this file. If an area file grows past about 60 lines, split it by sub-area, add a row to the table, and map it in `.coderabbit.yaml`.
+
+CodeRabbit learnings are an inbox, not the source of truth. When you reject or accept a CodeRabbit finding, reply with the rule file that settles it. Promote learnings into `docs/review/` or a check, then delete them.

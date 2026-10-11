@@ -1,7 +1,3 @@
----
-applyTo: "openapi/**,fixtures/**,generated/**,contract-check/**,dashboard/src/contract-check.ts,scripts/codegen.sh"
----
-
 # Contract and codegen review rules
 
 - `openapi/contract-v1.yaml` is the source of truth. Generated code is committed but never hand-edited: review the contract and the templates for semantic changes, not generated diffs. The drift check in `scripts/verify-contract.sh` enforces this.

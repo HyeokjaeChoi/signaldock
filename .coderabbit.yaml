@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+#
+# Review rules live in docs/review/*.md (source of truth, versioned with code).
+# CodeRabbit learnings are an inbox: promote them into docs/review/ or
+# scripts/check-repo-rules.sh, then delete them. See AGENTS.md "Code review".
+
+reviews:
+  profile: chill
+  auto_review:
+    drafts: true # PR #9 was skipped while it was a draft
+  path_filters:
+    - "!generated/**" # never hand-edited; review openapi/ and templates instead
+    - "!**/gradle/wrapper/**"
+    - "!dashboard/package-lock.json"
+  pre_merge_checks:
+    custom_checks:
+      - name: Verification evidence
+        mode: warning
+        instructions: >-
+          Pass if every item the PR description reports as verified, passed, or
+          tested names the command that ran and where it ran. Fail if an item
+          claims verification without a run, or if a step that could not run
+          (missing tool, sandbox) is not stated as not run.
+      - name: Review rule location
+        mode: warning
+        instructions: >-
+          Pass if any new review rule is added to docs/review/*.md, an ADR in
+          docs/adr/, or a check in scripts/check-repo-rules.sh. Fail if the PR
+          adds review rules or "decided review rules" to AGENTS.md.
+      - name: Contract change discipline
+        mode: warning
+        instructions: >-
+          Pass if openapi/contract-v1.yaml is unchanged. If it changed, pass
+          only when generated/ is regenerated in the same PR and the
+          description states whether fixtures/contract/contract-v1.baseline.yaml
+          was updated on purpose.
+  tools:
+    shellcheck:
+      enabled: true
+    actionlint:
+      enabled: true
+    gitleaks:
+      enabled: true
+    detekt:
+      enabled: true
+
+knowledge_base:
+  learnings:
+    scope: local
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - files: docs/review/repo.md
+        applyTo: "**"
+      - files: docs/review/sdk.md
+        applyTo: "sdk/**"
+      - files: docs/review/server.md
+        applyTo: "server/**"
+      - files: docs/review/contract.md
+        applyTo: "openapi/**"
+      - files: docs/review/contract.md
+        applyTo: "fixtures/**"
+      - files: docs/review/contract.md
+        applyTo: "contract-check/**"
+      - files: docs/review/contract.md
+        applyTo: "dashboard/src/contract-check.ts"
+      - files: docs/review/contract.md
+        applyTo: "scripts/codegen.sh"
+      - files: docs/review/verification.md
+        applyTo: "scripts/**"
+      - files: docs/review/verification.md
+        applyTo: ".githooks/**"
+      - files: docs/review/verification.md
+        applyTo: ".github/workflows/**"
+      - files: docs/review/verification.md
+        applyTo: "gradle/**"
+      - files: docs/review/verification.md
+        applyTo: "**/*.gradle.kts"
+      - files: docs/review/verification.md
+        applyTo: "dashboard/package.json"
+      - files: docs/review/verification.md
+        applyTo: "TOOLCHAIN.md"
+      - files: docs/adr/*.md
+        applyTo: "**"
+      - files: GLOSSARY.md
+        applyTo: "**"

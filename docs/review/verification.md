@@ -1,7 +1,3 @@
----
-applyTo: "scripts/**,.githooks/**,dashboard/package*.json,TOOLCHAIN.md,gradle/**,**/*.gradle.kts"
----
-
 # Toolchain and verification review rules
 
 Executable file modes and issue placeholders are enforced by `scripts/check-repo-rules.sh`. Do not repeat those findings by hand.

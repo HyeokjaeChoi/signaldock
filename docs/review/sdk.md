@@ -1,7 +1,3 @@
----
-applyTo: "sdk/**"
----
-
 # SDK review rules
 
 ### SDK delivery correctness (highest priority)
