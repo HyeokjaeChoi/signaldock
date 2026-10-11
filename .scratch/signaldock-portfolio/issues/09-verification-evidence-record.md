@@ -3,7 +3,7 @@
 Status: ready-for-agent
 Type: task
 Blocked by: None
-Execution: Not started
+Execution: Implemented; awaiting PR review (see the 2026-10-11 implementation comment)
 
 ## Source
 
@@ -43,3 +43,14 @@ AGENTS.md: "Never label a step verified without a run."
 ## Comments
 
 2026-10-11: Created from the PR #9 deep review (Minor). Status is `ready-for-agent` because the scope and the expected record are fixed.
+
+2026-10-11 implementation (docs only, no product code, no run):
+- Edited only "Execution evidence" and "Environment limitation" in `01-toolchain-contract.md`.
+- Each claim now names command, date, and result. Claims with no recorded command are "not verified (command not recorded)".
+- Kotlin, tsc, `5/5`, and the 2026-10-09 oasdiff self-diff are not verified for 2026-10-09. The self-diff was not valid (it compared the contract with itself).
+- Full run on 2026-10-11 recorded from the PR #9 Test report and the pre-push hook result (commit 681b6df).
+- CI job `verify-contract` is not verified: no CI result in the sources. The CI log was not checked.
+- Sources: commit 5c264cd (2026-10-09 text), commit 32f4d7f and 74e35fa (2026-10-11 corrections), PR #9 description (`gh pr view 9`), commit messages on main.
+- Not run: `scripts/verify-contract.sh`, Gradle, kotlinc, tsc.
+- Not changed: product code, pinned versions, contract.
+- Out of scope, noticed: `01` "Pinned toolchain" still lists Gradle 8.14.5, JDK 17, AGP 8.13.2. Commit a20e785 (issue 11) moved to JDK 21, AGP 9.3.3, Gradle 9.7.0. Not edited here.

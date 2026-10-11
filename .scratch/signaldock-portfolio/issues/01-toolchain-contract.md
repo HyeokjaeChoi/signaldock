@@ -36,12 +36,36 @@ The worker reported the work as implemented. It is awaiting PR review.
 - Pinned template override `openapi/templates/oneof_class.mustache` fixes two upstream bugs: (1) oneOf number branch never matched JSON numbers (BigDecimal not flagged primitive); (2) `BigDecimal.serializer()` does not exist.
 
 ### Execution evidence
-- `scripts/codegen.sh`: generates Kotlin (kotlinx_serialization) + TypeScript (typescript-fetch) models into `generated/` (tracked per Q91).
-- Kotlin models compile with kotlinc 2.4.21 + serialization plugin (25 classes).
-- `contract-check` round-trip tests: 5/5 pass. Fixtures cover unicode, numeric offsets (+09:00), BigDecimal values written with a decimal point (1.0, 0.0), null/nested rejection. Note: `-0.0` normalizes to `0.0`, consistent with Q62 (-0 == 0).
-- TypeScript models compile with tsc 7.0.2 (strict); union type `boolean | number | string` verified.
-- oasdiff: `scripts/verify-contract.sh` runs `oasdiff diff --fail-on-diff fixtures/contract/contract-v1.baseline.yaml openapi/contract-v1.yaml`. No unrecorded change.
-- Independent builds: `sdk/`, `server/`, `contract-check/` each have own settings + wrapper 8.14.5 + shared version catalog.
+Each claim names its command, date, and result. Source: commit 5c264cd (2026-10-09 text), PR #9 description Test report (2026-10-11, commit 681b6df), and PR #9 merge history. A claim with no recorded command is marked "not verified (command not recorded)".
+
+#### 2026-10-09 claims (commit 5c264cd; no command recorded for any of them)
+- `scripts/codegen.sh` generates Kotlin (kotlinx_serialization) + TypeScript (typescript-fetch) models into `generated/` (tracked per Q91). Run on 2026-10-09: not verified (command not recorded). Drift check passed on 2026-10-11 (see below).
+- Kotlin models compile with kotlinc 2.4.21 + serialization plugin (25 classes). Date: 2026-10-09. Command: not verified (command not recorded). Result: not verified.
+- `contract-check` round-trip tests: 5/5 pass. Date: 2026-10-09. Command: not verified (command not recorded). Count 5/5: not verified. Gradle run on 2026-10-11 passed, count not recorded (see below).
+- TypeScript models compile with tsc 7.0.2 (strict); union type `boolean | number | string`. Date: 2026-10-09. Command: not verified (command not recorded). Typecheck and contract-check passed on 2026-10-11 (see below).
+- oasdiff "self-diff `{}`" (2026-10-09): not valid evidence. It compared the contract with itself. Superseded by commit 32f4d7f (2026-10-11).
+- Fixture coverage (unicode, +09:00, BigDecimal `1.0`/`0.0`, null/nested rejection, `-0.0` to `0.0`): describes fixture content, not a run. Not verified as a separate run.
+- Independent builds: `sdk/`, `server/`, `contract-check/` each have their own settings and wrapper. This is a file check, not a build result. Build results are in the 2026-10-11 table.
+
+#### Full run on 2026-10-11 (commit 681b6df, macOS 26 Darwin arm64, repo root; source: PR #9 Test report)
+- Pre-push hook (`.githooks/pre-push`) ran the full `scripts/verify-contract.sh` for the push of 681b6df. Result: `ALL CONTRACT CHECKS PASSED`.
+- Step-by-step results from the same report:
+
+| Step | Command | Result |
+|---|---|---|
+| Repo rules | `scripts/check-repo-rules.sh` | Pass |
+| 1. Codegen drift | `scripts/verify-contract.sh` step 1 (`scripts/codegen.sh` into a temp dir, `diff -rq` against `generated/`) | Pass |
+| 2. Contract baseline | `.tools/oasdiff diff --fail-on-diff fixtures/contract/contract-v1.baseline.yaml openapi/contract-v1.yaml` | Pass |
+| 3. Kotlin round trip | `cd contract-check && ./gradlew test --no-daemon` | `BUILD SUCCESSFUL`, round-trip tests passed (count not recorded) |
+| 4. TypeScript | `cd dashboard && npm ci && npm run typecheck && npm run contract-check` | `ALL CONTRACT-CHECK ASSERTIONS PASSED` |
+| 5. Independent builds | `./gradlew help` in `sdk/` and `server/` (Gradle 8.14.5) | Pass |
+
+- CI job `verify-contract`: not verified. Commit 32f4d7f says CI runs full contract verification, but no CI result is recorded in the sources.
+- Not run on 2026-10-11: AGP, Room, Ktor, and other doc-pinned versions in `TOOLCHAIN.md` (PR #9 "Not run").
 
 ### Environment limitation
-Gradle daemon cannot run in this sandbox (IPv4/IPv6 localhost conflict + egress proxy). Verification used kotlinc/tsc directly with the pinned versions; `scripts/verify-contract.sh` documents the Gradle-based workflow for CI/dev machines.
+2026-10-09 (commit 5c264cd): Gradle daemon could not run in the sandbox (IPv4/IPv6 localhost conflict + egress proxy). Direct kotlinc and tsc runs were used instead. Command for the failure and for the kotlinc/tsc runs: not verified (command not recorded). No Gradle run is recorded for 2026-10-09.
+
+2026-10-11 (PR #9 Test report): `./gradlew test --no-daemon` (contract-check) and `./gradlew help` (sdk, server) ran on macOS, not the 2026-10-09 sandbox. The report does not say the daemon problem was resolved. Do not read the 2026-10-09 limitation as applying to 2026-10-11.
+
+`scripts/verify-contract.sh` contains the Gradle-based workflow (file check).
