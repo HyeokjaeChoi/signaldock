@@ -23,6 +23,10 @@ import org.openapitools.client.models.BatchAckResponse
 import org.openapitools.client.models.ErrorResponse
 import java.io.ByteArrayOutputStream
 import java.security.MessageDigest
+import local.signaldock.ingestion.RequestFailure
+import local.signaldock.persistence.Database
+import local.signaldock.persistence.DatabaseObserver
+import local.signaldock.persistence.DatabaseUnavailable
 
 /** Callback is a test seam for response loss after a real commit; production uses the default. */
 internal fun Application.ingestionModule(
@@ -46,12 +50,12 @@ internal fun Application.ingestionModule(
                     val authorized = provided?.singleOrNull()?.let {
                         MessageDigest.isEqual(it.toByteArray(Charsets.UTF_8), "Bearer $collectionKey".toByteArray(Charsets.UTF_8))
                     } ?: false
-                    if (!authorized) throw RequestFailure("COLLECTION_KEY_INVALID", 401)
+                    if (!authorized) throw RequestFailure("COLLECTION_KEY_INVALID")
                     if (!call.request.contentType().match(ContentType.Application.Json)) {
-                        throw RequestFailure("CONTENT_TYPE_UNSUPPORTED", 415)
+                        throw RequestFailure("CONTENT_TYPE_UNSUPPORTED")
                     }
                     if (call.request.headers[HttpHeaders.ContentEncoding]?.lowercase()?.let { it != "identity" } == true) {
-                        throw RequestFailure("CONTENT_ENCODING_UNSUPPORTED", 415)
+                        throw RequestFailure("CONTENT_ENCODING_UNSUPPORTED")
                     }
                     val channel = call.receiveChannel()
                     val body = ByteArrayOutputStream()
@@ -60,7 +64,7 @@ internal fun Application.ingestionModule(
                         val count = channel.readAvailable(buffer, 0, minOf(buffer.size, 262145 - body.size()))
                         if (count < 0) break
                         body.write(buffer, 0, count)
-                        if (body.size() > 262144) throw RequestFailure("PAYLOAD_TOO_LARGE", 413)
+                        if (body.size() > 262144) throw RequestFailure("PAYLOAD_TOO_LARGE")
                     }
                     val ack = ingestion.ingest(parseBatch(body.toByteArray(), requestContractVersion), budget)
                     afterCommit(ack)
@@ -68,7 +72,7 @@ internal fun Application.ingestionModule(
                 }
             } catch (error: RequestFailure) {
                 call.respondText(Json.encodeToString(ErrorResponse(error.code, error.code)), ContentType.Application.Json,
-                    HttpStatusCode.fromValue(error.httpStatus))
+                    HttpStatusCode.fromValue(httpStatusOf(error.code)))
             } catch (_: DatabaseUnavailable) {
                 call.response.headers.append(HttpHeaders.RetryAfter, "1")
                 call.respondText(Json.encodeToString(ErrorResponse("TEMPORARILY_UNAVAILABLE", "Retry with the same event IDs")),

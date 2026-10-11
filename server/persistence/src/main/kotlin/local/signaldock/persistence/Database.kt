@@ -1,4 +1,4 @@
-package local.signaldock.server
+package local.signaldock.persistence
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource

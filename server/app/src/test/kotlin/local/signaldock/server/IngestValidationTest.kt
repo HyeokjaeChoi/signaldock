@@ -1,6 +1,8 @@
 package local.signaldock.server
 
 import kotlinx.serialization.json.Json
+import local.signaldock.ingestion.RequestFailure
+import local.signaldock.ingestion.sameContent
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -26,7 +28,7 @@ class IngestValidationTest {
             parse(batch(event()).dropLast(1).plus(",\"unknown\":true}"))
         }
         assertEquals("UNKNOWN_FIELD", error.code)
-        assertEquals(400, error.httpStatus)
+        assertEquals(400, httpStatusOf(error.code))
     }
 
     @Test
@@ -52,7 +54,7 @@ class IngestValidationTest {
         val error = assertFailsWith<RequestFailure> {
             parse(batch(event(properties = Json.encodeToString(mapOf("value" to large)))))
         }
-        assertEquals(413, error.httpStatus)
+        assertEquals(413, httpStatusOf(error.code))
     }
 
     @Test

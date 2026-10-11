@@ -1,54 +1,33 @@
 package local.signaldock.server
 
-import java.math.BigDecimal
 import java.nio.ByteBuffer
 import java.nio.charset.CharacterCodingException
 import java.nio.charset.CodingErrorAction
 import java.nio.charset.StandardCharsets
-import java.time.Instant
-import java.time.OffsetDateTime
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
-import java.util.UUID
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.decodeFromJsonElement
+import local.signaldock.ingestion.EventCandidate
+import local.signaldock.ingestion.EventFields
+import local.signaldock.ingestion.PropertyValue
+import local.signaldock.ingestion.RequestFailure
+import local.signaldock.ingestion.ValidatedBatch
+import local.signaldock.ingestion.checkBatchBytes
+import local.signaldock.ingestion.checkEventBytes
+import local.signaldock.ingestion.checkEventCount
+import local.signaldock.ingestion.checkItemContractVersion
+import local.signaldock.ingestion.parseInstallationId
+import local.signaldock.ingestion.resolveEventIdConflicts
+import local.signaldock.ingestion.validateEvent
 import org.openapitools.client.models.EventIngest
 
-/** A request-level failure. The route maps this to one ErrorResponse and stores nothing. */
-class RequestFailure(val code: String, val httpStatus: Int = 400) : RuntimeException(code)
-
-data class ValidatedBatch(val items: List<ValidatedItem>)
-
-data class ValidatedItem(
-    val index: Int,
-    val eventId: String?,
-    val event: StoredEvent?,
-    val rejectionCode: String?,
-)
-
-data class StoredEvent(
-    val eventId: UUID,
-    val installationId: UUID,
-    val name: String,
-    val occurredAt: Instant,
-    val sdkVersion: String,
-    val properties: JsonObject,
-)
-
-private const val MAX_BATCH_BYTES = 256 * 1024
-private const val MAX_EVENT_BYTES = 16 * 1024
-private const val MAX_EVENTS = 50
 private const val MAX_JSON_NESTING_DEPTH = 8
-private const val MAX_NUMERIC_INTEGER_DIGITS = 131_072
-private const val MAX_NUMERIC_FRACTIONAL_DIGITS = 16_383
-private val MAX_SAFE_INTEGER = BigDecimal("9007199254740991")
-private val SUPPORTED_CONTRACT_VERSIONS = setOf("1")
 
 private val json = Json {
     ignoreUnknownKeys = false
@@ -56,15 +35,20 @@ private val json = Json {
     explicitNulls = true
 }
 
+/** HTTP status for a request-level failure code. Rules in `:ingestion` know codes, not statuses. */
+internal fun httpStatusOf(code: String): Int = when (code) {
+    "BATCH_TOO_LARGE", "PAYLOAD_TOO_LARGE", "EVENT_TOO_LARGE" -> 413
+    "COLLECTION_KEY_INVALID" -> 401
+    "CONTENT_TYPE_UNSUPPORTED", "CONTENT_ENCODING_UNSUPPORTED" -> 415
+    else -> 400
+}
+
 /**
  * Parses one raw JSON body without normalizing it before size and duplicate-key checks.
- *
- * The contract whitespace set for names and property keys is the fixed Unicode White_Space
- * set: U+0009..U+000D, U+0020, U+0085, U+00A0, U+1680, U+2000..U+200A, U+2028,
- * U+2029, U+202F, U+205F, and U+3000. Values are never trimmed or normalized.
+ * This layer owns raw JSON and DTO mapping. The rules in `:ingestion` decide what is valid.
  */
-fun parseBatch(body: ByteArray, requestContractVersion: String): ValidatedBatch {
-    if (body.size > MAX_BATCH_BYTES) throw RequestFailure("BATCH_TOO_LARGE", 413)
+internal fun parseBatch(body: ByteArray, requestContractVersion: String): ValidatedBatch {
+    checkBatchBytes(body.size)
     val source = decodeUtf8(body)
     val root = try {
         StrictJsonScanner(source).parseDocument()
@@ -76,11 +60,9 @@ fun parseBatch(body: ByteArray, requestContractVersion: String): ValidatedBatch 
     val rootFields = requiredUniqueFields(rootObject, setOf("installationId", "events"))
     val eventsNode = rootFields.getValue("events")
     val eventNodes = eventsNode.arrayValues ?: throw RequestFailure("MALFORMED_REQUEST")
-    if (eventNodes.isEmpty()) throw RequestFailure("MALFORMED_REQUEST")
-    if (eventNodes.size > MAX_EVENTS) throw RequestFailure("BATCH_TOO_LARGE", 413)
+    checkEventCount(eventNodes.size)
 
-    val installationText = rootFields.getValue("installationId").stringValue
-    val installationId = installationText?.let(::uuidV4OrNull)
+    val installationId = parseInstallationId(rootFields.getValue("installationId").stringValue)
 
     // Do this only after the scanner has verified every field name. kotlinx.serialization
     // does not retain duplicate keys, so it must never be the preflight authority.
@@ -96,13 +78,7 @@ fun parseBatch(body: ByteArray, requestContractVersion: String): ValidatedBatch 
         val itemContractVersion = fields.singleOrNull { it.name == "contractVersion" }
             ?.value
             ?.stringValue
-            ?: throw RequestFailure("CONTRACT_VERSION_MISSING")
-        if (itemContractVersion !in SUPPORTED_CONTRACT_VERSIONS) {
-            throw RequestFailure("CONTRACT_VERSION_UNSUPPORTED")
-        }
-        if (itemContractVersion != requestContractVersion) {
-            throw RequestFailure("CONTRACT_VERSION_MISMATCH")
-        }
+        checkItemContractVersion(itemContractVersion, requestContractVersion)
     }
 
     val document = try {
@@ -115,48 +91,14 @@ fun parseBatch(body: ByteArray, requestContractVersion: String): ValidatedBatch 
 
     val items = eventNodes.indices.map { index ->
         val node = eventNodes[index]
-        if (utf8Size(source, node.start, node.end) > MAX_EVENT_BYTES) {
-            throw RequestFailure("EVENT_TOO_LARGE", 413)
-        }
-        validateItem(index, node, documentEvents[index], installationId)
-    }.toMutableList()
-
-    // A malformed member can otherwise leave a valid same-ID sibling eligible for storage.
-    // Treat every parsed UUIDv4 identity as one atomic conflict group at this boundary.
-    items.filter { it.eventId != null }
-        .groupBy { UUID.fromString(it.eventId) }
-        .values
-        .filter { group -> group.size > 1 && group.any { it.rejectionCode != null } }
-        .flatten()
-        .forEach { item ->
-            val position = items.indexOfFirst { it.index == item.index }
-            items[position] = item.copy(event = null, rejectionCode = "EVENT_ID_CONFLICT")
-        }
-
-    return ValidatedBatch(items)
+        checkEventBytes(utf8Size(source, node.start, node.end))
+        validateEvent(index, candidateOf(node, documentEvents[index]), installationId)
+    }
+    return resolveEventIdConflicts(items)
 }
 
-/** Content comparison for duplicate handling. It intentionally ignores JSON object key order. */
-fun sameContent(a: StoredEvent, b: StoredEvent): Boolean =
-    a.eventId == b.eventId &&
-        a.installationId == b.installationId &&
-        a.name == b.name &&
-        a.occurredAt == b.occurredAt &&
-        a.sdkVersion == b.sdkVersion &&
-        sameProperties(a.properties, b.properties)
-
-private fun validateItem(
-    index: Int,
-    node: JsonNode,
-    element: JsonElement,
-    installationId: UUID?,
-): ValidatedItem {
-    val objectNode = node.asObjectOrNull()
-        ?: return ValidatedItem(index, null, null, "INVALID_EVENT")
-    val rawEventId = objectNode.fields.singleOrNull { it.name == "eventId" }?.value?.stringValue
-    val eventId = rawEventId?.let(::uuidV4OrNull)
-    if (eventId == null) return ValidatedItem(index, null, null, "INVALID_EVENT_ID")
-
+private fun candidateOf(node: JsonNode, element: JsonElement): EventCandidate? {
+    val objectNode = node.asObjectOrNull() ?: return null
     val duplicateProperties = objectNode.fields.singleOrNull { it.name == "properties" }
         ?.value
         ?.asObjectOrNull()
@@ -164,32 +106,33 @@ private fun validateItem(
         ?.groupingBy { it.name }
         ?.eachCount()
         ?.any { it.value != 1 } == true
-    if (duplicateProperties) return invalid(index, rawEventId, "DUPLICATE_PROPERTY_KEY")
-    if (installationId == null) return invalid(index, rawEventId, "INVALID_INSTALLATION_ID")
-
-    val dto = try {
-        json.decodeFromJsonElement<EventIngest>(element)
-    } catch (_: SerializationException) {
-        return invalid(index, rawEventId, "INVALID_EVENT")
-    }
-    if (!validText(dto.name, keyOrName = true) || !validText(dto.sdkVersion, keyOrName = false)) {
-        return invalid(index, rawEventId, "INVALID_TEXT")
-    }
-    val occurredAt = parseMillisInstant(dto.occurredAt) ?: return invalid(index, rawEventId, "INVALID_OCCURRED_AT")
-    val properties = (element as JsonObject)["properties"] as? JsonObject
-        ?: return invalid(index, rawEventId, "INVALID_PROPERTIES")
-    if (!validProperties(properties)) return invalid(index, rawEventId, "INVALID_PROPERTIES")
-
-    return ValidatedItem(
-        index = index,
-        eventId = rawEventId,
-        event = StoredEvent(eventId, installationId, dto.name, occurredAt, dto.sdkVersion, properties),
-        rejectionCode = null,
+    return EventCandidate(
+        rawEventId = objectNode.fields.singleOrNull { it.name == "eventId" }?.value?.stringValue,
+        hasDuplicatePropertyKeys = duplicateProperties,
+        fields = fieldsOf(element),
     )
 }
 
-private fun invalid(index: Int, eventId: String, code: String) =
-    ValidatedItem(index, eventId, null, code)
+private fun fieldsOf(element: JsonElement): EventFields? {
+    val dto = try {
+        json.decodeFromJsonElement<EventIngest>(element)
+    } catch (_: SerializationException) {
+        return null
+    }
+    val properties = (element as JsonObject)["properties"] as? JsonObject
+    return EventFields(dto.name, dto.occurredAt, dto.sdkVersion, properties?.let(::propertyValuesOf))
+}
+
+private fun propertyValuesOf(properties: JsonObject): Map<String, PropertyValue> = properties.mapValues { (_, value) ->
+    val primitive = value as? JsonPrimitive
+    val flag = primitive?.booleanOrNull
+    when {
+        primitive == null || primitive is JsonNull -> PropertyValue.Unsupported
+        primitive.isString -> PropertyValue.Text(primitive.content)
+        flag != null -> PropertyValue.Flag(flag)
+        else -> PropertyValue.Number(primitive.content)
+    }
+}
 
 private fun requiredUniqueFields(objectNode: JsonObjectNode, allowed: Set<String>): Map<String, JsonNode> {
     if (objectNode.fields.any { it.name !in allowed }) throw RequestFailure("UNKNOWN_FIELD")
@@ -198,84 +141,6 @@ private fun requiredUniqueFields(objectNode: JsonObjectNode, allowed: Set<String
         throw RequestFailure("MALFORMED_REQUEST")
     }
     return grouped.mapValues { it.value.single().value }
-}
-
-private fun validProperties(properties: JsonObject): Boolean = properties.all { (key, value) ->
-    validText(key, keyOrName = true) && when (value) {
-        is JsonPrimitive -> when {
-            value.isString -> validText(value.content, keyOrName = false)
-            value.booleanOrNull != null -> true
-            else -> validNumber(value.content)
-        }
-        else -> false
-    }
-}
-
-private fun validNumber(raw: String): Boolean = try {
-    val number = BigDecimal(raw)
-    val normalized = number.stripTrailingZeros()
-    if (normalized.scale() <= 0) number.abs() <= MAX_SAFE_INTEGER
-    else {
-        val double = number.toDouble()
-        val integerDigits = normalized.precision() - normalized.scale()
-        double.isFinite() &&
-            BigDecimal.valueOf(double).compareTo(number) == 0 &&
-            normalized.scale() <= MAX_NUMERIC_FRACTIONAL_DIGITS &&
-            integerDigits <= MAX_NUMERIC_INTEGER_DIGITS
-    }
-} catch (_: NumberFormatException) {
-    false
-}
-
-private fun parseMillisInstant(value: String): Instant? = try {
-    if (!RFC3339_OFFSET.matches(value)) return null
-    val instant = OffsetDateTime.parse(value, DateTimeFormatter.ISO_OFFSET_DATE_TIME).toInstant()
-    if (instant.nano % 1_000_000 != 0 || instant.atOffset(ZoneOffset.UTC).year !in 1..9999) null else instant
-} catch (_: Exception) {
-    null
-}
-
-private fun uuidV4OrNull(value: String): UUID? = try {
-    UUID.fromString(value).takeIf { it.version() == 4 }
-} catch (_: IllegalArgumentException) {
-    null
-}
-
-private fun validText(value: String, keyOrName: Boolean): Boolean =
-    validUnicode(value) &&
-        (!keyOrName || (value.isNotEmpty() && !isContractWhitespace(value.first()) && !isContractWhitespace(value.last())))
-
-private fun validUnicode(value: String): Boolean {
-    var index = 0
-    while (index < value.length) {
-        val current = value[index]
-        if (current == '\u0000' || current.isLowSurrogate()) return false
-        if (current.isHighSurrogate()) {
-            if (index + 1 >= value.length || !value[index + 1].isLowSurrogate()) return false
-            index += 2
-        } else index++
-    }
-    return true
-}
-
-private fun isContractWhitespace(c: Char): Boolean =
-    c in '\u0009'..'\u000d' || c == '\u0020' || c == '\u0085' || c == '\u00a0' || c == '\u1680' ||
-        c in '\u2000'..'\u200a' || c == '\u2028' || c == '\u2029' || c == '\u202f' || c == '\u205f' || c == '\u3000'
-
-private fun sameProperties(a: JsonObject, b: JsonObject): Boolean =
-    a.size == b.size && a.all { (key, left) -> b[key]?.let { sameScalar(left, it) } == true }
-
-private fun sameScalar(left: JsonElement, right: JsonElement): Boolean {
-    if (left !is JsonPrimitive || right !is JsonPrimitive) return false
-    if (left.isString || right.isString) return left.isString && right.isString && left.content == right.content
-    val leftBoolean = left.booleanOrNull
-    val rightBoolean = right.booleanOrNull
-    if (leftBoolean != null || rightBoolean != null) return leftBoolean != null && leftBoolean == rightBoolean
-    return try {
-        BigDecimal(left.content).compareTo(BigDecimal(right.content)) == 0
-    } catch (_: NumberFormatException) {
-        false
-    }
 }
 
 private fun decodeUtf8(body: ByteArray): String = try {
@@ -292,7 +157,6 @@ private fun utf8Size(source: String, start: Int, end: Int): Int =
     source.substring(start, end).toByteArray(StandardCharsets.UTF_8).size
 
 private val EVENT_FIELDS = setOf("eventId", "name", "occurredAt", "properties", "sdkVersion", "contractVersion")
-private val RFC3339_OFFSET = Regex(".*(?:Z|[+-]\\d{2}:\\d{2})$")
 
 private sealed interface JsonNode { val start: Int; val end: Int }
 private data class JsonObjectNode(override val start: Int, override val end: Int, val fields: List<JsonField>) : JsonNode

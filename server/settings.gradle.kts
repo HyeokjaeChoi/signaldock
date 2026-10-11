@@ -1,6 +1,6 @@
-// Independent build: Ktor ingestion server (issue #1 skeleton).
+// Independent build: Ktor ingestion server.
 // Per Q89 the server and SDK are separate Gradle builds with their own
-// settings and wrappers. Real modules land in issue #2.
+// settings and wrappers.
 pluginManagement {
     repositories {
         mavenCentral()
@@ -19,3 +19,5 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "signaldock-server"
+// Layered modules: ADR-0005, section "Server: layered Gradle modules".
+include(":app", ":ingestion", ":persistence")
