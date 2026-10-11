@@ -28,3 +28,5 @@ Commands and results (JDK `.tools/jdk-21.0.12.1+1`, `ANDROID_HOME=~/Library/Andr
 - `scripts/verify-contract.sh`: ALL CONTRACT CHECKS PASSED.
 
 Evidence class: implementation and JVM execution evidence only (Robolectric SDK 36, MockWebServer on localhost, `work-testing`, fake clock and transport). Not run: emulator or device, real process restart, real WorkManager execution and constraints, R8 consumer app with Retrofit, status follow-ups inside one OkHttp Call, a second process. No performance measurement.
+
+2026-10-11 (PR #27 review fix): `WorkManagerScheduler.requestAt` now restores the pending marker when the enqueue fails, so a request made while WorkManager was not initialized no longer blocks later requests. The periodic job has no marker. New test `a failed enqueue does not leave a pending marker that blocks later requests`. Command: `sdk/gradlew -p sdk :sdk-android:cleanTestDebugUnitTest :sdk-android:testDebugUnitTest --no-daemon`: 90 tests, 0 failures.

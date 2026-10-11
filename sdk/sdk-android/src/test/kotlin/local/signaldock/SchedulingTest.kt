@@ -166,6 +166,24 @@ class SchedulingTest {
     }
 
     @Test
+    fun `a failed enqueue does not leave a pending marker that blocks later requests`() {
+        WorkManagerTestInitHelper.initializeTestWorkManager(context)
+        val wm = WorkManager.getInstance(context)
+        var ready = false
+        val s = WorkManagerScheduler(context, clock, FakeLogger()) {
+            if (!ready) throw IllegalStateException("WorkManager is not initialized")
+            wm
+        }
+        s.requestAt(T0 + 10_000) // WorkManager not initialized: swallowed
+        assertEquals(0, wm.getWorkInfosForUniqueWork(ONE_TIME_WORK_NAME).get().size)
+        ready = true
+        s.requestAt(T0 + 10_000) // same time: must enqueue now
+        assertEquals(1, wm.getWorkInfosForUniqueWork(ONE_TIME_WORK_NAME).get().size)
+        s.requestAt(T0 + 20_000) // now covered by the pending request
+        assertEquals(1, wm.getWorkInfosForUniqueWork(ONE_TIME_WORK_NAME).get().size)
+    }
+
+    @Test
     fun `leaving the foreground schedules the Worker`() = runBlocking {
         val sdk = newSdk(clock = clock, scheduler = scheduler)
         val observer = ForegroundExitObserver(clock, sdk.delivery)

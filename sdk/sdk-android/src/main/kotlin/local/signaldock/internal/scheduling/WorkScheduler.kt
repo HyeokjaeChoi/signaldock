@@ -47,6 +47,8 @@ internal class WorkManagerScheduler(
     context: Context,
     private val clock: Clock,
     private val logger: Logger,
+    /** Seam for tests; throws IllegalStateException while WorkManager is not initialized. */
+    private val workManager: () -> WorkManager = { WorkManager.getInstance(context.applicationContext) },
 ) : WorkScheduler {
     private val appContext = context.applicationContext
     private val constraints = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
@@ -57,21 +59,28 @@ internal class WorkManagerScheduler(
     override fun ensurePeriodic() = guarded {
         val request = PeriodicWorkRequestBuilder<DeliveryWorker>(PERIODIC_INTERVAL_MINUTES, TimeUnit.MINUTES)
             .setConstraints(constraints).build()
-        WorkManager.getInstance(appContext).enqueueUniquePeriodicWork(PERIODIC_WORK_NAME, ExistingPeriodicWorkPolicy.KEEP, request)
+        workManager().enqueueUniquePeriodicWork(PERIODIC_WORK_NAME, ExistingPeriodicWorkPolicy.KEEP, request)
     }
 
     override fun requestAt(atMillis: Long) = guarded {
         // An enqueued run at or before this time will look at the queue anyway.
+        var previous = NONE
         while (true) {
             val pending = pendingAt.get()
             if (pending != NONE && pending <= atMillis) return@guarded
-            if (pendingAt.compareAndSet(pending, atMillis)) break
+            if (pendingAt.compareAndSet(pending, atMillis)) { previous = pending; break }
         }
         val request = OneTimeWorkRequestBuilder<DeliveryWorker>()
             .setConstraints(constraints)
             .setInitialDelay((atMillis - clock.nowMillis()).coerceAtLeast(0), TimeUnit.MILLISECONDS)
             .build()
-        WorkManager.getInstance(appContext).enqueueUniqueWork(ONE_TIME_WORK_NAME, ExistingWorkPolicy.APPEND_OR_REPLACE, request)
+        try {
+            workManager().enqueueUniqueWork(ONE_TIME_WORK_NAME, ExistingWorkPolicy.APPEND_OR_REPLACE, request)
+        } catch (e: Exception) {
+            // Nothing was enqueued: the marker must not suppress later requests.
+            pendingAt.compareAndSet(atMillis, previous)
+            throw e
+        }
     }
 
     override fun workerStarted() = pendingAt.set(NONE)
