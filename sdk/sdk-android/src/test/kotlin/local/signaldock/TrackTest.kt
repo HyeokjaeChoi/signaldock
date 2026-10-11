@@ -109,6 +109,8 @@ class TrackTest {
         assertEquals(InvalidReason.NON_FINITE_NUMBER, sdk.invalid("e") { property("k", Double.NEGATIVE_INFINITY) })
         assertEquals(InvalidReason.NUMBER_OUT_OF_RANGE, sdk.invalid("e") { property("k", max + 1) })
         assertEquals(InvalidReason.NUMBER_OUT_OF_RANGE, sdk.invalid("e") { property("k", -max - 1) })
+        assertEquals(InvalidReason.NUMBER_OUT_OF_RANGE, sdk.invalid("e") { property("k", Long.MIN_VALUE) })
+        assertEquals(InvalidReason.NUMBER_OUT_OF_RANGE, sdk.invalid("e") { property("k", Long.MAX_VALUE) })
         assertEquals(InvalidReason.NUMBER_OUT_OF_RANGE, sdk.invalid("e") { property("k", (max + 1).toDouble()) })
         assertEquals(InvalidReason.NUMBER_OUT_OF_RANGE, sdk.invalid("e") { property("k", 1e20) })
         assertTrue(sdk.track("e") { property("a", max); property("b", -max); property("c", max.toDouble() - 1.0); property("d", 1e-7) } is TrackResult.Success)

@@ -32,3 +32,11 @@ Commands run (from the worktree root, JDK = `.tools/jdk-17.0.20.1+1`, Android SD
 - `scripts/verify-contract.sh`: ALL CONTRACT CHECKS PASSED (includes `sdk` Gradle build evaluation).
 
 Not run: emulator/device tests; a real process restart (the 1,000-event test re-opens the same Room files in one JVM); backup exclusion on a real device (tests assert file locations under `noBackupFilesDir` only); R8; any HTTP delivery.
+
+2026-10-11: CodeRabbit review round fixes (second commit on `impl/03-sdk-storage`).
+- Long.MIN_VALUE: `property(key, Long)` now uses a range check instead of `abs()`; TrackTest covers `Long.MIN_VALUE` and `Long.MAX_VALUE`.
+- Initialization: `runAttempt` maps every non-cancellation `Exception` to `InitError.StorageFailure`; `CancellationException` is rethrown. New test: a `SecurityException` during storage creation returns a failure result and a later call succeeds.
+- R8 claim: true for the AGP 8.13.2 bundled R8 (Kotlin 2.4 needs R8 9.1.29 per developer.android.com/build/kotlin-support; effect is metadata-parse warnings, not build failure), but it does not apply to this unminified AAR. No build change; reason, sources and the requirement for the consumer R8 test are in ADR-0003 item 9.
+- `JAVA_HOME=.tools/jdk-17.0.20.1+1 sdk/gradlew -p sdk :sdk-android:testDebugUnitTest :sdk-android:assembleRelease --no-daemon`: BUILD SUCCESSFUL; 31 tests, 0 failures (LifecycleTest 11, StorageTest 7, TrackTest 13). `assembleRelease` ran without minification.
+- `scripts/verify-contract.sh`: ALL CONTRACT CHECKS PASSED.
+- Not run: R8-shrunk consumer build (distribution issue).

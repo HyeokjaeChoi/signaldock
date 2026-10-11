@@ -28,7 +28,8 @@ public class EventBuilder internal constructor() {
     }
 
     public fun property(key: String, value: Long) {
-        if (abs(value) > MAX_SAFE_INTEGER) return fail(InvalidReason.NUMBER_OUT_OF_RANGE, key)
+        // Range check, not abs(): abs(Long.MIN_VALUE) overflows.
+        if (value !in -MAX_SAFE_INTEGER..MAX_SAFE_INTEGER) return fail(InvalidReason.NUMBER_OUT_OF_RANGE, key)
         put(key, EventIngestPropertiesValue.BigDecimalValue(BigDecimal.valueOf(value)))
     }
 

@@ -1,7 +1,7 @@
 package local.signaldock.internal
 
 import android.content.Context
-import android.database.sqlite.SQLiteException
+import kotlinx.coroutines.CancellationException
 import androidx.room.Room
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -56,11 +56,11 @@ internal class InitCoordinator(
         try {
             success = build(context, config)
             return InitResult.Success(success)
-        } catch (e: IOException) {
-            return storageFailure(e)
-        } catch (e: SQLiteException) {
-            return storageFailure(e)
-        } catch (e: IllegalStateException) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // Any other exception (IO, SQLite, Room, SecurityException, ...) is an expected-style
+            // storage failure. Errors (OutOfMemoryError etc.) are not Exceptions and still propagate.
             return storageFailure(e)
         } finally {
             synchronized(lock) {

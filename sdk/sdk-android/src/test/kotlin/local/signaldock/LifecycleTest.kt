@@ -122,6 +122,16 @@ class LifecycleTest {
     }
 
     @Test
+    fun `unexpected exception during storage creation returns a failure result and allows retry`() = runBlocking {
+        val calls = AtomicInteger()
+        val co = InitCoordinator(scope) { c, cfg ->
+            if (calls.incrementAndGet() == 1) throw SecurityException("denied") else createSdk(c, cfg)
+        }
+        assertEquals(InitResult.Failure(InitError.StorageFailure("SecurityException")), co.initialize(context, testConfig))
+        assertTrue(co.initialize(context, testConfig) is InitResult.Success)
+    }
+
+    @Test
     fun `invalid configuration fails without creating state`() = runBlocking {
         val c = Counting()
         val co = coordinator(c)
