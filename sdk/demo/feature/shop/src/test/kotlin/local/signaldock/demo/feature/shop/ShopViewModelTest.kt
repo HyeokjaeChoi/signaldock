@@ -2,6 +2,7 @@ package local.signaldock.demo.feature.shop
 
 import androidx.lifecycle.SavedStateHandle
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -22,6 +23,13 @@ import org.junit.Test
 private class FakeClient(var result: TrackResult = TrackResult.Success("event-1")) : SignalDockClient {
     val tracked = mutableListOf<DemoEvent>()
     override suspend fun track(event: DemoEvent): TrackResult { tracked += event; return result }
+    override suspend fun diagnostics(): Diagnostics = error("not used by the shop")
+}
+
+private class GatedClient : SignalDockClient {
+    val gates = mutableListOf<CompletableDeferred<TrackResult>>()
+    override suspend fun track(event: DemoEvent): TrackResult =
+        CompletableDeferred<TrackResult>().also { gates += it }.await()
     override suspend fun diagnostics(): Diagnostics = error("not used by the shop")
 }
 
@@ -128,5 +136,15 @@ class ShopViewModelTest {
         vm.onIntent(ShopIntent.AddToCart)
         assertEquals(TrackOutcome("add_to_cart", TrackResult.Success("event-2")), vm.state.value.lastTrack)
         assertEquals(2, client.tracked.size)
+    }
+
+    @Test fun an_older_result_that_finishes_late_does_not_overwrite_lastTrack() {
+        val client = GatedClient()
+        val vm = ShopViewModel(client, SavedStateHandle(), newOrderId = { "order-1" })
+        vm.onIntent(ShopIntent.OpenProduct("P-001"))
+        vm.onIntent(ShopIntent.AddToCart)
+        client.gates[1].complete(TrackResult.Success("event-2")) // second action finishes first
+        client.gates[0].complete(TrackResult.QueueFull)
+        assertEquals(TrackOutcome("add_to_cart", TrackResult.Success("event-2")), vm.state.value.lastTrack)
     }
 }

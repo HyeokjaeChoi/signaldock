@@ -95,10 +95,14 @@ class ShopViewModel(
         }
     }
 
+    private var trackSeq = 0
+
     private fun track(event: DemoEvent) {
+        val seq = ++trackSeq
         viewModelScope.launch {
             val result = client.track(event)
-            _state.update { it.copy(lastTrack = TrackOutcome(event.name, result)) }
+            // Only the newest attempt may set lastTrack; an older result that finishes late is dropped.
+            if (seq == trackSeq) _state.update { it.copy(lastTrack = TrackOutcome(event.name, result)) }
         }
     }
 
