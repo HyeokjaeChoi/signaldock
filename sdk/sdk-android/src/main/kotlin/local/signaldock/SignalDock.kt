@@ -1,7 +1,7 @@
 package local.signaldock
 
 import android.content.Context
-import local.signaldock.internal.EventCollector
+import local.signaldock.internal.collection.EventCollector
 import local.signaldock.internal.init.InitCoordinator
 import local.signaldock.internal.storage.QueueDao
 import local.signaldock.internal.transport.SDK_VERSION

@@ -12,13 +12,16 @@ The SDK stays one Gradle publication module (`sdk/sdk-android`) that ships one A
 
 | Package | Owns |
 |---|---|
-| `init` | initialization coordinator, composition point (manual DI, Q87) |
+| `init` | initialization coordinator, composition point (manual DI, Q87), composition seams (logger, clock, id generator) |
+| `collection` | the `track` path: validate, build the transport event, size it, store it |
 | `validation` | event name, key, value, and size validation |
 | `storage` | Room database, DAOs, entities, installation id |
 | `delivery` | batching, HTTP transport, ACK application (issue 04) |
 | `scheduling` | WorkManager and foreground triggers, backoff (issue 04) |
 | `diagnostics` | diagnostics snapshot mapping |
 | `transport` | generated DTO adapters and canonical size calculation |
+
+The Room database class `SignalDockDatabase` stays in `local.signaldock.internal`, because Room names the exported schema directory after the class's fully qualified name, and moving it would rename `sdk/sdk-android/schemas/...`.
 
 Public API types stay in `local.signaldock`. Implementation types stay `internal`.
 

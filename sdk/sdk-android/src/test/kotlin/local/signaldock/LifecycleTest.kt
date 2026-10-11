@@ -15,7 +15,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import local.signaldock.internal.storage.AddOutcome
 import local.signaldock.internal.init.Clock
-import local.signaldock.internal.EventCollector
+import local.signaldock.internal.collection.EventCollector
 import local.signaldock.internal.storage.EventEntity
 import local.signaldock.internal.storage.EventSink
 import local.signaldock.internal.init.InitCoordinator

@@ -1,4 +1,4 @@
-package local.signaldock.internal
+package local.signaldock.internal.collection
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext

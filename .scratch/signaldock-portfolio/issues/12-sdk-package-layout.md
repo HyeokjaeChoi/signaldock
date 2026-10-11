@@ -28,7 +28,7 @@ Done when SDK tests and `scripts/verify-contract.sh` pass, with commands and res
 | `Storage.kt`: entities, `QueueDao`, `QueueLimits`, `QueueUsage`, `AddOutcome`, `DiagnosticsSnapshot` | `storage/Storage.kt` |
 | `Storage.kt`: `SignalDockDatabase` | stays in `local.signaldock.internal` (`SignalDockDatabase.kt`) |
 | `EventCollector.kt`: `EventSink`, `RoomEventSink` | `storage/EventSink.kt` |
-| `EventCollector.kt`: `EventCollector` | stays in `local.signaldock.internal` |
+| `EventCollector.kt`: `EventCollector` | stays in `local.signaldock.internal` (moved to `collection` in the follow-up below) |
 
 Decisions:
 - Room writes the schema to `schemas/<fully qualified database class name>/`. Moving `SignalDockDatabase` would rename that directory, so the class stays in place. `schemas/` is unchanged.
@@ -39,4 +39,9 @@ Decisions:
 Verification (JAVA_HOME=.tools/jdk-21.0.12.1+1, ANDROID_HOME=~/Library/Android/sdk):
 - `sdk/gradlew -p sdk :sdk-android:testDebugUnitTest :sdk-android:assembleRelease --no-daemon`: BUILD SUCCESSFUL; 35 tests, 0 failures, 0 skipped.
 - `scripts/verify-contract.sh`: ALL CONTRACT CHECKS PASSED.
+- `git diff --stat main -- sdk/sdk-android/schemas`: empty.
+
+2026-10-11: Follow-up. `EventCollector` moved to `local.signaldock.internal.collection`. ADR-0005 SDK section: added the `collection` row, added composition seams to the `init` row, added a sentence on why `SignalDockDatabase` stays in `local.signaldock.internal`. Only `SignalDockDatabase` remains in the root internal package.
+- `sdk/gradlew -p sdk :sdk-android:testDebugUnitTest :sdk-android:assembleRelease --no-daemon`: BUILD SUCCESSFUL; 35 tests, 0 failures
+- `scripts/verify-contract.sh`: ALL CONTRACT CHECKS PASSED
 - `git diff --stat main -- sdk/sdk-android/schemas`: empty.

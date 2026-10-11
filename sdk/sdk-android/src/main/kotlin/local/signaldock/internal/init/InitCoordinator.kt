@@ -13,7 +13,7 @@ import local.signaldock.InitError
 import local.signaldock.InitResult
 import local.signaldock.SignalDock
 import local.signaldock.SignalDockConfig
-import local.signaldock.internal.EventCollector
+import local.signaldock.internal.collection.EventCollector
 import local.signaldock.internal.SignalDockDatabase
 import local.signaldock.internal.storage.InstallationIdStore
 import local.signaldock.internal.storage.QueueLimits
