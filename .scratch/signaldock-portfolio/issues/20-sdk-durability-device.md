@@ -3,7 +3,7 @@
 Status: ready-for-agent
 Type: task
 Blocked by: None
-Execution: In review
+Execution: Done (merged in PR #46, 2026-10-12)
 
 ## Scope and completion criteria
 
@@ -76,3 +76,5 @@ Fixed three minor findings.
 Results on emulator `signaldock-api37` (API 37, serial emulator-5554): `connectedDebugAndroidTest` BUILD SUCCESSFUL (28 tests: 22 ran, 6 skipped as before (DurabilityPhases phase tests that the script drives), 0 failed); `device-durability.sh kill restore` passed (kill: pid alive, acked.log 98753 -> 107374 bytes, acked=2914 stored=2914 integrity ok); full `device-durability.sh` passed all seven cases (kill: acked=2820 stored=2821); `testDebugUnitTest` BUILD SUCCESSFUL (UP-TO-DATE, main sources unchanged). ADR-0011 not changed: nothing in it is now wrong.
 
 CodeRabbit on the fix commit 2c1fe37: the totals line above was corrected (28 total, 22 ran, 6 skipped). A Major finding said the script switches off Backup Manager and selects LocalTransport on any serial, which would change a physical device's backup settings. Fixed with a guard: the script refuses serials that do not start with `emulator-` (the script is emulator-only; the Limits section already states no physical device was used). The Minor finding about the PR description is addressed in the PR text, not in files.
+
+2026-10-12: Merged into main in PR #46.

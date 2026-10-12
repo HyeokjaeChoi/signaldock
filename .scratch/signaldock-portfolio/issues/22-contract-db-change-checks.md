@@ -3,7 +3,7 @@
 Status: ready-for-agent
 Type: task
 Blocked by: None
-Execution: In review
+Execution: Done (merged in PR #47, 2026-10-12)
 
 ## Scope and completion criteria
 
@@ -58,3 +58,5 @@ Limits:
 - The commit-uncertain window (a cancel during `COMMIT`) has no deterministic test; the lost-response test covers the client-visible result.
 - `verify-contract.sh` still runs only `gradlew help` for the server, so the server replay test runs in `server-test`.
 - Not executed: CI. Nothing is pushed, so CI results do not exist yet.
+
+2026-10-12: Merged into main in PR #47.
