@@ -21,6 +21,7 @@ ADRs:
 - ADR-0005 (`docs/adr/0005-module-structure.md`), section "SDK: one publication module, feature packages"
 - ADR-0006 (`docs/adr/0006-sdk-delivery-decisions.md`)
 - ADR-0011 (`docs/adr/0011-sdk-device-test-harness.md`), for `sdk/sdk-android/src/androidTest` and `scripts/device-durability.sh`
+- ADR-0014 (`docs/adr/0014-sdk-device-measurement-harness.md`), for `MeasurePhases.kt` and `scripts/device-measure.sh` (issue 24)
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 1. Goal and scope
@@ -112,7 +113,9 @@ Spec (`.scratch/signaldock-portfolio/spec.md`):
 
 Also read `.scratch/signaldock-portfolio/dashboard-verification-defaults.md`.
 
-## `perf/` (server load measurement harness, issue 23)
+## `perf/` (server load measurement harness, issue 23; SDK device measurement results, issue 24)
+
+For issue 24 (`perf/sdk_summarize.py`, `perf/sdk-results/`, `scripts/device-measure.sh`) read ADR-0014 (`docs/adr/0014-sdk-device-measurement-harness.md`) and spec section 7 (the load sentences under the table).
 
 Architecture (`architecture.md`):
 - DB time budgets and queries
