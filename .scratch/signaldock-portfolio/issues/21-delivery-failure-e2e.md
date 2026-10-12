@@ -68,7 +68,7 @@ Results (host: macOS, emulator `signaldock-api37` as `emulator-5556` with `ANDRO
 - `sdk/gradlew -p sdk :sdk-android:testDebugUnitTest --no-daemon --rerun-tasks`: BUILD SUCCESSFUL.
 - `scripts/verify-contract.sh`: ALL CONTRACT CHECKS PASSED.
 - `scripts/e2e-delivery.sh` (full, with build): exit 0, cases 1 to 4 PASS. Demo part of case 1: `product_viewed` d5ed0014-c7fc-4e36-b78b-dd8ee717a73a and `add_to_cart` 40b17116-9188-4f4c-808a-fca5118fd510 were the only two new server rows; the Dashboard detail returned 200 for both; by-name counts 1 to 2 for each. (The first run of the new code also passed case 1 and failed case 3 for the batch split above, before the retry was added.)
-- `E2E_SKIP_BUILD=1 scripts/e2e-delivery.sh 9`: prints `error: unknown case number(s) ['9']` and exits 2.
+- `scripts/e2e-delivery.sh 9` (rejected in the shell entry before any build; the Python side also rejects): prints `error: unknown case number '9'; known: 1 2 3 4` and exits 2 (no build ran). CodeRabbit's re-review found this late rejection as the only finding; fixed in a second commit.
 - `E2E_SKIP_BUILD=1 E2E_PROXY_PORT=8080 scripts/e2e-delivery.sh 4` (port in use): the proxy's `Address already in use` error is shown and the script prints `fault proxy not ready` and exits 1 (the exit code itself was not captured; the output shows the `exit 1` branch).
 
 Limit: the demo flow drives only product, then Add to cart (the demo screen shows only 8 characters of an event ID, so IDs are matched by prefix).

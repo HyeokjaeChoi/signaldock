@@ -20,6 +20,9 @@ export JAVA_HOME="${JAVA_HOME:-$ROOT/.tools/jdk-21.0.12.1+1}"
 ADB="$ANDROID_HOME/platform-tools/adb"
 cd "$ROOT"
 
+for c in "$@"; do  # same cases as CASES in scripts/e2e/e2e_cases.py; checked here so a typo does not cost a build
+  case "$c" in 1|2|3|4) ;; *) echo "error: unknown case number '$c'; known: 1 2 3 4" >&2; exit 2 ;; esac
+done
 [ -f .env ] || { echo "error: no .env; run: cp .env.example .env && docker compose up -d --build" >&2; exit 1; }
 set -a; . ./.env; set +a
 curl -fsS -o /dev/null "http://127.0.0.1:${SIGNALDOCK_DASHBOARD_PORT:-5173}/" || { echo "error: Dashboard not reachable; run: docker compose up -d --build" >&2; exit 1; }
