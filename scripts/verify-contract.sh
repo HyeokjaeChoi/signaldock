@@ -6,6 +6,7 @@
 # 2. Checks oasdiff finds no unrecorded change against the v1 baseline.
 # 3. Compiles generated Kotlin DTOs and runs the fixture round-trip tests.
 # 4. Installs pinned dashboard deps (npm ci from the committed lockfile),
+#    runs the dashboard tests and the bundle-has-no-query-key check (Q129),
 #    type-checks the dashboard, and runs the executable TS round-trip assertions.
 # 5. Evaluates the independent sdk/ and server/ Gradle builds.
 set -euo pipefail
@@ -49,7 +50,7 @@ echo "=== 3. kotlin compile + tests (contract-check build) ==="
 (cd "$ROOT/contract-check" && ./gradlew test --no-daemon)
 
 echo "=== 4. typescript contract check (dashboard) ==="
-(cd "$ROOT/dashboard" && npm ci && npm run typecheck && npm run contract-check)
+(cd "$ROOT/dashboard" && npm ci && npm run typecheck && npm test && npm run contract-check && npm run check-bundle-key)
 
 echo "=== 5. independent sdk/ and server/ builds ==="
 (cd "$ROOT/sdk" && ./gradlew help --no-daemon -q)
