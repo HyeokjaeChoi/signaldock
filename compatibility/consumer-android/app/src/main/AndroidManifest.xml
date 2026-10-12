@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Local verification app (ADR-0009): the release build must reach the Compose stack at the
+         emulator host 10.0.2.2 over HTTP. The network security config allows cleartext for that one
+         host only; every other host stays HTTPS only. -->
+    <application
+        android:name=".ConsumerApplication"
+        android:allowBackup="false"
+        android:label="SignalDock Consumer"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:theme="@android:style/Theme.Material.Light.NoActionBar"
+        android:usesCleartextTraffic="false">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

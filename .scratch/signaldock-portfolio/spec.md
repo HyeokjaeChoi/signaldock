@@ -1,8 +1,8 @@
 # SignalDock first-release spec
 
-Status: Q127 full design agreement complete (agreements continue through Q131, dated 2026-10-12); implementation approved and ready to begin. Product code implementation has not started. Record build, device, and performance verification results separately.
+Status: Q127 full design agreement complete (agreements continue through Q132, dated 2026-10-12); implementation approved and ready to begin. Product code implementation has not started. Record build, device, and performance verification results separately.
 
-Baseline date: 2026-10-09. Q127 approved entry into implementation. This baseline design is not evidence of completed build, device, or performance verification. This document is not an execution report. Keep personal conversations and résumé review records local only. The latest agreements are the items marked as agreed through Q131 in this document and the ADRs (Q128 to Q131 are dated 2026-10-12). Later agreements refine or replace earlier proposals. Read performance-plan.md for performance measurement and dashboard-verification-defaults.md for Dashboard defaults. Section 9 lists technical conditions to check during implementation. final-review.md summarizes the full review.
+Baseline date: 2026-10-09. Q127 approved entry into implementation. This baseline design is not evidence of completed build, device, or performance verification. This document is not an execution report. Keep personal conversations and résumé review records local only. The latest agreements are the items marked as agreed through Q132 in this document and the ADRs (Q128 to Q132 are dated 2026-10-12). Later agreements refine or replace earlier proposals. Read performance-plan.md for performance measurement and dashboard-verification-defaults.md for Dashboard defaults. Section 9 lists technical conditions to check during implementation. final-review.md summarizes the full review.
 
 ## 1. Goal and scope
 
@@ -375,3 +375,5 @@ Q129 agreed (2026-10-12): the Dashboard gets the query key through a same-origin
 Q130 agreed (2026-10-12): a missing, wrong, or other-role key on a query endpoint returns 401 `QUERY_KEY_INVALID`, never 403, so the server does not reveal that a value is a valid collection key. Ingestion keeps 401 `COLLECTION_KEY_INVALID`, and a query key sent there gets that 401. The check order stays: contract version header (400), key (401), parameters (400).
 
 Q131 agreed (2026-10-12): the environment variable is `SIGNALDOCK_QUERY_KEY`. The server does not start if it is missing or blank, or if it equals `SIGNALDOCK_COLLECTION_KEY`. There is no length or format rule beyond non-blank. Key values are never logged; startup errors name only the variable.
+
+Q132 agreed (2026-10-12): the SDK keeps the Kotlin 2.4.21 compiler but sets `languageVersion` and `apiVersion` to 2.2, and pins `kotlin-stdlib` to 2.2.21 in its POM, so the AAR metadata is 2.2 and Kotlin 2.2 consumers can read it. Consumers need Kotlin 2.2 or newer and AGP 9.x (ADR-0006). Reason: the default built-in Kotlin of AGP 9 is 2.2, so customers need no extra setup. Revisit when the AGP default moves. Recorded in ADR-0009 decision 4.

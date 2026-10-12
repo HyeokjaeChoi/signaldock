@@ -44,8 +44,8 @@ migration cost does not apply. It brings built-in Kotlin (no
 `org.jetbrains.kotlin.android` plugin; the SDK uses `kotlin { compilerOptions {} }`),
 and Robolectric can run at SDK 36 and jOOQ 3.21 (needs Java 21). Kotlin 2.4 needs
 R8 9.1.29 or newer (https://developer.android.com/build/kotlin-support); AGP bundles R8, so a current
-AGP is the way to meet it. The R8 version inside AGP 9.3.3 was not read from a
-build output (see ADR-0003 item 9). `android.builtInKotlin` and `android.newDsl` are
+AGP is the way to meet it. The R8 inside AGP 9.3.3 is 9.3.28, read from the `mapping.txt`
+header of the consumer app's release build (issue 06, ADR-0003 item 9, ADR-0009). `android.builtInKotlin` and `android.newDsl` are
 not turned off. Because of the new DSL, generated Kotlin sources are added with
 `androidComponents.onVariants { variant.sources.kotlin }`; the old `sourceSets` accessor fails with a ClassCastException.
 
@@ -75,6 +75,15 @@ Versions were read from `npm view <pkg> version` and Docker Hub tag listings on 
 
 Docker 29.4.0 and Compose v5.1.2 (OrbStack) ran `docker compose up -d --build`.
 
+## Build-verified in issue #6
+
+| Component | Pinned | Why and how verified |
+|---|---|---|
+| R8 (bundled in AGP 9.3.3) | 9.3.28 | `scripts/verify-consumer.sh`: `compatibility/consumer-android` `assembleRelease` with `isMinifyEnabled = true`; `app/build/outputs/mapping/release/mapping.txt` header `# compiler_version: 9.3.28`. Meets the 9.1.29 minimum for Kotlin 2.4 (the SDK compiler) |
+| Consumer Kotlin | 2.2.10 (AGP 9.3.3 built-in default, no override) | The SDK sets `languageVersion`/`apiVersion` 2.2 and stdlib 2.2.21, so its metadata is 2.2.0 (Q132, ADR-0009 decision 4). `scripts/verify-consumer.sh` checks this |
+| Maven publication | `maven-publish`, `local.signaldock:sdk-android:0.1.0` | `sdk/gradlew -p sdk :sdk-android:signaldockMavenZip` (AAR, sources jar, POM, Gradle module metadata) |
+| Android emulator run | AVD `signaldock-api37`, system image android-37.2, headless | Consumer release APK installed; `track()` then `lastAck accepted=1`; the row was in PostgreSQL |
+
 ## Doc-pinned (build verification deferred to the noted issue)
 
 | Component | Pinned | Verified in |
@@ -91,5 +100,5 @@ Docker 29.4.0 and Compose v5.1.2 (OrbStack) ran `docker compose up -d --build`.
 - Generated models (tracked per Q91): `generated/kotlin/`, `generated/typescript/`
 - Round-trip fixtures: `fixtures/roundtrip/`
 - Verification build: `contract-check/` (compiles generated Kotlin, runs fixture tests)
-- Independent builds: `sdk/`, `server/` (own settings + wrappers, shared catalog). `server/` has the modules `:app`, `:ingestion`, `:persistence`; `cd server && ./gradlew test verifyJooq` runs all of them
+- Independent builds: `sdk/`, `server/`, `compatibility/consumer-android/` (own settings + wrappers, shared catalog; the consumer takes the SDK only from the Maven ZIP). `server/` has the modules `:app`, `:ingestion`, `:persistence`; `cd server && ./gradlew test verifyJooq` runs all of them
 - Root scripts: `scripts/codegen.sh`, `scripts/verify-contract.sh`
