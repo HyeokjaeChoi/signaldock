@@ -84,6 +84,13 @@ Docker 29.4.0 and Compose v5.1.2 (OrbStack) ran `docker compose up -d --build`.
 | Maven publication | `maven-publish`, `local.signaldock:sdk-android:0.1.0` | `sdk/gradlew -p sdk :sdk-android:signaldockMavenZip` (AAR, sources jar, POM, Gradle module metadata) |
 | Android emulator run | AVD `signaldock-api37`, system image android-37.2, headless | Consumer release APK installed; `track()` then `lastAck accepted=1`; the row was in PostgreSQL |
 
+## Build-verified in issue #20
+
+| Component | Pinned | Why and how verified |
+|---|---|---|
+| androidx.test runner / ext:junit | 1.7.0 / 1.3.0 | Latest stable on Google Maven, 2026-10-12 (core stays 1.7.0). `sdk/gradlew -p sdk :sdk-android:assembleDebugAndroidTest` and `connectedDebugAndroidTest` on both AVDs |
+| Instrumented test device images | AVD `signaldock-api24` (API 24, google_apis, arm64) and `signaldock-api37` (API 37.2), headless | Start with `$ANDROID_HOME/emulator/emulator -avd <name> -no-window -no-audio -no-boot-anim`. Commands, results and limits: [ADR-0011](docs/adr/0011-sdk-device-test-harness.md), `scripts/device-durability.sh` |
+
 ## Doc-pinned (build verification deferred to the noted issue)
 
 | Component | Pinned | Verified in |

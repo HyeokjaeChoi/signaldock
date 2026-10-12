@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The SDK library declares no permissions (the host app declares INTERNET, README). The test APK is
+     the host app here: it needs INTERNET and cleartext HTTP to MockWebServer on localhost.
+     allowBackup is explicit so that the backup and restore case (ADR-0011) does not depend on defaults. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <application
+        android:allowBackup="true"
+        android:usesCleartextTraffic="true" />
+</manifest>
