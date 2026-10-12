@@ -41,3 +41,19 @@ Consumer rules: the AAR ships no `proguard.txt`. None were needed: the minified 
 Limits: one event on one emulator (API 37), not a physical device. The release APK uses the debug signing key. Cleartext to `10.0.2.2` is allowed in the release build of the consumer app only (ADR-0009 decision 5). Consumers need Kotlin 2.4 or newer. CI job `consumer-r8` was added but has not run on GitHub. Other completion criteria (offline recovery, ACK loss, and so on) are not covered by this issue.
 
 CodeRabbit (`coderabbit review --base main --deep --agent`, 2026-10-12): 1 finding, minor. The comment in `sdk/sdk-android/build.gradle.kts` about consumer R8 rules contradicted ADR-0009 decision 6. Valid; the comment was reworded. No other findings.
+
+## Comment 2026-10-12 (Q132: Kotlin 2.2 metadata)
+
+What changed: `sdk/sdk-android/build.gradle.kts` keeps the Kotlin 2.4.21 compiler but sets `languageVersion` and `apiVersion` to `KOTLIN_2_2` and `coreLibrariesVersion = "2.2.21"`. No SDK source change was needed. `compatibility/consumer-android/build.gradle.kts` no longer has the `kotlin-gradle-plugin` classpath. `scripts/verify-consumer.sh` now fails if the consumer overrides the Kotlin Gradle plugin or if any class in the AAR has `kotlin.Metadata` `mv` above 2.2. ADR-0009 decision 4, README, TOOLCHAIN.md, and spec Q132 are updated.
+
+Why stdlib is pinned: the first attempt with only languageVersion/apiVersion still failed in the consumer, because the POM pulled `kotlin-stdlib` 2.4.21 (metadata 2.4.0, unreadable by a 2.2 compiler). The pin fixes it; the POM now lists 2.2.21.
+
+Commands and results:
+- `sdk/gradlew -p sdk :sdk-android:testDebugUnitTest :sdk-android:assembleRelease --no-daemon`: BUILD SUCCESSFUL.
+- `scripts/verify-consumer.sh`: BUILD SUCCESSFUL. Check printed `metadata versions: mv=[2,2,0]` (every class under `local/` in the AAR `classes.jar`, read with `javap -v`). Consumer build used Kotlin 2.2.10 (`buildEnvironment` shows `kotlin-gradle-plugin:2.2.10`; the Kotlin daemon ran `kotlin-compiler-embeddable-2.2.10`). No "incompatible version" error.
+- R8: `mapping.txt` header `# compiler_version: 9.3.28`; no Kotlin-metadata warning.
+- `scripts/verify-contract.sh`: ALL CONTRACT CHECKS PASSED.
+- `sdk/gradlew -p sdk :demo:app:assembleDebug :demo:feature:shop:testDebugUnitTest :demo:feature:diagnostics:testDebugUnitTest --no-daemon`: BUILD SUCCESSFUL.
+- Emulator (AVD `signaldock-api37`, headless, Compose stack): new release APK installed, "Track consumer_ping" tapped; diagnostics first showed `queuedEvents=1`, then `queuedEvents=0`, `accepted=1`, `lastAck` 1791780146246 (04:42:26 UTC). `psql` returned one row: `consumer_ping`, sdk_version 0.1.0, properties `{"tap": 1}`, received_at 2026-10-12 04:42:26.8+00. `evidence/06-consumer-diagnostics-acked.png` was replaced with the new screenshot. Emulator killed, `docker compose down` (no volumes removed), `.env` removed.
+
+Limits: consumers on AGP 8.x or a Kotlin older than 2.2 are not verified. The SDK still uses the 2.4.21 compiler (R8 9.1.29 or newer is needed only for that compiler).

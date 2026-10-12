@@ -37,9 +37,15 @@ android {
 
 // Built-in Kotlin (AGP 9): no kotlin-android plugin. Bytecode target 17 stays below
 // the JDK 21 that runs the build, and AGP desugaring covers minSdk 24.
+// languageVersion/apiVersion 2.2 (spec Q132, ADR-0009): the 2.4 compiler writes metadata 2.2, so
+// consumers on AGP 9's default built-in Kotlin (2.2) can read the AAR. Raise when AGP's default moves.
 kotlin {
+    // The POM's kotlin-stdlib dependency must also be readable by Kotlin 2.2 (stdlib 2.4 has metadata 2.4).
+    coreLibrariesVersion = "2.2.21"
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_2)
+        apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_2)
     }
 }
 
