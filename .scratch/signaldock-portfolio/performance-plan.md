@@ -1,6 +1,12 @@
 # SignalDock performance measurement plan
 
-Status: design approved; implementation and execution have not started. On 2026-10-08, the user selected option 1 in Q104 and delegated the remaining performance measurement decisions to the agent. The numbers below are project test hypotheses and acceptance targets. They are not official recommended specifications or achieved results. This delegation does not authorize changes to product contracts outside performance testing.
+Status: reduced by Q133 on 2026-10-12. Only the harness, two pilots, and ONE overload run are delivered (see "Q133 scope" below). The matrix, pool comparison, repetitions, run order, and selection sections are kept as the original design and are NOT run (reason: Q133). On 2026-10-08, the user selected option 1 in Q104 and delegated the remaining performance measurement decisions to the agent. The numbers below are project test hypotheses and acceptance targets. They are not official recommended specifications or achieved results. This delegation does not authorize changes to product contracts outside performance testing.
+
+## Q133 scope (current)
+
+The user decided that a pool-size benchmark of a Docker-limited local server is not meaningful for an SDK portfolio. The pilots showed large headroom (server CPU about 7 %, p95 at most one third of the targets), so a pool 2/4/8 comparison would likely show no difference. These parts are therefore **not run (reason Q133)**: the 24 combinations x 3 pools x 3 repetitions matrix (216 runs), the pool comparison, the repetitions, the run order, and the acceptance item 6 (pool selection). `perf/matrix.py` is kept as working code and is not used for the deliverable. The fixed conditions, data, collection load, and acceptance items 1 to 5 still describe the pilots. The pilots are a local environment record, not an SLA and not a pool choice.
+
+The added deliverable is ONE overload run (`perf/overload.py`, ADR-0013). Setup: seed 100,000 rows recent70, 30-day window, pool 4, concurrency limit 2 and admission wait 100 ms (lowered for this run only through benchmark variables; Q124 and Q125 keep product values separate). Phases on one k6 clock, no server restart: baseline 30 s (collection 5 requests/s of 20 events, plus a 1 request/s list probe); overload 30 s (collection 200 requests/s, plus 150 requests/s of the by-name aggregate over 30 days, which holds slots for long DB work); recovery 60 s (baseline load again). Reason for the values: the server does a batch insert in about 0.1 ms, so collection alone does not fill a slot. A by-name aggregate takes about 50 ms, so 150 requests/s need about 7 slots while 2 exist. The pass criteria were set before the final run: only 200 and 503 answers, every 503 with a positive integer `Retry-After`, at least one collection 503 in the overload phase, every ACKed event stored exactly once, no row stored for a 503 request, no dropped k6 iterations, and in the last 30 s of recovery only 200 answers and collection p95 at most max(2x baseline p95, baseline p95 + 20 ms). SDK behavior under 503 is not part of this run.
 
 ## Fixed conditions
 
@@ -29,7 +35,7 @@ Status: design approved; implementation and execution have not started. On 2026-
 - The measurement target is 1,500 requests/30,000 events, or 1,800 requests/36,000 events including warm-up. Record actual starts, completions, accepted, duplicate, rejected, and timeout counts separately.
 - Baseline performance runs use unique events only. Keep ACK loss, retry, duplicate, conflict, and partial-rejection checks in the existing functional tests. Do not mix fault-injection results into performance statistics.
 
-## Pool comparison and limits
+## Pool comparison and limits (not run, Q133)
 
 - maximumPoolSize candidates: 2, 4, 8. Set each candidate's minimumIdle equal to maximumPoolSize to reduce variation from pool expansion. Check connection readiness during warm-up.
 - Fix the DB concurrency limit at 8 for every candidate. Compare only pool size because changing both pool size and execution limits makes causes harder to separate. Distinguish admission control, such as a Semaphore, from the blocking IO execution area. A coroutine dispatcher alone does not guarantee a concurrency limit across an entire suspend operation.
@@ -38,7 +44,7 @@ Status: design approved; implementation and execution have not started. On 2026-
 - A statement timeout is not a whole-transaction deadline. Client cancellation/timeout is not evidence of DB rollback. Avoid unlimited queue/admission waits and do not produce success ACKs on failure. Compare IDs after the run to determine whether a commit occurred after a timeout.
 - These values form the benchmark profile. This document does not set the product-wide HTTP timeout or overload API contract. The previous spec values of a 5-second connection wait and 10-second statement timeout were not adopted; use this document's values for the benchmark.
 
-## Duration, repetitions, and run order
+## Duration, repetitions, and run order (matrix not run, Q133)
 
 - For each combination and pool candidate, run a 1-minute warm-up and 5-minute measurement independently 3 times. Allow up to 10 additional seconds to drain active requests, plus time to check DB state. Do not start the next run while DB work remains.
 - 24 × 3 pools × 3 repetitions = 216 runs. The base intervals total 1,296 minutes = 21 hours 36 minutes. Data preparation, restoration, draining, pilot runs, and additional repetitions are separate. Distinguish human work time from automated execution time.
@@ -46,7 +52,7 @@ Status: design approved; implementation and execution have not started. On 2026-
 - Run the pilot with the large seed, recent concentration, 30-day query window, and 5 clients. If result trends and generator metrics are unstable, extend warm-up/measurement durations and apply the same new procedure to all candidates. The pilot does not count toward the 3 measurement repetitions.
 - A restart alone does not prove that the OS cache is empty. Do not force-clear the host cache. Record DB buffer metrics before and after warm-up, but do not interpret shared buffer hits as proof of no physical disk I/O.
 
-## Acceptance and selection
+## Acceptance and selection (selection not run, Q133)
 
 The criteria below are project targets set before measurement, not an external SLA. Do not lower them after measurement to hide a failure.
 

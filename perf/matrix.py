@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""The measurement matrix of performance-plan.md: 24 combinations x 3 pools x 3 repetitions = 216 runs.
+"""NOT USED for the deliverable (Q133: the matrix and pool comparison are not run; see ADR-0013). Kept as working code.
+
+The measurement matrix of performance-plan.md: 24 combinations x 3 pools x 3 repetitions = 216 runs.
 
   python3 perf/matrix.py                 # list the runs in order (default; runs nothing)
   python3 perf/matrix.py --execute       # run them serially; finished run directories are skipped (resume)

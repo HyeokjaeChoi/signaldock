@@ -1,0 +1,347 @@
+{
+  "kind": "overload",
+  "run_id": "overload-1",
+  "status": "completed",
+  "git": {
+    "revision": "0c80660547fa56049b5f7749ad0c14f4efcf4b7e",
+    "branch": "impl/23-server-load-measurement",
+    "dirty": false,
+    "dirty_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "decision": "Q133 / ADR-0013",
+  "parameters": {
+    "seed_size": 100000,
+    "dist": "recent70",
+    "window_days": 30,
+    "pool_size": 4,
+    "concurrency": 2,
+    "admission_ms": 100,
+    "base_s": 30,
+    "over_s": 30,
+    "rec_s": 60,
+    "rate": 5,
+    "over_rate": 200,
+    "heavy_rate": 150
+  },
+  "reference_time_T": "2026-10-12T00:00:00+09:00",
+  "window": {
+    "from": "2026-09-11T15:00:00.000Z",
+    "to": "2026-10-11T15:00:00.000Z"
+  },
+  "seed": {
+    "name": "seed_100000_recent70",
+    "size": 100000,
+    "dist": "recent70",
+    "generator_seed": 1007,
+    "reference_time_T": "2026-10-12T00:00:00+09:00",
+    "reference_time_T_utc": "2026-10-11T15:00:00.000Z",
+    "csv_sha256": "b361ab8c7abe4f83f46200344ae6257baae9116ec62d412775b97551c4dbe9a2",
+    "csv_bytes": 102840000,
+    "event_json_bytes_min_avg_max": [
+      1024,
+      1024,
+      1024
+    ],
+    "name_counts": {
+      "product_view": 70000,
+      "cart_add": 20000,
+      "purchase": 10000
+    },
+    "installations": 100,
+    "table_bytes": 102825984,
+    "index_bytes": 10477568,
+    "database_bytes": 121212051,
+    "build_seconds": 13.3
+  },
+  "server_limits": {
+    "concurrency_limit": 2,
+    "admission_ms": 100,
+    "connection_ms": 1000,
+    "statement_ms": 2000,
+    "lock_ms": 500,
+    "request_budget_ms": 5000,
+    "client_timeout_ms": 5000,
+    "minimum_idle": "equal to pool size",
+    "statement_timeout_scope": "transaction (SET LOCAL per query by the server); not applied to migration or codegen",
+    "jvm": "-Xmx512m -Xlog:gc:file=/tmp/gc.log",
+    "pg_stat_statements": "shared_preload_libraries=pg_stat_statements, track=top; reset after warm-up, saved after measurement (statements.json/.csv)",
+    "limits": {
+      "db": "2 CPUs / 2 GiB",
+      "server": "2 CPUs / 1 GiB"
+    }
+  },
+  "times": {
+    "run_start": "2026-10-12T10:59:18.283Z",
+    "server_ready": "2026-10-12T10:59:24.416Z",
+    "k6_start": "2026-10-12T10:59:25.299Z",
+    "k6_end": "2026-10-12T11:01:27.579Z",
+    "test_start_wall": "2026-10-12T10:59:26.450Z",
+    "run_end": "2026-10-12T11:01:30.332Z"
+  },
+  "credentials": "not recorded (random per-machine test keys in perf/work/env)",
+  "load_fixture_sha256": "0c040a33f01bb24d5de16edf5b2fbcd8b6b974d7d30279af486a83fe1318d269",
+  "environment": {
+    "host": {
+      "model": "Apple M2 Pro",
+      "cpus": "12",
+      "memory_bytes": "34359738368",
+      "arch": "arm64",
+      "os": "26.6.2",
+      "storage": "Protocol:                  Apple Fabric; Solid State:               Yes"
+    },
+    "docker": {
+      "version": "29.4.0",
+      "os": "OrbStack",
+      "vm_cpus": 12,
+      "vm_memory_bytes": 16819298304,
+      "storage_driver": "overlayfs",
+      "data_volume": "local named volume signaldock-perf_signaldock-db"
+    },
+    "tools": {
+      "k6": "k6 v2.3.0 (commit/devel, go1.27.1, darwin/arm64)",
+      "python": "3.9.6",
+      "compose": "Docker Compose version v5.1.2",
+      "java": "Picked up JAVA_TOOL_OPTIONS: -Xmx512m -Xlog:gc:file=/tmp/gc.log:time,uptime -Dorg.slf4j.simpleLogger.showDateTime=true -Dorg.slf4j.simpleLogger.dateTimeFormat=HH:mm:ss.SSS\nopenjdk version \"21.0.12.1\" 2026-08-18 LTS\nOpenJDK Runtime Environment Temurin-21.0.12.1+1 (build 21.0.12.1+1-LTS)\nOpenJDK 64-Bit Server VM Temurin-21.0.12.1+1 (build 21.0.12.1+1-LTS, mixed mode, sharing)",
+      "postgres": "PostgreSQL 17.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit"
+    },
+    "images": {
+      "db": "postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94",
+      "db_inspect": {
+        "image_id": "sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94",
+        "nano_cpus": 2000000000,
+        "cpu_quota": 0,
+        "memory_bytes": 2147483648,
+        "memory_swap_bytes": 2147483648
+      },
+      "server_inspect": {
+        "image_id": "sha256:eed7d5ab4d6b68dca7193f4373d6d5de3699ea3abe252ab6a762f66ed1f2d001",
+        "nano_cpus": 2000000000,
+        "cpu_quota": 0,
+        "memory_bytes": 1073741824,
+        "memory_swap_bytes": 1073741824
+      },
+      "server_image_tag": "signaldock-perf-server:local"
+    }
+  },
+  "postgres_settings": [
+    {
+      "name": "DateStyle",
+      "setting": "ISO, MDY",
+      "unit": "",
+      "source": "configuration file"
+    },
+    {
+      "name": "TimeZone",
+      "setting": "UTC",
+      "unit": "",
+      "source": "configuration file"
+    },
+    {
+      "name": "application_name",
+      "setting": "psql",
+      "unit": "",
+      "source": "client"
+    },
+    {
+      "name": "autovacuum",
+      "setting": "on",
+      "unit": "",
+      "source": "default"
+    },
+    {
+      "name": "checkpoint_timeout",
+      "setting": "300",
+      "unit": "s",
+      "source": "default"
+    },
+    {
+      "name": "config_file",
+      "setting": "/var/lib/postgresql/data/postgresql.conf",
+      "unit": "",
+      "source": "override"
+    },
+    {
+      "name": "data_directory",
+      "setting": "/var/lib/postgresql/data",
+      "unit": "",
+      "source": "override"
+    },
+    {
+      "name": "default_statistics_target",
+      "setting": "100",
+      "unit": "",
+      "source": "default"
+    },
+    {
+      "name": "default_text_search_config",
+      "setting": "pg_catalog.english",
+      "unit": "",
+      "source": "configuration file"
+    },
+    {
+      "name": "dynamic_shared_memory_type",
+      "setting": "posix",
+      "unit": "",
+      "source": "configuration file"
+    },
+    {
+      "name": "effective_cache_size",
+      "setting": "524288",
+      "unit": "8kB",
+      "source": "default"
+    },
+    {
+      "name": "fsync",
+      "setting": "on",
+      "unit": "",
+      "source": "default"
+    },
+    {
+      "name": "full_page_writes",
+      "setting": "on",
+      "unit": "",
+      "source": "default"
+    },
+    {
+      "name": "hba_file",
+      "setting": "/var/lib/postgresql/data/pg_hba.conf",
+      "unit": "",
+      "source": "override"
+    },
+    {
+      "name": "ident_file",
+      "setting": "/var/lib/postgresql/data/pg_ident.conf",
+      "unit": "",
+      "source": "override"
+    },
+    {
+      "name": "jit",
+      "setting": "on",
+      "unit": "",
+      "source": "default"
+    },
+    {
+      "name": "lc_messages",
+      "setting": "en_US.utf8",
+      "unit": "",
+      "source": "configuration file"
+    },
+    {
+      "name": "lc_monetary",
+      "setting": "en_US.utf8",
+      "unit": "",
+      "source": "configuration file"
+    },
+    {
+      "name": "lc_numeric",
+      "setting": "en_US.utf8",
+      "unit": "",
+      "source": "configuration file"
+    },
+    {
+      "name": "lc_time",
+      "setting": "en_US.utf8",
+      "unit": "",
+      "source": "configuration file"
+    },
+    {
+      "name": "listen_addresses",
+      "setting": "*",
+      "unit": "",
+      "source": "configuration file"
+    },
+    {
+      "name": "log_timezone",
+      "setting": "UTC",
+      "unit": "",
+      "source": "configuration file"
+    },
+    {
+      "name": "max_connections",
+      "setting": "100",
+      "unit": "",
+      "source": "configuration file"
+    },
+    {
+      "name": "max_wal_size",
+      "setting": "1024",
+      "unit": "MB",
+      "source": "configuration file"
+    },
+    {
+      "name": "min_wal_size",
+      "setting": "80",
+      "unit": "MB",
+      "source": "configuration file"
+    },
+    {
+      "name": "pg_stat_statements.track",
+      "setting": "top",
+      "unit": "",
+      "source": "command line"
+    },
+    {
+      "name": "random_page_cost",
+      "setting": "4",
+      "unit": "",
+      "source": "default"
+    },
+    {
+      "name": "shared_buffers",
+      "setting": "16384",
+      "unit": "8kB",
+      "source": "configuration file"
+    },
+    {
+      "name": "shared_preload_libraries",
+      "setting": "pg_stat_statements",
+      "unit": "",
+      "source": "command line"
+    },
+    {
+      "name": "synchronous_commit",
+      "setting": "on",
+      "unit": "",
+      "source": "default"
+    },
+    {
+      "name": "transaction_deferrable",
+      "setting": "off",
+      "unit": "",
+      "source": "override"
+    },
+    {
+      "name": "transaction_isolation",
+      "setting": "read committed",
+      "unit": "",
+      "source": "override"
+    },
+    {
+      "name": "transaction_read_only",
+      "setting": "off",
+      "unit": "",
+      "source": "override"
+    },
+    {
+      "name": "wal_level",
+      "setting": "replica",
+      "unit": "",
+      "source": "default"
+    },
+    {
+      "name": "work_mem",
+      "setting": "4096",
+      "unit": "kB",
+      "source": "default"
+    }
+  ],
+  "server_effective_env": {
+    "SIGNALDOCK_DB_STATEMENT_MS": "2000",
+    "SIGNALDOCK_DB_LOCK_MS": "500",
+    "SIGNALDOCK_DB_POOL_MIN_IDLE": "4",
+    "SIGNALDOCK_DB_CONNECTION_MS": "1000",
+    "SIGNALDOCK_DB_ADMISSION_MS": "100",
+    "SIGNALDOCK_DB_POOL_SIZE": "4",
+    "SIGNALDOCK_DB_CONCURRENCY": "2"
+  }
+}
