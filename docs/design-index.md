@@ -83,6 +83,17 @@ ADRs:
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 6. User screens and distribution, Demo and diagnostics
 
+## `compatibility/` (independent consumer app, issue 06)
+
+Architecture (`architecture.md`):
+- Independent distribution and verification
+
+ADRs:
+- ADR-0009 (`docs/adr/0009-maven-zip-and-consumer-app.md`)
+
+Spec (`.scratch/signaldock-portfolio/spec.md`):
+- 6. User screens and distribution, Reproduction and deliverables
+
 ## `dashboard/`
 
 Architecture (`architecture.md`):
