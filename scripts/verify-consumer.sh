@@ -38,7 +38,7 @@ META="$(mktemp -d)"
 unzip -q "$REPO/local/signaldock/sdk-android/0.1.0/sdk-android-0.1.0.aar" classes.jar -d "$META"
 (cd "$META" && unzip -q classes.jar -d classes)
 MVS="$(cd "$META/classes" && find . -name '*.class' -print0 \
-  | xargs -0 "$JAVA_HOME/bin/javap" -v -cp . | grep -o 'mv=\[[0-9,]*\]' | sort -u)"
+  | xargs -0 "$JAVA_HOME/bin/javap" -v -cp . | { grep -o 'mv=\[[0-9,]*\]' || true; } | sort -u)"
 echo "metadata versions: $MVS"
 [ -n "$MVS" ] || { echo "error: no kotlin.Metadata found in the AAR" >&2; exit 1; }
 if echo "$MVS" | grep -qv -E 'mv=\[2,[0-2],[0-9]+\]'; then
@@ -50,7 +50,7 @@ rm -rf "$META"
 echo "=== 3. consumer assembleRelease (R8) from the unzipped folder ==="
 # Effective Kotlin Gradle plugin must be AGP 9's default (2.2.x). Catches overrides in any form.
 KGP="$("$ROOT/compatibility/consumer-android/gradlew" -p "$ROOT/compatibility/consumer-android" \
-  -Psignaldock.repo="$REPO" buildEnvironment :app:buildEnvironment --no-daemon -q | grep -o 'kotlin-gradle-plugin:[0-9][0-9.]*' | sort -u)"
+  -Psignaldock.repo="$REPO" buildEnvironment :app:buildEnvironment --no-daemon -q | { grep -o 'kotlin-gradle-plugin:[0-9][0-9.]*' || true; } | sort -u)"
 echo "consumer Kotlin Gradle plugin: $KGP"
 if [ -z "$KGP" ] || echo "$KGP" | grep -qvx 'kotlin-gradle-plugin:2\.2\.[0-9]*'; then
   echo "error: consumer Kotlin is not AGP's default 2.2.x; revisit Q132 if the AGP default moved" >&2
@@ -60,5 +60,6 @@ fi
   -Psignaldock.repo="$REPO" :app:assembleRelease --no-daemon
 
 echo "ZIP:  $ZIP"
+grep "^# compiler" "$ROOT/compatibility/consumer-android/app/build/outputs/mapping/release/mapping.txt"
 echo "REPO: $REPO"
 echo "APK:  $ROOT/compatibility/consumer-android/app/build/outputs/apk/release/app-release.apk"
