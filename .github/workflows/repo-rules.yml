@@ -42,7 +42,7 @@ jobs:
       # ubuntu-latest ships an Android SDK at $ANDROID_HOME.
       - run: |
           export JAVA_HOME="$PWD/.tools/$(ls .tools | grep '^jdk-')"
-          sdk/gradlew -p sdk :sdk-android:testDebugUnitTest --no-daemon
+          sdk/gradlew -p sdk :sdk-android:testDebugUnitTest :demo:feature:shop:testDebugUnitTest :demo:feature:diagnostics:testDebugUnitTest --no-daemon
 
   server-test:
     runs-on: ubuntu-latest
