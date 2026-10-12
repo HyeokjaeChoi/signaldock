@@ -1,0 +1,61 @@
+# Needs a .env file: cp .env.example .env
+#
+#   docker compose up -d --build      start PostgreSQL, the server, and the Dashboard
+#   docker compose up -d db           DB-only mode for local Ktor and Vite
+#   docker compose stop|down          stop; the DB volume is kept
+#   docker compose down --volumes     RESET: also deletes the DB volume and all events
+#
+# Every published port binds to 127.0.0.1 only.
+name: signaldock
+
+services:
+  db:
+    image: postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+    environment:
+      POSTGRES_DB: ${SIGNALDOCK_DB_NAME:-signaldock}
+      POSTGRES_USER: ${SIGNALDOCK_DB_USER:?set SIGNALDOCK_DB_USER in .env}
+      POSTGRES_PASSWORD: ${SIGNALDOCK_DB_PASSWORD:?set SIGNALDOCK_DB_PASSWORD in .env}
+    volumes:
+      - signaldock-db:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:${SIGNALDOCK_DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    environment:
+      SIGNALDOCK_COLLECTION_KEY: ${SIGNALDOCK_COLLECTION_KEY:?set SIGNALDOCK_COLLECTION_KEY in .env}
+      SIGNALDOCK_QUERY_KEY: ${SIGNALDOCK_QUERY_KEY:?set SIGNALDOCK_QUERY_KEY in .env}
+      SIGNALDOCK_JDBC_URL: jdbc:postgresql://db:5432/${SIGNALDOCK_DB_NAME:-signaldock}
+      SIGNALDOCK_DB_USER: ${SIGNALDOCK_DB_USER}
+      SIGNALDOCK_DB_PASSWORD: ${SIGNALDOCK_DB_PASSWORD}
+      SIGNALDOCK_TIME_ZONE: ${SIGNALDOCK_TIME_ZONE:-Asia/Seoul}
+    ports:
+      # Apps and the SDK send events here. An emulator reaches it as 10.0.2.2.
+      - "127.0.0.1:${SIGNALDOCK_SERVER_PORT:-8080}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: dashboard/Dockerfile
+      args:
+        VITE_SIGNALDOCK_TIME_ZONE: ${SIGNALDOCK_TIME_ZONE:-Asia/Seoul}
+    environment:
+      # Read by nginx at start (templates/default.conf.template). Never a build argument.
+      SIGNALDOCK_QUERY_KEY: ${SIGNALDOCK_QUERY_KEY:?set SIGNALDOCK_QUERY_KEY in .env}
+    ports:
+      - "127.0.0.1:${SIGNALDOCK_DASHBOARD_PORT:-5173}:80"
+    depends_on:
+      - server
+
+volumes:
+  signaldock-db:

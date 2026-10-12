@@ -57,6 +57,24 @@ not turned off. Because of the new DSL, generated Kotlin sources are added with
 | Retrofit | 3.0.0 | Real requests against MockWebServer (`TransportTest`) |
 | OkHttp | 5.4.0 (was doc-pinned at 5.5.0) | The `okhttp-android` 5.5.0 AAR declares `minCompileSdk=37`; the SDK builds at compileSdk 36, and AGP fails `checkDebugUnitTestAarMetadata`. 5.4.0 passes. `mockwebserver3` uses the same version. See ADR-0006 decision 1 |
 
+## Build-verified in issue #15
+
+Versions were read from `npm view <pkg> version` and Docker Hub tag listings on 2026-10-12, then pinned exactly (`--save-exact`, committed `dashboard/package-lock.json`). Local Node was v24.14.1 (npm 11.11.0), not the 24.20.0 recorded above; the Dashboard Docker build ran on `node:24.20.0`. All commands below ran in `dashboard/` unless noted.
+
+| Component | Pinned | Why and how verified |
+|---|---|---|
+| react / react-dom | 19.3.0 | Latest stable. `npm test`, `npm run build` |
+| recharts | 3.10.1 | Latest stable; accepts React 19. Renders in the built Dashboard (headless Chrome screenshot) |
+| vite / @vitejs/plugin-react | 8.3.4 / 6.1.2 | Latest stable. `npm run build`, dev proxy checked with `npm run dev` |
+| vitest / jsdom / @testing-library/react / @testing-library/dom | 5.0.3 / 30.1.2 / 16.3.3 / 10.4.2 | Latest stable (the last is the peer of testing-library/react). `npm test`: 19 tests |
+| @types/react, @types/react-dom / @types/node | 19.3.0 / 24.19.2 | Latest stable for each major in use; Node types follow the Node 24 line. `npm run typecheck` with TypeScript 7.0.2 |
+| Node image | `node:24.20.0-alpine3.24` @ `sha256:e67514e5d0f6c46656005e1b693b2ec9d52e80b641307de684d4a015ba7a4eaf` | Same Node as the 24.20.0 record above (24.21.0 exists; staying on the verified minor). `docker compose build dashboard` |
+| nginx image | `nginx:1.30.5-alpine3.24` @ `sha256:0985e772fb9f729e6fa0980da05fca5d9c468e870eed43071545afa9d2e27d94` | Latest 1.30 (stable branch) patch. Serves the bundle and proxies `/v1/` with the key (compose run) |
+| JDK images | `eclipse-temurin:21.0.12.1_1-jdk-noble` @ `sha256:b468c3fc...2a87`, `...-jre-noble` @ `sha256:000fd431...408c` | Same Temurin build as the pinned JDK 21.0.12.1+1. `installDist` in the image, server started under the JRE image (full digests in the Dockerfile) |
+| PostgreSQL image | `postgres:17.6-alpine` @ `sha256:ef257d85...ee94` | Same pin the server tests and jOOQ codegen use |
+
+Docker 29.4.0 and Compose v5.1.2 (OrbStack) ran `docker compose up -d --build`.
+
 ## Doc-pinned (build verification deferred to the noted issue)
 
 | Component | Pinned | Verified in |

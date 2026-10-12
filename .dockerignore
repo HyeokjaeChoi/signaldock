@@ -1,0 +1,14 @@
+.git
+.tools
+.scratch
+.env
+.env.*
+!.env.example
+**/build
+**/.gradle
+**/node_modules
+dashboard/dist
+dashboard/.tmp-contract-check
+sdk
+contract-check
+docs

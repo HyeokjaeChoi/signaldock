@@ -75,9 +75,25 @@ Functional verification is pending. The [completion criteria](.scratch/signaldoc
 Load and latency values in the [performance plan](.scratch/signaldock-portfolio/performance-plan.md) are targets, not measured results or an SLA.
 Verified prerequisites and steps to run, integrate, and stop the product will follow once runnable artifacts exist.
 
+## Run the server and Dashboard
+
+Needs Docker with Compose. The first build downloads base images and dependencies, so it is not fully offline.
+
+```sh
+cp .env.example .env                 # change the example keys and password
+docker compose up -d --build         # PostgreSQL, server, Dashboard
+open http://127.0.0.1:5173           # Dashboard (SIGNALDOCK_DASHBOARD_PORT)
+docker compose stop                  # stop; the DB volume is kept
+docker compose down --volumes        # RESET: deletes the DB volume and all events
+```
+
+- The server listens on `127.0.0.1:8080`. An Android emulator reaches it as `http://10.0.2.2:8080`. Send events with `SIGNALDOCK_COLLECTION_KEY`.
+- The Dashboard holds no key. nginx proxies `GET /v1/*` and adds `SIGNALDOCK_QUERY_KEY` ([ADR-0008](docs/adr/0008-dashboard-and-compose-delivery.md)). All ports bind to `127.0.0.1`.
+- Local development: `docker compose up -d db`, then run the server from `server/` with the variables in `.env.example` and `npm run dev` in `dashboard/` (the Vite proxy adds the query key from `SIGNALDOCK_QUERY_KEY`).
+
 ## Repository guide
 
-The repository currently holds design documents. Product directories and run examples will follow implementation.
+The repository holds design documents and product code under `sdk/`, `server/`, and `dashboard/`.
 The spec, verification plans, and implementation issues in `.scratch/signaldock-portfolio/` are the approved design sources tracked in Git. Personal conversations and résumé review records are excluded.
 
 | Path | Contents |
