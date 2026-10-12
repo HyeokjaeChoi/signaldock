@@ -165,7 +165,7 @@ def execute(a, out):
     manifest["environment"] = ro.environment_facts()
     manifest["postgres_settings"] = ro.pg_settings()
     manifest["server_effective_env"] = {k: v for k, v in (l.split("=", 1) for l in ro.sh(
-        "docker", "exec", c.SERVER_CONTAINER, "env").splitlines() if l.startswith("SIGNALDOCK_DB_")) }
+        "docker", "exec", c.SERVER_CONTAINER, "env").splitlines() if l.startswith("SIGNALDOCK_DB_") and "PASSWORD" not in l and "_USER" not in l)}
     cg0 = {"db": ro.cgroup(c.DB_CONTAINER), "server": ro.cgroup(c.SERVER_CONTAINER)}
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2, default=str) + "\n")
 
