@@ -5,9 +5,9 @@ An Android event SDK designed to save events on the device and confirm server re
 This monorepo contains the design for the SDK and a local data processing server.
 Review the path from an app's `track()` call through a durable queue, retries, server deduplication, and independent artifact installation.
 
-> **Status: 2026-10-09**
-> The first release design is complete. Product implementation has not started.
-> The behavior below is the agreed design. Runnable artifacts, product setup instructions, and functional and performance results are not yet available.
+> **Status: 2026-10-12**
+> Implementation is in progress. The SDK, the server, the Android demo app, and the Dashboard are implemented, and the server and Dashboard run with Docker Compose (see below).
+> The SDK Maven ZIP, the independent consumer app, end-to-end verification, and performance results are not yet available.
 
 ## Start here
 
@@ -73,11 +73,27 @@ iOS / Flutter, automatic events, `identify`, campaign / push, funnels, multiple 
 
 Functional verification is pending. The [completion criteria](.scratch/signaldock-portfolio/spec.md#7-completion-criteria-and-verification-plan) require environment records, source revision/hash, and event ID comparisons.
 Load and latency values in the [performance plan](.scratch/signaldock-portfolio/performance-plan.md) are targets, not measured results or an SLA.
-Verified prerequisites and steps to run, integrate, and stop the product will follow once runnable artifacts exist.
+Steps to run and stop the server and Dashboard are below. Steps to integrate the SDK from the Maven ZIP will follow with that artifact.
+
+## Run the server and Dashboard
+
+Needs Docker with Compose. The first build downloads base images and dependencies, so it is not fully offline.
+
+```sh
+cp .env.example .env                 # change the example keys and password
+docker compose up -d --build         # PostgreSQL, server, Dashboard
+open http://127.0.0.1:5173           # Dashboard (SIGNALDOCK_DASHBOARD_PORT)
+docker compose stop                  # stop; the DB volume is kept
+docker compose down --volumes        # RESET: deletes the DB volume and all events
+```
+
+- The server listens on `127.0.0.1:8080`. An Android emulator reaches it as `http://10.0.2.2:8080`. Send events with `SIGNALDOCK_COLLECTION_KEY`.
+- The Dashboard holds no key. nginx proxies `GET /v1/*` and adds `SIGNALDOCK_QUERY_KEY` ([ADR-0008](docs/adr/0008-dashboard-and-compose-delivery.md)). All ports bind to `127.0.0.1`.
+- Local development: `docker compose up -d db`, then run the server from `server/` with the variables in `.env.example` and `npm run dev` in `dashboard/` (the Vite proxy adds the query key from `SIGNALDOCK_QUERY_KEY`).
 
 ## Repository guide
 
-The repository currently holds design documents. Product directories and run examples will follow implementation.
+The repository holds design documents and product code under `sdk/`, `server/`, and `dashboard/`.
 The spec, verification plans, and implementation issues in `.scratch/signaldock-portfolio/` are the approved design sources tracked in Git. Personal conversations and résumé review records are excluded.
 
 | Path | Contents |

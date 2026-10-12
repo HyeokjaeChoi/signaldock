@@ -96,7 +96,7 @@ fun main() {
         })
     try {
         database.migrate()
-        embeddedServer(Netty, host = "127.0.0.1", port = System.getenv("PORT")?.toInt() ?: 8080) {
+        embeddedServer(Netty, host = System.getenv("SIGNALDOCK_BIND_HOST") ?: "127.0.0.1", port = System.getenv("PORT")?.toInt() ?: 8080) {
             ingestionModule(database, collectionKey)
             queryModule(database, queryKey, parseProjectZone(System.getenv("SIGNALDOCK_TIME_ZONE") ?: "Asia/Seoul"))
             monitor.subscribe(ApplicationStopped) { database.close() }
