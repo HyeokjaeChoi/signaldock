@@ -3,7 +3,7 @@
 Status: ready-for-agent
 Type: task
 Blocked by: 23
-Execution: Implemented and run on both AVDs (branch `impl/24-sdk-device-measurement`, 2026-10-12; not merged yet)
+Execution: Done (merged in PR #55, 2026-10-13)
 
 ## Scope and completion criteria
 

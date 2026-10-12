@@ -3,7 +3,7 @@
 Status: ready-for-agent
 Type: task
 Blocked by: 07
-Execution: Not started
+Execution: In progress (23 and 24 done; 25 open)
 
 ## Scope and completion criteria
 

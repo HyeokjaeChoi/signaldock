@@ -1,9 +1,9 @@
 # 23. Server load measurement (part of issue 08)
 
-Status: ready-for-review
+Status: ready-for-agent
 Type: task
 Blocked by: None
-Execution: Done (pilots and one overload run; matrix not run, Q133)
+Execution: Done (merged in PR #53, 2026-10-13)
 
 ## Scope and completion criteria
 
