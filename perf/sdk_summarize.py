@@ -99,8 +99,8 @@ def analyze(d):
     sent = [i for b in proxy for i in b.get("eventIds", [])]
     ack_status, unreadable_acks = {}, 0
     for b in proxy:
-        if not b.get("eventIds"):
-            continue
+        if not b.get("eventIds") or b.get("upstreamStatus") != 200:
+            continue  # a non-200 answer is counted in batches_not_200 and has no ACK body to read
         try:
             for it in json.loads(b["upstreamBody"])["results"]:
                 ack_status[it["status"]] = ack_status.get(it["status"], 0) + 1
@@ -168,7 +168,7 @@ def md_run(r):
     L = [f"### {r['avd']} (API {r.get('api', '?')}) - {r['scenario']}: **{r['verdict']}**", ""]
     if r["reasons"]:
         L += [f"- Reasons: {'; '.join(r['reasons'])}"]
-    if "injection" not in r:
+    if "reconciliation" not in r:
         return L + [""]
     i, t, e, c, dr = r["injection"], r["track_ms"], r["errors"], r["reconciliation"], r["drain"]
     L += [
@@ -200,7 +200,7 @@ def main():
              "| AVD | Scenario | Verdict | Target / actual events/s | Max in flight | track() p50 / p95 / max ms | Not ok | Missing / dup rows | Drain s | queue.db + wal + shm bytes (after drain) | PSS delta KiB |",
              "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
         for r in runs:
-            if "injection" not in r:
+            if "reconciliation" not in r:
                 L.append(f"| {r['avd']} | {r['scenario']} | {r['verdict']} | - | - | - | - | - | - | - | - |")
                 continue
             i, t, c = r["injection"], r["track_ms"] or {"p50": "-", "p95": "-", "max": "-"}, r["reconciliation"]
