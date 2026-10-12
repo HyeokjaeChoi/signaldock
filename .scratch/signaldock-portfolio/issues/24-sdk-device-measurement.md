@@ -24,7 +24,7 @@ Files:
 - Results: `perf/sdk-results/<api>-<scenario>/` (raw `calls-*.csv`, `result-*.json`, `db-ids.txt`, `proxy.jsonl`, `meta.json`, `run.json`, `summary.md`) and `perf/sdk-results/summary.md`.
 - Not done: `perf/report` and `perf/summarize.py --index` do not show SDK runs (cost: TypeScript and a second data shape; ADR-0014 "Not done").
 
-Environment: Apple M2 Pro, 12 CPUs, macOS host that also ran other work (load average 5 to 14 during the runs; other agents used the host. The api37 burst row is a repeat run after the last script fix (artifact collection); the other rows are from the full run before it. Earlier sets of runs, taken before CodeRabbit review fixes, gave the same pattern and are not kept, stored in each `meta.json`). AVDs `signaldock-api24` (Android 7.0, API 24, `google_apis` arm64) and `signaldock-api37` (Android 17, API 37, ps16k arm64), one at a time, `-no-window -no-audio -no-snapshot-save`. Build mode: debug androidTest APK (SDK library debug variant, debuggable, no R8). Server: real Ktor + PostgreSQL 17.6 from `docker-compose.yml`, Compose project `signaldock-sdkmeasure`, ports 18090 and 15440, product settings, behind the pass-through proxy `scripts/e2e/fault-proxy.py`. The runs used uncommitted files of this branch, so each `meta.json` says `(dirty)`.
+Environment: Apple M2 Pro, 12 CPUs, macOS host that also ran other work (load average 5 to 14 during the runs; other agents used the host. The api37 burst row and both offline rows are repeat runs after later review fixes; the other rows are from the full run before them. Earlier sets of runs, taken before CodeRabbit review fixes, gave the same pattern and are not kept, stored in each `meta.json`). AVDs `signaldock-api24` (Android 7.0, API 24, `google_apis` arm64) and `signaldock-api37` (Android 17, API 37, ps16k arm64), one at a time, `-no-window -no-audio -no-snapshot-save`. Build mode: debug androidTest APK (SDK library debug variant, debuggable, no R8). Server: real Ktor + PostgreSQL 17.6 from `docker-compose.yml`, Compose project `signaldock-sdkmeasure`, ports 18090 and 15440, product settings, behind the pass-through proxy `scripts/e2e/fault-proxy.py`. The runs used uncommitted files of this branch, so each `meta.json` says `(dirty)`.
 
 Commands:
 ```
@@ -39,10 +39,10 @@ Results (one run per cell; measured in this environment, not an SLA; all 6 runs 
 | AVD | Scenario | Target / actual events/s | Max in flight | track() p50 / p95 / max ms | Missing / dup | Drain s |
 | --- | --- | --- | --- | --- | --- | --- |
 | api24 | normal 60 s | 1 / 1.0 | 1 | 1.87 / 3.80 / 7.08 | 0 / 0 | 0.92 |
-| api24 | offline 1,000 | back to back / 1127.8 | 1 | 0.76 / 1.66 / 6.08 | 0 / 0 | 16.29 (5.4 s retry wait, 10.86 s after) |
+| api24 | offline 1,000 | back to back / 1128.2 | 1 | 0.75 / 1.90 / 7.78 | 0 / 0 | 16.37 (4.5 s retry wait, 11.88 s after) |
 | api24 | burst 10 s | 100 / 99.97 | 1 | 1.15 / 2.25 / 7.00 | 0 / 0 | 0.06 |
 | api37 | normal 60 s | 1 / 1.0 | 1 | 1.58 / 2.23 / 20.52 | 0 / 0 | 2.02 |
-| api37 | offline 1,000 | back to back / 1175.2 | 1 | 0.64 / 2.35 / 16.78 | 0 / 0 | 16.80 (no retry wait left at restart) |
+| api37 | offline 1,000 | back to back / 888.3 | 1 | 0.85 / 2.70 / 24.42 | 0 / 0 | 16.57 (3.5 s retry wait, 13.02 s after) |
 | api37 | burst 10 s | 100 / 99.99 | 4 | 0.85 / 2.29 / 52.14 | 0 / 0 | 0.06 |
 
 DB and sidecar sizes, memory change, ACK statuses, and per-run details are in `perf/sdk-results/summary.md`. In every run each event was sent once (no ID sent twice) and every ACK was `accepted`. Delivery of the 1,000 offline events took 11 to 17 s (20 batches, both AVDs); this follows the SDK's own Worker scheduling and was not analyzed further.

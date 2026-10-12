@@ -69,8 +69,8 @@ phase() {
 }
 
 run_scenario() {
-  local sc="$1" dir="perf/sdk-results/api$api-$1" runId="r$(date -u +%Y%m%d%H%M%S)$1" proxy_pid ok=0
-  rm -rf "$dir"; mkdir -p "$dir"
+  local sc="$1" final="perf/sdk-results/api$api-$1" dir runId="r$(date -u +%Y%m%d%H%M%S)$1" proxy_pid ok=0
+  dir="$(mktemp -d)"  # published to $final only after collection, so a failed setup keeps the previous run
   echo "== $sc (run $runId)"
   adb shell pm clear "$PKG" >/dev/null
   python3 scripts/e2e/fault-proxy.py --listen "127.0.0.1:$PROXY_PORT" --upstream "127.0.0.1:$SERVER_PORT" --log "$dir/proxy.jsonl" &
@@ -95,7 +95,7 @@ run_scenario() {
   for f in $(adb shell run-as "$PKG" ls "files/measure/$runId" 2>/dev/null | tr -d '\r'); do
     adb exec-out run-as "$PKG" cat "files/measure/$runId/$f" > "$dir/$f" || rm -f "$dir/$f"
   done
-  psql_ids "$runId" > "$dir/db-ids.txt" || { echo "warning: could not read event IDs from the database" >&2; : > "$dir/db-ids.txt"; }
+  psql_ids "$runId" > "$dir/db-ids.txt" || { echo "warning: could not read event IDs from the database; the run is invalid" >&2; rm -f "$dir/db-ids.txt"; }
   python3 - "$dir" "$sc" "$runId" "$ok" "$started" "$ended" "$load_before" "$load_after" "$avd" "$serial" <<'EOF'
 import json, subprocess, sys
 d, sc, run_id, ok, t0, t1, l0, l1, avd, serial = sys.argv[1:]
@@ -111,7 +111,11 @@ json.dump({
     "git_revision": sh("git", "rev-parse", "--short", "HEAD") + (" (dirty)" if sh("git", "status", "--porcelain", "--untracked-files=no") else ""),
 }, open(d + "/meta.json", "w"), indent=2)
 EOF
-  python3 perf/sdk_summarize.py "$dir"  # exits 1 for a fail or invalid verdict; run_scenario then returns 1
+  local rc=0
+  python3 perf/sdk_summarize.py "$dir" || rc=1  # exits 1 for a fail or invalid verdict; the run is kept either way
+  rm -rf "$final"; mkdir -p perf/sdk-results; cp -R "$dir" "$final"; chmod 755 "$final"; rm -rf "$dir"
+  echo "  published $final"
+  return "$rc"
 }
 
 fail=0

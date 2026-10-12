@@ -6,10 +6,10 @@ Measured in this environment (emulators, Compose server on one Mac). Not an SLA.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | signaldock-api24 | burst | pass | 100 / 99.97 | 1 | 1.15 / 2.25 / 7.0 | 0 | 0 / 0 | 0.06 | 57344 + wal 436752 + shm 32768 | 6797 |
 | signaldock-api24 | normal | pass | 1 / 1.0 | 1 | 1.87 / 3.8 / 7.08 | 0 | 0 / 0 | 0.92 | 36864 + wal 420272 + shm 32768 | 7032 |
-| signaldock-api24 | offline | pass | back to back / 1127.8 | 1 | 0.76 / 1.66 / 6.08 | 0 | 0 / 0 | 16.29 | 626688 + wal 465592 + shm 32768 | 8156 |
+| signaldock-api24 | offline | pass | back to back / 1128.22 | 1 | 0.75 / 1.9 / 7.78 | 0 | 0 / 0 | 16.37 | 626688 + wal 524288 + shm 32768 | 7713 |
 | signaldock-api37 | burst | pass | 100 / 99.99 | 4 | 0.85 / 2.29 / 52.14 | 0 | 0 / 0 | 0.06 | 36864 + wal 502672 + shm 32768 | 2702 |
 | signaldock-api37 | normal | pass | 1 / 1.0 | 1 | 1.58 / 2.23 / 20.52 | 0 | 0 / 0 | 2.02 | 36864 + wal 424392 + shm 32768 | 2008 |
-| signaldock-api37 | offline | pass | back to back / 1175.22 | 1 | 0.64 / 2.35 / 16.78 | 0 | 0 / 0 | 16.8 | 626688 + wal 473832 + shm 32768 | 3384 |
+| signaldock-api37 | offline | pass | back to back / 888.31 | 1 | 0.85 / 2.7 / 24.42 | 0 | 0 / 0 | 16.57 | 479232 + wal 523272 + shm 32768 | 3498 |
 
 Offline row: track() numbers are the offline store phase (endpoint unreachable, calls back to back); drain seconds are the restarted process after the persisted retry wait (see the run details).
 
@@ -40,14 +40,14 @@ Offline row: track() numbers are the offline store phase (endpoint unreachable, 
 ### signaldock-api24 (API 24) - offline: **pass**
 
 - Device: Google Android SDK built for arm64, Android 7.0 (API 24), arm64-v8a. Build: debug androidTest APK: SDK library debug variant, debuggable, no R8/minify (ADR-0014).
-- Injection: target back to back events/s, actual 1127.8 events/s over 0.89 s (1000 of 1000 calls); max calls in flight 1; start lateness None; event size 1026 bytes.
-- track() completion (ms): p50 0.76, p95 1.66, max 6.08 (n=1000).
+- Injection: target back to back events/s, actual 1128.22 events/s over 0.89 s (1000 of 1000 calls); max calls in flight 1; start lateness None; event size 1026 bytes.
+- track() completion (ms): p50 0.75, p95 1.9, max 7.78 (n=1000).
 - Errors: track() not ok 0; SDK WARN/ERROR lines 0; last delivery error NETWORK.
 - Reconciliation with server DB: tracked ok 1000, server rows 1000, missing 0, not tracked 0, duplicate rows 0; sent on the wire 1000 events in 20 batches, IDs sent more than once 0, batches not 200: 0, ACK statuses {'accepted': 1000}.
-- Queue drain: {'seconds': 16.29, 'queued_after': 0, 'queued_at_injection_end': 1000, 'persisted_retry_wait_at_start_s': 5.4, 'seconds_after_retry_wait': 10.86}.
-- Files (bytes): {'after_store': {'installation-id': 36, 'queue.db': 1437696, 'queue.db-shm': 32768, 'queue.db-wal': 432632}, 'after_drain': {'installation-id': 36, 'queue.db': 626688, 'queue.db-shm': 32768, 'queue.db-wal': 465592}}.
-- Memory (KiB): {'store_process': {'pss_after_init_to_after_store': 8156, 'heap_after_init_to_after_store': 2700}, 'drain_process': {'pss_before_init_to_after_drain': 10302, 'heap_before_init_to_after_drain': 748}, 'pss_absolute': {'store_after_store': 30982, 'drain_after_drain': 29125}}.
-- Host: Apple M2 Pro, 12 CPUs, load average before { 4.47 7.56 7.92 }, after { 4.62 7.35 7.83 }. Run 2026-10-12T16:18:25Z to 2026-10-12T16:18:46Z, git 5b369f4 (dirty).
+- Queue drain: {'seconds': 16.37, 'queued_after': 0, 'queued_at_injection_end': 1000, 'persisted_retry_wait_at_start_s': 4.5, 'seconds_after_retry_wait': 11.88}.
+- Files (bytes): {'after_store': {'installation-id': 36, 'queue.db': 1437696, 'queue.db-shm': 32768, 'queue.db-wal': 432632}, 'after_drain': {'installation-id': 36, 'queue.db': 626688, 'queue.db-shm': 32768, 'queue.db-wal': 524288}}.
+- Memory (KiB): {'store_process': {'pss_after_init_to_after_store': 7713, 'heap_after_init_to_after_store': 2965}, 'drain_process': {'pss_before_init_to_after_drain': 10253, 'heap_before_init_to_after_drain': -696}, 'pss_absolute': {'store_after_store': 30456, 'drain_after_drain': 28788}}.
+- Host: Apple M2 Pro, 12 CPUs, load average before { 7.43 6.25 6.37 }, after { 6.53 6.12 6.32 }. Run 2026-10-12T16:36:13Z to 2026-10-12T16:36:34Z, git 3e7d160 (dirty).
 
 ### signaldock-api37 (API 37) - burst: **pass**
 
@@ -76,11 +76,11 @@ Offline row: track() numbers are the offline store phase (endpoint unreachable, 
 ### signaldock-api37 (API 37) - offline: **pass**
 
 - Device: Google sdk_gphone16k_arm64, Android 17 (API 37), arm64-v8a. Build: debug androidTest APK: SDK library debug variant, debuggable, no R8/minify (ADR-0014).
-- Injection: target back to back events/s, actual 1175.22 events/s over 0.85 s (1000 of 1000 calls); max calls in flight 1; start lateness None; event size 1026 bytes.
-- track() completion (ms): p50 0.64, p95 2.35, max 16.78 (n=1000).
+- Injection: target back to back events/s, actual 888.31 events/s over 1.12 s (1000 of 1000 calls); max calls in flight 1; start lateness None; event size 1026 bytes.
+- track() completion (ms): p50 0.85, p95 2.7, max 24.42 (n=1000).
 - Errors: track() not ok 0; SDK WARN/ERROR lines 0; last delivery error NETWORK.
 - Reconciliation with server DB: tracked ok 1000, server rows 1000, missing 0, not tracked 0, duplicate rows 0; sent on the wire 1000 events in 20 batches, IDs sent more than once 0, batches not 200: 0, ACK statuses {'accepted': 1000}.
-- Queue drain: {'seconds': 16.8, 'queued_after': 0, 'queued_at_injection_end': 1000, 'persisted_retry_wait_at_start_s': 0, 'seconds_after_retry_wait': 16.8}.
-- Files (bytes): {'after_store': {'installation-id': 36, 'queue.db': 1437696, 'queue.db-shm': 32768, 'queue.db-wal': 444992}, 'after_drain': {'installation-id': 36, 'queue.db': 626688, 'queue.db-shm': 32768, 'queue.db-wal': 473832}}.
-- Memory (KiB): {'store_process': {'pss_after_init_to_after_store': 3384, 'heap_after_init_to_after_store': -160}, 'drain_process': {'pss_before_init_to_after_drain': 1208, 'heap_before_init_to_after_drain': 512}, 'pss_absolute': {'store_after_store': 42134, 'drain_after_drain': 40488}}.
-- Host: Apple M2 Pro, 12 CPUs, load average before { 6.75 9.08 8.44 }, after { 6.03 8.74 8.33 }. Run 2026-10-12T16:16:33Z to 2026-10-12T16:16:55Z, git 5b369f4 (dirty).
+- Queue drain: {'seconds': 16.57, 'queued_after': 0, 'queued_at_injection_end': 1000, 'persisted_retry_wait_at_start_s': 3.5, 'seconds_after_retry_wait': 13.02}.
+- Files (bytes): {'after_store': {'installation-id': 36, 'queue.db': 1445888, 'queue.db-shm': 32768, 'queue.db-wal': 449112}, 'after_drain': {'installation-id': 36, 'queue.db': 479232, 'queue.db-shm': 32768, 'queue.db-wal': 523272}}.
+- Memory (KiB): {'store_process': {'pss_after_init_to_after_store': 3498, 'heap_after_init_to_after_store': -112}, 'drain_process': {'pss_before_init_to_after_drain': 1238, 'heap_before_init_to_after_drain': 464}, 'pss_absolute': {'store_after_store': 42239, 'drain_after_drain': 40603}}.
+- Host: Apple M2 Pro, 12 CPUs, load average before { 6.90 6.00 6.29 }, after { 7.05 6.11 6.33 }. Run 2026-10-12T16:35:33Z to 2026-10-12T16:35:55Z, git 3e7d160 (dirty).

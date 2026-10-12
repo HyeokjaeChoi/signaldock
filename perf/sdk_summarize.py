@@ -78,6 +78,11 @@ def analyze(d):
         reasons_fail.append(f"track() not ok: {bad}")
 
     tracked = {r["event_id"] for r in ok_rows}
+    if len(tracked) != len(ok_rows):
+        reasons_fail.append(f"{len(ok_rows) - len(tracked)} successful track() calls returned an event ID that an earlier call already returned")
+    if not (d / "db-ids.txt").exists():
+        run.update(verdict="invalid", reasons=["database reconciliation is unavailable (db-ids.txt is missing)"])
+        return run
     db_lines = [x for x in (d / "db-ids.txt").read_text().split() if x]
     db = set(db_lines)
     if not (d / "proxy.jsonl").exists():

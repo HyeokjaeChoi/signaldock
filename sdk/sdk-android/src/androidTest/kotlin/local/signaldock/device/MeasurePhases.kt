@@ -175,6 +175,8 @@ class MeasurePhases {
         val (sdk, initMicros) = init()
         val memAfterInit = memory()
         val (calls, maxInFlight) = inject(sdk, 0, 1000)
+        val filesAtEnd = files()
+        val memAfterStore = memory() // read before the wait below, so both describe the end of injection
         // The first delivery attempt runs in the background: wait until it failed and its retry time is persisted (ADR-0014 item 6).
         awaitTrue(60_000, "a failed delivery attempt with a persisted retry time") {
             runBlocking { sdk.diagnostics() }.let { it.retryFailureCount > 0 && it.nextAttemptEpochMillis != null }
@@ -189,7 +191,7 @@ class MeasurePhases {
             .put("lastDeliveryError", d.lastDeliveryError?.kind?.name ?: JSONObject.NULL).put("retryFailureCount", d.retryFailureCount)
             .put("nextAttemptInSeconds", d.nextAttemptEpochMillis?.let { (it - System.currentTimeMillis()) / 1000.0 } ?: JSONObject.NULL)
             .put("sdkWarnings", Logcat.warnings(Logcat.since(before)).size)
-            .put("files", files()).put("memBeforeInit", memBeforeInit).put("memAfterInit", memAfterInit).put("memAfterStore", memory())
+            .put("files", filesAtEnd).put("memBeforeInit", memBeforeInit).put("memAfterInit", memAfterInit).put("memAfterStore", memAfterStore)
         finish("offline_store", o)
     }
 

@@ -1,13 +1,13 @@
 {
   "scenario": "offline",
-  "run_id": "r20261012161633offline",
+  "run_id": "r20261012163532offline",
   "avd": "signaldock-api37",
   "meta": {
     "scenario": "offline",
-    "run_id": "r20261012161633offline",
+    "run_id": "r20261012163532offline",
     "completed_phases": true,
-    "started_utc": "2026-10-12T16:16:33Z",
-    "ended_utc": "2026-10-12T16:16:55Z",
+    "started_utc": "2026-10-12T16:35:33Z",
+    "ended_utc": "2026-10-12T16:35:55Z",
     "avd": "signaldock-api37",
     "serial": "emulator-5584",
     "build": "debug androidTest APK: SDK library debug variant, debuggable, no R8/minify (ADR-0014)",
@@ -19,10 +19,10 @@
       "model": "Apple M2 Pro",
       "cpus": "12",
       "os": "26.6.2",
-      "loadavg_before": "{ 6.75 9.08 8.44 }",
-      "loadavg_after": "{ 6.03 8.74 8.33 }"
+      "loadavg_before": "{ 6.90 6.00 6.29 }",
+      "loadavg_after": "{ 7.05 6.11 6.33 }"
     },
-    "git_revision": "5b369f4 (dirty)"
+    "git_revision": "3e7d160 (dirty)"
   },
   "device": "Google sdk_gphone16k_arm64",
   "api": 37,
@@ -33,16 +33,16 @@
     "target_rate_per_s": "back to back",
     "planned": 1000,
     "started": 1000,
-    "actual_rate_per_s": 1175.22,
-    "span_s": 0.85,
+    "actual_rate_per_s": 888.31,
+    "span_s": 1.12,
     "max_calls_in_flight": 1,
     "start_lateness_ms": null,
     "event_bytes": 1026
   },
   "track_ms": {
-    "p50": 0.64,
-    "p95": 2.35,
-    "max": 16.78,
+    "p50": 0.85,
+    "p95": 2.7,
+    "max": 24.42,
     "count": 1000
   },
   "errors": {
@@ -65,38 +65,38 @@
     }
   },
   "drain": {
-    "seconds": 16.8,
+    "seconds": 16.57,
     "queued_after": 0,
     "queued_at_injection_end": 1000,
-    "persisted_retry_wait_at_start_s": 0,
-    "seconds_after_retry_wait": 16.8
+    "persisted_retry_wait_at_start_s": 3.5,
+    "seconds_after_retry_wait": 13.02
   },
   "files_bytes": {
     "after_store": {
       "installation-id": 36,
-      "queue.db": 1437696,
+      "queue.db": 1445888,
       "queue.db-shm": 32768,
-      "queue.db-wal": 444992
+      "queue.db-wal": 449112
     },
     "after_drain": {
       "installation-id": 36,
-      "queue.db": 626688,
+      "queue.db": 479232,
       "queue.db-shm": 32768,
-      "queue.db-wal": 473832
+      "queue.db-wal": 523272
     }
   },
   "memory_kb": {
     "store_process": {
-      "pss_after_init_to_after_store": 3384,
-      "heap_after_init_to_after_store": -160
+      "pss_after_init_to_after_store": 3498,
+      "heap_after_init_to_after_store": -112
     },
     "drain_process": {
-      "pss_before_init_to_after_drain": 1208,
-      "heap_before_init_to_after_drain": 512
+      "pss_before_init_to_after_drain": 1238,
+      "heap_before_init_to_after_drain": 464
     },
     "pss_absolute": {
-      "store_after_store": 42134,
-      "drain_after_drain": 40488
+      "store_after_store": 42239,
+      "drain_after_drain": 40603
     }
   },
   "verdict": "pass",
