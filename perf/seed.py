@@ -137,6 +137,7 @@ def build(size, dist, day, force):
     c.log(f"generating {size} rows ({dist}), T={T.isoformat()}")
     counts, esize = generate(size, dist, T, csv_path)
     c.log("loading")
+    meta_path(size, dist).unlink(missing_ok=True)  # a failed rebuild must not leave metadata that marks it valid
     c.psql(f"DROP DATABASE IF EXISTS {name}", db="postgres")
     c.psql(f"CREATE DATABASE {name} TEMPLATE base_schema", db="postgres")
     with open(csv_path) as f:
