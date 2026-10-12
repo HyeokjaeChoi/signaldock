@@ -15,6 +15,7 @@ import retrofit2.http.POST
 import retrofit2.http.Streaming
 import java.io.IOException
 import java.io.InterruptedIOException
+import javax.net.SocketFactory
 import java.util.concurrent.TimeUnit
 
 internal class BatchHttpRequest(val contractVersion: String, val body: ByteArray)
@@ -48,25 +49,31 @@ internal interface IngestApi {
 
 internal const val MAX_ACK_BYTES = 1L shl 20
 
-internal class RetrofitBatchTransport(config: SignalDockConfig) : BatchTransport {
+internal class RetrofitBatchTransport(
+    config: SignalDockConfig,
+    /** Test-only seam: null (the default) keeps OkHttp's own socket factory. */
+    socketFactory: SocketFactory? = null,
+) : BatchTransport {
     private val authorization = "Bearer ${config.collectionKey}"
     private val json = "application/json".toMediaType()
 
+    /** Internal so tests can check the timeout and redirect settings (Q119 to Q123). */
+    internal val client: OkHttpClient = OkHttpClient.Builder()
+        // Redirects are not followed, same-origin ones included (Q123).
+        .followRedirects(false)
+        .followSslRedirects(false)
+        // Connection recovery inside one Call is allowed (Q122).
+        .retryOnConnectionFailure(true)
+        .apply { if (socketFactory != null) socketFactory(socketFactory) }
+        .callTimeout(config.callTimeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
+        .connectTimeout(config.connectTimeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
+        .readTimeout(config.readTimeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
+        .writeTimeout(config.writeTimeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
+        .build()
+
     private val api: IngestApi = Retrofit.Builder()
         .baseUrl(config.endpoint.trimEnd('/') + "/")
-        .client(
-            OkHttpClient.Builder()
-                // Redirects are not followed, same-origin ones included (Q123).
-                .followRedirects(false)
-                .followSslRedirects(false)
-                // Connection recovery inside one Call is allowed (Q122).
-                .retryOnConnectionFailure(true)
-                .callTimeout(config.callTimeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
-                .connectTimeout(config.connectTimeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
-                .readTimeout(config.readTimeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
-                .writeTimeout(config.writeTimeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
-                .build(),
-        )
+        .client(client)
         .build()
         .create(IngestApi::class.java)
 

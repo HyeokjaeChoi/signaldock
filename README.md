@@ -7,7 +7,7 @@ Review the path from an app's `track()` call through a durable queue, retries, s
 
 > **Status: 2026-10-12**
 > Implementation is in progress. The SDK, the server, the Android demo app, and the Dashboard are implemented. The server and Dashboard run with Docker Compose, the SDK builds into a local Maven ZIP, and an independent consumer app uses that ZIP with an R8 release build (see below).
-> Full end-to-end verification (offline recovery, ACK loss, and the other completion criteria) and performance results are not yet available.
+> Delivery failure E2E (normal, ACK loss, partial rejection, content conflict) runs with `scripts/e2e-delivery.sh` (see below; results in issue 21). Offline recovery on devices, contract and DB change checks, and performance results are not yet available.
 
 ## Start here
 
@@ -151,6 +151,19 @@ adb shell am start -n local.signaldock.consumer/.MainActivity
 ```
 
 Tap "Track consumer_ping", wait about 15 seconds, then tap "Show diagnostics": `lastAck` shows `accepted=1`. The app allows cleartext for `10.0.2.2` only. The default endpoint is `http://10.0.2.2:8080`; override it with `-Psignaldock.endpoint=...`. For a physical device, use a reachable HTTPS endpoint.
+
+## Run the delivery failure checks
+
+`scripts/e2e-delivery.sh` runs four cases against the Compose stack and the consumer app on an emulator: normal E2E, ACK loss (a fault proxy drops the response after the server commits), partial rejection, and content conflict ([ADR-0010](docs/adr/0010-delivery-failure-e2e-harness.md)). Case 1 uses both apps: the demo app (product, then add to cart: the path the spec names) and the consumer app (the R8 build of the published AAR; cases 2 and 3 use it for exact `diagnostics()` values). It builds and installs both. It needs Python 3, `.env`, the running stack, and a booted emulator. It is local only and not part of CI.
+
+```sh
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+docker compose up -d --build
+"$ANDROID_HOME/emulator/emulator" -avd signaldock-api37 -no-window -no-audio -no-boot-anim &
+scripts/e2e-delivery.sh          # all cases; or: scripts/e2e-delivery.sh 2 3
+```
+
+It prints the environment, the event ID comparisons, and a PASS/FAIL summary. The events stay in the DB.
 
 ## Repository guide
 
