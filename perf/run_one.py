@@ -515,8 +515,8 @@ def execute(a):
         w.writerows({**s, "pg_conns": json.dumps(s.get("pg_conns", {}))} for s in samples)
 
     # server logs, gc log, post checks
-    (out / "server.log").write_text(c.run(["docker", "logs", c.SERVER_CONTAINER], check=False).stdout +
-                                    c.run(["docker", "logs", c.SERVER_CONTAINER], check=False).stderr)
+    with open(out / "server.log", "w") as f:  # one call, both streams in order (the day rollover logic reads line order)
+        subprocess.run(["docker", "logs", c.SERVER_CONTAINER], stdout=f, stderr=subprocess.STDOUT, check=False)
     (out / "gc.log").write_text(c.run(["docker", "exec", c.SERVER_CONTAINER, "cat", "/tmp/gc.log"], check=False).stdout)
     stage, pool = parse_server_log(out / "server.log", bounds)
     check = aggregate_check(frm, to, env["SIGNALDOCK_QUERY_KEY"], a.window)
