@@ -158,8 +158,12 @@ def execute(a, out):
                                                       "PERF_ADMISSION_MS": str(P["admission_ms"])})
     ro.wait_health()
     end = time.time() + 60
-    while time.time() < end and int(c.psql("SELECT count(*) FROM pg_stat_activity WHERE datname='bench' AND application_name NOT LIKE 'psql%'")) < P["pool_size"]:
-        time.sleep(1)
+    pool_ready = False
+    while time.time() < end and not pool_ready:
+        pool_ready = int(c.psql("SELECT count(*) FROM pg_stat_activity WHERE datname='bench' AND application_name NOT LIKE 'psql%'")) >= P["pool_size"]
+        if not pool_ready:
+            time.sleep(1)
+    manifest["pool_ready"] = pool_ready
     started_at = ro.sh("docker", "inspect", "-f", "{{.State.StartedAt}} {{.RestartCount}}", c.SERVER_CONTAINER)
     times["server_ready"] = ro.stamp()
     manifest["environment"] = ro.environment_facts()
@@ -239,6 +243,8 @@ def execute(a, out):
     clean = [s for s in ser if s[1] == "collect" and s[0] * 1000 >= over_end and s[5] == 0 and s[4] == 0]
     first_clean = min((s[0] for s in clean), default=None)
     bad, invalid = [], []
+    if not pool_ready:
+        invalid.append("pool not ready before the baseline phase")
     if counters.get("bodies_exhausted"):
         invalid.append("request fixtures exhausted")
     if dropped:
