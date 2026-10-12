@@ -1,0 +1,341 @@
+#!/usr/bin/env python3
+"""Delivery failure E2E cases (issue 21, ADR-0010). Python 3 standard library only.
+
+Run through scripts/e2e-delivery.sh. Expects: the Compose stack up, a booted emulator with the
+consumer app installed (built for the fault proxy endpoint), and .env with the stack's keys.
+Cases: 1 normal E2E, 2 ACK loss, 3 partial rejection, 4 content conflict. Prints evidence for
+each case and a PASS/FAIL summary; the exit code is 1 when any case failed.
+"""
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.request
+import uuid
+import xml.etree.ElementTree as ET
+from datetime import datetime, timedelta, timezone
+
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+PKG = "local.signaldock.consumer"
+SERVER = "http://127.0.0.1:8080"
+DASHBOARD = "http://127.0.0.1:5173"  # nginx: adds the query key, GET only
+PROXY_PORT = int(os.environ.get("E2E_PROXY_PORT", "8081"))
+PROXY = f"http://127.0.0.1:{PROXY_PORT}"
+ADB = os.path.join(os.environ.get("ANDROID_HOME", os.path.expanduser("~/Library/Android/sdk")), "platform-tools", "adb")
+
+
+def say(msg=""):
+    print(msg, flush=True)
+
+
+def env_file():
+    values = {}
+    with open(os.path.join(ROOT, ".env")) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                values[k] = v
+    return values
+
+
+ENV = env_file()
+
+
+def run(cmd, **kw):
+    return subprocess.run(cmd, check=True, capture_output=True, text=True, cwd=ROOT, **kw).stdout
+
+
+def adb(*args):
+    return run([ADB, *args])
+
+
+def sql(query):
+    out = run(["docker", "compose", "exec", "-T", "db", "psql", "-U", ENV["SIGNALDOCK_DB_USER"],
+               "-d", ENV.get("SIGNALDOCK_DB_NAME", "signaldock"), "-tA", "-F", "|", "-c", query])
+    return [line for line in out.splitlines() if line]
+
+
+def http(method, url, headers=None, body=None):
+    req = urllib.request.Request(url, data=body, method=method, headers=headers or {})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return r.status, json.loads(r.read() or b"null")
+    except urllib.error.HTTPError as e:
+        return e.code, json.loads(e.read() or b"null")
+
+
+def dashboard(path):
+    """What the Dashboard reads: the nginx proxy with the contract header."""
+    return http("GET", DASHBOARD + path, {"SignalDock-Contract-Version": "1"})
+
+
+def window():
+    now = datetime.now(timezone.utc)
+    f = lambda d: d.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    return f"from={f(now - timedelta(days=1))}&to={f(now + timedelta(days=1))}"
+
+
+def name_count(name):
+    status, body = dashboard(f"/v1/event-counts/by-name?{window()}&name={name}")
+    assert status == 200, (status, body)
+    return sum(i["count"] for i in body["items"] if i["name"] == name)
+
+
+def event_ids():
+    return set(sql("select event_id from events"))
+
+
+def row(event_id):
+    r = sql(f"select name, received_at, installation_id, properties::text from events where event_id='{event_id}'")
+    return tuple(r[0].split("|", 3)) if r else None
+
+
+# ---- proxy control and log ----
+def proxy_mode(mode):
+    status, _ = http("POST", f"{PROXY}/__fault/mode/{mode}", body=b"")
+    assert status == 200, f"proxy mode {mode}: {status}"
+
+
+def proxy_log():
+    return http("GET", f"{PROXY}/__fault/log")[1]
+
+
+# ---- device driving through the UI (the app has two buttons) ----
+def ui_nodes():
+    adb("shell", "uiautomator", "dump", "/sdcard/ui.xml")
+    xml = adb("exec-out", "cat", "/sdcard/ui.xml")
+    return [n.attrib for n in ET.fromstring(xml[xml.index("<"):]).iter("node")]
+
+
+def button_xy(label):
+    for n in ui_nodes():
+        if n.get("text", "").lower() == label.lower():
+            l, t, r, b = map(int, re.findall(r"\d+", n["bounds"]))
+            return str((l + r) // 2), str((t + b) // 2)
+    raise RuntimeError(f"button not found: {label}")
+
+
+def tap(label, times=1):
+    x, y = button_xy(label)
+    # One shell command: the taps are well inside the SDK's 10 s foreground window.
+    adb("shell", "; ".join([f"input tap {x} {y}"] * times))
+
+
+def screen_text(prefix, timeout=20, not_equal=None):
+    end = time.time() + timeout
+    while time.time() < end:
+        for n in ui_nodes():
+            t = n.get("text", "")
+            if t.startswith(prefix) and t != not_equal:
+                return t
+        time.sleep(1)
+    raise RuntimeError(f"no screen text starting with {prefix!r}")
+
+
+def fresh_app():
+    adb("shell", "pm", "clear", PKG)
+    adb("shell", "am", "start", "-n", f"{PKG}/.MainActivity")
+    screen_text("diagnostics:")
+
+
+def track_once(previous):
+    tap("Track consumer_ping")
+    t = screen_text("track:", not_equal=previous)
+    m = re.search(r"eventId=([0-9a-f-]{36})", t)
+    assert m, t
+    return m.group(1), t
+
+
+def diagnostics():
+    """Parsed `diagnostics()` snapshot of the device queue, read from the screen."""
+    tap("Show diagnostics")
+    time.sleep(1)
+    text = re.sub(r"\s+", " ", screen_text("diagnostics:"))
+    d = {"raw": text, "queued": int(re.search(r"queuedEvents=(\d+)", text).group(1)),
+         "failures": int(re.search(r"retryFailureCount=(\d+)", text).group(1))}
+    ack = re.search(r"lastAck=AckDiagnostic\(atEpochMillis=\d+, accepted=(\d+), duplicate=(\d+), rejected=(\d+)\)", text)
+    d["ack"] = tuple(map(int, ack.groups())) if ack else None  # (accepted, duplicate, rejected)
+    err = re.search(r"lastDeliveryError=DeliveryErrorDiagnostic\(kind=(\w+)", text)
+    d["error"] = err.group(1) if err else None
+    d["rejections"] = re.findall(r"RejectionDiagnostic\(eventId=([0-9a-f-]+), code=(\w+),", text)
+    return d
+
+
+def wait_for(what, fn, timeout):
+    end = time.time() + timeout
+    last = None
+    while time.time() < end:
+        last = fn()
+        if last:
+            return last
+        time.sleep(3)
+    raise AssertionError(f"timeout waiting for {what}")
+
+
+def check(cond, msg):
+    if not cond:
+        raise AssertionError(msg)
+    say(f"  ok: {msg}")
+
+
+# ---- cases ----
+def case1_normal():
+    proxy_mode("pass")
+    c0, ids0 = name_count("consumer_ping"), event_ids()
+    fresh_app()
+    eid, text = track_once("")
+    say(f"  track on device: {text.splitlines()[0]}")
+    d = wait_for("ACK on device", lambda: (lambda x: x if x["queued"] == 0 and x["ack"] else None)(diagnostics()), 120)
+    say(f"  device diagnostics: queued={d['queued']} lastAck(accepted,duplicate,rejected)={d['ack']}")
+    check(d["ack"] == (1, 0, 0), "device lastAck is accepted=1")
+    check(event_ids() - ids0 == {eid}, f"server stored exactly the new eventId {eid}")
+    status, detail = dashboard(f"/v1/events/{eid}")
+    say(f"  Dashboard GET /v1/events/{eid}: {status} name={detail.get('name')} receivedAt={detail.get('receivedAt')}")
+    check(status == 200 and detail["name"] == "consumer_ping", "Dashboard detail shows the event")
+    status, page = dashboard(f"/v1/events?{window()}&eventId={eid}")
+    check(status == 200 and [i["eventId"] for i in page["items"]] == [eid], "Dashboard list (eventId filter) shows the event")
+    check(name_count("consumer_ping") == c0 + 1, f"Dashboard by-name consumer_ping {c0} -> {c0 + 1}")
+
+
+def case2_ack_loss():
+    proxy_mode("pass")
+    ids0, c0 = event_ids(), name_count("consumer_ping")
+    before_log = len(proxy_log())
+    proxy_mode("drop-response")
+    fresh_app()
+    eid, _ = track_once("")
+    say(f"  tracked eventId={eid}; proxy mode drop-response; server rows before={len(ids0)}, consumer_ping count before={c0}")
+    wait_for("server commit of the event", lambda: row(eid), 90)
+    ids1, c1 = event_ids(), name_count("consumer_ping")
+    received1 = row(eid)[1]
+    say(f"  server committed: rows={len(ids1)} count={c1} receivedAt={received1}")
+    check(ids1 - ids0 == {eid} and c1 == c0 + 1, "server has exactly one new row and count +1 after the first (lost) response")
+    d = wait_for("NETWORK failure on device", lambda: (lambda x: x if x["error"] == "NETWORK" else None)(diagnostics()), 60)
+    say(f"  device after lost ACK: queued={d['queued']} lastDeliveryError={d['error']} retryFailureCount={d['failures']} lastAck={d['ack']}")
+    check(d["queued"] == 1 and d["ack"] is None, "device keeps the event in the queue (no ACK applied)")
+    # Let the SDK resend at least once more while the response is still lost.
+    wait_for("a resend while the ACK is still lost", lambda: len([e for e in proxy_log()[before_log:] if eid in e.get("eventIds", [])]) >= 2, 120)
+    mine = [e for e in proxy_log()[before_log:] if eid in e.get("eventIds", [])]
+    for e in mine:
+        say(f"  proxy: action={e['action']} upstreamStatus={e['upstreamStatus']} upstream={e['upstreamBody'][:120]}")
+    check(row(eid)[1] == received1 and len(event_ids()) == len(ids1), "resends during the outage added no row and kept receivedAt")
+    proxy_mode("pass")
+    say("  proxy mode pass; waiting for the SDK to resend and apply the ACK")
+    d = wait_for("ACK applied on device", lambda: (lambda x: x if x["queued"] == 0 else None)(diagnostics()), 400)
+    say(f"  device after recovery: queued={d['queued']} lastAck(accepted,duplicate,rejected)={d['ack']} retryFailureCount={d['failures']}")
+    check(d["ack"] == (0, 1, 0), "device ACK is duplicate=1 (server answered the resend; queue item removed)")
+    check(d["failures"] == 0, "retry failure count reset after the valid ACK")
+    ids2, c2 = event_ids(), name_count("consumer_ping")
+    say(f"  eventIds: before={len(ids0)} afterCommit={len(ids1)} afterResend={len(ids2)}; same set after resend as after commit: {ids2 == ids1}")
+    check(ids2 == ids1, "event ID set unchanged by the resend")
+    check(c2 == c1 and len(ids2) == len(ids1), f"unique rows {len(ids1)} -> {len(ids2)} and Dashboard aggregate {c1} -> {c2} did not increase")
+    check(row(eid)[1] == received1, "first receivedAt unchanged")
+    status, detail = dashboard(f"/v1/events/{eid}")
+    check(status == 200 and detail["receivedAt"].startswith(received1[:19].replace(" ", "T")), "Dashboard detail still shows the first receivedAt")
+
+
+def case3_partial():
+    proxy_mode("pass")
+    ids0 = event_ids()
+    before_log = len(proxy_log())
+    proxy_mode("mutate")
+    fresh_app()
+    tap("Track consumer_ping", times=3)
+    say("  3 taps on device (proxy mode mutate: event index 1 of the batch gets a leading space in its name)")
+    d = wait_for("ACK on device", lambda: (lambda x: x if x["queued"] == 0 and x["ack"] else None)(diagnostics()), 120)
+    proxy_mode("pass")
+    batches = [e for e in proxy_log()[before_log:] if e.get("mutatedEventId")]
+    tapped = batches[0]["eventIds"] if batches else []
+    check(len(batches) == 1 and len(tapped) == 3, f"the three tapped events went out in one batch: {tapped}")
+    bad = batches[0]["mutatedEventId"]
+    say(f"  proxy: upstream status {batches[0]['upstreamStatus']} body={batches[0]['upstreamBody']}")
+    say(f"  device diagnostics: queued={d['queued']} lastAck(accepted,duplicate,rejected)={d['ack']} recentRejections={d['rejections']} retryFailureCount={d['failures']}")
+    check(bad == tapped[1], f"rejected eventId is {bad} (index 1)")
+    new = event_ids() - ids0
+    check(new == {tapped[0], tapped[2]}, f"server stored the two valid events {sorted(new)} and not {bad}")
+    check(d["ack"] == (2, 0, 1), "device lastAck is accepted=2 rejected=1")
+    check(d["rejections"] == [(bad, "INVALID_TEXT")], "device recentRejections lists only the invalid eventId with its code")
+    check(d["queued"] == 0 and d["failures"] == 0, "device queue is empty and the failure count is 0")
+
+
+def case4_conflict():
+    key = ENV["SIGNALDOCK_COLLECTION_KEY"]
+    run_id = uuid.uuid4().hex[:8]
+    name = f"e2e_conflict_{run_id}"
+    inst, eid, other = str(uuid.uuid4()), str(uuid.uuid4()), str(uuid.uuid4())
+
+    def ev(event_id, n, props):
+        return {"contractVersion": "1", "eventId": event_id, "name": n, "occurredAt": "2026-10-12T00:00:00.123Z",
+                "properties": props, "sdkVersion": "0.1.0"}
+
+    def post(events):
+        body = json.dumps({"installationId": inst, "events": events}).encode()
+        s, r = http("POST", f"{SERVER}/v1/events:batch", {"Authorization": f"Bearer {key}", "SignalDock-Contract-Version": "1",
+                                                           "Content-Type": "application/json"}, body)
+        assert s == 200, (s, r)
+        return [(i["status"], i.get("code")) for i in r["results"]]
+
+    ids0 = event_ids()
+    r = post([ev(eid, name, {"price": 100, "color": "red"})])
+    say(f"  first send {eid}: {r}")
+    check(r == [("accepted", None)], "original stored as accepted")
+    orig = row(eid)
+    say(f"  original row: {orig}")
+    time.sleep(1.1)  # a changed receivedAt would be visible at ms precision
+    r = post([ev(eid, name, {"color": "red", "price": 100.0})])
+    check(r == [("duplicate", None)], "same ID, same content (key order, 100 vs 100.0) is duplicate")
+    r = post([ev(eid, name + "_other", {"price": 100, "color": "red"}), ev(other, name, {"price": 1})])
+    say(f"  conflicting send (same eventId, different name) + a new valid event in one batch: {r}")
+    check(r == [("rejected", "CONFLICT"), ("accepted", None)], "different content is rejected as CONFLICT; the valid sibling is accepted")
+    r = post([ev(eid, name, {"price": 101, "color": "red"})])
+    check(r == [("rejected", "CONFLICT")], "different properties are rejected as CONFLICT")
+    check(row(eid) == orig, "original row (name, receivedAt, installationId, properties) unchanged")
+    status, detail = dashboard(f"/v1/events/{eid}")
+    check(status == 200 and detail["name"] == name and detail["properties"] == {"price": 100, "color": "red"}, "Dashboard detail shows the original content")
+    check(event_ids() - ids0 == {eid, other}, "rows added: the original and the valid sibling only")
+    check(name_count(name) == 2 and name_count(name + "_other") == 0, f"aggregate: {name}=2 (original + sibling), no conflicting name stored")
+
+
+CASES = [("1 normal E2E", case1_normal), ("2 ACK loss", case2_ack_loss),
+         ("3 partial rejection", case3_partial), ("4 content conflict", case4_conflict)]
+
+
+def environment():
+    say("=== environment ===")
+    say(f"date: {datetime.now(timezone.utc).isoformat(timespec='seconds')}")
+    say(f"git: {run(['git', 'rev-parse', 'HEAD']).strip()} dirty={bool(run(['git', 'status', '--porcelain']).strip())}")
+    for prop in ("ro.product.model", "ro.build.version.release", "ro.build.version.sdk", "ro.product.cpu.abi", "ro.build.fingerprint"):
+        say(f"emulator {prop}: {adb('shell', 'getprop', prop).strip()}")
+    say(f"consumer app: {PKG} release (R8), endpoint via fault proxy {PROXY} -> {SERVER}")
+    say(f"db: {sql('select version()')[0]}")
+    say(f"docker: {run(['docker', 'version', '--format', '{{.Server.Version}}']).strip()}")
+    say(f"compose images: {' '.join(run(['docker', 'compose', 'images', '--format', 'table']).split())[:300]}")
+    say(f"python: {sys.version.split()[0]}")
+
+
+def main():
+    only = set(sys.argv[1:])
+    environment()
+    results = []
+    for title, fn in CASES:
+        if only and title.split()[0] not in only:
+            continue
+        say(f"\n=== case {title} ===")
+        try:
+            fn()
+            results.append((title, "PASS", ""))
+        except Exception as e:  # keep running the other cases
+            say(f"  FAIL: {e!r}")
+            results.append((title, "FAIL", repr(e)))
+    say("\n=== summary ===")
+    for title, status, why in results:
+        say(f"{status}  case {title} {why}")
+    sys.exit(0 if all(s == "PASS" for _, s, _ in results) else 1)
+
+
+if __name__ == "__main__":
+    main()

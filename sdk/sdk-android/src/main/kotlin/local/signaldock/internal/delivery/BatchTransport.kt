@@ -52,21 +52,22 @@ internal class RetrofitBatchTransport(config: SignalDockConfig) : BatchTransport
     private val authorization = "Bearer ${config.collectionKey}"
     private val json = "application/json".toMediaType()
 
+    /** Internal so tests can check the timeout and redirect settings (Q119 to Q123). */
+    internal val client: OkHttpClient = OkHttpClient.Builder()
+        // Redirects are not followed, same-origin ones included (Q123).
+        .followRedirects(false)
+        .followSslRedirects(false)
+        // Connection recovery inside one Call is allowed (Q122).
+        .retryOnConnectionFailure(true)
+        .callTimeout(config.callTimeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
+        .connectTimeout(config.connectTimeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
+        .readTimeout(config.readTimeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
+        .writeTimeout(config.writeTimeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
+        .build()
+
     private val api: IngestApi = Retrofit.Builder()
         .baseUrl(config.endpoint.trimEnd('/') + "/")
-        .client(
-            OkHttpClient.Builder()
-                // Redirects are not followed, same-origin ones included (Q123).
-                .followRedirects(false)
-                .followSslRedirects(false)
-                // Connection recovery inside one Call is allowed (Q122).
-                .retryOnConnectionFailure(true)
-                .callTimeout(config.callTimeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
-                .connectTimeout(config.connectTimeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
-                .readTimeout(config.readTimeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
-                .writeTimeout(config.writeTimeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
-                .build(),
-        )
+        .client(client)
         .build()
         .create(IngestApi::class.java)
 

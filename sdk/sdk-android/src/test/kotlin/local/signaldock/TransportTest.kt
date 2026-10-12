@@ -12,6 +12,7 @@ import mockwebserver3.Dispatcher
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import mockwebserver3.RecordedRequest
+import mockwebserver3.SocketEffect
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -144,5 +145,88 @@ class TransportTest {
         assertEquals(1, sdk.diagnostics().queuedEvents)
         assertEquals(DeliveryErrorKind.AUTH_OR_CONFIGURATION, sdk.diagnostics().lastDeliveryError?.kind)
         assertEquals(1_760_000_000_123L + 30 * 60_000L, sdk.diagnostics().nextAttemptEpochMillis)
+    }
+
+    // ---- Q119 to Q124 (issue 21) ----
+
+    private fun transportClient(cfg: SignalDockConfig) = RetrofitBatchTransport(cfg).client
+
+    @Test
+    fun `Q119 Q120 - defaults are a 30 s call timeout and 10 s connect, read and write timeouts, applied to the client`() {
+        val d = SignalDockConfig(endpoint = "http://localhost", collectionKey = "k")
+        assertEquals(listOf(30.seconds, 10.seconds, 10.seconds, 10.seconds), listOf(d.callTimeout, d.connectTimeout, d.readTimeout, d.writeTimeout))
+        val c = transportClient(d)
+        assertEquals(listOf(30_000, 10_000, 10_000, 10_000), listOf(c.callTimeoutMillis, c.connectTimeoutMillis, c.readTimeoutMillis, c.writeTimeoutMillis))
+    }
+
+    @Test
+    fun `Q119 - the whole-call timeout ends a slow response even when the read timeout is long`() = runBlocking {
+        server.enqueue(MockResponse.Builder().code(200).body("{}").headersDelay(5, TimeUnit.SECONDS).build())
+        val t0 = System.nanoTime()
+        val result = RetrofitBatchTransport(config(callTimeout = 500.milliseconds, readTimeout = 10.seconds)).send(BatchHttpRequest("1", body))
+        assertEquals(DeliveryErrorKind.TIMEOUT, (result as TransportResult.Failed).kind)
+        assertTrue("ended by the call timeout", (System.nanoTime() - t0) / 1_000_000 < 3_000)
+    }
+
+    @Test
+    fun `Q120 - the read timeout ends a slow response even when the call timeout is long`() = runBlocking {
+        server.enqueue(MockResponse.Builder().code(200).body("{}").headersDelay(5, TimeUnit.SECONDS).build())
+        val t0 = System.nanoTime()
+        val result = RetrofitBatchTransport(config(callTimeout = 30.seconds, readTimeout = 300.milliseconds)).send(BatchHttpRequest("1", body))
+        assertEquals(DeliveryErrorKind.TIMEOUT, (result as TransportResult.Failed).kind)
+        assertTrue("ended by the read timeout", (System.nanoTime() - t0) / 1_000_000 < 3_000)
+    }
+
+    @Test
+    fun `Q121 - host overrides reach the client (invalid values are covered by LifecycleTest invalid configuration)`() {
+        val cfg = config().copy(callTimeout = 7.seconds, connectTimeout = 2.seconds, readTimeout = 3.seconds, writeTimeout = 4.seconds)
+        val c = transportClient(cfg)
+        assertEquals(listOf(7_000, 2_000, 3_000, 4_000), listOf(c.callTimeoutMillis, c.connectTimeoutMillis, c.readTimeoutMillis, c.writeTimeoutMillis))
+    }
+
+    @Test
+    fun `Q122 - retryOnConnectionFailure is on, and the SDK sender alone records the failure after the final transport result`() = runBlocking {
+        assertTrue(transportClient(config()).retryOnConnectionFailure)
+        // The connection is cut after the request arrived (a lost ACK). OkHttp has no other route to
+        // recover on, so this is the final result of the Call and the sender records exactly one failure.
+        server.enqueue(MockResponse.Builder().onResponseStart(SocketEffect.CloseSocket()).build())
+        val sdk = createSdk(context, config(), Clock { 1_760_000_000_123L }, SequenceIds(), scheduler = NoopScheduler, foregroundTriggers = false)
+        sdk.track("e")
+        assertEquals(RunEnd.WAITING, sdk.delivery.sender.run().end)
+        val d = sdk.diagnostics()
+        assertEquals(1, d.queuedEvents)
+        assertEquals(1, d.retryFailureCount)
+        assertEquals(DeliveryErrorKind.NETWORK, d.lastDeliveryError?.kind)
+        assertTrue(d.nextAttemptEpochMillis != null)
+    }
+
+    @Test
+    fun `Q123 - the client does not follow redirects, and a 302 keeps the queue under the configuration hold`() = runBlocking {
+        val c = transportClient(config())
+        assertTrue(!c.followRedirects && !c.followSslRedirects)
+        server.enqueue(MockResponse.Builder().code(302).addHeader("Location", "/elsewhere").build())
+        val sdk = createSdk(context, config(), Clock { 1_760_000_000_123L }, SequenceIds(), scheduler = NoopScheduler, foregroundTriggers = false)
+        sdk.track("e")
+        assertEquals(RunEnd.WAITING, sdk.delivery.sender.run().end)
+        assertEquals(1, server.requestCount)
+        assertEquals(1, sdk.diagnostics().queuedEvents)
+        assertEquals(DeliveryErrorKind.AUTH_OR_CONFIGURATION, sdk.diagnostics().lastDeliveryError?.kind)
+        assertEquals(302, sdk.diagnostics().lastDeliveryError?.httpStatus)
+    }
+
+    @Test
+    fun `Q124 - a 503 with a positive Retry-After keeps the queue and the next attempt honors it`() = runBlocking {
+        server.enqueue(MockResponse.Builder().code(503).addHeader("Retry-After", "120").body("""{"code":"SERVICE_BUSY","message":"x"}""").build())
+        val sdk = createSdk(context, config(), Clock { 1_760_000_000_123L }, SequenceIds(), scheduler = NoopScheduler, foregroundTriggers = false)
+        sdk.track("e")
+        assertEquals(RunEnd.WAITING, sdk.delivery.sender.run().end)
+        val d = sdk.diagnostics()
+        assertEquals(1, d.queuedEvents)
+        assertEquals(DeliveryErrorKind.SERVER_ERROR, d.lastDeliveryError?.kind)
+        assertEquals(1, d.retryFailureCount)
+        assertTrue(d.nextAttemptEpochMillis!! >= 1_760_000_000_123L + 120_000L)
+        // Before that time the sender sends nothing.
+        assertEquals(RunEnd.WAITING, sdk.delivery.sender.run().end)
+        assertEquals(1, server.requestCount)
     }
 }
