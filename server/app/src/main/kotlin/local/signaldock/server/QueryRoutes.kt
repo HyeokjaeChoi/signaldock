@@ -25,7 +25,7 @@ import local.signaldock.query.bucketStarts
 import local.signaldock.query.encodeCursor
 import local.signaldock.query.fillBuckets
 import local.signaldock.query.parseCountQuery
-import local.signaldock.query.parseEventId
+import local.signaldock.query.parseDetailRequest
 import local.signaldock.query.parseListQuery
 import local.signaldock.query.parseTimeCountQuery
 import org.openapitools.client.models.ErrorResponse
@@ -49,12 +49,12 @@ private val json = Json
  * Dashboard query routes (ADR-0002 Q107, ADR-0007). Parsing and limits live in `:query`, SQL in
  * `:persistence`; this layer owns HTTP status mapping and the generated transport DTOs.
  */
-internal fun Application.queryModule(database: Database, collectionKey: String, zone: ZoneId) {
-    require(collectionKey.isNotBlank())
+internal fun Application.queryModule(database: Database, queryKey: String, zone: ZoneId) {
+    require(queryKey.isNotBlank())
     val store = QueryStore(database)
     routing {
         get("/v1/events") {
-            call.answer(database, collectionKey) { budget ->
+            call.answer(database, queryKey) { budget ->
                 val query = parseListQuery(call.queryParameterMap(), zone)
                 val page = store.list(query, budget)
                 val next = page.items.lastOrNull()?.takeIf { page.hasMore }
@@ -63,8 +63,8 @@ internal fun Application.queryModule(database: Database, collectionKey: String, 
             }
         }
         get("/v1/events/{eventId}") {
-            call.answer(database, collectionKey) { budget ->
-                val id = parseEventId(call.parameters["eventId"].orEmpty())
+            call.answer(database, queryKey) { budget ->
+                val id = parseDetailRequest(call.parameters["eventId"].orEmpty(), call.queryParameterMap())
                 val event = store.find(id, budget) ?: throw EventNotFound()
                 val summary = event.summary
                 json.encodeToString(EventReceiptDetail(
@@ -75,13 +75,13 @@ internal fun Application.queryModule(database: Database, collectionKey: String, 
             }
         }
         get("/v1/event-counts/by-name") {
-            call.answer(database, collectionKey) { budget ->
+            call.answer(database, queryKey) { budget ->
                 val counts = store.countByName(parseCountQuery(call.queryParameterMap(), zone), budget)
                 json.encodeToString(EventNameCounts(counts.items.map { EventNameCount(it.name, it.count) }, counts.truncated))
             }
         }
         get("/v1/event-counts/by-time") {
-            call.answer(database, collectionKey) { budget ->
+            call.answer(database, queryKey) { budget ->
                 val query = parseTimeCountQuery(call.queryParameterMap(), zone)
                 val buckets = fillBuckets(bucketStarts(query.period, query.bucket, zone), store.countByTime(query, budget))
                 json.encodeToString(EventTimeCounts(
@@ -99,14 +99,14 @@ private class EventNotFound : RuntimeException("EVENT_NOT_FOUND")
 /** Same order as ingestion: contract version, then key, then parameters. One request budget covers all of it. */
 private suspend fun ApplicationCall.answer(
     database: Database,
-    collectionKey: String,
+    queryKey: String,
     work: suspend (RequestBudget) -> String,
 ) {
     val budget = database.budget()
     try {
         val body = withTimeout(budget.remainingMs()) {
             requireContractVersion()
-            requireCollectionKey(collectionKey)
+            requireQueryKey(queryKey)
             work(budget)
         }
         respondText(body, ContentType.Application.Json)

@@ -90,7 +90,7 @@ class QueryRoutesTest {
         path: String,
         params: Map<String, String> = emptyMap(),
         version: String? = "1",
-        auth: String? = "Bearer test-key",
+        auth: String? = "Bearer query-key",
     ): HttpResponse = get(path) {
         version?.let { header("SignalDock-Contract-Version", it) }
         auth?.let { header(HttpHeaders.Authorization, it) }
@@ -100,7 +100,7 @@ class QueryRoutesTest {
     private val october12 = mapOf("from" to "2026-10-12T00:00:00+09:00", "to" to "2026-10-13T00:00:00+09:00")
 
     private fun io.ktor.server.testing.ApplicationTestBuilder.useQueryModule() {
-        application { queryModule(database, "test-key", seoul) }
+        application { queryModule(database, "query-key", seoul) }
     }
 
     private suspend fun HttpResponse.errorCode(): String = json.decodeFromString<ErrorResponse>(bodyAsText()).code
@@ -122,15 +122,32 @@ class QueryRoutesTest {
     }
 
     @Test
-    fun `every endpoint requires the collection key`() = testApplication {
+    fun `every endpoint requires the query key and rejects the collection key`() = testApplication {
         useQueryModule()
+        insert(1, "2026-10-12T01:00:00Z")
         for (path in endpoints) {
-            for (auth in listOf(null, "Bearer wrong", "test-key", "Basic dGVzdC1rZXk=")) {
+            assertEquals(HttpStatusCode.OK, client.query(path, october12.takeIf { "event-counts" in path || path == "/v1/events" }.orEmpty()).status, path)
+            // No Authorization, wrong, collection key, missing scheme, wrong scheme: all the same 401 (Q130, never 403).
+            for (auth in listOf(null, "Bearer wrong", "Bearer collection-key", "query-key", "Basic cXVlcnkta2V5")) {
                 val response = client.query(path, october12, auth = auth)
                 assertEquals(HttpStatusCode.Unauthorized, response.status, "$path $auth")
                 assertTrue(response.headers[HttpHeaders.ContentType]?.startsWith("application/json") == true)
-                assertEquals("COLLECTION_KEY_INVALID", response.errorCode())
+                assertEquals("QUERY_KEY_INVALID", response.errorCode(), "$path $auth")
             }
+        }
+    }
+
+    @Test
+    fun `details reject any query parameter`() = testApplication {
+        useQueryModule()
+        insert(1, "2026-10-12T01:00:00Z")
+        for (query in listOf("?unknown=1", "?from=2026-10-12T00:00:00Z", "?a=1&a=2")) {
+            val response = client.get("/v1/events/${id(1)}$query") {
+                header("SignalDock-Contract-Version", "1")
+                header(HttpHeaders.Authorization, "Bearer query-key")
+            }
+            assertEquals(HttpStatusCode.BadRequest, response.status, query)
+            assertEquals("INVALID_PARAMETER", response.errorCode(), query)
         }
     }
 
@@ -158,7 +175,7 @@ class QueryRoutesTest {
         // A repeated parameter is not silently collapsed.
         val repeated = client.get("/v1/events?from=2026-10-12T00:00:00Z&to=2026-10-13T00:00:00Z&limit=1&limit=2") {
             header("SignalDock-Contract-Version", "1")
-            header(HttpHeaders.Authorization, "Bearer test-key")
+            header(HttpHeaders.Authorization, "Bearer query-key")
         }
         assertEquals(HttpStatusCode.BadRequest, repeated.status)
         assertEquals("INVALID_CURSOR", client.query("/v1/events", october12 + ("cursor" to "AAAA")).errorCode())

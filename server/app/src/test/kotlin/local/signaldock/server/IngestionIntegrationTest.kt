@@ -190,6 +190,21 @@ class IngestionIntegrationTest {
     }
 
     @Test
+    fun `route rejects the query key with the collection key error`() = testApplication {
+        application { ingestionModule(database, "test-key") }
+        // "query-key" is another role's key here: the ingestion module only knows the collection key.
+        val response = client.post("/v1/events:batch") {
+            header("SignalDock-Contract-Version", "1")
+            header(HttpHeaders.Authorization, "Bearer query-key")
+            header(HttpHeaders.ContentType, ContentType.Application.Json)
+            setBody(batch(event("eb755b76-0902-4c6a-aa15-389dfb750370")))
+        }
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+        assertTrue(response.bodyAsText().contains("COLLECTION_KEY_INVALID"))
+        assertEquals(0, runBlocking { countRows() })
+    }
+
+    @Test
     fun `route returns 415 ErrorResponse for unsupported media boundaries`() = testApplication {
         application { ingestionModule(database, "test-key") }
         val requestBody = batch(event("eb755b76-0902-4c6a-aa15-389dfb750370"))

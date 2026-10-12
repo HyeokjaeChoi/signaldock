@@ -112,6 +112,12 @@ public fun parseProjectZone(id: String): ZoneId {
 
 public fun parseEventId(raw: String): UUID = parseUuid("eventId", raw)
 
+/** The details route takes no query parameters: any one, even repeated, is rejected like on the other routes. */
+public fun parseDetailRequest(rawEventId: String, params: Map<String, List<String>>): UUID {
+    rejectUnknown(params, emptySet())
+    return parseEventId(rawEventId)
+}
+
 /** Starts of all buckets that touch the period, in order. The first start can precede `from`. */
 public fun bucketStarts(period: Period, bucket: Bucket, zone: ZoneId): List<Instant> {
     val starts = ArrayList<Instant>()

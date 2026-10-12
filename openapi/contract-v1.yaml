@@ -112,7 +112,7 @@ paths:
         commits. Request parameters are strict: unknown or repeated
         parameters are rejected with HTTP 400.
       security:
-        - collectionKey: []
+        - queryKey: []
       parameters:
         - $ref: '#/components/parameters/ContractVersion'
         - $ref: '#/components/parameters/From'
@@ -163,7 +163,7 @@ paths:
       operationId: getReceivedEvent
       summary: Get one received event with its stored properties
       security:
-        - collectionKey: []
+        - queryKey: []
       parameters:
         - $ref: '#/components/parameters/ContractVersion'
         - name: eventId
@@ -200,7 +200,7 @@ paths:
         the same filters as the list. At most 100 names are returned, largest
         count first, then by name; `truncated` tells whether more exist.
       security:
-        - collectionKey: []
+        - queryKey: []
       parameters:
         - $ref: '#/components/parameters/ContractVersion'
         - $ref: '#/components/parameters/From'
@@ -232,7 +232,7 @@ paths:
         count 0. At most 720 buckets: a request that produces more than 720
         buckets returns 400 PERIOD_TOO_LONG.
       security:
-        - collectionKey: []
+        - queryKey: []
       parameters:
         - $ref: '#/components/parameters/ContractVersion'
         - $ref: '#/components/parameters/From'
@@ -330,7 +330,8 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
     Unauthorized:
       description: >
-        The Bearer collection key is missing, repeated, malformed, or invalid.
+        The Bearer query key is missing, repeated, malformed, or invalid, or the
+        value is another key. The code is QUERY_KEY_INVALID.
       content:
         application/json:
           schema:
@@ -354,6 +355,16 @@ components:
       description: >
         Collection key used for local evaluation. This is an access check,
         not end-user authentication or a public-service security boundary.
+        It is write-only: only ingestion accepts it. Apps can expose it.
+    queryKey:
+      type: http
+      scheme: bearer
+      description: >
+        Query key used for local evaluation. The Dashboard reads stored
+        events with it through a same-origin proxy. This is an access check,
+        not end-user authentication or a public-service security boundary.
+        Only the query endpoints accept it. A missing, wrong, or collection
+        key returns 401 QUERY_KEY_INVALID.
   schemas:
     BatchIngestRequest:
       type: object
@@ -562,7 +573,8 @@ components:
           type: string
           description: >
             Machine-readable error code, e.g. CONTRACT_HEADER_MISSING,
-            CONTRACT_VERSION_UNSUPPORTED, UNKNOWN_FIELD, MALFORMED_REQUEST,
+            CONTRACT_VERSION_UNSUPPORTED, COLLECTION_KEY_INVALID,
+            QUERY_KEY_INVALID, UNKNOWN_FIELD, MALFORMED_REQUEST,
             INVALID_PARAMETER, INVALID_CURSOR, PERIOD_TOO_LONG, EVENT_NOT_FOUND.
         message:
           type: string

@@ -13,11 +13,16 @@ internal fun ApplicationCall.requireContractVersion(): String {
     return version.single()
 }
 
-/** One `Authorization: Bearer <collection key>` value, compared in constant time. */
-internal fun ApplicationCall.requireCollectionKey(collectionKey: String) {
+internal fun ApplicationCall.requireCollectionKey(collectionKey: String) = requireBearer(collectionKey, "COLLECTION_KEY_INVALID")
+
+/** Query endpoints take only the query key; the error never says whether a value is a valid collection key (Q130). */
+internal fun ApplicationCall.requireQueryKey(queryKey: String) = requireBearer(queryKey, "QUERY_KEY_INVALID")
+
+/** One `Authorization: Bearer <key>` value, compared in constant time. The error code follows the role. */
+private fun ApplicationCall.requireBearer(key: String, errorCode: String) {
     val provided = request.headers.getAll(HttpHeaders.Authorization)
     val authorized = provided?.singleOrNull()?.let {
-        MessageDigest.isEqual(it.toByteArray(Charsets.UTF_8), "Bearer $collectionKey".toByteArray(Charsets.UTF_8))
+        MessageDigest.isEqual(it.toByteArray(Charsets.UTF_8), "Bearer $key".toByteArray(Charsets.UTF_8))
     } ?: false
-    if (!authorized) throw RequestFailure("COLLECTION_KEY_INVALID")
+    if (!authorized) throw RequestFailure(errorCode)
 }

@@ -1,8 +1,8 @@
 # SignalDock first-release spec
 
-Status: Q127 full design agreement complete; implementation approved and ready to begin. Product code implementation has not started. Record build, device, and performance verification results separately.
+Status: Q127 full design agreement complete (agreements continue through Q131, dated 2026-10-12); implementation approved and ready to begin. Product code implementation has not started. Record build, device, and performance verification results separately.
 
-Baseline date: 2026-10-09. Q127 approved entry into implementation. This baseline design is not evidence of completed build, device, or performance verification. This document is not an execution report. Keep personal conversations and résumé review records local only. The latest agreements are the items marked as agreed through Q126 in this document and the ADRs. Later agreements refine or replace earlier proposals. Read performance-plan.md for performance measurement and dashboard-verification-defaults.md for Dashboard defaults. Section 9 lists technical conditions to check during implementation. final-review.md summarizes the full review.
+Baseline date: 2026-10-09. Q127 approved entry into implementation. This baseline design is not evidence of completed build, device, or performance verification. This document is not an execution report. Keep personal conversations and résumé review records local only. The latest agreements are the items marked as agreed through Q131 in this document and the ADRs (Q128 to Q131 are dated 2026-10-12). Later agreements refine or replace earlier proposals. Read performance-plan.md for performance measurement and dashboard-verification-defaults.md for Dashboard defaults. Section 9 lists technical conditions to check during implementation. final-review.md summarizes the full review.
 
 ## 1. Goal and scope
 
@@ -11,7 +11,7 @@ This portfolio supports a Datarize Mobile SDK Engineer application. It adds evid
 - Target date: a first complete version by 2026-10-22. The user's available work time is 10 to 15 hours per week, 20 to 30 hours total. This is not an estimate that guarantees completion.
 - First release of an Android native SDK. The customer app explicitly calls `track()`.
 - Shopping demo: product view → cart → simulated purchase. No real payment.
-- One local project, collection-key checks, synthetic data, and a local Dashboard without login.
+- One local project, collection-key checks for ingestion and a separate query-key check for Dashboard reads, synthetic data, and a local Dashboard without login.
 - JSON for both SDK and server. Generate Kotlin and TypeScript models from the OpenAPI contract.
 - Deliver one entry point for server/DB/Dashboard startup, an SDK Maven folder-repository ZIP, an independent consumer app, reproduction instructions, and a short verification video.
 - The first scope excludes iOS/Flutter SDKs, automatic events, user identify, campaign/push, funnel analysis, multiple projects/account management, public internet operation, and Maven Central publication.
@@ -107,7 +107,7 @@ Store installation ID, queue, failure diagnostics, and retry state in an SDK-spe
 
 Use an eventId unique constraint within the single project. Do not rely only on a prior lookup to prevent duplicate insertion.
 
-1. Validate request structure, collection key, and size.
+1. Validate request structure, collection key (the query key is not accepted here), and size.
 2. Validate each event's semantics in a parseable batch. Separate valid storage candidates from permanently invalid rejection candidates.
 3. Insert valid items in a transaction. For ID conflicts, compare content with the confirmed existing row.
 4. Return item-level receipt results after DB commit. Do not produce successful receipt on DB failure or rollback.
@@ -117,6 +117,8 @@ The same ID/content is duplicate success. The same ID with different content pre
 Keep server events until explicit deletion or DB reset. There is no automatic TTL or separate dedup tombstone. Prevent duplicate storage/aggregation while the row remains. An old event resent after deletion may be stored again. Do not describe delivery as exactly-once.
 
 The collection key is not a secret that cannot be extracted from the SDK. It checks access for local evaluation and does not replace user authentication or public-service security. Do not empty the queue by treating a key mismatch as permanent event rejection.
+
+A separate query key protects the four Dashboard read endpoints (Q128 to Q131). The collection key is write-only because apps can expose it. Only the Dashboard side holds the query key, and the Dashboard reaches the server through a same-origin proxy that adds it.
 
 ## 6. User screens and distribution
 
@@ -365,3 +367,11 @@ Q125 agreed: design processing-slot/connection acquisition waits, SQL execution,
 Apply limits with SET LOCAL or equivalent inside the transaction on the same connection, preventing settings from leaking on pool reuse. After DB errors, roll back or discard unusable connections. Do not assume that ending the HTTP wait stops DB work. Acknowledge uncertain storage outcomes when the commit response is lost; recover through same-eventId resends and server duplicate handling. Existing SDK backoff handles retries for temporary DB failures. Do not add a separate automatic server retry loop. Record processing-slot waits, connection waits, lock timeouts, and statement timeouts separately without sensitive information.
 
 Implementation verification: reproduce lock contention, slow SQL, pool exhaustion, cancellation/rollback completion and connection reuse, and response loss after commit. A timeout response alone does not establish no storage or resource reclamation. Keep the existing post-commit collection ACK rule. Exact normal-operation values and driver/server cancellation integration remain implementation checks. This agreement does not mean execution verification is complete.
+
+Q128 agreed (2026-10-12): separate the keys fully. Ingestion (`POST /v1/events:batch`) accepts only the collection key. The four query endpoints (`GET /v1/events`, `GET /v1/events/{eventId}`, `GET /v1/event-counts/by-name`, `GET /v1/event-counts/by-time`) accept only the query key. The collection key can be extracted from apps, so it is write-only. No key issuance, rotation, or key table; multi-project and account management stay out of scope.
+
+Q129 agreed (2026-10-12): the Dashboard gets the query key through a same-origin proxy. In Docker Compose, nginx serves the built Dashboard and proxies `/v1/*` to the server, adding `Authorization: Bearer ${SIGNALDOCK_QUERY_KEY}`. In development, the Vite dev server proxy does the same with the key from `process.env`; the key is never in the bundle. The Dashboard port binds to `127.0.0.1` only. The server has no CORS. Issue 15 implements this.
+
+Q130 agreed (2026-10-12): a missing, wrong, or other-role key on a query endpoint returns 401 `QUERY_KEY_INVALID`, never 403, so the server does not reveal that a value is a valid collection key. Ingestion keeps 401 `COLLECTION_KEY_INVALID`, and a query key sent there gets that 401. The check order stays: contract version header (400), key (401), parameters (400).
+
+Q131 agreed (2026-10-12): the environment variable is `SIGNALDOCK_QUERY_KEY`. The server does not start if it is missing or blank, or if it equals `SIGNALDOCK_COLLECTION_KEY`. There is no length or format rule beyond non-blank. Key values are never logged; startup errors name only the variable.
