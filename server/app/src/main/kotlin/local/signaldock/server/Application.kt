@@ -22,11 +22,11 @@ import kotlinx.serialization.json.Json
 import org.openapitools.client.models.BatchAckResponse
 import org.openapitools.client.models.ErrorResponse
 import java.io.ByteArrayOutputStream
-import java.security.MessageDigest
 import local.signaldock.ingestion.RequestFailure
 import local.signaldock.persistence.Database
 import local.signaldock.persistence.DatabaseObserver
 import local.signaldock.persistence.DatabaseUnavailable
+import local.signaldock.query.parseProjectZone
 
 /** Callback is a test seam for response loss after a real commit; production uses the default. */
 internal fun Application.ingestionModule(
@@ -42,15 +42,8 @@ internal fun Application.ingestionModule(
             val budget = database.budget()
             try {
                 withTimeout(budget.remainingMs()) {
-                    val version = call.request.headers.getAll("SignalDock-Contract-Version")
-                    if (version == null) throw RequestFailure("CONTRACT_HEADER_MISSING")
-                    if (version != listOf("1")) throw RequestFailure("CONTRACT_VERSION_UNSUPPORTED")
-                    val requestContractVersion = version.single()
-                    val provided = call.request.headers.getAll(HttpHeaders.Authorization)
-                    val authorized = provided?.singleOrNull()?.let {
-                        MessageDigest.isEqual(it.toByteArray(Charsets.UTF_8), "Bearer $collectionKey".toByteArray(Charsets.UTF_8))
-                    } ?: false
-                    if (!authorized) throw RequestFailure("COLLECTION_KEY_INVALID")
+                    val requestContractVersion = call.requireContractVersion()
+                    call.requireCollectionKey(collectionKey)
                     if (!call.request.contentType().match(ContentType.Application.Json)) {
                         throw RequestFailure("CONTENT_TYPE_UNSUPPORTED")
                     }
@@ -86,9 +79,17 @@ internal fun Application.ingestionModule(
     }
 }
 
+/** Q131: both keys are required and non-blank, and they differ. Errors name variables, never values. */
+internal fun resolveKeys(collectionKey: String?, queryKey: String?): Pair<String, String> {
+    require(!collectionKey.isNullOrBlank()) { "SIGNALDOCK_COLLECTION_KEY is missing or blank" }
+    require(!queryKey.isNullOrBlank()) { "SIGNALDOCK_QUERY_KEY is missing or blank" }
+    require(collectionKey != queryKey) { "SIGNALDOCK_QUERY_KEY must differ from SIGNALDOCK_COLLECTION_KEY" }
+    return collectionKey to queryKey
+}
+
 fun main() {
     fun required(name: String) = requireNotNull(System.getenv(name)) { "Missing $name" }
-    val key = required("SIGNALDOCK_COLLECTION_KEY").also { require(it.isNotBlank()) }
+    val (collectionKey, queryKey) = resolveKeys(System.getenv("SIGNALDOCK_COLLECTION_KEY"), System.getenv("SIGNALDOCK_QUERY_KEY"))
     val database = Database(required("SIGNALDOCK_JDBC_URL"), required("SIGNALDOCK_DB_USER"), required("SIGNALDOCK_DB_PASSWORD"),
         observer = DatabaseObserver { stage, millis ->
             org.slf4j.LoggerFactory.getLogger("ingestion.database").info("stage={} elapsedMs={}", stage, millis)
@@ -96,7 +97,8 @@ fun main() {
     try {
         database.migrate()
         embeddedServer(Netty, host = "127.0.0.1", port = System.getenv("PORT")?.toInt() ?: 8080) {
-            ingestionModule(database, key)
+            ingestionModule(database, collectionKey)
+            queryModule(database, queryKey, parseProjectZone(System.getenv("SIGNALDOCK_TIME_ZONE") ?: "Asia/Seoul"))
             monitor.subscribe(ApplicationStopped) { database.close() }
         }.start(wait = true)
     } finally {

@@ -5,7 +5,12 @@ import org.openapitools.client.models.BatchAckResponse
 import org.openapitools.client.models.BatchIngestRequest
 import org.openapitools.client.models.ErrorResponse
 import org.openapitools.client.models.EventIngestPropertiesValue
+import org.openapitools.client.models.EventNameCounts
+import org.openapitools.client.models.EventReceiptDetail
+import org.openapitools.client.models.EventReceiptPage
+import org.openapitools.client.models.EventTimeCounts
 import org.openapitools.client.models.ItemAck
+import org.openapitools.client.models.PropertyValue
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -90,6 +95,50 @@ class RoundTripTest {
 
         val reserialized = json.parseToJsonElement(json.encodeToString(ErrorResponse.serializer(), err))
         assertEquals(json.parseToJsonElement(raw), reserialized)
+    }
+
+    @Test
+    fun `query responses round trip`() {
+        fun <T> roundTrip(name: String, serializer: kotlinx.serialization.KSerializer<T>): T {
+            val raw = fixture(name)
+            val value = json.decodeFromString(serializer, raw)
+            assertEquals(json.parseToJsonElement(raw), json.parseToJsonElement(json.encodeToString(serializer, value)), name)
+            return value
+        }
+
+        val page = roundTrip("event-receipt-page.json", EventReceiptPage.serializer())
+        assertEquals(2, page.items.size)
+        assertEquals("2026-10-12T01:00:00.500Z", page.items[0].receivedAt)
+        assertEquals("2026-10-12T00:00:00.250Z", page.items[0].occurredAt)
+        assertTrue(page.nextCursor!!.isNotEmpty())
+
+        val detail = roundTrip("event-receipt-detail.json", EventReceiptDetail.serializer())
+        assertEquals(PropertyValue.StringValue("sku-42"), detail.properties["product_id"])
+        assertEquals(PropertyValue.BooleanValue(true), detail.properties["in_stock"])
+        assertEquals(0, (detail.properties["price"] as PropertyValue.BigDecimalValue).value.compareTo(java.math.BigDecimal("12.5")))
+        assertEquals(0, (detail.properties["quantity"] as PropertyValue.BigDecimalValue).value.compareTo(java.math.BigDecimal(3)))
+        assertEquals("가나다 🎉", (detail.properties["note"] as PropertyValue.StringValue).value)
+
+        val names = roundTrip("event-name-counts.json", EventNameCounts.serializer())
+        assertEquals(listOf("product_view", "cart_add", "purchase"), names.items.map { it.name })
+        assertEquals(false, names.truncated)
+
+        val times = roundTrip("event-time-counts.json", EventTimeCounts.serializer())
+        assertEquals(EventTimeCounts.Bucket.DAY, times.bucket)
+        assertEquals(listOf(0L, 3L, 1L), times.items.map { it.count })
+    }
+
+    @Test
+    fun `query responses tolerate added fields but not missing required fields`() {
+        val tolerant = Json { ignoreUnknownKeys = true; explicitNulls = true }
+        val extended = fixture("event-receipt-page.json").trimEnd().dropLast(1) + ""","added":{"later":1}}"""
+        assertEquals(2, tolerant.decodeFromString<EventReceiptPage>(extended).items.size)
+        assertFailsWith<kotlinx.serialization.SerializationException> {
+            tolerant.decodeFromString<EventReceiptPage>("""{"nextCursor":"x"}""")
+        }
+        assertFailsWith<kotlinx.serialization.SerializationException> {
+            tolerant.decodeFromString<EventTimeCounts>("""{"timeZone":"Asia/Seoul","bucket":"week","items":[]}""")
+        }
     }
 
     @Test

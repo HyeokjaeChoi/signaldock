@@ -33,7 +33,7 @@ Spec (`.scratch/signaldock-portfolio/spec.md`):
 
 ## `server/`
 
-Modules: `server/app`, `server/ingestion`, `server/persistence`. The tracked jOOQ output is `server/persistence/generated/jooq`.
+Modules: `server/app`, `server/ingestion`, `server/query`, `server/persistence`. The tracked jOOQ output is `server/persistence/generated/jooq`.
 
 Architecture (`architecture.md`):
 - Collection, delivery, and ACK
@@ -45,13 +45,17 @@ ADRs:
 - ADR-0002
 - ADR-0004 (`docs/adr/0004-server-runtime-and-receipt-boundaries.md`)
 - ADR-0005, section "Server: layered Gradle modules"
+- ADR-0007 (`docs/adr/0007-dashboard-query-api.md`), for `server/query` and the query routes
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 2. Agreed stack and boundaries
 - 5. Server receipt and duplicate handling
+- 6. User screens and distribution, Dashboard (for `server/query`)
 - 8, B. Errors, ACKs, and data representation
 - 11. Delegated performance measurement decisions
 - 12. Dashboard role confirmation and default delegation
+
+Also read `.scratch/signaldock-portfolio/dashboard-verification-defaults.md` before you edit `server/query` or the query routes.
 
 ## `openapi/`, `fixtures/`, `generated/`, `contract-check/`
 
@@ -86,6 +90,7 @@ Architecture (`architecture.md`):
 
 ADRs:
 - ADR-0002
+- ADR-0007 (`docs/adr/0007-dashboard-query-api.md`)
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 6. User screens and distribution, Dashboard

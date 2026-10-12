@@ -17,12 +17,12 @@ The SDK is the main product. The demo app and Dashboard help verify its behavior
 | Host app / Compose demo | Collect business events explicitly after initialization. Do not collect again automatically after recomposition or call cancellation |
 | Public SDK API | Validate input, return collection results, and expose read-only diagnostics. Do not expose shopping models or transport DTOs |
 | Room / sender | Own the durable queue, capacity checks, batches, ACK application, and retry state shared by foreground work and WorkManager |
-| Ktor / PostgreSQL | Validate contracts and the collection key; store and deduplicate events; ACK after commit; expose query APIs |
+| Ktor / PostgreSQL | Validate contracts and the collection key (ingestion) or query key (queries); store and deduplicate events; ACK after commit; expose query APIs |
 | React Dashboard | Show server records, details, and supporting counts. Access PostgreSQL only through Ktor |
 
 App diagnostics are a snapshot of the device queue, recent ACK, and next retry.
 The Dashboard shows server records. Those records cannot establish the device queue state or retry count.
-The collection key checks access for local evaluation. An SDK key can be extracted and does not provide user authentication.
+The collection key checks access for local evaluation. An SDK key can be extracted and does not provide user authentication, so the collection key is write-only. A separate query key guards the Dashboard read endpoints and is added by a same-origin proxy (spec Q128 to Q131, ADR-0007).
 
 ## Collection, delivery, and ACK
 

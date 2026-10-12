@@ -38,7 +38,7 @@ private val json = Json {
 /** HTTP status for a request-level failure code. Rules in `:ingestion` know codes, not statuses. */
 internal fun httpStatusOf(code: String): Int = when (code) {
     "BATCH_TOO_LARGE", "PAYLOAD_TOO_LARGE", "EVENT_TOO_LARGE" -> 413
-    "COLLECTION_KEY_INVALID" -> 401
+    "COLLECTION_KEY_INVALID", "QUERY_KEY_INVALID" -> 401
     "CONTENT_TYPE_UNSUPPORTED", "CONTENT_ENCODING_UNSUPPORTED" -> 415
     else -> 400
 }
