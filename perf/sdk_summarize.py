@@ -87,7 +87,15 @@ def analyze(d):
     db = set(db_lines)
     if not (d / "proxy.jsonl").exists():
         reasons_invalid.append("proxy.jsonl is missing: no record of what the SDK sent")
-    proxy = [json.loads(x) for x in (d / "proxy.jsonl").read_text().splitlines() if x.strip()] if (d / "proxy.jsonl").exists() else []
+    proxy, bad_lines = [], 0
+    if (d / "proxy.jsonl").exists():
+        for x in (d / "proxy.jsonl").read_text().splitlines():
+            try:
+                proxy.append(json.loads(x))
+            except ValueError:
+                bad_lines += 1  # the proxy was cut in the middle of a write
+    if bad_lines:
+        reasons_invalid.append(f"proxy.jsonl has {bad_lines} unreadable lines")
     sent = [i for b in proxy for i in b.get("eventIds", [])]
     ack_status = {}
     for b in proxy:
