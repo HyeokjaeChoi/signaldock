@@ -1,6 +1,6 @@
 # SignalDock first-release spec
 
-Status: Q127 full design agreement complete (agreements continue through Q133, dated 2026-10-12); implementation approved and ready to begin. Product code implementation has not started. Record build, device, and performance verification results separately.
+Status: Q127 full design agreement complete (agreements continue through Q133, dated 2026-10-12); implementation approved and ready to begin. Product code implementation is in progress on separate branches. Record build, device, and performance verification results separately.
 
 Baseline date: 2026-10-09. Q127 approved entry into implementation. This baseline design is not evidence of completed build, device, or performance verification. This document is not an execution report. Keep personal conversations and résumé review records local only. The latest agreements are the items marked as agreed through Q133 in this document and the ADRs (Q128 to Q133 are dated 2026-10-12). Later agreements refine or replace earlier proposals. Read performance-plan.md for performance measurement and dashboard-verification-defaults.md for Dashboard defaults. Section 9 lists technical conditions to check during implementation. final-review.md summarizes the full review.
 

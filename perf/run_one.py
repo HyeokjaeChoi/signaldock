@@ -459,12 +459,13 @@ def execute(a):
     sampler = Sampler(k6.pid)
     sampler.start()
     snaps = {}
+    k6_exit = None
     try:
         time.sleep(a.warmup + 3)  # k6 initialisation is a few seconds; exact boundaries come from request timestamps
         snaps["after_warmup"] = db_snapshot()
         c.psql("SELECT pg_stat_statements_reset()")
         times["statements_reset"] = stamp()
-        k6.wait(timeout=a.measure + 120)
+        k6_exit = k6.wait(timeout=a.measure + 120)
     finally:
         times["k6_end"] = stamp()
         sampler.stop.set()
@@ -537,6 +538,8 @@ def execute(a):
     skipped = {ep: c_get("ticks_skipped", ep, "measure") for ep in ("list", "by-name", "by-time")}
     reasons, invalid = [], []
     scheduled = a.measure * RATE
+    if k6_exit != 0:
+        invalid.append(f"k6 exit code {k6_exit}; phases may be incomplete (see k6.log)")
     if c_get("bodies_exhausted"):
         invalid.append("request fixtures exhausted")
     if dropped:
