@@ -17,6 +17,9 @@ shift || true
 cases=("$@")
 [ ${#cases[@]} -gt 0 ] || cases=(offline kill restart update clear reinstall restore)
 
+# The cases switch Backup Manager off and select the local transport: that must never touch a physical device.
+case "$serial" in emulator-*) ;; *) echo "refusing $serial: emulators only (backup settings are changed)" >&2; exit 1 ;; esac
+
 adb_bin="${ANDROID_HOME:+$ANDROID_HOME/platform-tools/}adb"
 adb() { "$adb_bin" -s "$serial" "$@"; }
 
