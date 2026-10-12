@@ -6,8 +6,8 @@ This monorepo contains the design for the SDK and a local data processing server
 Review the path from an app's `track()` call through a durable queue, retries, server deduplication, and independent artifact installation.
 
 > **Status: 2026-10-12**
-> Implementation is in progress. The SDK, the server, the Android demo app, and the Dashboard are implemented, and the server and Dashboard run with Docker Compose (see below).
-> The SDK Maven ZIP, the independent consumer app, end-to-end verification, and performance results are not yet available.
+> Implementation is in progress. The SDK, the server, the Android demo app, and the Dashboard are implemented. The server and Dashboard run with Docker Compose, the SDK builds into a local Maven ZIP, and an independent consumer app uses that ZIP with an R8 release build (see below).
+> Full end-to-end verification (offline recovery, ACK loss, and the other completion criteria) and performance results are not yet available.
 
 ## Start here
 
@@ -63,7 +63,7 @@ Deduplication lasts while the server row exists. The design does not claim exact
 | Contracts and distribution | OpenAPI / JSON · generated sources tracked in Git · Docker Compose entry point · local Maven repository ZIP |
 
 Exact dependency versions need build verification and pinning during implementation.
-The planned first coordinate is `local.signaldock:sdk-android:0.1.0`. No installable artifact is available yet.
+The first coordinate is `local.signaldock:sdk-android:0.1.0` (local only, not Maven Central). Build the ZIP as described below.
 
 ## Scope and verification
 
@@ -73,7 +73,7 @@ iOS / Flutter, automatic events, `identify`, campaign / push, funnels, multiple 
 
 Functional verification is pending. The [completion criteria](.scratch/signaldock-portfolio/spec.md#7-completion-criteria-and-verification-plan) require environment records, source revision/hash, and event ID comparisons.
 Load and latency values in the [performance plan](.scratch/signaldock-portfolio/performance-plan.md) are targets, not measured results or an SLA.
-Steps to run and stop the server and Dashboard are below. Steps to integrate the SDK from the Maven ZIP will follow with that artifact.
+Steps to run and stop the server and Dashboard, to build the Maven ZIP, and to run the consumer app are below.
 
 ## Run the server and Dashboard
 
@@ -90,6 +90,67 @@ docker compose down --volumes        # RESET: deletes the DB volume and all even
 - The server listens on `127.0.0.1:8080`. An Android emulator reaches it as `http://10.0.2.2:8080`. Send events with `SIGNALDOCK_COLLECTION_KEY`.
 - The Dashboard holds no key. nginx proxies `GET /v1/*` and adds `SIGNALDOCK_QUERY_KEY` ([ADR-0008](docs/adr/0008-dashboard-and-compose-delivery.md)). All ports bind to `127.0.0.1`.
 - Local development: `docker compose up -d db`, then run the server from `server/` with the variables in `.env.example` and `npm run dev` in `dashboard/` (the Vite proxy adds the query key from `SIGNALDOCK_QUERY_KEY`).
+
+## Build the Maven ZIP
+
+Needs JDK 21 (`scripts/setup-toolchain.sh` installs it into `.tools/`) and an Android SDK with platform `android-36` (`ANDROID_HOME`).
+
+```sh
+export JAVA_HOME="$PWD/.tools/jdk-21.0.12.1+1"
+sdk/gradlew -p sdk :sdk-android:signaldockMavenZip --no-daemon
+# -> sdk/sdk-android/build/distributions/signaldock-sdk-android-0.1.0-maven.zip
+```
+
+The ZIP is a Maven folder repository: AAR, sources jar, POM, and Gradle module metadata for `local.signaldock:sdk-android:0.1.0`. The first build downloads dependencies, so it is not fully offline.
+
+## Add the SDK to an app
+
+Unzip the ZIP into a folder, then add it as a repository and depend on the coordinate:
+
+```kotlin
+// settings.gradle.kts
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+        maven {
+            url = uri("/path/to/unzipped/folder")
+            content { includeGroup("local.signaldock") }
+        }
+    }
+}
+// app/build.gradle.kts
+dependencies { implementation("local.signaldock:sdk-android:0.1.0") }
+```
+
+Requirements of the 0.1.0 AAR:
+
+- `compileSdk` 36 or newer (`aarMetadata.minCompileSdk=36`, [ADR-0006](docs/adr/0006-sdk-delivery-decisions.md)), `minSdk` 24 or newer.
+- Kotlin Gradle plugin 2.4 or newer. With AGP 9.3.3 the built-in Kotlin defaults to 2.2.0 and cannot read the SDK; add `classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.21")` to the root `buildscript` ([ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md)).
+- The host app declares `INTERNET`. The SDK needs no R8 rules of its own. The SDK reaches the server over HTTPS unless the app allows cleartext for that host.
+- Call `SignalDock.initialize(context, SignalDockConfig(endpoint, collectionKey))` once (for example in `Application.onCreate`), then `track("name") { property("key", value) }` and `diagnostics()` on the returned instance.
+
+## Run the consumer app
+
+`compatibility/consumer-android/` is a separate Gradle build. It depends only on the unzipped folder repository, compiles with API 36, and builds a release APK with R8. One command builds the ZIP, unzips it into a clean temporary folder, and builds the APK:
+
+```sh
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+scripts/verify-consumer.sh
+```
+
+To run it against the Compose stack on an emulator (the collection key is baked in at build time; use your `.env` value):
+
+```sh
+cp .env.example .env && docker compose up -d --build
+SIGNALDOCK_REPO_DIR=/tmp/signaldock-maven scripts/verify-consumer.sh   # keep the unzipped folder
+compatibility/consumer-android/gradlew -p compatibility/consumer-android \
+  -Psignaldock.repo=/tmp/signaldock-maven -Psignaldock.collectionKey=<SIGNALDOCK_COLLECTION_KEY> :app:assembleRelease
+adb install -r compatibility/consumer-android/app/build/outputs/apk/release/app-release.apk
+adb shell am start -n local.signaldock.consumer/.MainActivity
+```
+
+Tap "Track consumer_ping", wait about 15 seconds, then tap "Show diagnostics": `lastAck` shows `accepted=1`. The app allows cleartext for `10.0.2.2` only. The default endpoint is `http://10.0.2.2:8080`; override it with `-Psignaldock.endpoint=...`. For a physical device, use a reachable HTTPS endpoint.
 
 ## Repository guide
 

@@ -44,6 +44,18 @@ jobs:
           export JAVA_HOME="$PWD/.tools/$(ls .tools | grep '^jdk-')"
           sdk/gradlew -p sdk :sdk-android:testDebugUnitTest :demo:feature:shop:testDebugUnitTest :demo:feature:diagnostics:testDebugUnitTest --no-daemon
 
+  # Maven ZIP, then the independent consumer app (R8 release) from the unzipped folder.
+  # No emulator: the run on a device is a local verification (README).
+  consumer-r8:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - run: scripts/setup-toolchain.sh
+      - run: scripts/verify-consumer.sh
+
   server-test:
     runs-on: ubuntu-latest
     timeout-minutes: 30

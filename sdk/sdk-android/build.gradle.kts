@@ -2,6 +2,7 @@
 // implementation in `local.signaldock.internal`. No DI framework (Q87).
 plugins {
     alias(libs.plugins.android.library)
+    `maven-publish`
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
 }
@@ -19,6 +20,12 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    // Publish the release variant with a sources jar (issue 06). Consumer R8 rules, if any, live in
+    // consumer-rules.pro and ship inside the AAR.
+    publishing {
+        singleVariant("release") { withSourcesJar() }
     }
 
     testOptions {
@@ -41,6 +48,42 @@ androidComponents {
     onVariants { variant ->
         variant.sources.kotlin?.addStaticSourceDirectory("../../generated/kotlin/src/main/kotlin")
     }
+}
+
+// Local Maven folder repository and ZIP (issue 06, spec Q126). Not Maven Central.
+//   sdk/gradlew -p sdk :sdk-android:signaldockMavenZip
+// writes sdk-android/build/distributions/signaldock-sdk-android-0.1.0-maven.zip.
+val sdkVersion = "0.1.0"
+val mavenFolder = layout.buildDirectory.dir("maven-repo")
+publishing {
+    publications {
+        register<MavenPublication>("release") {
+            groupId = "local.signaldock"
+            artifactId = "sdk-android"
+            version = sdkVersion
+            afterEvaluate { from(components["release"]) }
+        }
+    }
+    repositories {
+        maven {
+            name = "folder"
+            url = uri(mavenFolder)
+        }
+    }
+}
+tasks.register<Delete>("cleanMavenFolder") { delete(mavenFolder) }
+tasks.matching { it.name == "publishReleasePublicationToFolderRepository" }.configureEach {
+    mustRunAfter("cleanMavenFolder")
+}
+tasks.register<Zip>("signaldockMavenZip") {
+    group = "publishing"
+    description = "Publishes local.signaldock:sdk-android:$sdkVersion to a clean folder repository and zips it."
+    dependsOn("cleanMavenFolder", "publishReleasePublicationToFolderRepository")
+    from(mavenFolder)
+    archiveBaseName.set("signaldock-sdk-android")
+    archiveVersion.set(sdkVersion)
+    archiveClassifier.set("maven")
+    destinationDirectory.set(layout.buildDirectory.dir("distributions"))
 }
 
 ksp {
