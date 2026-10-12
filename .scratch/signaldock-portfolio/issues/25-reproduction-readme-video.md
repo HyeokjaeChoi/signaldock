@@ -3,7 +3,7 @@
 Status: ready-for-agent
 Type: task
 Blocked by: 23, 24
-Execution: Not started
+Execution: Done 2026-10-13 on branch impl/25-reproduction-readme-video (README, docs/reproduce.md, evidence video). Physical device and full measurement runs are not verified (see the comment).
 
 ## Scope and completion criteria
 
@@ -16,3 +16,43 @@ Done when a clean-clone run of the README commands is recorded and the video fil
 ## Comments
 
 2026-10-12: Split from issue 08.
+
+2026-10-13: Implemented. `README.md` section "Reproduce from a clean clone" and `docs/reproduce.md` hold the steps. The commands were run in a fresh clone of `https://github.com/HyeokjaeChoi/signaldock.git` (origin/main `da51462`, a temporary folder under `/private/tmp`, removed afterwards). Host: macOS, Apple M2 Pro. Emulator `signaldock-api37`, port 5584. Compose project name `signaldock-readme` (set with `COMPOSE_PROJECT_NAME`, so the commands read as in the README; the default `signaldock` project and volume were not touched). No volume was deleted. The new volumes `signaldock-readme_signaldock-db` and `signaldock-readme-measure_signaldock-db` stay on this machine.
+
+Wall times are from a warm machine: the Docker layer cache and `~/.gradle` already held the dependencies, so a first run on a new machine takes longer (downloads).
+
+| Command | Result | Time |
+| --- | --- | --- |
+| `git clone <origin url>` | ok | a few seconds (not timed) |
+| `git config core.hooksPath .githooks` | ok | 0 s |
+| `scripts/setup-toolchain.sh` | JDK 21.0.12.1+1, oasdiff 1.33.0, openapi-generator 7.26.0 installed | 12 s |
+| `cp .env.example .env` and the `sed` / `openssl rand -hex 24` loop (keys and DB password) | ok | 0 s |
+| `docker compose up -d --build` | db healthy, server and dashboard started (images were cached) | 5 s |
+| `curl ... http://127.0.0.1:5173/` | 200 | 0 s |
+| `scripts/verify-consumer.sh` | ZIP built, Kotlin metadata check ok, consumer R8 release built (R8 9.3.28) from the unzipped folder by coordinate; BUILD SUCCESSFUL | 54 s |
+| consumer `gradlew ... -Psignaldock.collectionKey=<key> :app:assembleRelease` | BUILD SUCCESSFUL | 31 s |
+| emulator start, `adb install -r` app-release.apk, `am start`, tap "Track consumer_ping", wait 16 s, tap "Show diagnostics" | `lastAck` accepted=1, queuedEvents=0; event in the Dashboard | about 25 s after boot |
+| `sdk/gradlew -p sdk -Psignaldock.collectionKey=<key> :demo:app:assembleDebug`, `adb install -r` | BUILD SUCCESSFUL | 31 s |
+| demo: tap product, tap "Add to cart", screen recording and Dashboard capture | `product_viewed` and `add_to_cart` stored; IDs match the demo screen | 41 s recording |
+| `scripts/e2e-delivery.sh 1` | PASS case 1 (consumer app and demo app, Dashboard detail, list, by-name counts) | 102 s |
+| `scripts/device-measure.sh emulator-5584 normal` (separate Compose project `signaldock-readme-measure`, own env file and ports) | verdict pass | 97 s (includes the stack build) |
+| `scripts/device-durability.sh emulator-5584 offline` | pass: 1,000 events offline, process kill, recovery, delivered in 18.1 s | 34 s |
+| `python3 perf/overload.py --help`, `python3 perf/seed.py --help` | usage printed | 0 s each |
+| `docker compose stop`, `up -d`, event count, `docker compose down` | 6 events before and after stop/up (volume kept); containers and network removed | 18 s |
+| `adb reverse tcp:8080 tcp:8080`, `adb reverse --list`, `adb reverse --remove tcp:8080` (emulator only) | command works on an emulator | 0 s |
+
+Run in full: the clean-clone path (toolchain, Compose, ZIP, consumer R8 on emulator, demo app). Represented by one short command each: E2E (case 1 of 4), device durability (`offline` of 7 cases), SDK device measurement (`normal` of 3 scenarios, API 37 only).
+
+Not verified, with reasons:
+- Physical device (LAN address with `SIGNALDOCK_BIND_HOST`, `adb reverse` on a device): no physical device attached. The README says so. Both apps allow cleartext to `10.0.2.2` only, so a physical device needs HTTPS or a changed network security config (a code change, outside this release).
+- Server pilots and the overload run (`perf/run_one.py`, `perf/overload.py`): not run. The harness uses a fixed Compose project `signaldock-perf` and volume that already exist on this machine from the earlier runs; a new clone would write new random passwords, so the old database would probably reject them, and the volume must not be deleted. Only `--help` ran. The committed results in `perf/results/` are from issue 23.
+- E2E cases 2 to 4, durability cases other than `offline`, `device-measure.sh` scenarios `offline` and `burst`, API 24: not re-run; results are in issues 20, 21, and 24.
+- `docker compose down --volumes` (reset): not run, by rule. The README warns that it deletes data.
+- A first-run download from a machine with empty caches: not measured.
+
+Evidence (folder `.scratch/signaldock-portfolio/evidence/`):
+- `25-demo-track-to-dashboard.mp4`: 41 s, 1576x1000, about 360 KB. Left: emulator screen recording (`adb shell screenrecord`) of the demo app. Right: headless Chrome captures of the Dashboard every 1.5 to 2 s. The event ID prefixes on the Dashboard match the demo screen. Frames checked: no key and no secret shown.
+- `25-demo-saved-on-device.png`: demo screen "Saved on device: add_to_cart (8bdf0699)".
+- `25-dashboard-received.png`: Dashboard with `product_viewed`, `add_to_cart`, and the earlier `consumer_ping`.
+
+Note: the side-by-side video is aligned by start time only, not frame-exact. "Saved on device" does not mean server receipt; the Dashboard frames show receipt.

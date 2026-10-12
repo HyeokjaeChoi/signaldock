@@ -1,0 +1,100 @@
+# Reproduction guide
+
+This guide continues the README section "Reproduce from a clean clone". Do steps 1 to 3 there first: toolchain, Compose stack with `.env`, and `scripts/verify-consumer.sh`.
+Marks: **ran** means the command ran in a fresh clone on 2026-10-13 (record: issue 25). **not verified here** means it did not run, with the reason.
+
+Set `ANDROID_HOME` first (`export ANDROID_HOME="$HOME/Library/Android/sdk"`). Start one emulator and keep it running. Use an even port:
+
+```sh
+"$ANDROID_HOME/emulator/emulator" -avd signaldock-api37 -no-window -no-audio -no-boot-anim -no-snapshot-save -port 5584 &
+adb -s emulator-5584 wait-for-device
+```
+
+Stop it at the end with `adb -s emulator-5584 emu kill`. AVD names: `signaldock-api24`, `signaldock-api37` ([TOOLCHAIN.md](../TOOLCHAIN.md)). The scripts refuse a serial that does not start with `emulator-`.
+
+## Demo app (ran)
+
+The demo app is a debug build with the SDK as a project dependency. It follows product view, cart, and simulated purchase.
+
+```sh
+set -a; . ./.env; set +a
+sdk/gradlew -p sdk -Psignaldock.collectionKey="$SIGNALDOCK_COLLECTION_KEY" :demo:app:assembleDebug
+adb -s emulator-5584 install -r sdk/demo/app/build/outputs/apk/debug/app-debug.apk
+adb -s emulator-5584 shell am start -n local.signaldock.demo/local.signaldock.demo.app.MainActivity
+```
+
+Tap a product, then "Add to cart". The screen shows "Saved on device: add_to_cart (<8 characters of eventId>)". That means the event is in the local queue, not that the server has it. Open `http://127.0.0.1:5173`: after a few seconds the Dashboard lists `product_viewed` and `add_to_cart` with the same ID prefixes. The default endpoint is `http://10.0.2.2:8080`; change it with `-Psignaldock.endpoint=...`.
+
+Evidence: [video](../.scratch/signaldock-portfolio/evidence/25-demo-track-to-dashboard.mp4) (phone left, Dashboard right), [demo screen](../.scratch/signaldock-portfolio/evidence/25-demo-saved-on-device.png), [Dashboard](../.scratch/signaldock-portfolio/evidence/25-dashboard-received.png).
+
+## Delivery failure E2E (case 1 ran; cases 2 to 4 not run for this guide)
+
+```sh
+scripts/e2e-delivery.sh 1         # normal E2E: consumer app and demo app. Or: scripts/e2e-delivery.sh (all four cases)
+```
+
+It needs `.env`, the running stack, and a booted emulator. It builds and installs both apps, starts a fault proxy on `127.0.0.1:8081`, and prints a PASS/FAIL summary. It does not delete data. See [ADR-0010](adr/0010-delivery-failure-e2e-harness.md). Cases 2 to 4 (ACK loss, partial rejection, content conflict) have their own results in issue 21.
+
+## Device durability (one case ran)
+
+```sh
+scripts/device-durability.sh emulator-5584 offline     # 1,000 events offline, process kill, restart, delivery
+scripts/device-durability.sh emulator-5584             # all cases (offline kill restart update clear reinstall restore)
+```
+
+It runs the SDK `androidTest` debug build. It needs no server. See [ADR-0011](adr/0011-sdk-device-test-harness.md). Only `offline` ran for this guide; the other cases have results in issue 20.
+
+## Measurements
+
+SDK on a device (ADR-0014). It needs a separate Compose project with its own ports and an env file outside the repository:
+
+```sh
+cat > /tmp/measure.env <<EOT                       # values are random; keep this file out of the repository
+SIGNALDOCK_COLLECTION_KEY=$(openssl rand -hex 24)
+SIGNALDOCK_QUERY_KEY=$(openssl rand -hex 24)
+SIGNALDOCK_DB_NAME=signaldock
+SIGNALDOCK_DB_USER=signaldock
+SIGNALDOCK_DB_PASSWORD=$(openssl rand -hex 24)
+SIGNALDOCK_DB_PORT=15434
+SIGNALDOCK_SERVER_PORT=18090
+EOT
+docker compose -p signaldock-measure --env-file /tmp/measure.env up -d --build db server
+MEASURE_PROJECT=signaldock-measure SIGNALDOCK_ENV_FILE=/tmp/measure.env \
+  scripts/device-measure.sh emulator-5584 normal          # or: normal offline burst (default: all three)
+docker compose -p signaldock-measure --env-file /tmp/measure.env down      # keeps the volume
+```
+
+It writes `perf/sdk-results/<api>-<scenario>/` and `perf/sdk-results/summary.md` (the committed results came from the owner's runs; a new run overwrites that folder in your clone, so use a scratch clone). The `normal` scenario ran for this guide. `offline` and `burst` did not.
+It uses a debug build of the SDK and the emulator, so the numbers are not release numbers and not an SLA.
+
+Server load (ADR-0013, [Q133](../.scratch/signaldock-portfolio/spec.md)): two pilots and one overload run are committed in `perf/results/`, with `perf/report/` as the viewer. **Not verified here:** the pilot and overload runs did not run in the clean clone. `perf/` always uses the Compose project `signaldock-perf` and a fixed volume, and this machine already holds such a volume from the earlier runs; a new clone writes new random passwords that would not match the old database password in it (expected, not tried), and the volume must not be deleted. Only the command line was checked:
+
+```sh
+python3 perf/seed.py --help
+python3 perf/overload.py --help           # one run: seed 100,000 rows first, then
+# python3 perf/seed.py build --size 100000 --dist recent70
+# python3 perf/overload.py --run-id <new-id>      (not verified here)
+# python3 perf/run_one.py --seed-size 100000 --dist recent70 --window 30 --clients 5 --pool 4 --run-id <new-id> --pilot     (not verified here)
+```
+
+The harness needs `k6` and Python 3. A full pilot or overload run takes several minutes. The 216-run matrix is not part of the deliverable.
+
+## Connect a device to the local server
+
+| Device | Address | Status |
+| --- | --- | --- |
+| Emulator | `http://10.0.2.2:8080` (host loopback, as the emulator sees it) | ran |
+| Physical device, same Wi-Fi | `http://<host LAN address>:8080`. Compose publishes the server on `127.0.0.1` only, so run the server from the host (`docker compose up -d db`, then Ktor from `server/`) with `SIGNALDOCK_BIND_HOST=0.0.0.0` ([ADR-0008](adr/0008-dashboard-and-compose-delivery.md)) | not verified here: no physical device |
+| Physical device, USB | `adb reverse tcp:8080 tcp:8080`, then the app reaches the server as `127.0.0.1:8080`. Remove it with `adb reverse --remove tcp:8080` | the `adb reverse` command ran against an emulator only; not verified on a device |
+
+The apps allow cleartext HTTP to `10.0.2.2` only (network security config). For a physical device, both routes above give a network path, but the apps still refuse plain HTTP to a LAN address or `127.0.0.1`. Use an HTTPS endpoint, or add your address to the app's network security config. That is a code change and is outside this release. Opening the Dashboard from another machine is also not supported: it binds to `127.0.0.1`.
+
+## Shutdown and reset
+
+```sh
+docker compose stop                 # stop; the DB volume is kept
+docker compose down                 # remove containers and network; the DB volume is kept
+docker compose down --volumes       # RESET: deletes the DB volume and ALL stored events (not run for this guide)
+```
+
+`docker compose up -d` after `stop` or `down` shows the old events again. Only `--volumes` gives an empty database. The measurement stacks above use their own project names, so they have their own volumes.
