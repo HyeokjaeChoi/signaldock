@@ -21,4 +21,12 @@ class DatabaseLimitsEnvTest {
         assertEquals(DatabaseLimits(concurrency = 8, poolSize = 8, minimumIdle = 8, admissionMs = 1000,
             connectionMs = 1000, lockMs = 500, statementMs = 2000), limits)
     }
+
+    @Test
+    fun `a malformed value fails instead of using the default`() {
+        val error = kotlin.test.assertFailsWith<IllegalArgumentException> {
+            databaseLimitsFromEnv(mapOf("SIGNALDOCK_DB_POOL_SIZE" to "8 ")::get)
+        }
+        assertEquals("SIGNALDOCK_DB_POOL_SIZE is not an integer", error.message)
+    }
 }

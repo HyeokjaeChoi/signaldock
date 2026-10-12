@@ -86,8 +86,9 @@ internal fun Application.ingestionModule(
  */
 internal fun databaseLimitsFromEnv(env: (String) -> String?): DatabaseLimits {
     val d = DatabaseLimits()
-    fun long(name: String, default: Long) = env(name)?.toLongOrNull() ?: default
-    fun int(name: String, default: Int) = env(name)?.toIntOrNull() ?: default
+    // A variable that is set but malformed must not silently fall back: a run would measure the wrong limits.
+    fun long(name: String, default: Long) = env(name)?.let { requireNotNull(it.toLongOrNull()) { "$name is not an integer" } } ?: default
+    fun int(name: String, default: Int) = env(name)?.let { requireNotNull(it.toIntOrNull()) { "$name is not an integer" } } ?: default
     return DatabaseLimits(
         concurrency = int("SIGNALDOCK_DB_CONCURRENCY", d.concurrency),
         poolSize = int("SIGNALDOCK_DB_POOL_SIZE", d.poolSize),
