@@ -2,8 +2,10 @@
 """Delivery failure E2E cases (issue 21, ADR-0010). Python 3 standard library only.
 
 Run through scripts/e2e-delivery.sh. Expects: the Compose stack up, a booted emulator with the
-consumer app installed (built for the fault proxy endpoint), and .env with the stack's keys.
-Cases: 1 normal E2E, 2 ACK loss, 3 partial rejection, 4 content conflict. Prints evidence for
+consumer app and the demo app installed (both built for the fault proxy endpoint), and the
+entry script's environment (it sources .env and exports E2E_*_PORT, SIGNALDOCK_*). Do not run
+this file directly. Cases: 1 normal E2E (consumer app and demo app), 2 ACK loss, 3 partial
+rejection, 4 content conflict. Unknown case numbers exit nonzero before anything runs. Prints evidence for
 each case and a PASS/FAIL summary; the exit code is 1 when any case failed.
 """
 import json
@@ -20,8 +22,9 @@ from datetime import datetime, timedelta, timezone
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 PKG = "local.signaldock.consumer"
-SERVER = "http://127.0.0.1:8080"
-DASHBOARD = "http://127.0.0.1:5173"  # nginx: adds the query key, GET only
+DEMO_PKG = "local.signaldock.demo"
+SERVER = f"http://127.0.0.1:{os.environ.get('E2E_SERVER_PORT', '8080')}"
+DASHBOARD = f"http://127.0.0.1:{os.environ.get('E2E_DASHBOARD_PORT', '5173')}"  # nginx: adds the query key, GET only
 PROXY_PORT = int(os.environ.get("E2E_PROXY_PORT", "8081"))
 PROXY = f"http://127.0.0.1:{PROXY_PORT}"
 ADB = os.path.join(os.environ.get("ANDROID_HOME", os.path.expanduser("~/Library/Android/sdk")), "platform-tools", "adb")
@@ -31,18 +34,8 @@ def say(msg=""):
     print(msg, flush=True)
 
 
-def env_file():
-    values = {}
-    with open(os.path.join(ROOT, ".env")) as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith("#") and "=" in line:
-                k, v = line.split("=", 1)
-                values[k] = v
-    return values
-
-
-ENV = env_file()
+# The entry script sourced .env and exported these (shell quoting already resolved).
+ENV = os.environ
 
 
 def run(cmd, **kw):
@@ -199,6 +192,47 @@ def case1_normal():
     status, page = dashboard(f"/v1/events?{window()}&eventId={eid}")
     check(status == 200 and [i["eventId"] for i in page["items"]] == [eid], "Dashboard list (eventId filter) shows the event")
     check(name_count("consumer_ping") == c0 + 1, f"Dashboard by-name consumer_ping {c0} -> {c0 + 1}")
+    case1_demo()
+
+
+def tap_node(match):
+    """Tap the center of the first UI node for which match(attrib) is true."""
+    for n in ui_nodes():
+        if match(n):
+            l, t, r, b = map(int, re.findall(r"\d+", n["bounds"]))
+            adb("shell", "input", "tap", str((l + r) // 2), str((t + b) // 2))
+            return
+    raise RuntimeError("UI node not found")
+
+
+def case1_demo():
+    """Spec section 7 'Normal E2E' names the demo app: product -> add to cart through its Compose UI."""
+    say("  -- demo app (sdk/demo/app, debug build): product -> Add to cart --")
+    pv0, atc0, ids0 = name_count("product_viewed"), name_count("add_to_cart"), event_ids()
+    adb("shell", "pm", "clear", DEMO_PKG)
+    adb("shell", "am", "start", "-n", f"{DEMO_PKG}/local.signaldock.demo.app.MainActivity")
+    screen_text("Products")
+    tap_node(lambda n: n.get("text", "").startswith("KRW"))  # first product card
+    viewed = re.search(r"product_viewed \(([0-9a-f]{8})\)", screen_text("Saved on device: product_viewed")).group(1)
+    tap_node(lambda n: n.get("text") == "Add to cart")
+    added = re.search(r"add_to_cart \(([0-9a-f]{8})\)", screen_text("Saved on device: add_to_cart")).group(1)
+    say(f"  demo track on device: product_viewed ({viewed}), add_to_cart ({added}) (the screen shows 8 characters of each eventId)")
+
+    def new_with_prefix():
+        new = event_ids() - ids0
+        found = {p: [e for e in new if e.startswith(p)] for p in (viewed, added)}
+        return found if all(len(v) == 1 for v in found.values()) else None
+
+    found = wait_for("demo events on the server", new_with_prefix, 120)
+    vid, aid = found[viewed][0], found[added][0]
+    say(f"  server stored the demo events: product_viewed={vid} add_to_cart={aid}")
+    check(event_ids() - ids0 == {vid, aid}, "server stored exactly the two new demo eventIds")
+    for eid, name in ((vid, "product_viewed"), (aid, "add_to_cart")):
+        status, detail = dashboard(f"/v1/events/{eid}")
+        say(f"  Dashboard GET /v1/events/{eid}: {status} name={detail.get('name')} receivedAt={detail.get('receivedAt')}")
+        check(status == 200 and detail["name"] == name, f"Dashboard detail shows the demo {name} event")
+    check(name_count("product_viewed") == pv0 + 1 and name_count("add_to_cart") == atc0 + 1,
+          f"Dashboard by-name product_viewed {pv0} -> {pv0 + 1}, add_to_cart {atc0} -> {atc0 + 1}")
 
 
 def case2_ack_loss():
@@ -238,7 +272,20 @@ def case2_ack_loss():
     check(status == 200 and detail["receivedAt"].startswith(received1[:19].replace(" ", "T")), "Dashboard detail still shows the first receivedAt")
 
 
+class Split(Exception):
+    """The taps did not land in one batch (slow emulator); the case starts over."""
+
+
 def case3_partial():
+    for attempt in range(1, 4):
+        try:
+            return case3_once()
+        except Split as e:
+            say(f"  attempt {attempt}: {e}; starting over with a fresh app")
+    raise AssertionError("the three taps never landed in one batch in 3 attempts")
+
+
+def case3_once():
     proxy_mode("pass")
     ids0 = event_ids()
     before_log = len(proxy_log())
@@ -250,7 +297,9 @@ def case3_partial():
     proxy_mode("pass")
     batches = [e for e in proxy_log()[before_log:] if e.get("mutatedEventId")]
     tapped = batches[0]["eventIds"] if batches else []
-    check(len(batches) == 1 and len(tapped) == 3, f"the three tapped events went out in one batch: {tapped}")
+    if len(batches) != 1 or len(tapped) != 3:
+        raise Split(f"the tapped events were split across batches: {[e['eventIds'] for e in proxy_log()[before_log:]]}")
+    check(True, f"the three tapped events went out in one batch: {tapped}")
     bad = batches[0]["mutatedEventId"]
     say(f"  proxy: upstream status {batches[0]['upstreamStatus']} body={batches[0]['upstreamBody']}")
     say(f"  device diagnostics: queued={d['queued']} lastAck(accepted,duplicate,rejected)={d['ack']} recentRejections={d['rejections']} retryFailureCount={d['failures']}")
@@ -310,7 +359,7 @@ def environment():
     say(f"git: {run(['git', 'rev-parse', 'HEAD']).strip()} dirty={bool(run(['git', 'status', '--porcelain']).strip())}")
     for prop in ("ro.product.model", "ro.build.version.release", "ro.build.version.sdk", "ro.product.cpu.abi", "ro.build.fingerprint"):
         say(f"emulator {prop}: {adb('shell', 'getprop', prop).strip()}")
-    say(f"consumer app: {PKG} release (R8), endpoint via fault proxy {PROXY} -> {SERVER}")
+    say(f"consumer app: {PKG} release (R8); demo app: {DEMO_PKG} debug; endpoint via fault proxy {PROXY} -> {SERVER}")
     say(f"db: {sql('select version()')[0]}")
     say(f"docker: {run(['docker', 'version', '--format', '{{.Server.Version}}']).strip()}")
     say(f"compose images: {' '.join(run(['docker', 'compose', 'images', '--format', 'table']).split())[:300]}")
@@ -319,6 +368,10 @@ def environment():
 
 def main():
     only = set(sys.argv[1:])
+    known = {title.split()[0] for title, _ in CASES}
+    if only - known:
+        say(f"error: unknown case number(s) {sorted(only - known)}; known: {sorted(known)}")
+        sys.exit(2)
     environment()
     results = []
     for title, fn in CASES:

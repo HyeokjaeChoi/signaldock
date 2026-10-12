@@ -154,7 +154,7 @@ Tap "Track consumer_ping", wait about 15 seconds, then tap "Show diagnostics": `
 
 ## Run the delivery failure checks
 
-`scripts/e2e-delivery.sh` runs four cases against the Compose stack and the consumer app on an emulator: normal E2E, ACK loss (a fault proxy drops the response after the server commits), partial rejection, and content conflict ([ADR-0010](docs/adr/0010-delivery-failure-e2e-harness.md)). It needs Python 3, `.env`, the running stack, and a booted emulator. It is local only and not part of CI.
+`scripts/e2e-delivery.sh` runs four cases against the Compose stack and the consumer app on an emulator: normal E2E, ACK loss (a fault proxy drops the response after the server commits), partial rejection, and content conflict ([ADR-0010](docs/adr/0010-delivery-failure-e2e-harness.md)). Case 1 uses both apps: the demo app (product, then add to cart: the path the spec names) and the consumer app (the R8 build of the published AAR; cases 2 and 3 use it for exact `diagnostics()` values). It builds and installs both. It needs Python 3, `.env`, the running stack, and a booted emulator. It is local only and not part of CI.
 
 ```sh
 export ANDROID_HOME="$HOME/Library/Android/sdk"

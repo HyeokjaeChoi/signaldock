@@ -2,6 +2,7 @@ package local.signaldock
 
 import kotlinx.coroutines.runBlocking
 import local.signaldock.internal.delivery.BatchHttpRequest
+import local.signaldock.internal.delivery.BatchTransport
 import local.signaldock.internal.delivery.RetrofitBatchTransport
 import local.signaldock.internal.delivery.RunEnd
 import local.signaldock.internal.delivery.TransportResult
@@ -22,6 +23,10 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.net.InetAddress
+import java.net.InetSocketAddress
+import java.net.ServerSocket
+import java.net.Socket
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -175,6 +180,77 @@ class TransportTest {
         val result = RetrofitBatchTransport(config(callTimeout = 30.seconds, readTimeout = 300.milliseconds)).send(BatchHttpRequest("1", body))
         assertEquals(DeliveryErrorKind.TIMEOUT, (result as TransportResult.Failed).kind)
         assertTrue("ended by the read timeout", (System.nanoTime() - t0) / 1_000_000 < 3_000)
+    }
+
+    // ---- Q120 behavior: connect and write timeouts against real sockets, with the SDK sender ----
+
+    private suspend fun sdkWith(cfg: SignalDockConfig, transport: BatchTransport = RetrofitBatchTransport(cfg)) =
+        createSdk(context, cfg, Clock { 1_760_000_000_123L }, SequenceIds(), transport = transport, scheduler = NoopScheduler, foregroundTriggers = false)
+
+    @Test
+    fun `Q120 - a connect that never completes ends at the connect timeout as TIMEOUT and the sender keeps the queue`() = runBlocking {
+        // Loopback server with backlog 1 that never accepts. Raw sockets fill the accept queue; the next
+        // SYN gets no answer, so the SDK connect hangs until connectTimeout (no external network needed).
+        val listener = ServerSocket(0, 1, InetAddress.getLoopbackAddress())
+        val fillers = mutableListOf<Socket>()
+        try {
+            var full = false
+            repeat(20) {
+                if (full) return@repeat
+                val s = Socket()
+                try { s.connect(listener.localSocketAddress, 200); fillers += s } catch (_: java.io.IOException) { s.close(); full = true }
+            }
+            assertTrue("test setup: the accept queue did not fill", full)
+            val cfg = SignalDockConfig(
+                endpoint = "http://127.0.0.1:${listener.localPort}", collectionKey = "secret-key",
+                callTimeout = 30.seconds, connectTimeout = 300.milliseconds,
+            )
+            val sdk = sdkWith(cfg)
+            sdk.track("e")
+            val t0 = System.nanoTime()
+            assertEquals(RunEnd.WAITING, sdk.delivery.sender.run().end)
+            val ms = (System.nanoTime() - t0) / 1_000_000
+            assertTrue("ended by the connect timeout, not the 30 s call timeout: $ms ms", ms < 5_000)
+            val d = sdk.diagnostics()
+            assertEquals(DeliveryErrorKind.TIMEOUT, d.lastDeliveryError?.kind)
+            assertEquals(1, d.queuedEvents)
+            assertEquals(1, d.retryFailureCount)
+        } finally {
+            fillers.forEach { runCatching { it.close() } }
+            listener.close()
+        }
+    }
+
+    @Test
+    fun `Q120 - a write the peer never reads ends at the write timeout as TIMEOUT and the sender keeps the queue`() = runBlocking {
+        // The server accepts and never reads. A 64 MB body cannot fit in the socket buffers, so the write blocks.
+        val listener = ServerSocket(0, 1, InetAddress.getLoopbackAddress())
+        val accepted = mutableListOf<Socket>()
+        val acceptor = Thread { runCatching { while (true) accepted += listener.accept() } }.apply { isDaemon = true; start() }
+        try {
+            val cfg = SignalDockConfig(
+                endpoint = "http://127.0.0.1:${listener.localPort}", collectionKey = "secret-key",
+                callTimeout = 30.seconds, writeTimeout = 300.milliseconds,
+            )
+            val real = RetrofitBatchTransport(cfg)
+            val big = ByteArray(64 shl 20)
+            val sdk = sdkWith(cfg, object : BatchTransport {
+                override suspend fun send(request: BatchHttpRequest) = real.send(BatchHttpRequest(request.contractVersion, big))
+            })
+            sdk.track("e")
+            val t0 = System.nanoTime()
+            assertEquals(RunEnd.WAITING, sdk.delivery.sender.run().end)
+            val ms = (System.nanoTime() - t0) / 1_000_000
+            assertTrue("ended by the write timeout, not the 30 s call timeout: $ms ms", ms < 5_000)
+            val d = sdk.diagnostics()
+            assertEquals(DeliveryErrorKind.TIMEOUT, d.lastDeliveryError?.kind)
+            assertEquals(1, d.queuedEvents)
+            assertEquals(1, d.retryFailureCount)
+        } finally {
+            listener.close()
+            accepted.forEach { runCatching { it.close() } }
+            acceptor.interrupt()
+        }
     }
 
     @Test

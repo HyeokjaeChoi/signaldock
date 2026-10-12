@@ -2,7 +2,7 @@
 # Issue 21: delivery failure E2E against the Compose stack and a real SDK build (R8 consumer app on an
 # emulator). Cases: 1 normal E2E, 2 ACK loss, 3 partial rejection, 4 content conflict. Local only; not in CI.
 #
-# Needs (started by you, never by this script):
+# Needs (started by you, never by this script). Case 1 also drives the demo app (sdk/demo/app, debug build).
 #   - .env (cp .env.example .env) and `docker compose up -d --build`
 #   - a booted emulator, for example:
 #       $ANDROID_HOME/emulator/emulator -avd signaldock-api37 -no-window -no-audio -no-boot-anim &
@@ -28,19 +28,28 @@ curl -fsS -o /dev/null "http://127.0.0.1:${SIGNALDOCK_DASHBOARD_PORT:-5173}/" ||
 until [ "$("$ADB" shell getprop sys.boot_completed | tr -d '\r')" = "1" ]; do sleep 2; done
 
 if [ "${E2E_SKIP_BUILD:-0}" != "1" ]; then
-  echo "=== build: Maven ZIP, then the consumer app aimed at the fault proxy (10.0.2.2:$PROXY_PORT) ==="
+  echo "=== build: Maven ZIP, the consumer app and the demo app, both aimed at the fault proxy (10.0.2.2:$PROXY_PORT) ==="
   REPO="$(mktemp -d)/maven-repo"
   SIGNALDOCK_REPO_DIR="$REPO" scripts/verify-consumer.sh >/dev/null
   compatibility/consumer-android/gradlew -p compatibility/consumer-android --no-daemon \
     -Psignaldock.repo="$REPO" -Psignaldock.endpoint="http://10.0.2.2:$PROXY_PORT" \
     -Psignaldock.collectionKey="$SIGNALDOCK_COLLECTION_KEY" :app:assembleRelease >/dev/null
   "$ADB" install -r compatibility/consumer-android/app/build/outputs/apk/release/app-release.apk
+  sdk/gradlew -p sdk --no-daemon -Psignaldock.endpoint="http://10.0.2.2:$PROXY_PORT" \
+    -Psignaldock.collectionKey="$SIGNALDOCK_COLLECTION_KEY" :demo:app:assembleDebug >/dev/null
+  "$ADB" install -r sdk/demo/app/build/outputs/apk/debug/app-debug.apk
 fi
 
 LOG="$(mktemp -d)/proxy.jsonl"
 python3 scripts/e2e/fault-proxy.py --listen "127.0.0.1:$PROXY_PORT" --upstream "127.0.0.1:${SIGNALDOCK_SERVER_PORT:-8080}" --log "$LOG" &
 PROXY_PID=$!
 trap 'kill "$PROXY_PID" 2>/dev/null || true; echo "proxy log: $LOG"' EXIT
-until curl -fsS -o /dev/null "http://127.0.0.1:$PROXY_PORT/__fault/mode"; do sleep 0.2; done
+ready=0
+for _ in $(seq 50); do  # deadline: 10 s
+  kill -0 "$PROXY_PID" 2>/dev/null || break
+  curl -fs -o /dev/null "http://127.0.0.1:$PROXY_PORT/__fault/mode" && { ready=1; break; }
+  sleep 0.2
+done
+[ "$ready" = 1 ] || { echo "error: fault proxy not ready on port $PROXY_PORT (died or timed out after 10 s); its startup error is above" >&2; exit 1; }
 
-E2E_PROXY_PORT="$PROXY_PORT" python3 scripts/e2e/e2e_cases.py "$@"
+E2E_PROXY_PORT="$PROXY_PORT" E2E_SERVER_PORT="${SIGNALDOCK_SERVER_PORT:-8080}" E2E_DASHBOARD_PORT="${SIGNALDOCK_DASHBOARD_PORT:-5173}" python3 scripts/e2e/e2e_cases.py "$@"
