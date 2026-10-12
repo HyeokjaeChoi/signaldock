@@ -5,9 +5,9 @@ An Android event SDK designed to save events on the device and confirm server re
 This monorepo contains the design for the SDK and a local data processing server.
 Review the path from an app's `track()` call through a durable queue, retries, server deduplication, and independent artifact installation.
 
-> **Status: 2026-10-09**
-> The first release design is complete. Product implementation has not started.
-> The behavior below is the agreed design. Runnable artifacts, product setup instructions, and functional and performance results are not yet available.
+> **Status: 2026-10-12**
+> Implementation is in progress. The SDK, the server, the Android demo app, and the Dashboard are implemented, and the server and Dashboard run with Docker Compose (see below).
+> The SDK Maven ZIP, the independent consumer app, end-to-end verification, and performance results are not yet available.
 
 ## Start here
 
@@ -73,7 +73,7 @@ iOS / Flutter, automatic events, `identify`, campaign / push, funnels, multiple 
 
 Functional verification is pending. The [completion criteria](.scratch/signaldock-portfolio/spec.md#7-completion-criteria-and-verification-plan) require environment records, source revision/hash, and event ID comparisons.
 Load and latency values in the [performance plan](.scratch/signaldock-portfolio/performance-plan.md) are targets, not measured results or an SLA.
-Verified prerequisites and steps to run, integrate, and stop the product will follow once runnable artifacts exist.
+Steps to run and stop the server and Dashboard are below. Steps to integrate the SDK from the Maven ZIP will follow with that artifact.
 
 ## Run the server and Dashboard
 
