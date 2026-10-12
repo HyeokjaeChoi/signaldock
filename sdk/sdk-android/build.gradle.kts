@@ -22,8 +22,8 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    // Publish the release variant with a sources jar (issue 06). Consumer R8 rules, if any, live in
-    // consumer-rules.pro and ship inside the AAR.
+    // Publish the release variant with a sources jar (issue 06). The AAR ships no consumer R8 rules
+    // (ADR-0009 decision 6); add consumerProguardFiles only when a run shows a missing rule.
     publishing {
         singleVariant("release") { withSourcesJar() }
     }

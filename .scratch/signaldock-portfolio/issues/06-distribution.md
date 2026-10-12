@@ -39,3 +39,5 @@ R8 version: 9.3.28, from the `mapping.txt` header of the consumer release build 
 Consumer rules: the AAR ships no `proguard.txt`. None were needed: the minified APK initialized the SDK and delivered an event (Retrofit, Room, WorkManager, OkHttp, kotlinx.serialization bring their own rules). Recorded in ADR-0009 decision 6.
 
 Limits: one event on one emulator (API 37), not a physical device. The release APK uses the debug signing key. Cleartext to `10.0.2.2` is allowed in the release build of the consumer app only (ADR-0009 decision 5). Consumers need Kotlin 2.4 or newer. CI job `consumer-r8` was added but has not run on GitHub. Other completion criteria (offline recovery, ACK loss, and so on) are not covered by this issue.
+
+CodeRabbit (`coderabbit review --base main --deep --agent`, 2026-10-12): 1 finding, minor. The comment in `sdk/sdk-android/build.gradle.kts` about consumer R8 rules contradicted ADR-0009 decision 6. Valid; the comment was reworded. No other findings.
