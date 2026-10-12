@@ -3,7 +3,7 @@
 Status: ready-for-agent
 Type: task
 Blocked by: None
-Execution: Implemented; awaiting PR review (see the 2026-10-09 implementation comment)
+Execution: Done (merged in PR #9, 2026-10-11)
 
 ## Scope and completion criteria
 
@@ -71,3 +71,5 @@ A claim names its command, date, and result only when a source records the comma
 2026-10-11 (PR #9 Test report): `./gradlew test --no-daemon` (contract-check) and `./gradlew help` (sdk, server) ran on macOS, not the 2026-10-09 sandbox. The report does not say the daemon problem was resolved. Do not read the 2026-10-09 limitation as applying to 2026-10-11.
 
 `scripts/verify-contract.sh` contains the Gradle-based workflow (file check).
+
+2026-10-12: Record reconciled. Merged into main in PR #9 on 2026-10-11. Earlier branch and push notes above describe the state before that merge.

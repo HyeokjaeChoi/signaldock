@@ -3,7 +3,7 @@
 Status: ready-for-agent
 Type: task
 Blocked by: 01
-Execution: Implemented on branch impl/03-sdk-storage (not pushed). 30 JVM tests (Robolectric + real Room) and scripts/verify-contract.sh pass. Not run: emulator or device checks, real process restart, real backup/restore, R8.
+Execution: Done (merged in PR #11, 2026-10-11)
 
 ## Scope and completion criteria
 
@@ -50,3 +50,5 @@ Not run: emulator/device tests; a real process restart (the 1,000-event test re-
 - `JAVA_HOME=.tools/jdk-17.0.20.1+1 sdk/gradlew -p sdk :sdk-android:testDebugUnitTest :sdk-android:assembleRelease --no-daemon`: BUILD SUCCESSFUL; 35 tests, 0 failures (LifecycleTest 11, PublicApiTest 1, StorageTest 9, TrackTest 14).
 - `scripts/verify-contract.sh`: ALL CONTRACT CHECKS PASSED (drift check, oasdiff, contract-check tests, TypeScript check, sdk/server Gradle evaluation).
 - Not run: the server's own build against the `internal` models (the server code is on another branch).
+
+2026-10-12: Record reconciled. Merged into main in PR #11 on 2026-10-11. Earlier branch and push notes above describe the state before that merge.

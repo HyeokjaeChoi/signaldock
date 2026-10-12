@@ -3,7 +3,7 @@
 Status: ready-for-agent
 Type: task
 Blocked by: 11
-Execution: Done on branch impl/12-sdk-package-layout (not pushed)
+Execution: Done (merged in PR #22, 2026-10-11)
 
 ## Scope and completion criteria
 
@@ -45,3 +45,5 @@ Verification (JAVA_HOME=.tools/jdk-21.0.12.1+1, ANDROID_HOME=~/Library/Android/s
 - `sdk/gradlew -p sdk :sdk-android:testDebugUnitTest :sdk-android:assembleRelease --no-daemon`: BUILD SUCCESSFUL; 35 tests, 0 failures
 - `scripts/verify-contract.sh`: ALL CONTRACT CHECKS PASSED
 - `git diff --stat main -- sdk/sdk-android/schemas`: empty.
+
+2026-10-12: Record reconciled. Merged into main in PR #22 on 2026-10-11. Earlier branch and push notes above describe the state before that merge.

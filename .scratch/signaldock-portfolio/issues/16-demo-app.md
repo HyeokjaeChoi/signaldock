@@ -3,7 +3,7 @@
 Status: ready-for-agent
 Type: task
 Blocked by: None
-Execution: In review
+Execution: Done (merged in PR #33, 2026-10-12)
 
 ## Scope and completion criteria
 
@@ -41,3 +41,5 @@ Emulator run (AVD `signaldock-api37`, pixel_8, `system-images;android-37.2;googl
 - Emulator, server, and container were stopped at the end.
 
 Limits: the UI was driven with `adb input`, not Compose UI tests. The ACK counts on the Diagnostics screen show the last ACK only.
+
+2026-10-12: Record reconciled. Merged into main in PR #33 on 2026-10-12. Earlier branch and push notes above describe the state before that merge.

@@ -3,7 +3,7 @@
 Status: ready-for-agent
 Type: task
 Blocked by: None
-Execution: Implemented; awaiting PR review (see the 2026-10-11 implementation comment)
+Execution: Done (merged in PR #24, 2026-10-11)
 
 ## Source
 
@@ -54,3 +54,5 @@ AGENTS.md: "Never label a step verified without a run."
 - Not run: `scripts/verify-contract.sh`, Gradle, kotlinc, tsc.
 - Not changed: product code, pinned versions, contract.
 - Out of scope, noticed: `01` "Pinned toolchain" still lists Gradle 8.14.5, JDK 17, AGP 8.13.2. Commit a20e785 (issue 11) moved to JDK 21, AGP 9.3.3, Gradle 9.7.0. Not edited here.
+
+2026-10-12: Record reconciled. Merged into main in PR #24 on 2026-10-11. Earlier branch and push notes above describe the state before that merge.
