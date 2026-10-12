@@ -232,8 +232,9 @@ def execute(a, out):
     over_end = (P["base_s"] + P["over_s"]) * 1000
     last = [r for r in rows if r["ep"] in ("collect", "probe") and int(r["at_ms"]) >= (total_s - 30) * 1000]
     last_collect = sorted(float(r["duration_ms"]) for r in last if r["ep"] == "collect")
-    base_p95 = ph["baseline"]["collect"]["p95_ms"]
-    limit = max(2 * base_p95, base_p95 + 20)  # same noise rule as summarize.py: 2x or 20 ms, whichever is larger
+    base = ph.get("baseline", {})
+    base_p95 = base.get("collect", {}).get("p95_ms")
+    limit = None if base_p95 is None else max(2 * base_p95, base_p95 + 20)  # same noise rule as summarize.py: 2x or 20 ms, whichever is larger
     ser = series(rows, total_s)
     clean = [s for s in ser if s[1] == "collect" and s[0] * 1000 >= over_end and s[5] == 0 and s[4] == 0]
     first_clean = min((s[0] for s in clean), default=None)
@@ -244,21 +245,24 @@ def execute(a, out):
         invalid.append(f"dropped_iterations={int(dropped)} (generator limit, not server behavior)")
     if not drained:
         invalid.append("DB work still active after 30 s drain")
-    if not ph["overload"]["collect"]["status"].get("503"):
+    missing = [ep for ep in ("collect", "probe") if ep not in base]
+    if missing:
+        invalid.append(f"no baseline requests recorded for {missing}")
+    if not ph.get("overload", {}).get("collect", {}).get("status", {}).get("503"):
         invalid.append("no 503 on collection requests in the overload phase: the server was not saturated")
     stray = {(r["ep"], r["phase"], r["outcome"]) for r in rows if r["outcome"] not in ("ok", "shed")}
     if stray:
         bad.append(f"answers other than 200 or 503 with valid Retry-After: {sorted(stray)}")
     for ep in ("collect", "probe"):
-        if ph["baseline"][ep]["status"] != {"200": ph["baseline"][ep]["requests"]}:
-            bad.append(f"baseline {ep} not all 200: {ph['baseline'][ep]['status']}")
+        if ep in base and base[ep]["status"] != {"200": base[ep]["requests"]}:
+            bad.append(f"baseline {ep} not all 200: {base[ep]['status']}")
     if rec["ok_requests_not_fully_stored"] or rec["duplicate_ids_in_db"] or rec["rows_for_ids_without_result"]:
         bad.append(f"ACK/storage mismatch: {rec}")
     if rec["rows_stored_for_shed_requests"] or rec["rows_stored_for_other_requests"]:
         bad.append(f"rows stored for rejected requests: {rec}")
     if any(r["status"] != "200" for r in last):
         bad.append("last 30 s of recovery contain non-200 answers")
-    if not last_collect or c.percentile(last_collect, 95) > limit:
+    if not last_collect or limit is None or c.percentile(last_collect, 95) > limit:
         bad.append(f"recovery collect p95 {c.percentile(last_collect, 95)} ms > {limit} ms (2x baseline or +20 ms)")
     if started_at != ended_at:
         bad.append(f"server restarted or its state changed: {started_at} -> {ended_at}")
