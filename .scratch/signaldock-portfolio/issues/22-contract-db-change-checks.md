@@ -12,7 +12,9 @@ Spec section 7 rows "Contract changes" and "DB changes".
 - Contract: regenerate and compile models, compare with the prior schema, and check prior-request and new-response fixture compatibility. Much of this runs in CI already (`scripts/verify-contract.sh`); confirm what runs and fill gaps.
 - DB: Flyway migrations, jOOQ generation, and server queries on an empty DB and on a DB at the previous schema.
 
-Done when each check runs from a command (CI where cheap), with results recorded here.
+- Q125 (one request time budget, `statement_timeout`, shorter `lock_timeout`, multi-statement and commit/rollback boundaries): confirm each has a server test; add missing ones.
+
+Done when each check runs and every Q125 item maps to a passing test, from a command (CI where cheap), with results recorded here.
 
 ## Comments
 

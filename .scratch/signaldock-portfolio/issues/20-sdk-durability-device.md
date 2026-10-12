@@ -15,7 +15,9 @@ Spec section 7 rows "Offline recovery", "Concurrency", "Collection cancellation"
 - Capacity: 16 KiB event, 256 KiB batch, 10,000 events, 16 MiB queue, concurrent insertion, space recovery after QueueFull.
 - Installation lifetime: data kept on restart and app update; excluded on data clear, reinstall, and supported restore.
 
-Done when the tests pass on both AVDs, with commands, results, and environment (device, OS, build mode) recorded here.
+- Q110-Q118 (initialization results, retry, shared attempts, process-lifetime scope, log level and destination, invalid configuration): confirm each has a test (JVM or instrumented); add missing ones.
+
+Done when the tests pass on both AVDs and every Q110-Q118 item maps to a passing test, with commands, results, and environment (device, OS, build mode) recorded here.
 
 ## Comments
 
