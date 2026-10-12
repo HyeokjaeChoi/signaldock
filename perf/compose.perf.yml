@@ -20,10 +20,11 @@ services:
       JAVA_TOOL_OPTIONS: -Xmx512m -Xlog:gc:file=/tmp/gc.log:time,uptime -Dorg.slf4j.simpleLogger.showDateTime=true -Dorg.slf4j.simpleLogger.dateTimeFormat=HH:mm:ss.SSS
       SIGNALDOCK_POOL_STATS_MS: "1000"
       # Benchmark profile (performance-plan.md "Pool comparison and limits"). The pool size comes from the runner.
+      # Concurrency and admission wait change only in the overload run (perf/overload.py, ADR-0013); defaults here are the plan's 8 and 1 s.
       SIGNALDOCK_DB_POOL_SIZE: ${PERF_POOL_SIZE:-4}
       SIGNALDOCK_DB_POOL_MIN_IDLE: ${PERF_POOL_SIZE:-4}
-      SIGNALDOCK_DB_CONCURRENCY: "8"
-      SIGNALDOCK_DB_ADMISSION_MS: "1000"
+      SIGNALDOCK_DB_CONCURRENCY: ${PERF_CONCURRENCY:-8}
+      SIGNALDOCK_DB_ADMISSION_MS: ${PERF_ADMISSION_MS:-1000}
       SIGNALDOCK_DB_CONNECTION_MS: "1000"
       SIGNALDOCK_DB_STATEMENT_MS: "2000"
       SIGNALDOCK_DB_LOCK_MS: "500"

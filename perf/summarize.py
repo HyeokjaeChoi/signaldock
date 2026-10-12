@@ -122,6 +122,39 @@ def index_entry(d, m, s):
     }
 
 
+def overload_entry(d, m, s):
+    """One overload run (perf/overload.py, Q133): per-phase status counts, Retry-After values, 5 s series, recovery, storage checks."""
+    keep = ("requests", "status", "retry_after", "error_codes", "p50_ms", "p95_ms", "p95_ok_ms", "max_ms")
+    return {"run_id": m["run_id"], "verdict": s["verdict"], "invalid_reasons": s["invalid_reasons"], "fail_reasons": s["fail_reasons"],
+            "git": {"revision": m["git"]["revision"][:12], "dirty": m["git"]["dirty"]}, "parameters": s["parameters"],
+            "server_effective_env": m.get("server_effective_env", {}),
+            "phases": {ph: {ep: {k: x[k] for k in keep} for ep, x in eps.items()} for ph, eps in s["phases"].items()},
+            "series_5s": s["series_5s"], "recovery": s["recovery"], "reconciliation": s["reconciliation"],
+            "dropped_iterations": s["dropped_iterations"], "hikari_series": pool_series(d, m), "container_series": container_series(d, m)}
+
+
+def overload_markdown(d, m, s):
+    P = s["parameters"]
+    L = [f"## {m['run_id']} (overload run, Q133)", "", f"- Verdict: **{s['verdict']}**",
+         f"- Git: `{m['git']['revision'][:12]}`, dirty={m['git']['dirty']}, diff sha256 `{m['git']['dirty_diff_sha256'][:16]}`",
+         f"- Server limits for this run: concurrency {P['concurrency']}, admission wait {P['admission_ms']} ms, pool {P['pool_size']}; seed {P['seed_size']} rows, {P['dist']}, window {P['window_days']} d",
+         f"- Phases: baseline {P['base_s']} s, overload {P['over_s']} s, recovery {P['rec_s']} s. Collection {P['rate']} rps (overload phase: {P['over_rate']} rps); "
+         f"probe 1 rps (list); heavy {P['heavy_rate']} rps by-name in the overload phase only. Dropped iterations: {int(s['dropped_iterations'])}"]
+    for k in ("invalid_reasons", "fail_reasons"):
+        for r in s[k]:
+            L.append(f"- {k.split('_')[0]}: {r}")
+    L += ["", "| Phase | Endpoint | requests | status counts | Retry-After values | error codes | p50 ms | p95 ms | p95 of 200 ms | max ms |", "|---|---|---|---|---|---|---|---|---|---|"]
+    for ph, eps in s["phases"].items():
+        for ep, x in eps.items():
+            L.append(f"| {ph} | {ep} | {x['requests']} | {x['status']} | {x['retry_after'] or '-'} | {x['error_codes'] or '-'} | {fmt(x['p50_ms'])} | {fmt(x['p95_ms'])} | {fmt(x['p95_ok_ms'])} | {fmt(x['max_ms'])} |")
+    r = s["recovery"]
+    L += ["", f"- Recovery: first all-200 5 s window of collection starts {r['first_clean_5s_window_after_overload_s']} s after the overload phase ended; last 30 s: "
+          f"{r['last_30s_requests']} collection/probe requests, {r['last_30s_non_200']} not 200, collection p95 {fmt(r['last_30s_collect_p95_ms'])} ms "
+          f"(baseline {fmt(r['baseline_collect_p95_ms'])} ms, limit {fmt(r['limit_ms'])} ms). Server state before/after: {s['server_state']['before']} / {s['server_state']['after']}",
+          f"- Storage reconciliation: {s['reconciliation']}", f"- Aggregate check after the run: {s['aggregate_check']}; seed rows after run: {s['seed_rows_after_run']}", ""]
+    return L
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("runs", nargs="+")
@@ -129,11 +162,14 @@ def main():
     ap.add_argument("--index", help="also write one JSON file with all given runs for perf/report/ (per-run values only)")
     a = ap.parse_args()
     runs = [load(r) for r in a.runs]
+    over = [r for r in runs if r[1].get("kind") == "overload"]
+    runs = [r for r in runs if r[1].get("kind") != "overload"]
     out = Path(a.out)
-    latency_csv(runs, out.parent)
+    latency_csv(runs + over, out.parent)
     if a.index:
         runs.sort(key=lambda r: (not r[1]["pilot"], r[1]["run_id"]))  # pilots first, then by id
-        Path(a.index).write_text(json.dumps({"targets_p95_ms": TARGET, "runs": [index_entry(*r) for r in runs]}, separators=(",", ":")) + "\n")
+        Path(a.index).write_text(json.dumps({"targets_p95_ms": TARGET, "runs": [index_entry(*r) for r in runs],
+                                       "overload": [overload_entry(*r) for r in over]}, separators=(",", ":")) + "\n")
     L = ["# Server load measurement summary", "",
          "Source: `perf/summarize.py`. Values come from `summary.json` and `requests.csv` of each run. "
          "Targets are project targets set before measurement, not an SLA. Latency is HTTP start to completion as seen by k6 "
@@ -172,6 +208,8 @@ def main():
               f"- GC: {s['gc']}; cgroup throttling server: nr_throttled={s['cgroup_deltas']['server'].get('cpu.stat:nr_throttled')}, "
               f"throttled_usec={s['cgroup_deltas']['server'].get('cpu.stat:throttled_usec')}; db: nr_throttled={s['cgroup_deltas']['db'].get('cpu.stat:nr_throttled')}",
               f"- Not collected: {'; '.join(s['metrics_not_collected'])}", ""]
+    for r in over:
+        L += overload_markdown(*r)
     L += ["## Figures", "", "`figure-data-latency.csv` holds every request (run_id, ep, phase, elapsed_s, duration_ms) for plotting. "
           "Graphs: `perf/report/` (static viewer of `perf/results/index.json`).", ""]
     out.write_text("\n".join(L))

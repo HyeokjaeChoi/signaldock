@@ -15,7 +15,16 @@ type Run = {
   cgroup: Record<string, { nr_periods: number | null; nr_throttled: number | null; throttled_usec: number | null }>;
   statements: null | { statements: number; harness_statements: number; top_by_total_time: { calls: number; rows: number; total_exec_ms: number; mean_exec_ms: number; max_exec_ms: number; query: string }[] };
 };
-type Data = { targets_p95_ms: Record<string, number>; runs: Run[] };
+type PhaseStat = { requests: number; status: Record<string, number>; retry_after: Record<string, number>; error_codes: Record<string, number>; p50_ms: number | null; p95_ms: number | null; p95_ok_ms: number | null; max_ms: number | null };
+type Overload = {
+  run_id: string; verdict: string; invalid_reasons: string[]; fail_reasons: string[]; git: { revision: string; dirty: boolean };
+  parameters: { concurrency: number; admission_ms: number; pool_size: number; base_s: number; over_s: number; rec_s: number; rate: number; over_rate: number; heavy_rate: number; seed_size: number; dist: string; window_days: number };
+  phases: Record<string, Record<string, PhaseStat>>;
+  series_5s: [number, string, number, number, number, number, number | null][];
+  recovery: { first_clean_5s_window_after_overload_s: number | null; last_30s_collect_p95_ms: number | null; baseline_collect_p95_ms: number; limit_ms: number; last_30s_requests: number; last_30s_non_200: number };
+  reconciliation: Record<string, number>; dropped_iterations: number;
+};
+type Data = { targets_p95_ms: Record<string, number>; runs: Run[]; overload?: Overload[] };
 
 declare global { interface Window { SIGNALDOCK_RESULTS?: Data } }
 
@@ -159,6 +168,62 @@ function Detail({ r }: { r: Run }) {
   );
 }
 
+const PHASES = ["baseline", "overload", "recovery"];
+const OEPS = ["collect", "probe", "heavy"];
+const counts = (o: Record<string, number>) => (Object.keys(o).length ? Object.entries(o).map(([k, v]) => `${k}: ${v}`).join(", ") : "-");
+
+function OverloadRun({ o }: { o: Overload }) {
+  const p = o.parameters;
+  const rc = o.reconciliation;
+  return (
+    <section>
+      <h2>Overload run {o.run_id} <span className={`badge ${o.verdict}`}>{o.verdict}</span></h2>
+      <p className="note">Q133: the server is saturated on purpose with concurrency {p.concurrency} and admission wait {p.admission_ms} ms (pool {p.pool_size}, {p.seed_size} rows, {p.dist}, {p.window_days} d). Phases: baseline {p.base_s} s, overload {p.over_s} s, recovery {p.rec_s} s, no server restart. Collection {p.rate} rps, {p.over_rate} rps in the overload phase; probe (list) 1 rps; heavy (by-name) {p.heavy_rate} rps in the overload phase only. Not an SLA and not a pool choice. git {o.git.revision}{o.git.dirty ? " (dirty)" : ""}.</p>
+      {[...o.invalid_reasons.map((x) => `invalid: ${x}`), ...o.fail_reasons.map((x) => `fail: ${x}`)].map((x) => <p key={x} className="reason">{x}</p>)}
+      <h3>Per phase</h3>
+      <table>
+        <thead><tr><th>Phase</th><th>Endpoint</th><th>requests</th><th>status counts</th><th>Retry-After (s)</th><th>error codes</th><th>p50</th><th>p95</th><th>p95 of 200</th><th>max</th></tr></thead>
+        <tbody>{PHASES.flatMap((ph) => OEPS.filter((ep) => o.phases[ph]?.[ep]).map((ep) => { const x = o.phases[ph][ep]; return (
+          <tr key={ph + ep}><td>{ph}</td><td>{ep}</td><td>{x.requests}</td><td>{counts(x.status)}</td><td>{counts(x.retry_after)}</td><td>{counts(x.error_codes)}</td><td>{f1(x.p50_ms)}</td><td>{f1(x.p95_ms)}</td><td>{f1(x.p95_ok_ms)}</td><td>{f1(x.max_ms)}</td></tr>); }))}</tbody>
+      </table>
+      <h3>Status codes over time (per 5 s of request start; overload phase from {p.base_s} s to {p.base_s + p.over_s} s)</h3>
+      <div className="grid">
+        {OEPS.map((ep) => (
+          <Chart key={ep} title={`${ep}: responses per 5 s`}>
+            <BarChart data={o.series_5s.filter((r) => r[1] === ep).map(([t, , n, s200, s503, other]) => ({ t, "200": s200, "503": s503, other, n }))}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="t" />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="200" stackId="a" isAnimationActive={false} fill="var(--ok)" />
+              <Bar dataKey="503" stackId="a" isAnimationActive={false} fill="var(--c2)" />
+              <Bar dataKey="other" stackId="a" isAnimationActive={false} fill="var(--bad)" />
+            </BarChart>
+          </Chart>
+        ))}
+        <Chart title="collect: p95 latency per 5 s (ms, all answers)">
+          <LineChart data={o.series_5s.filter((r) => r[1] === "collect").map(([t, , , , , , p95]) => ({ t, p95 }))}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="t" />
+            <YAxis />
+            <Tooltip />
+            <ReferenceLine x={p.base_s} stroke="var(--muted)" strokeDasharray="4 4" />
+            <ReferenceLine x={p.base_s + p.over_s} stroke="var(--muted)" strokeDasharray="4 4" />
+            <Line dataKey="p95" stroke="var(--c1)" dot={false} isAnimationActive={false} />
+          </LineChart>
+        </Chart>
+      </div>
+      <h3>Recovery and storage</h3>
+      <ul>
+        <li>First all-200 collection window starts {o.recovery.first_clean_5s_window_after_overload_s} s after the overload phase ended.</li>
+        <li>Last 30 s: {o.recovery.last_30s_requests} collection/probe requests, {o.recovery.last_30s_non_200} not 200; collection p95 {f1(o.recovery.last_30s_collect_p95_ms)} ms (baseline {f1(o.recovery.baseline_collect_p95_ms)} ms, limit {f1(o.recovery.limit_ms)} ms).</li>
+        <li>ACKed (200) collection requests: {rc.ok_requests}, not fully stored: {rc.ok_requests_not_fully_stored}. Shed (503): {rc.shed_requests}, rows stored for them: {rc.rows_stored_for_shed_requests}. Other answers: {rc.other_requests}. Duplicate IDs in DB: {rc.duplicate_ids_in_db}. Dropped k6 iterations: {o.dropped_iterations}.</li>
+      </ul>
+    </section>
+  );
+}
+
 export function App() {
   const [data, setData] = useState<Data | null>(window.SIGNALDOCK_RESULTS ?? null);
   const [error, setError] = useState("");
@@ -170,10 +235,11 @@ export function App() {
   }, [data]);
   if (!data) return <main><p>{error || "Loading..."}</p></main>;
   const current = data.runs.find((r) => r.run_id === id) ?? data.runs[data.runs.length - 1];
+  const overload = data.overload ?? [];
   return (
     <main>
       <h1>SignalDock server load report</h1>
-      <p className="note">Source: perf/results/index.json. Every value belongs to one run. There is no overall p95: percentiles of different runs are never averaged (performance-plan.md, acceptance 5). Pilot runs are marked and are not measured runs.</p>
+      <p className="note">Source: perf/results/index.json. Every value belongs to one run. There is no overall p95: percentiles of different runs are never averaged. Pilot runs are a local environment record, not an SLA and not a pool choice (Q133). The overload run shows 503 load shedding.</p>
       <section>
         <h2>Runs</h2>
         <table>
@@ -186,8 +252,9 @@ export function App() {
             </tr>))}</tbody>
         </table>
       </section>
-      <Compare runs={data.runs} targets={data.targets_p95_ms} />
-      <Detail r={current} />
+      {overload.map((o) => <OverloadRun key={o.run_id} o={o} />)}
+      {current && <Compare runs={data.runs} targets={data.targets_p95_ms} />}
+      {current && <Detail r={current} />}
     </main>
   );
 }
