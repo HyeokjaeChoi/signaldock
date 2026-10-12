@@ -38,7 +38,7 @@ R8 version: 9.3.28, from the `mapping.txt` header of the consumer release build 
 
 Consumer rules: the AAR ships no `proguard.txt`. None were needed: the minified APK initialized the SDK and delivered an event (Retrofit, Room, WorkManager, OkHttp, kotlinx.serialization bring their own rules). Recorded in ADR-0009 decision 6.
 
-Limits: one event on one emulator (API 37), not a physical device. The release APK uses the debug signing key. Cleartext to `10.0.2.2` is allowed in the release build of the consumer app only (ADR-0009 decision 5). Consumers need Kotlin 2.4 or newer. CI job `consumer-r8` was added but has not run on GitHub. Other completion criteria (offline recovery, ACK loss, and so on) are not covered by this issue.
+Limits: one event on one emulator (API 37), not a physical device. The release APK uses the debug signing key. Cleartext to `10.0.2.2` is allowed in the release build of the consumer app only (ADR-0009 decision 5). Consumers need Kotlin 2.2 or newer (Q132; first version of this issue said 2.4). CI job `consumer-r8` was added but has not run on GitHub. Other completion criteria (offline recovery, ACK loss, and so on) are not covered by this issue.
 
 CodeRabbit (`coderabbit review --base main --deep --agent`, 2026-10-12): 1 finding, minor. The comment in `sdk/sdk-android/build.gradle.kts` about consumer R8 rules contradicted ADR-0009 decision 6. Valid; the comment was reworded. No other findings.
 
@@ -57,3 +57,5 @@ Commands and results:
 - Emulator (AVD `signaldock-api37`, headless, Compose stack): new release APK installed, "Track consumer_ping" tapped; diagnostics first showed `queuedEvents=1`, then `queuedEvents=0`, `accepted=1`, `lastAck` 1791780146246 (04:42:26 UTC). `psql` returned one row: `consumer_ping`, sdk_version 0.1.0, properties `{"tap": 1}`, received_at 2026-10-12 04:42:26.8+00. `evidence/06-consumer-diagnostics-acked.png` was replaced with the new screenshot. Emulator killed, `docker compose down` (no volumes removed), `.env` removed.
 
 Limits: consumers on AGP 8.x or a Kotlin older than 2.2 are not verified. The SDK still uses the 2.4.21 compiler (R8 9.1.29 or newer is needed only for that compiler).
+
+CodeRabbit (`coderabbit review --base main --deep --agent`, 2026-10-12, Q132 change): 3 findings, all valid and fixed. Major: the plugin-override check was a text grep only; `verify-consumer.sh` now also reads the effective Kotlin Gradle plugin from `buildEnvironment` and fails unless it is 2.2.x. Minor: the metadata scan now covers every class in the AAR, not only `local/`. Minor: the stale "Kotlin 2.4 or newer" limit in this issue now says 2.2 (Q132).
