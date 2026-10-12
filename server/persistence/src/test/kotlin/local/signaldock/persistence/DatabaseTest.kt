@@ -10,6 +10,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.runBlocking
 import local.signaldock.ingestion.PropertyValue
 import local.signaldock.server.jooq.tables.Events.EVENTS
@@ -158,7 +159,7 @@ class DatabaseTest {
         }
         assertTrue(inSleep.await(2, TimeUnit.SECONDS))
         delay(300) // let pg_sleep reach the server: PostgreSQL ignores a cancel that arrives while idle
-        job.cancelAndJoin()
+        withTimeout(3_000) { job.cancelAndJoin() } // a missed cancel would wait for pg_sleep(4)
         // concurrency is 1: this call only succeeds if the cancelled worker rolled back and released its permit.
         assertEquals(0, database.transaction { query { fetchCount(EVENTS) } })
         val elapsedMs = (System.nanoTime() - started) / 1_000_000
