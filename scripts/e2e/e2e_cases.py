@@ -329,6 +329,7 @@ def case4_conflict():
         return [(i["status"], i.get("code")) for i in r["results"]]
 
     ids0 = event_ids()
+    n0, c0 = name_count(name), name_count(name + "_other")
     r = post([ev(eid, name, {"price": 100, "color": "red"})])
     say(f"  first send {eid}: {r}")
     check(r == [("accepted", None)], "original stored as accepted")
@@ -346,7 +347,7 @@ def case4_conflict():
     status, detail = dashboard(f"/v1/events/{eid}")
     check(status == 200 and detail["name"] == name and detail["properties"] == {"price": 100, "color": "red"}, "Dashboard detail shows the original content")
     check(event_ids() - ids0 == {eid, other}, "rows added: the original and the valid sibling only")
-    check(name_count(name) == 2 and name_count(name + "_other") == 0, f"aggregate: {name}=2 (original + sibling), no conflicting name stored")
+    check(name_count(name) == n0 + 2 and name_count(name + "_other") == c0, f"aggregate: {name} +2 (original + sibling) from {n0}, conflicting name unchanged at {c0}")
 
 
 CASES = [("1 normal E2E", case1_normal), ("2 ACK loss", case2_ack_loss),

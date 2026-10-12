@@ -27,6 +27,7 @@ import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
+import javax.net.SocketFactory
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -187,44 +188,52 @@ class TransportTest {
     private suspend fun sdkWith(cfg: SignalDockConfig, transport: BatchTransport = RetrofitBatchTransport(cfg)) =
         createSdk(context, cfg, Clock { 1_760_000_000_123L }, SequenceIds(), transport = transport, scheduler = NoopScheduler, foregroundTriggers = false)
 
+    /** A socket whose connect stalls for the requested timeout and then fails as a real stalled connect does. */
+    private class StallingSocketFactory : SocketFactory() {
+        val connectTimeoutsMillis = java.util.concurrent.CopyOnWriteArrayList<Int>()
+        override fun createSocket(): Socket = object : Socket() {
+            override fun connect(endpoint: java.net.SocketAddress, timeout: Int) {
+                connectTimeoutsMillis += timeout
+                Thread.sleep(timeout.toLong())
+                throw java.net.SocketTimeoutException("connect timed out")
+            }
+        }
+        override fun createSocket(host: String?, port: Int): Socket = throw UnsupportedOperationException()
+        override fun createSocket(host: String?, port: Int, localHost: InetAddress?, localPort: Int): Socket = throw UnsupportedOperationException()
+        override fun createSocket(host: InetAddress?, port: Int): Socket = throw UnsupportedOperationException()
+        override fun createSocket(address: InetAddress?, port: Int, localAddress: InetAddress?, localPort: Int): Socket = throw UnsupportedOperationException()
+    }
+
     @Test
     fun `Q120 - a connect that never completes ends at the connect timeout as TIMEOUT and the sender keeps the queue`() = runBlocking {
-        // Loopback server with backlog 1 that never accepts. Raw sockets fill the accept queue; the next
-        // SYN gets no answer, so the SDK connect hangs until connectTimeout (no external network needed).
-        val listener = ServerSocket(0, 1, InetAddress.getLoopbackAddress())
-        val fillers = mutableListOf<Socket>()
-        try {
-            var full = false
-            repeat(20) {
-                if (full) return@repeat
-                val s = Socket()
-                try { s.connect(listener.localSocketAddress, 200); fillers += s } catch (_: java.io.IOException) { s.close(); full = true }
-            }
-            assertTrue("test setup: the accept queue did not fill", full)
-            val cfg = SignalDockConfig(
-                endpoint = "http://127.0.0.1:${listener.localPort}", collectionKey = "secret-key",
-                callTimeout = 30.seconds, connectTimeout = 300.milliseconds,
-            )
-            val sdk = sdkWith(cfg)
-            sdk.track("e")
-            val t0 = System.nanoTime()
-            assertEquals(RunEnd.WAITING, sdk.delivery.sender.run().end)
-            val ms = (System.nanoTime() - t0) / 1_000_000
-            assertTrue("ended by the connect timeout, not the 30 s call timeout: $ms ms", ms < 5_000)
-            val d = sdk.diagnostics()
-            assertEquals(DeliveryErrorKind.TIMEOUT, d.lastDeliveryError?.kind)
-            assertEquals(1, d.queuedEvents)
-            assertEquals(1, d.retryFailureCount)
-        } finally {
-            fillers.forEach { runCatching { it.close() } }
-            listener.close()
-        }
+        // Why a SocketFactory seam and not a real stalled port: whether a full accept backlog stalls the SYN
+        // (timeout) or refuses it (NETWORK) depends on the host kernel, and unroutable addresses depend on the
+        // host routing. Here the socket's connect(address, timeout) blocks for exactly the timeout it is given
+        // and then throws SocketTimeoutException, like a real stalled connect. This proves the SDK passes its
+        // configured connectTimeout to the socket and classifies the result as TIMEOUT. No network is used.
+        val factory = StallingSocketFactory()
+        val cfg = SignalDockConfig(
+            endpoint = "http://127.0.0.1:9", collectionKey = "secret-key",
+            callTimeout = 30.seconds, connectTimeout = 300.milliseconds,
+        )
+        val sdk = sdkWith(cfg, RetrofitBatchTransport(cfg, factory))
+        sdk.track("e")
+        val t0 = System.nanoTime()
+        assertEquals(RunEnd.WAITING, sdk.delivery.sender.run().end)
+        val ms = (System.nanoTime() - t0) / 1_000_000
+        assertTrue("connect stalled for the connect timeout: $ms ms", ms >= 250)
+        assertTrue("ended by the connect timeout, not the 30 s call timeout: $ms ms", ms < 5_000)
+        assertTrue("socket got the configured connect timeout: ${factory.connectTimeoutsMillis}", factory.connectTimeoutsMillis.isNotEmpty() && factory.connectTimeoutsMillis.all { it == 300 })
+        val d = sdk.diagnostics()
+        assertEquals(DeliveryErrorKind.TIMEOUT, d.lastDeliveryError?.kind)
+        assertEquals(1, d.queuedEvents)
+        assertEquals(1, d.retryFailureCount)
     }
 
     @Test
     fun `Q120 - a write the peer never reads ends at the write timeout as TIMEOUT and the sender keeps the queue`() = runBlocking {
         // The server accepts and never reads. A 64 MB body cannot fit in the socket buffers, so the write blocks.
-        val listener = ServerSocket(0, 1, InetAddress.getLoopbackAddress())
+        val listener = ServerSocket(0, 1, InetAddress.getByAddress(byteArrayOf(127, 0, 0, 1)))
         val accepted = mutableListOf<Socket>()
         val acceptor = Thread { runCatching { while (true) accepted += listener.accept() } }.apply { isDaemon = true; start() }
         try {
@@ -274,6 +283,32 @@ class TransportTest {
         assertEquals(1, d.retryFailureCount)
         assertEquals(DeliveryErrorKind.NETWORK, d.lastDeliveryError?.kind)
         assertTrue(d.nextAttemptEpochMillis != null)
+    }
+
+    @Test
+    fun `Q122 - a retryable connection failure is retried inside the same Call, one ACK, no failure recorded`() = runBlocking {
+        // OkHttp retries inside one Call only when the failed connection had already worked (a fresh
+        // connection that fails counts as a route failure and is not retried). So: request 1 succeeds and
+        // pools the connection; the server then cuts that pooled connection after receiving request 2; OkHttp
+        // retries request 2 on a new connection inside the same Call and the sender sees one ACK.
+        val calls = java.util.concurrent.atomic.AtomicInteger()
+        server.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse =
+                if (calls.incrementAndGet() == 2) MockResponse.Builder().onResponseStart(SocketEffect.CloseSocket()).build()
+                else MockResponse.Builder().code(200).body(ackAll(BatchHttpRequest("1", request.body!!.toByteArray())).body!!).build()
+        }
+        val transport = RetrofitBatchTransport(config())
+        assertEquals(200, (transport.send(BatchHttpRequest("1", """{"events":[]}""".toByteArray())) as TransportResult.Http).status)
+        val sdk = sdkWith(config(), transport)
+        sdk.track("e")
+        val end = sdk.delivery.sender.run().end
+        assertEquals(RunEnd.QUEUE_EMPTY, end)
+        assertEquals("1 warm-up, 1 cut, 1 retry", 3, server.requestCount)
+        val d = sdk.diagnostics()
+        assertEquals(0, d.queuedEvents)
+        assertEquals(0, d.retryFailureCount)
+        assertNull(d.lastDeliveryError)
+        assertEquals(1, d.lastAck?.accepted)
     }
 
     @Test

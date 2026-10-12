@@ -15,6 +15,7 @@ import retrofit2.http.POST
 import retrofit2.http.Streaming
 import java.io.IOException
 import java.io.InterruptedIOException
+import javax.net.SocketFactory
 import java.util.concurrent.TimeUnit
 
 internal class BatchHttpRequest(val contractVersion: String, val body: ByteArray)
@@ -48,7 +49,11 @@ internal interface IngestApi {
 
 internal const val MAX_ACK_BYTES = 1L shl 20
 
-internal class RetrofitBatchTransport(config: SignalDockConfig) : BatchTransport {
+internal class RetrofitBatchTransport(
+    config: SignalDockConfig,
+    /** Test-only seam: null (the default) keeps OkHttp's own socket factory. */
+    socketFactory: SocketFactory? = null,
+) : BatchTransport {
     private val authorization = "Bearer ${config.collectionKey}"
     private val json = "application/json".toMediaType()
 
@@ -59,6 +64,7 @@ internal class RetrofitBatchTransport(config: SignalDockConfig) : BatchTransport
         .followSslRedirects(false)
         // Connection recovery inside one Call is allowed (Q122).
         .retryOnConnectionFailure(true)
+        .apply { if (socketFactory != null) socketFactory(socketFactory) }
         .callTimeout(config.callTimeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
         .connectTimeout(config.connectTimeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
         .readTimeout(config.readTimeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
