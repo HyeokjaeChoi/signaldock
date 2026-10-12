@@ -66,7 +66,7 @@ CodeRabbit (`coderabbit review --base main --deep --agent`, commit 0c0825f): 1 m
 Limits: the update case installs the same build over itself (no SDK version or schema change; no migration exists yet); offline is a refused connection to 127.0.0.1:9, not airplane mode; restore ran on the local backup transport only (not Google, device transfer or manufacturer tools; ADR-0001); SIGKILL through `am force-stop` is not power loss; two emulator images, no physical device; both AVDs ran with the test APK as a debug build; the Compose server path through `10.0.2.2:8080` was not exercised in this issue (MockWebServer on the device instead, ADR-0011 decision 2); emulator runs are not in CI (CI only compiles `assembleDebugAndroidTest`, which also built locally). `README.md` and `architecture.md` evidence rows were left unchanged for this PR.
 
 
-## Comment 2026-10-12: CodeRabbit minor findings on PR #46
+### Comment 2026-10-12: CodeRabbit minor findings on PR #46
 
 Fixed three minor findings.
 - `scripts/device-durability.sh` kill case: right before `am force-stop`, the script now checks `adb shell pidof local.signaldock.test` is not empty and that `files/harness/acked.log` (appended and fsynced by `kill_burst_store` after each reported success) grows over a one-second interval. If not, the case fails with the pid and sizes, because collection had already ended. Host `kill -0` on the adb process was dropped as proof.
