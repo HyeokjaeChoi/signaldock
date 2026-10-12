@@ -8,7 +8,6 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.runBlocking
@@ -144,8 +143,6 @@ class DatabaseTest {
         database = newDatabase(DatabaseLimits(concurrency = 1, poolSize = 2, requestMs = 10_000, admissionMs = 2_000, statementMs = 5_000, lockMs = 250))
         database.migrate()
         val id = UUID.fromString("0a4f8c52-3a6d-4d7e-9a54-6f1c0b7d2e33")
-        val inSleep = CountDownLatch(1)
-        val started = System.nanoTime()
         val job = launch(Dispatchers.Default) {
             database.transaction {
                 query {
@@ -154,11 +151,12 @@ class DatabaseTest {
                         .values(id, id, "cancel", java.time.OffsetDateTime.now(), "0.1.0", org.jooq.JSONB.valueOf("{}"))
                         .execute()
                 }
-                query { inSleep.countDown(); fetch("select pg_sleep(4)") }
+                query { fetch("select pg_sleep(4)") }
             }
         }
-        assertTrue(inSleep.await(2, TimeUnit.SECONDS))
-        delay(300) // let pg_sleep reach the server: PostgreSQL ignores a cancel that arrives while idle
+        // PostgreSQL ignores a cancel that arrives while idle: cancel only once a backend runs pg_sleep(4).
+        assertTrue(sleepIsActive(), "no active backend ran pg_sleep(4) within 5 s")
+        val started = System.nanoTime() // measure cancel latency only, not setup or polling
         withTimeout(3_000) { job.cancelAndJoin() } // a missed cancel would wait for pg_sleep(4)
         // concurrency is 1: this call only succeeds if the cancelled worker rolled back and released its permit.
         assertEquals(0, database.transaction { query { fetchCount(EVENTS) } })
@@ -203,6 +201,19 @@ class DatabaseTest {
             propertiesFrom(kotlinx.serialization.json.Json.parseToJsonElement(json) as kotlinx.serialization.json.JsonObject),
         )
     }
+
+    private fun sleepIsActive(deadlineMs: Long = 5_000): Boolean =
+        java.sql.DriverManager.getConnection(postgres.jdbcUrl, postgres.username, postgres.password).use { c ->
+            val end = System.nanoTime() + deadlineMs * 1_000_000
+            while (System.nanoTime() < end) {
+                c.createStatement().use { st ->
+                    st.executeQuery("select 1 from pg_stat_activity where state = 'active' and pid <> pg_backend_pid() " +
+                        "and query like '%pg_sleep(4)%'").use { if (it.next()) return true }
+                }
+                Thread.sleep(50)
+            }
+            false
+        }
 
     private fun newDatabase(limits: DatabaseLimits = DatabaseLimits()) =
         Database(postgres.jdbcUrl, postgres.username, postgres.password, limits)

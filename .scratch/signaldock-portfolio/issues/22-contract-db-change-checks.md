@@ -54,7 +54,7 @@ Commands and results (JDK from `scripts/setup-toolchain.sh`, Docker running):
 
 Limits:
 - No second migration exists, so the previous-schema check loads V1 rows at V1 and re-checks them at head. It has not yet upgraded real data across a schema change; the loop does that once V2 and `previous-data/V2.sql` exist.
-- A cancel that reaches PostgreSQL while a connection is idle between two statements is lost (the new cancel test waits 300 ms for this reason); the deadline task cancels again at the budget end.
+- A cancel that reaches PostgreSQL while a connection is idle between two statements is lost (the cancel test polls `pg_stat_activity` on a second connection until a backend is `active` on `pg_sleep(4)`, 5 s deadline, instead of a fixed 300 ms wait; updated 2026-10-12); the deadline task cancels again at the budget end.
 - The commit-uncertain window (a cancel during `COMMIT`) has no deterministic test; the lost-response test covers the client-visible result.
 - `verify-contract.sh` still runs only `gradlew help` for the server, so the server replay test runs in `server-test`.
 - Not executed: CI. Nothing is pushed, so CI results do not exist yet.
