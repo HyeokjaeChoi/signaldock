@@ -14,3 +14,5 @@ Preserve the applicable contracts in the [agreed spec](../spec.md) and [final re
 ## Comments
 
 2026-10-09: Created after the full Q127 agreement.
+
+2026-10-12: Split into issue 20 (SDK durability on devices), issue 21 (delivery failure E2E), and issue 22 (contract and DB change checks). The "Distribution" row is done in issue 06 (PR #39). This issue is done when 20, 21, and 22 are done. Order: 21, 20, 22.
