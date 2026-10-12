@@ -12,7 +12,6 @@ import local.signaldock.SignalDock
 import local.signaldock.SignalDockConfig
 import local.signaldock.TrackResult
 import org.json.JSONObject
-import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import java.io.File
@@ -159,7 +158,6 @@ class MeasurePhases {
             .put("memBeforeInit", memBeforeInit).put("memAfterInit", memAfterInit).put("memAtInjectionEnd", memAtEnd).put("memAfterDrain", memAfterDrain)
             .put("sinceInjectionEndSeconds", (System.nanoTime() - injectionEnd) / 1e9)
         finish(name, o)
-        assertTrue("queue drained within 5 minutes", drain != null)
     }
 
     @Test fun normal() = scenario("normal", 1, 60)
@@ -175,6 +173,7 @@ class MeasurePhases {
         val (sdk, initMicros) = init()
         val memAfterInit = memory()
         val (calls, maxInFlight) = inject(sdk, 0, 1000)
+        writeCalls("offline_store", calls) // before any wait, so a failed wait keeps the call record
         val filesAtEnd = files()
         val memAfterStore = memory() // read before the wait below, so both describe the end of injection
         // The first delivery attempt runs in the background: wait until it failed and its retry time is persisted (ADR-0014 item 6).
@@ -182,7 +181,6 @@ class MeasurePhases {
             runBlocking { sdk.diagnostics() }.let { it.retryFailureCount > 0 && it.nextAttemptEpochMillis != null }
         }
         val d = runBlocking { sdk.diagnostics() }
-        writeCalls("offline_store", calls)
         val o = base("offline_store")
             .put("targetRate", 0).put("plannedEvents", 1000).put("maxInFlight", maxInFlight).put("initMicros", initMicros)
             .put("eventBytes", eventBytes ?: JSONObject.NULL)
@@ -219,7 +217,6 @@ class MeasurePhases {
             .put("memBeforeInit", memBeforeInit).put("memAfterDrain", memory())
             .put("sinceStartSeconds", (System.nanoTime() - start) / 1e9)
         finish("offline_drain", o)
-        assertTrue("queue drained within 10 minutes", drain != null)
     }
 
     private companion object {

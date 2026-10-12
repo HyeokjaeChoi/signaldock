@@ -97,13 +97,17 @@ def analyze(d):
     if bad_lines:
         reasons_invalid.append(f"proxy.jsonl has {bad_lines} unreadable lines")
     sent = [i for b in proxy for i in b.get("eventIds", [])]
-    ack_status = {}
+    ack_status, unreadable_acks = {}, 0
     for b in proxy:
+        if not b.get("eventIds"):
+            continue
         try:
-            for it in json.loads(b.get("upstreamBody", "{}")).get("results", []):
+            for it in json.loads(b["upstreamBody"])["results"]:
                 ack_status[it["status"]] = ack_status.get(it["status"], 0) + 1
-        except (ValueError, KeyError):
-            pass
+        except (ValueError, KeyError, TypeError):
+            unreadable_acks += 1  # the record still counts for sent-ID reconciliation
+    if unreadable_acks:
+        reasons_invalid.append(f"{unreadable_acks} proxy records have no readable ACK response")
     run["reconciliation"] = {
         "tracked_ok": len(tracked), "server_rows": len(db_lines), "missing_on_server": len(tracked - db), "not_tracked_on_server": len(db - tracked),
         "duplicate_server_rows": len(db_lines) - len(db),

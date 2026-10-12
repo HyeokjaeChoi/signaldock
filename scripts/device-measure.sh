@@ -69,12 +69,13 @@ phase() {
 }
 
 run_scenario() {
-  local sc="$1" final="perf/sdk-results/api$api-$1" dir runId="r$(date -u +%Y%m%d%H%M%S)$1" proxy_pid ok=0
+  local sc="$1" final="perf/sdk-results/api$api-$1" dir runId="r$(date -u +%Y%m%d%H%M%S)$1" ok=0
   dir="$(mktemp -d)"  # published to $final only after collection, so a failed setup keeps the previous run
   echo "== $sc (run $runId)"
   adb shell pm clear "$PKG" >/dev/null
   python3 scripts/e2e/fault-proxy.py --listen "127.0.0.1:$PROXY_PORT" --upstream "127.0.0.1:$SERVER_PORT" --log "$dir/proxy.jsonl" &
-  proxy_pid=$!
+  PROXY_PID=$!
+  trap 'kill "$PROXY_PID" 2>/dev/null || true' EXIT  # a failing command below must not leave the proxy running
   for _ in $(seq 50); do curl -fs -o /dev/null "http://127.0.0.1:$PROXY_PORT/__fault/mode" && break; sleep 0.2; done
   local endpoint="http://10.0.2.2:$PROXY_PORT" load_before load_after started ended
   load_before="$(sysctl -n vm.loadavg)"
@@ -89,8 +90,9 @@ run_scenario() {
   esac
   ended="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   load_after="$(sysctl -n vm.loadavg)"
-  kill "$proxy_pid" 2>/dev/null || true
-  wait "$proxy_pid" 2>/dev/null || true
+  kill "$PROXY_PID" 2>/dev/null || true
+  wait "$PROXY_PID" 2>/dev/null || true
+  trap - EXIT
   # Pull what exists even when a phase failed, so that the evidence survives the next `pm clear`.
   for f in $(adb shell run-as "$PKG" ls "files/measure/$runId" 2>/dev/null | tr -d '\r'); do
     adb exec-out run-as "$PKG" cat "files/measure/$runId/$f" > "$dir/$f" || rm -f "$dir/$f"
