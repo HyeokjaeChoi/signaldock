@@ -42,6 +42,8 @@ class MeasurePhases {
     // About 1 KiB per event on the wire (see `eventBytes` in result.json). The text is fixed so every event has the same size.
     private val pad = "abcdefghijklmnopqrstuvwxyz0123456789".repeat(40).take(PAD_CHARS)
 
+    @Volatile private var eventBytes: Int? = null
+
     private class Call(val i: Int, val schedMicros: Long, val startMicros: Long, val durMicros: Long, val result: String, val eventId: String)
 
     /** PSS and Java heap in KiB. [settle] runs a GC first (about 0.3 s); without it the value is read at once. */
@@ -82,6 +84,8 @@ class MeasurePhases {
                 }
             } catch (e: Throwable) { e } finally { inFlight.decrementAndGet() }
             val end = System.nanoTime()
+            // Right after the first success: this event is still queued (delivery starts at 20 events or 10 s), so its size is known.
+            if (i == 0 && r is TrackResult.Success) eventBytes = sdk.dao.oldest(1).firstOrNull()?.sizeBytes
             return Call(
                 i, schedNanos / 1000, (start - t0) / 1000, (end - start) / 1000,
                 when (r) { is TrackResult.Success -> "ok"; is Throwable -> "exception:" + r.javaClass.simpleName; else -> r.javaClass.simpleName },
@@ -137,7 +141,6 @@ class MeasurePhases {
         val injectionEnd = System.nanoTime() // drain time counts from here
         val queuedAtEnd = runBlocking { sdk.diagnostics() }
         val filesAtEnd = files()
-        val firstSize = runBlocking { sdk.dao.oldest(1).firstOrNull()?.sizeBytes } // still queued: delivery starts at 20 events or 10 s
         val memAtEnd = memory(settle = false) // no GC: a GC here would delay the drain clock
         val drain = drainSeconds(sdk, 300_000, injectionEnd)
         val memAfterDrain = memory()
@@ -145,7 +148,7 @@ class MeasurePhases {
         writeCalls(name, calls)
         val o = base(name)
             .put("targetRate", rate).put("plannedEvents", count).put("maxInFlight", maxInFlight)
-            .put("initMicros", initMicros).put("eventBytes", firstSize ?: JSONObject.NULL)
+            .put("initMicros", initMicros).put("eventBytes", eventBytes ?: JSONObject.NULL)
             .put("injectionSeconds", (calls.maxOf { it.startMicros } - calls.minOf { it.startMicros }) / 1e6)
             .put("queuedAtInjectionEnd", queuedAtEnd.queuedEvents).put("queuedBytesAtInjectionEnd", queuedAtEnd.queuedBytes)
             .put("drainSeconds", drain ?: JSONObject.NULL).put("queuedAfterDrain", d.queuedEvents)
@@ -176,7 +179,7 @@ class MeasurePhases {
         writeCalls("offline_store", calls)
         val o = base("offline_store")
             .put("targetRate", 0).put("plannedEvents", 1000).put("maxInFlight", maxInFlight).put("initMicros", initMicros)
-            .put("eventBytes", runBlocking { sdk.dao.oldest(1).firstOrNull()?.sizeBytes } ?: JSONObject.NULL)
+            .put("eventBytes", eventBytes ?: JSONObject.NULL)
             .put("injectionSeconds", (calls.maxOf { it.startMicros } - calls.minOf { it.startMicros }) / 1e6)
             .put("queued", d.queuedEvents).put("queuedBytes", d.queuedBytes)
             .put("lastDeliveryError", d.lastDeliveryError?.kind?.name ?: JSONObject.NULL).put("retryFailureCount", d.retryFailureCount)

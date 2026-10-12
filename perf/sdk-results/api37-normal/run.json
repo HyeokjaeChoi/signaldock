@@ -1,13 +1,13 @@
 {
   "scenario": "normal",
-  "run_id": "r20261012155556normal",
+  "run_id": "r20261012160703normal",
   "avd": "signaldock-api37",
   "meta": {
     "scenario": "normal",
-    "run_id": "r20261012155556normal",
+    "run_id": "r20261012160703normal",
     "completed_phases": true,
-    "started_utc": "2026-10-12T15:55:56Z",
-    "ended_utc": "2026-10-12T15:56:58Z",
+    "started_utc": "2026-10-12T16:07:03Z",
+    "ended_utc": "2026-10-12T16:08:06Z",
     "avd": "signaldock-api37",
     "serial": "emulator-5584",
     "build": "debug androidTest APK: SDK library debug variant, debuggable, no R8/minify (ADR-0014)",
@@ -19,10 +19,10 @@
       "model": "Apple M2 Pro",
       "cpus": "12",
       "os": "26.6.2",
-      "loadavg_before": "{ 7.61 7.17 7.28 }",
-      "loadavg_after": "{ 6.98 7.08 7.24 }"
+      "loadavg_before": "{ 5.29 5.58 6.40 }",
+      "loadavg_after": "{ 6.91 5.93 6.46 }"
     },
-    "git_revision": "6bd96af (dirty)"
+    "git_revision": "5123400 (dirty)"
   },
   "device": "Google sdk_gphone16k_arm64",
   "api": 37,
@@ -37,15 +37,15 @@
     "span_s": 59.0,
     "max_calls_in_flight": 1,
     "start_lateness_ms": {
-      "p95": 7.6,
-      "max": 11.2
+      "p95": 3.6,
+      "max": 4.3
     },
-    "event_bytes": 1025
+    "event_bytes": 1024
   },
   "track_ms": {
-    "p50": 2.34,
-    "p95": 7.09,
-    "max": 30.93,
+    "p50": 1.85,
+    "p95": 5.37,
+    "max": 18.95,
     "count": 60
   },
   "errors": {
@@ -59,7 +59,7 @@
     "missing_on_server": 0,
     "not_tracked_on_server": 0,
     "duplicate_server_rows": 0,
-    "batches_sent": 11,
+    "batches_sent": 12,
     "events_sent": 60,
     "event_ids_sent_more_than_once": 0,
     "batches_not_200": 0,
@@ -68,7 +68,7 @@
     }
   },
   "drain": {
-    "seconds": 1.51,
+    "seconds": 2.1,
     "queued_after": 0,
     "queued_at_injection_end": 7
   },
@@ -87,14 +87,14 @@
     }
   },
   "memory_kb": {
-    "pss_after_init_to_injection_end": 3310,
-    "pss_after_init_to_after_drain": 2206,
-    "heap_after_init_to_after_drain": -48,
+    "pss_after_init_to_injection_end": 2746,
+    "pss_after_init_to_after_drain": 2218,
+    "heap_after_init_to_after_drain": -224,
     "pss_absolute": {
-      "before_init": 39220,
-      "after_init": 38637,
-      "injection_end": 41947,
-      "after_drain": 40843
+      "before_init": 38296,
+      "after_init": 38581,
+      "injection_end": 41327,
+      "after_drain": 40799
     }
   },
   "verdict": "pass",

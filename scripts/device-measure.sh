@@ -17,10 +17,11 @@
 #     Point SIGNALDOCK_ENV_FILE at it. The default is .env, which uses the default stack and ports.
 #   - one booted emulator (emulators only), for example:
 #       $ANDROID_HOME/emulator/emulator -avd signaldock-api37 -no-window -no-audio -no-snapshot-save -port 5584 &
-#   - JDK 21 (scripts/setup-toolchain.sh), ANDROID_HOME, python3.
+#   - macOS host (it records sysctl and sw_vers facts), JDK 21 (scripts/setup-toolchain.sh), ANDROID_HOME, python3.
 # Environment: SIGNALDOCK_ENV_FILE, MEASURE_PROJECT (Compose project, default signaldock-sdkmeasure), MEASURE_PROXY_PORT (default 18091).
 set -euo pipefail
 
+[ "$(uname)" = Darwin ] || { echo "error: this script reads macOS host facts (sysctl, sw_vers); run it on macOS" >&2; exit 1; }
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 serial="${1:?usage: scripts/device-measure.sh <adb-serial> [normal|offline|burst ...]}"

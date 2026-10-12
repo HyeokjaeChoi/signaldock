@@ -1,7 +1,7 @@
 {
   "phase": "burst",
-  "runId": "r20261012155722burst",
-  "pid": 1711,
+  "runId": "r20261012160829burst",
+  "pid": 30047,
   "device": "Google sdk_gphone16k_arm64",
   "api": 37,
   "release": "17",
@@ -9,16 +9,16 @@
   "debuggable": true,
   "targetRate": 100,
   "plannedEvents": 1000,
-  "maxInFlight": 3,
-  "initMicros": 26531,
-  "eventBytes": 1024,
-  "injectionSeconds": 9.989952,
-  "queuedAtInjectionEnd": 18,
-  "queuedBytesAtInjectionEnd": 18432,
-  "drainSeconds": 0.059640958,
+  "maxInFlight": 4,
+  "initMicros": 32534,
+  "eventBytes": 1022,
+  "injectionSeconds": 9.991967,
+  "queuedAtInjectionEnd": 7,
+  "queuedBytesAtInjectionEnd": 7168,
+  "drainSeconds": 0.061937958,
   "queuedAfterDrain": 0,
   "lastAck": {
-    "accepted": 18,
+    "accepted": 7,
     "duplicate": 0,
     "rejected": 0
   },
@@ -27,31 +27,31 @@
   "sdkWarnings": 0,
   "filesAtInjectionEnd": {
     "installation-id": 36,
-    "queue.db": 45056,
+    "queue.db": 36864,
     "queue.db-shm": 32768,
     "queue.db-wal": 449112
   },
   "filesAfterDrain": {
     "installation-id": 36,
-    "queue.db": 45056,
+    "queue.db": 36864,
     "queue.db-shm": 32768,
     "queue.db-wal": 449112
   },
   "memBeforeInit": {
-    "totalPssKb": 39267,
+    "totalPssKb": 39407,
     "javaHeapUsedKb": 2806
   },
   "memAfterInit": {
-    "totalPssKb": 38749,
-    "javaHeapUsedKb": 3558
+    "totalPssKb": 38856,
+    "javaHeapUsedKb": 3622
   },
   "memAtInjectionEnd": {
-    "totalPssKb": 42519,
-    "javaHeapUsedKb": 4870
+    "totalPssKb": 42564,
+    "javaHeapUsedKb": 4566
   },
   "memAfterDrain": {
-    "totalPssKb": 41255,
-    "javaHeapUsedKb": 3558
+    "totalPssKb": 41556,
+    "javaHeapUsedKb": 3574
   },
-  "sinceInjectionEndSeconds": 0.389965834
+  "sinceInjectionEndSeconds": 0.396925917
 }

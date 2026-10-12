@@ -65,7 +65,9 @@ def analyze(d):
     if target and (actual is None or actual < RATE_TOLERANCE * target):
         reasons_invalid.append(f"actual rate {actual and round(actual, 2)}/s is below {RATE_TOLERANCE:.0%} of the target {target}/s")
     eb = res.get("eventBytes")
-    if eb is not None and not EVENT_BYTES_RANGE[0] <= eb <= EVENT_BYTES_RANGE[1]:
+    if eb is None:
+        reasons_invalid.append("event size was not measured")
+    elif not EVENT_BYTES_RANGE[0] <= eb <= EVENT_BYTES_RANGE[1]:
         reasons_invalid.append(f"event size {eb} bytes is outside {EVENT_BYTES_RANGE}")
     run["track_ms"] = {"p50": round(pct(durs, 50), 2), "p95": round(pct(durs, 95), 2), "max": round(max(durs), 2), "count": len(durs)} if durs else None
     run["errors"] = {"track_not_ok": bad, "sdk_warnings": res["sdkWarnings"], "last_delivery_error": res.get("lastDeliveryError")}
