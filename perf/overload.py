@@ -183,8 +183,9 @@ def execute(a, out):
                            str(c.PERF / "overload.js")], env=k6env, stdout=open(out / "k6.log", "w"), stderr=subprocess.STDOUT)
     sampler = ro.Sampler(k6.pid)
     sampler.start()
+    k6_exit = None
     try:
-        k6.wait(timeout=total_s + 120)
+        k6_exit = k6.wait(timeout=total_s + 120)
     finally:
         times["k6_end"] = ro.stamp()
         sampler.stop.set()
@@ -245,6 +246,8 @@ def execute(a, out):
     clean = [s for s in ser if s[1] == "collect" and s[0] * 1000 >= over_end and s[5] == 0 and s[4] == 0]
     first_clean = min((s[0] for s in clean), default=None)
     bad, invalid = [], []
+    if k6_exit != 0:
+        invalid.append(f"k6 exit code {k6_exit}; phases may be incomplete (see k6.log)")
     if not pool_ready:
         invalid.append("pool not ready before the baseline phase")
     if counters.get("bodies_exhausted"):

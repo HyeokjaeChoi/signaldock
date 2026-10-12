@@ -173,7 +173,7 @@ def main():
     L = ["# Server load measurement summary", "",
          "Source: `perf/summarize.py`. Values come from `summary.json` and `requests.csv` of each run. "
          "Targets are project targets set before measurement, not an SLA. Latency is HTTP start to completion as seen by k6 "
-         "(sending + waiting + receiving); client connection wait is not included and is reported as `blocked+connecting max`.", ""]
+         "(sending + waiting + receiving); client connection wait is not included; it is stored in each `summary.json` as `client_blocked_connecting_max_ms`.", ""]
     for d, m, s in runs:
         c = m["combination"]
         L += [f"## {m['run_id']}", "",

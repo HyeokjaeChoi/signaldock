@@ -492,6 +492,8 @@ def execute(a):
     # parse k6
     k6_summary = json.loads((out / "k6-summary.json").read_text())
     rows, counters, dropped = read_k6(raw, k6_summary)
+    if not any(r["ep"] == "collect" for r in rows):
+        raise RuntimeError("k6 recorded no collection requests (startup failure or wrong BASE_URL); see k6.log")
     # `time` is when k6 emitted the point (request end); `at_ms` is the request start offset of a collection request.
     offsets = sorted((parse_time(r["time"]) - dt.timedelta(milliseconds=r["at_ms"] + r["duration_ms"])).timestamp()
                      for r in rows if r["ep"] == "collect")
