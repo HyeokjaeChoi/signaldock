@@ -1,0 +1,112 @@
+[
+ {
+  "queryid": "6455787198458309496",
+  "calls": 295,
+  "rows": 885,
+  "total_exec_time": 16146.124923000014,
+  "mean_exec_time": 54.732626857627146,
+  "max_exec_time": 121.57096,
+  "query": "select \"public\".\"events\".\"name\", count(*) from \"public\".\"events\" where (\"public\".\"events\".\"received_at\" >= cast($1 as timestamp(3) with time zone) and \"public\".\"events\".\"received_at\" < cast($2 as timestamp(3) with time zone)) group by \"public\".\"events\".\"name\" order by count(*) desc, \"public\".\"events\".\"name\" asc fetch next $3 rows only",
+  "harness": false
+ },
+ {
+  "queryid": "-8680379371661250327",
+  "calls": 295,
+  "rows": 8850,
+  "total_exec_time": 14568.237238999998,
+  "mean_exec_time": 49.383855047457594,
+  "max_exec_time": 93.178278,
+  "query": "select date_trunc('day', \"public\".\"events\".\"received_at\", 'Asia/Seoul'), count(*) from \"public\".\"events\" where (\"public\".\"events\".\"received_at\" >= cast($1 as timestamp(3) with time zone) and \"public\".\"events\".\"received_at\" < cast($2 as timestamp(3) with time zone)) group by date_trunc('day', \"public\".\"events\".\"received_at\", 'Asia/Seoul')",
+  "harness": false
+ },
+ {
+  "queryid": "-8165744871115377713",
+  "calls": 29720,
+  "rows": 29720,
+  "total_exec_time": 2727.1002579999986,
+  "mean_exec_time": 0.0917597664199195,
+  "max_exec_time": 9.869703000000001,
+  "query": "insert into \"public\".\"events\" (\"event_id\", \"installation_id\", \"name\", \"occurred_at\", \"sdk_version\", \"properties\") values (cast($1 as uuid), cast($2 as uuid), $3, cast($4 as timestamp(3) with time zone), $5, cast($6 as jsonb)) on conflict (\"event_id\") do nothing",
+  "harness": false
+ },
+ {
+  "queryid": "-3825322805637876987",
+  "calls": 30605,
+  "rows": 0,
+  "total_exec_time": 91.05862499999674,
+  "mean_exec_time": 0.0029752859009965567,
+  "max_exec_time": 0.694714,
+  "query": "SET LOCAL statement_timeout = '2000'",
+  "harness": false
+ },
+ {
+  "queryid": "3080373889714879416",
+  "calls": 30605,
+  "rows": 0,
+  "total_exec_time": 45.80133499999803,
+  "mean_exec_time": 0.0014965311223656278,
+  "max_exec_time": 0.287002,
+  "query": "SET LOCAL lock_timeout = '500'",
+  "harness": false
+ },
+ {
+  "queryid": "9191928859128612491",
+  "calls": 2371,
+  "rows": 0,
+  "total_exec_time": 33.45957499999996,
+  "mean_exec_time": 0.014112009700548276,
+  "max_exec_time": 0.423379,
+  "query": "SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL READ COMMITTED",
+  "harness": false
+ },
+ {
+  "queryid": "8686629060532989077",
+  "calls": 295,
+  "rows": 15045,
+  "total_exec_time": 17.953470000000003,
+  "mean_exec_time": 0.06085922033898304,
+  "max_exec_time": 0.42108599999999996,
+  "query": "select \"public\".\"events\".\"event_id\", \"public\".\"events\".\"installation_id\", \"public\".\"events\".\"name\", \"public\".\"events\".\"occurred_at\", \"public\".\"events\".\"received_at\", \"public\".\"events\".\"sdk_version\" from \"public\".\"events\" where (\"public\".\"events\".\"received_at\" >= cast($1 as timestamp(3) with time zone) and \"public\".\"events\".\"received_at\" < cast($2 as timestamp(3) with time zone)) order by \"public\".\"events\".\"received_at\" desc, \"public\".\"events\".\"event_id\" desc fetch next $3 rows only",
+  "harness": false
+ },
+ {
+  "queryid": "596622403981775133",
+  "calls": 59,
+  "rows": 60,
+  "total_exec_time": 8.609153999999997,
+  "mean_exec_time": 0.1459178644067797,
+  "max_exec_time": 0.24083500000000002,
+  "query": "SELECT coalesce(state,$1), count(*) FROM pg_stat_activity WHERE datname=$2 AND application_name NOT LIKE $3 GROUP BY 1",
+  "harness": true
+ },
+ {
+  "queryid": "3277030601195619898",
+  "calls": 885,
+  "rows": 0,
+  "total_exec_time": 5.410873999999996,
+  "mean_exec_time": 0.006113981920903953,
+  "max_exec_time": 0.831923,
+  "query": "SET TRANSACTION READ ONLY",
+  "harness": false
+ },
+ {
+  "queryid": "11701968915743190",
+  "calls": 2371,
+  "rows": 0,
+  "total_exec_time": 2.513948999999991,
+  "mean_exec_time": 0.0010602905946857867,
+  "max_exec_time": 0.022042,
+  "query": "BEGIN",
+  "harness": false
+ },
+ {
+  "queryid": "-5877977147301048815",
+  "calls": 1,
+  "rows": 1,
+  "total_exec_time": 0.0775,
+  "mean_exec_time": 0.0775,
+  "max_exec_time": 0.0775,
+  "query": "SELECT pg_stat_statements_reset()",
+  "harness": true
+ }
+]

@@ -8,8 +8,9 @@ services:
     cpus: 2
     mem_limit: 2g
     memswap_limit: 2g
-    # No DB settings are changed: fsync, synchronous_commit, full_page_writes, planner and memory stay at the
-    # defaults of the pinned image. perf/run_one.py saves the effective settings in every manifest.
+    # Only pg_stat_statements is added (benchmark profile, ADR-0013). fsync, synchronous_commit, full_page_writes,
+    # planner and memory stay at the defaults of the pinned image. perf/run_one.py saves the effective settings in every manifest.
+    command: ["postgres", "-c", "shared_preload_libraries=pg_stat_statements", "-c", "pg_stat_statements.track=top"]
   server:
     image: signaldock-perf-server:local
     cpus: 2

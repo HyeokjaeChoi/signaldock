@@ -7,7 +7,7 @@
 Steps: restore the run database from the seed template, ANALYZE, start the server with the pool size, wait for the
 pool, warm-up and measurement under one k6 process, drain, DB checks, ID reconciliation, manifest, raw results,
 verdict. Never uses k6 cloud. A run that misses the target injection rate is `invalid`, never `pass`.
-Files: manifest.json, summary.json, requests.csv, samples.csv, gc.log, k6-summary.json, k6.log, (gitignored:
+Files: manifest.json, summary.json, requests.csv, samples.csv, gc.log, k6-summary.json, k6.log, statements.json, statements.csv (gitignored:
 k6-raw.json.gz, server.log).
 """
 import argparse
@@ -34,7 +34,8 @@ import seed as seedmod
 BENCH_PROFILE = {"concurrency_limit": 8, "admission_ms": 1000, "connection_ms": 1000, "statement_ms": 2000, "lock_ms": 500,
                  "request_budget_ms": 5000, "client_timeout_ms": 5000, "minimum_idle": "equal to pool size",
                  "statement_timeout_scope": "transaction (SET LOCAL per query by the server); not applied to migration or codegen",
-                 "jvm": "-Xmx512m -Xlog:gc:file=/tmp/gc.log", "limits": {"db": "2 CPUs / 2 GiB", "server": "2 CPUs / 1 GiB"}}
+                 "jvm": "-Xmx512m -Xlog:gc:file=/tmp/gc.log",
+                 "pg_stat_statements": "shared_preload_libraries=pg_stat_statements, track=top; reset after warm-up, saved after measurement (statements.json/.csv)", "limits": {"db": "2 CPUs / 2 GiB", "server": "2 CPUs / 1 GiB"}}
 RATE = 5
 SERVER_URL = f"http://127.0.0.1:{c.SERVER_PORT}"
 
@@ -109,6 +110,27 @@ def pg_settings():
     rows = c.psql(f"SELECT name, setting, coalesce(unit,''), source FROM pg_settings WHERE source <> 'default' OR name IN ({names}) ORDER BY name",
                   db="postgres")
     return [dict(zip(("name", "setting", "unit", "source"), r.split("|"))) for r in rows.splitlines()]
+
+
+HARNESS_SQL = re.compile(r"pg_stat_activity|pg_stat_statements|pg_stat_database|pg_stat_wal|pg_stat_user_tables|pg_database_size|"
+                         r"pg_table_size|pg_indexes_size|pg_backend_pid|pg_terminate_backend|^ANALYZE|^CHECKPOINT|^SELECT count\(\*\)", re.I)
+
+
+def save_statements(out):
+    """Per-statement counters of the bench database since the reset after warm-up. Query text is as PostgreSQL normalizes it.
+    Statements run by this runner (monitoring queries) stay in the files with harness=true, so nothing is hidden."""
+    q = ("SELECT coalesce(json_agg(t), '[]') FROM (SELECT queryid::text AS queryid, calls, rows, total_exec_time, mean_exec_time, "
+         "max_exec_time, query FROM pg_stat_statements WHERE dbid = (SELECT oid FROM pg_database WHERE datname='bench') "
+         "ORDER BY total_exec_time DESC) t")
+    rows = json.loads(c.psql(q))
+    for r in rows:
+        r["harness"] = bool(HARNESS_SQL.search(r["query"].strip()))
+    (out / "statements.json").write_text(json.dumps(rows, indent=1) + "\n")
+    with open(out / "statements.csv", "w", newline="") as f:
+        w = csv.DictWriter(f, ["queryid", "calls", "rows", "total_exec_time", "mean_exec_time", "max_exec_time", "harness", "query"])
+        w.writeheader()
+        w.writerows(rows)
+    return len(rows)
 
 
 def cgroup(container):
@@ -389,6 +411,8 @@ def execute(a):
     c.psql("DROP DATABASE IF EXISTS bench", db="postgres")
     times["restore_start"] = stamp()
     c.psql(f"CREATE DATABASE bench TEMPLATE {seed_db}", db="postgres")
+    assert c.psql("SELECT 1 FROM pg_extension WHERE extname='pg_stat_statements'") == "1", \
+        "pg_stat_statements missing in the seed template; run perf/seed.py build again"
     c.psql("ANALYZE")
     c.psql("CHECKPOINT")
     times["restore_end"] = stamp()
@@ -438,12 +462,15 @@ def execute(a):
     try:
         time.sleep(a.warmup + 3)  # k6 initialisation is a few seconds; exact boundaries come from request timestamps
         snaps["after_warmup"] = db_snapshot()
+        c.psql("SELECT pg_stat_statements_reset()")
+        times["statements_reset"] = stamp()
         k6.wait(timeout=a.measure + 120)
     finally:
         times["k6_end"] = stamp()
         sampler.stop.set()
         if k6.poll() is None:
             k6.kill()
+    n_statements = save_statements(out)  # before drain and post checks, which run their own queries
     snaps["after_k6"] = db_snapshot()
 
     # drain: no active DB work may remain before the next run
@@ -567,8 +594,8 @@ def execute(a):
         "metrics_collected": ["per-request client latency/outcome (k6)", "ACK reconciliation", "DB sizes, WAL, buffer counters",
                               "server stage timings: admission_wait, connection_wait, commit, lock/statement timeout, rollback",
                               "Hikari active/idle/pending/total once per second", "container CPU/memory (docker stats, 5 s)",
-                              "cgroup CPU throttling and OOM counters", "JVM GC pauses", "generator CPU/RSS and host CPU"],
-        "metrics_not_collected": ["per-query DB execution time (no pg_stat_statements)", "Hikari acquire time other than the connection_wait stage",
+                              "cgroup CPU throttling and OOM counters", f"pg_stat_statements per statement (calls, rows, total/mean/max time): {n_statements} statements", "JVM GC pauses", "generator CPU/RSS and host CPU"],
+        "metrics_not_collected": ["Hikari acquire time other than the connection_wait stage",
                                   "native JVM memory beyond container memory", "physical disk I/O"],
     }
     manifest["status"] = "completed"

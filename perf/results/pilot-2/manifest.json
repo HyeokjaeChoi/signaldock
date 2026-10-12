@@ -1,0 +1,377 @@
+{
+  "run_id": "pilot-2",
+  "status": "completed",
+  "counts_as_measured_run": false,
+  "pilot": true,
+  "git": {
+    "revision": "d8e4bc2e24cdacc5be9dac3d9a58176e03223636",
+    "branch": "impl/23-server-load-measurement",
+    "dirty": true,
+    "dirty_diff_sha256": "88697f3d8d45725991fcf79c32474d3f16b7ead82e710204a9969fbbda3b1160"
+  },
+  "plan": "perf/../.scratch/signaldock-portfolio/performance-plan.md",
+  "repetition": 1,
+  "pool_order": "pilot",
+  "pool_size": 4,
+  "combination": {
+    "seed_size": 100000,
+    "distribution": "recent70",
+    "window_days": 30,
+    "clients": 5
+  },
+  "reference_time_T": "2026-10-12T00:00:00+09:00",
+  "window": {
+    "from": "2026-09-11T15:00:00.000Z",
+    "to": "2026-10-11T15:00:00.000Z"
+  },
+  "seed": {
+    "name": "seed_100000_recent70",
+    "size": 100000,
+    "dist": "recent70",
+    "generator_seed": 1007,
+    "reference_time_T": "2026-10-12T00:00:00+09:00",
+    "reference_time_T_utc": "2026-10-11T15:00:00.000Z",
+    "csv_sha256": "b361ab8c7abe4f83f46200344ae6257baae9116ec62d412775b97551c4dbe9a2",
+    "csv_bytes": 102840000,
+    "event_json_bytes_min_avg_max": [
+      1024,
+      1024,
+      1024
+    ],
+    "name_counts": {
+      "product_view": 70000,
+      "cart_add": 20000,
+      "purchase": 10000
+    },
+    "installations": 100,
+    "table_bytes": 102825984,
+    "index_bytes": 10477568,
+    "database_bytes": 121212051,
+    "build_seconds": 54.3
+  },
+  "load": {
+    "collection": {
+      "rate_rps": 5,
+      "events_per_batch": 20,
+      "preallocated_vus": 30,
+      "max_vus": 30,
+      "timeout_ms": 5000,
+      "retries": 0,
+      "executor": "constant-arrival-rate"
+    },
+    "dashboard": {
+      "clients": 5,
+      "tick_ms": 5000,
+      "requests_per_tick_per_client": 3,
+      "endpoints": [
+        "GET /v1/events?limit=50 (no name filter)",
+        "GET /v1/event-counts/by-name",
+        "GET /v1/event-counts/by-time (default bucket)"
+      ]
+    },
+    "warmup_s": 60,
+    "measure_s": 300,
+    "run_id_salt": "3e2d6f1b",
+    "request_fixture_sha256": "de440d2b270bc83dee8998559a74428d2b7c7650b119ed647ea9e1addaee2a5d"
+  },
+  "benchmark_profile": {
+    "concurrency_limit": 8,
+    "admission_ms": 1000,
+    "connection_ms": 1000,
+    "statement_ms": 2000,
+    "lock_ms": 500,
+    "request_budget_ms": 5000,
+    "client_timeout_ms": 5000,
+    "minimum_idle": "equal to pool size",
+    "statement_timeout_scope": "transaction (SET LOCAL per query by the server); not applied to migration or codegen",
+    "jvm": "-Xmx512m -Xlog:gc:file=/tmp/gc.log",
+    "pg_stat_statements": "shared_preload_libraries=pg_stat_statements, track=top; reset after warm-up, saved after measurement (statements.json/.csv)",
+    "limits": {
+      "db": "2 CPUs / 2 GiB",
+      "server": "2 CPUs / 1 GiB"
+    }
+  },
+  "times": {
+    "run_start": "2026-10-12T10:22:38.633Z",
+    "restore_start": "2026-10-12T10:22:39.675Z",
+    "restore_end": "2026-10-12T10:22:40.731Z",
+    "server_ready": "2026-10-12T10:22:43.004Z",
+    "k6_start": "2026-10-12T10:22:43.959Z",
+    "statements_reset": "2026-10-12T10:23:47.101Z",
+    "k6_end": "2026-10-12T10:28:44.377Z",
+    "drain_end": "2026-10-12T10:28:44.587Z",
+    "test_start_wall": "2026-10-12T10:22:44.280Z",
+    "measurement_start_wall": "2026-10-12T10:23:44.280Z",
+    "measurement_end_wall": "2026-10-12T10:28:44.280Z",
+    "run_end": "2026-10-12T10:28:47.054Z"
+  },
+  "credentials": "not recorded (random per-machine test keys in perf/work/env)",
+  "expected_window": {
+    "total": 100000,
+    "by_name": {
+      "cart_add": 20000,
+      "product_view": 70000,
+      "purchase": 10000
+    }
+  },
+  "pool_ready": true,
+  "environment": {
+    "host": {
+      "model": "Apple M2 Pro",
+      "cpus": "12",
+      "memory_bytes": "34359738368",
+      "arch": "arm64",
+      "os": "26.6.2",
+      "storage": "Protocol:                  Apple Fabric; Solid State:               Yes"
+    },
+    "docker": {
+      "version": "29.4.0",
+      "os": "OrbStack",
+      "vm_cpus": 12,
+      "vm_memory_bytes": 16819298304,
+      "storage_driver": "overlayfs",
+      "data_volume": "local named volume signaldock-perf_signaldock-db"
+    },
+    "tools": {
+      "k6": "k6 v2.3.0 (commit/devel, go1.27.1, darwin/arm64)",
+      "python": "3.9.6",
+      "compose": "Docker Compose version v5.1.2",
+      "java": "Picked up JAVA_TOOL_OPTIONS: -Xmx512m -Xlog:gc:file=/tmp/gc.log:time,uptime -Dorg.slf4j.simpleLogger.showDateTime=true -Dorg.slf4j.simpleLogger.dateTimeFormat=HH:mm:ss.SSS\nopenjdk version \"21.0.12.1\" 2026-08-18 LTS\nOpenJDK Runtime Environment Temurin-21.0.12.1+1 (build 21.0.12.1+1-LTS)\nOpenJDK 64-Bit Server VM Temurin-21.0.12.1+1 (build 21.0.12.1+1-LTS, mixed mode, sharing)",
+      "postgres": "PostgreSQL 17.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit"
+    },
+    "images": {
+      "db": "postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94",
+      "db_inspect": {
+        "image_id": "sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94",
+        "nano_cpus": 2000000000,
+        "cpu_quota": 0,
+        "memory_bytes": 2147483648,
+        "memory_swap_bytes": 2147483648
+      },
+      "server_inspect": {
+        "image_id": "sha256:e46e9441b9c87e21433e6272b83b118ec9178dcbf65f476d11f1d42835d535d3",
+        "nano_cpus": 2000000000,
+        "cpu_quota": 0,
+        "memory_bytes": 1073741824,
+        "memory_swap_bytes": 1073741824
+      },
+      "server_image_tag": "signaldock-perf-server:local"
+    }
+  },
+  "postgres_settings": [
+    {
+      "name": "DateStyle",
+      "setting": "ISO, MDY",
+      "unit": "",
+      "source": "configuration file"
+    },
+    {
+      "name": "TimeZone",
+      "setting": "UTC",
+      "unit": "",
+      "source": "configuration file"
+    },
+    {
+      "name": "application_name",
+      "setting": "psql",
+      "unit": "",
+      "source": "client"
+    },
+    {
+      "name": "autovacuum",
+      "setting": "on",
+      "unit": "",
+      "source": "default"
+    },
+    {
+      "name": "checkpoint_timeout",
+      "setting": "300",
+      "unit": "s",
+      "source": "default"
+    },
+    {
+      "name": "config_file",
+      "setting": "/var/lib/postgresql/data/postgresql.conf",
+      "unit": "",
+      "source": "override"
+    },
+    {
+      "name": "data_directory",
+      "setting": "/var/lib/postgresql/data",
+      "unit": "",
+      "source": "override"
+    },
+    {
+      "name": "default_statistics_target",
+      "setting": "100",
+      "unit": "",
+      "source": "default"
+    },
+    {
+      "name": "default_text_search_config",
+      "setting": "pg_catalog.english",
+      "unit": "",
+      "source": "configuration file"
+    },
+    {
+      "name": "dynamic_shared_memory_type",
+      "setting": "posix",
+      "unit": "",
+      "source": "configuration file"
+    },
+    {
+      "name": "effective_cache_size",
+      "setting": "524288",
+      "unit": "8kB",
+      "source": "default"
+    },
+    {
+      "name": "fsync",
+      "setting": "on",
+      "unit": "",
+      "source": "default"
+    },
+    {
+      "name": "full_page_writes",
+      "setting": "on",
+      "unit": "",
+      "source": "default"
+    },
+    {
+      "name": "hba_file",
+      "setting": "/var/lib/postgresql/data/pg_hba.conf",
+      "unit": "",
+      "source": "override"
+    },
+    {
+      "name": "ident_file",
+      "setting": "/var/lib/postgresql/data/pg_ident.conf",
+      "unit": "",
+      "source": "override"
+    },
+    {
+      "name": "jit",
+      "setting": "on",
+      "unit": "",
+      "source": "default"
+    },
+    {
+      "name": "lc_messages",
+      "setting": "en_US.utf8",
+      "unit": "",
+      "source": "configuration file"
+    },
+    {
+      "name": "lc_monetary",
+      "setting": "en_US.utf8",
+      "unit": "",
+      "source": "configuration file"
+    },
+    {
+      "name": "lc_numeric",
+      "setting": "en_US.utf8",
+      "unit": "",
+      "source": "configuration file"
+    },
+    {
+      "name": "lc_time",
+      "setting": "en_US.utf8",
+      "unit": "",
+      "source": "configuration file"
+    },
+    {
+      "name": "listen_addresses",
+      "setting": "*",
+      "unit": "",
+      "source": "configuration file"
+    },
+    {
+      "name": "log_timezone",
+      "setting": "UTC",
+      "unit": "",
+      "source": "configuration file"
+    },
+    {
+      "name": "max_connections",
+      "setting": "100",
+      "unit": "",
+      "source": "configuration file"
+    },
+    {
+      "name": "max_wal_size",
+      "setting": "1024",
+      "unit": "MB",
+      "source": "configuration file"
+    },
+    {
+      "name": "min_wal_size",
+      "setting": "80",
+      "unit": "MB",
+      "source": "configuration file"
+    },
+    {
+      "name": "pg_stat_statements.track",
+      "setting": "top",
+      "unit": "",
+      "source": "command line"
+    },
+    {
+      "name": "random_page_cost",
+      "setting": "4",
+      "unit": "",
+      "source": "default"
+    },
+    {
+      "name": "shared_buffers",
+      "setting": "16384",
+      "unit": "8kB",
+      "source": "configuration file"
+    },
+    {
+      "name": "shared_preload_libraries",
+      "setting": "pg_stat_statements",
+      "unit": "",
+      "source": "command line"
+    },
+    {
+      "name": "synchronous_commit",
+      "setting": "on",
+      "unit": "",
+      "source": "default"
+    },
+    {
+      "name": "transaction_deferrable",
+      "setting": "off",
+      "unit": "",
+      "source": "override"
+    },
+    {
+      "name": "transaction_isolation",
+      "setting": "read committed",
+      "unit": "",
+      "source": "override"
+    },
+    {
+      "name": "transaction_read_only",
+      "setting": "off",
+      "unit": "",
+      "source": "override"
+    },
+    {
+      "name": "wal_level",
+      "setting": "replica",
+      "unit": "",
+      "source": "default"
+    },
+    {
+      "name": "work_mem",
+      "setting": "4096",
+      "unit": "kB",
+      "source": "default"
+    }
+  ],
+  "drain": {
+    "seconds": 0.1,
+    "db_idle": true
+  }
+}

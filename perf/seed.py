@@ -70,6 +70,11 @@ def generate(size, dist, T, out):
     return counts, (min(sizes), sum(sizes) // len(sizes), max(sizes))
 
 
+def ensure_extension(db):
+    """pg_stat_statements lives in every template, so each restored `bench` database has it (ADR-0013). Idempotent."""
+    c.psql("CREATE EXTENSION IF NOT EXISTS pg_stat_statements", db=db)
+
+
 def wait_health(timeout=90):
     end = time.time() + timeout
     while time.time() < end:
@@ -85,6 +90,7 @@ def wait_health(timeout=90):
 def ensure_base_schema():
     """Flyway migrates through the real server, so the template has the product's own schema and history."""
     if c.psql("SELECT 1 FROM pg_database WHERE datname='base_schema'", db="postgres"):
+        ensure_extension("base_schema")
         return
     c.log("building server image (first run takes a few minutes)")
     c.compose("build", "server")
@@ -93,6 +99,7 @@ def ensure_base_schema():
     wait_health()
     c.compose("rm", "-sf", "server")
     c.psql("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='base_schema'", db="postgres")
+    ensure_extension("base_schema")
 
 
 def build(size, dist, day, force):
@@ -103,6 +110,7 @@ def build(size, dist, day, force):
     name = seed_name(size, dist)
     exists = c.psql(f"SELECT 1 FROM pg_database WHERE datname='{name}'", db="postgres")
     if exists and not force:
+        ensure_extension(name)
         c.log(f"{name} exists; use --force to rebuild")
         return
     ensure_base_schema()

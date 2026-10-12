@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
-"""Writes a Markdown summary (and figures when matplotlib is installed) for run directories from run_one.py.
+"""Writes a Markdown summary, a latency CSV, and (with --index) the JSON for perf/report/ from run directories of run_one.py.
 
-  python3 perf/summarize.py perf/results/pilot-1 [more run dirs] --out perf/results/pilot-1/report.md
+  python3 perf/summarize.py perf/results/pilot-2 [more run dirs] --out perf/results/pilot-2/report.md
+  python3 perf/summarize.py perf/results/*/ --out perf/results/report.md --index perf/results/index.json
 
 Per-run values stay separate: percentiles of different runs are never averaged into one p95 (performance-plan.md,
-acceptance 5). Without matplotlib the script writes CSV files for later plotting and says so in the report.
+acceptance 5). The graphical report is the static viewer in perf/report/.
 """
 import argparse
 import csv
+import datetime as dt
 import json
+import re
 from pathlib import Path
 
 TARGET = {"collect": 500, "list": 500, "by-name": 1000, "by-time": 1000}
@@ -46,48 +49,91 @@ def fmt(v):
     return "n/a" if v is None else f"{v:.1f}" if isinstance(v, float) else str(v)
 
 
-def figures(runs, out_dir):
-    try:
-        import matplotlib
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-    except ImportError:
-        # Fallback: raw points for any plotting tool.
-        with open(out_dir / "figure-data-latency.csv", "w", newline="") as f:
-            w = csv.writer(f)
-            w.writerow(["run_id", "ep", "phase", "elapsed_s", "duration_ms"])
-            for d, m, s in runs:
-                for r in csv.DictReader(open(d / "requests.csv")):
-                    w.writerow([m["run_id"], r["ep"], r["phase"], int(r["at_ms"]) / 1000, r["duration_ms"]])
-        return None, "matplotlib is not installed here; wrote figure-data-latency.csv (run_id, ep, phase, elapsed_s, duration_ms) for later plotting."
-    names = []
-    for d, m, s in runs:
-        fig, axes = plt.subplots(2, 2, figsize=(10, 6), sharex=True)
-        rows = list(csv.DictReader(open(d / "requests.csv")))
-        for ax, ep in zip(axes.flat, TARGET):
-            pts = [(int(r["at_ms"]) / 1000, float(r["duration_ms"])) for r in rows if r["ep"] == ep]
-            ax.scatter(*zip(*pts), s=6) if pts else None
-            ax.axhline(TARGET[ep], color="red", lw=0.8, ls="--")
-            ax.axvline(m["load"]["warmup_s"], color="gray", lw=0.8)
-            ax.set_title(f"{ep} (target p95 {TARGET[ep]} ms)")
-            ax.set_ylabel("ms")
-        fig.suptitle(m["run_id"] + ": latency over time (gray line: end of warm-up)")
-        fig.tight_layout()
-        p = out_dir / f"{m['run_id']}-latency.png"
-        fig.savefig(p, dpi=110)
-        plt.close(fig)
-        names.append(p.name)
-    return names, None
+def latency_csv(runs, out_dir):
+    """Raw latency points for any plotting tool (the graphical report is perf/report/, which reads index.json)."""
+    with open(out_dir / "figure-data-latency.csv", "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["run_id", "ep", "phase", "elapsed_s", "duration_ms"])
+        for d, m, s in runs:
+            for r in csv.DictReader(open(d / "requests.csv")):
+                w.writerow([m["run_id"], r["ep"], r["phase"], int(r["at_ms"]) / 1000, r["duration_ms"]])
+
+
+def parse_ts(s):
+    return dt.datetime.fromisoformat(s.replace("Z", "+00:00"))
+
+
+def pool_series(d, m):
+    """Hikari active/idle/pending per second since test start, from server.log (gitignored; empty when it is missing)."""
+    log = d / "server.log"
+    if not log.exists():
+        return []
+    start = parse_ts(m["times"]["test_start_wall"])
+    base = start.hour * 3600 + start.minute * 60 + start.second + start.microsecond / 1e6
+    out = []
+    for line in open(log, errors="replace"):
+        x = re.match(r"(\d\d):(\d\d):(\d\d)\.(\d{3}) .*pool active=(\d+) idle=(\d+) pending=(\d+)", line)
+        if x:
+            sec = int(x[1]) * 3600 + int(x[2]) * 60 + int(x[3]) + int(x[4]) / 1000
+            delta = (sec - base + 43200) % 86400 - 43200  # log lines carry time of day only
+            out.append([round(delta, 1), int(x[5]), int(x[6]), int(x[7])])
+    return out
+
+
+def container_series(d, m):
+    start = parse_ts(m["times"]["test_start_wall"])
+    keep = ("db_cpu_pct", "server_cpu_pct", "db_mem_mib", "server_mem_mib")
+    out = []
+    for r in csv.DictReader(open(d / "samples.csv")):
+        out.append({"t": round((parse_ts(r["ts"]) - start).total_seconds(), 1), **{k: float(r[k]) for k in keep if r.get(k)}})
+    return out
+
+
+def statements(d, top=20):
+    f = d / "statements.csv"
+    if not f.exists():
+        return None
+    rows = list(csv.DictReader(open(f)))
+    app = [r for r in rows if r["harness"] != "True"]
+    keep = lambda r: {"calls": int(r["calls"]), "rows": int(r["rows"]), "total_exec_ms": float(r["total_exec_time"]),
+                      "mean_exec_ms": float(r["mean_exec_time"]), "max_exec_ms": float(r["max_exec_time"]), "query": r["query"]}
+    return {"statements": len(rows), "harness_statements": len(rows) - len(app), "top_by_total_time": [keep(r) for r in app[:top]]}
+
+
+def index_entry(d, m, s):
+    non_ok = {ep: {k: v for k, v in x["outcomes"].items() if k != "ok"} for ep, x in s["measurement"].items()}
+    v = s["load_validity"]
+    return {
+        "run_id": m["run_id"], "counted": m["counts_as_measured_run"], "verdict": s["verdict"],
+        "invalid_reasons": s["invalid_reasons"], "fail_reasons": s["fail_reasons"],
+        "repetition": m["repetition"], "pool_order": m["pool_order"], "pool_size": m["pool_size"], "combination": m["combination"],
+        "git": {"revision": m["git"]["revision"][:12], "dirty": m["git"]["dirty"]},
+        "warmup_s": m["load"]["warmup_s"], "measure_s": m["load"]["measure_s"],
+        "endpoints": {ep: {"target_p95_ms": TARGET[ep], **{k: x[k] for k in ("samples", "p50_ms", "p95_ms", "max_ms", "outcomes")}}
+                      for ep, x in s["measurement"].items()},
+        "injection": {"scheduled": v["scheduled_measurement_iterations"], "started": v["started_measurement_iterations"],
+                      "dropped": v["dropped_iterations"]},
+        "non_ok_outcomes": {ep: o for ep, o in non_ok.items() if o},
+        "skipped_ticks": {ep: t["measure_skipped"] for ep, t in s["dashboard_ticks"].items()},
+        "hikari_series": pool_series(d, m), "container_series": container_series(d, m),
+        "cgroup": {k: {n: s["cgroup_deltas"][k].get(f"cpu.stat:{n}") for n in ("nr_periods", "nr_throttled", "throttled_usec")}
+                   for k in ("server", "db")},
+        "statements": statements(d),
+    }
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("runs", nargs="+")
     ap.add_argument("--out", required=True)
+    ap.add_argument("--index", help="also write one JSON file with all given runs for perf/report/ (per-run values only)")
     a = ap.parse_args()
     runs = [load(r) for r in a.runs]
     out = Path(a.out)
-    figs, note = figures(runs, out.parent)
+    latency_csv(runs, out.parent)
+    if a.index:
+        runs.sort(key=lambda r: (not r[1]["pilot"], r[1]["run_id"]))  # pilots first, then by id
+        Path(a.index).write_text(json.dumps({"targets_p95_ms": TARGET, "runs": [index_entry(*r) for r in runs]}, separators=(",", ":")) + "\n")
     L = ["# Server load measurement summary", "",
          "Source: `perf/summarize.py`. Values come from `summary.json` and `requests.csv` of each run. "
          "Targets are project targets set before measurement, not an SLA. Latency is HTTP start to completion as seen by k6 "
@@ -126,10 +172,8 @@ def main():
               f"- GC: {s['gc']}; cgroup throttling server: nr_throttled={s['cgroup_deltas']['server'].get('cpu.stat:nr_throttled')}, "
               f"throttled_usec={s['cgroup_deltas']['server'].get('cpu.stat:throttled_usec')}; db: nr_throttled={s['cgroup_deltas']['db'].get('cpu.stat:nr_throttled')}",
               f"- Not collected: {'; '.join(s['metrics_not_collected'])}", ""]
-    if figs:
-        L += ["## Figures", ""] + [f"![{n}]({n})" for n in figs] + [""]
-    if note:
-        L += ["## Figures", "", note, ""]
+    L += ["## Figures", "", "`figure-data-latency.csv` holds every request (run_id, ep, phase, elapsed_s, duration_ms) for plotting. "
+          "Graphs: `perf/report/` (static viewer of `perf/results/index.json`).", ""]
     out.write_text("\n".join(L))
 
 

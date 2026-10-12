@@ -1,0 +1,479 @@
+{
+  "run_id": "pilot-2",
+  "verdict": "pass",
+  "invalid_reasons": [],
+  "fail_reasons": [],
+  "counts_as_measured_run": false,
+  "load_validity": {
+    "scheduled_measurement_iterations": 1500,
+    "started_measurement_iterations": 1500,
+    "dropped_iterations": 0,
+    "generator": {
+      "samples": 59,
+      "k6_cpu_pct": {
+        "avg": 2.1,
+        "max": 18.5
+      },
+      "host_cpu_pct_sum": {
+        "avg": 224.9,
+        "max": 441.5
+      },
+      "db_cpu_pct": {
+        "avg": 11.9,
+        "max": 44.63
+      },
+      "server_cpu_pct": {
+        "avg": 6.9,
+        "max": 17.46
+      },
+      "db_mem_mib": {
+        "avg": 159.9,
+        "max": 162.0
+      },
+      "server_mem_mib": {
+        "avg": 198.7,
+        "max": 217.1
+      },
+      "k6_rss_kb": {
+        "avg": 266830.4,
+        "max": 267488
+      }
+    }
+  },
+  "measurement": {
+    "collect": {
+      "samples": 1500,
+      "outcomes": {
+        "ok": 1500
+      },
+      "p50_ms": 19.069,
+      "p95_ms": 30.152,
+      "max_ms": 169.567,
+      "min_ms": 4.779,
+      "client_blocked_connecting_max_ms": 0.306,
+      "duration_includes": "sending+waiting+receiving; connection wait (blocked+connecting) reported separately"
+    },
+    "list": {
+      "samples": 300,
+      "outcomes": {
+        "ok": 300
+      },
+      "p50_ms": 53.502,
+      "p95_ms": 144.794,
+      "max_ms": 161.365,
+      "min_ms": 5.738,
+      "client_blocked_connecting_max_ms": 0.337,
+      "duration_includes": "sending+waiting+receiving; connection wait (blocked+connecting) reported separately"
+    },
+    "by-name": {
+      "samples": 300,
+      "outcomes": {
+        "ok": 300
+      },
+      "p50_ms": 131.024,
+      "p95_ms": 170.429,
+      "max_ms": 231.326,
+      "min_ms": 39.511,
+      "client_blocked_connecting_max_ms": 0.071,
+      "duration_includes": "sending+waiting+receiving; connection wait (blocked+connecting) reported separately"
+    },
+    "by-time": {
+      "samples": 300,
+      "outcomes": {
+        "ok": 300
+      },
+      "p50_ms": 121.34,
+      "p95_ms": 168.484,
+      "max_ms": 183.473,
+      "min_ms": 28.765,
+      "client_blocked_connecting_max_ms": 0.67,
+      "duration_includes": "sending+waiting+receiving; connection wait (blocked+connecting) reported separately"
+    }
+  },
+  "warmup": {
+    "collect": {
+      "samples": 300,
+      "outcomes": {
+        "ok": 300
+      },
+      "p50_ms": 27.025,
+      "p95_ms": 120.146,
+      "max_ms": 679.27,
+      "min_ms": 5.051,
+      "client_blocked_connecting_max_ms": 2.894,
+      "duration_includes": "sending+waiting+receiving; connection wait (blocked+connecting) reported separately"
+    },
+    "list": {
+      "samples": 60,
+      "outcomes": {
+        "ok": 60
+      },
+      "p50_ms": 141.79,
+      "p95_ms": 455.225,
+      "max_ms": 549.331,
+      "min_ms": 20.708,
+      "client_blocked_connecting_max_ms": 2.205,
+      "duration_includes": "sending+waiting+receiving; connection wait (blocked+connecting) reported separately"
+    },
+    "by-name": {
+      "samples": 60,
+      "outcomes": {
+        "ok": 60
+      },
+      "p50_ms": 232.254,
+      "p95_ms": 540.828,
+      "max_ms": 656.021,
+      "min_ms": 54.947,
+      "client_blocked_connecting_max_ms": 2.255,
+      "duration_includes": "sending+waiting+receiving; connection wait (blocked+connecting) reported separately"
+    },
+    "by-time": {
+      "samples": 60,
+      "outcomes": {
+        "ok": 60
+      },
+      "p50_ms": 162.353,
+      "p95_ms": 533.237,
+      "max_ms": 671.31,
+      "min_ms": 54.468,
+      "client_blocked_connecting_max_ms": 2.213,
+      "duration_includes": "sending+waiting+receiving; connection wait (blocked+connecting) reported separately"
+    }
+  },
+  "acks": {
+    "acks_accepted": 36020.0,
+    "acks_duplicate": 0,
+    "acks_rejected": 0
+  },
+  "dashboard_ticks": {
+    "list": {
+      "measure_ticks": 300.0,
+      "measure_skipped": 0,
+      "warmup_ticks": 60.0,
+      "warmup_skipped": 0
+    },
+    "by-name": {
+      "measure_ticks": 300.0,
+      "measure_skipped": 0,
+      "warmup_ticks": 60.0,
+      "warmup_skipped": 0
+    },
+    "by-time": {
+      "measure_ticks": 300.0,
+      "measure_skipped": 0,
+      "warmup_ticks": 60.0,
+      "warmup_skipped": 0
+    }
+  },
+  "dashboard_request_counts_measure": {
+    "list": 300,
+    "by-name": 300,
+    "by-time": 300
+  },
+  "reconciliation": {
+    "requests_with_result": 1801,
+    "rows_for_run_ids": 36020,
+    "ok_requests": 1801,
+    "ok_requests_not_fully_stored": 0,
+    "failed_requests": 0,
+    "rows_stored_after_failed_requests": 0,
+    "rows_for_ids_without_result": 0,
+    "unique_row_mismatch": 0,
+    "duplicate_ids_in_db": 0
+  },
+  "aggregate_check": {
+    "names_ok": true,
+    "days_ok": true,
+    "list_first_page_ok": true,
+    "sql_total": 100000,
+    "api_total": 100000
+  },
+  "seed_rows_after_run": 100000,
+  "db": {
+    "snapshot_before": {
+      "wal_bytes": 249013878,
+      "blks_read": 20738,
+      "blks_hit": 20937,
+      "xact_commit": 98,
+      "xact_rollback": 0,
+      "n_tup_ins": 0,
+      "database_bytes": 121392275,
+      "events_table_bytes": 102825984,
+      "events_index_bytes": 10477568,
+      "ts": "2026-10-12T10:22:43.958Z"
+    },
+    "after_warmup": {
+      "wal_bytes": 257375905,
+      "blks_read": 260657,
+      "blks_hit": 793171,
+      "xact_commit": 2004,
+      "xact_rollback": 0,
+      "n_tup_ins": 6220,
+      "database_bytes": 128289939,
+      "events_table_bytes": 108896256,
+      "events_index_bytes": 11304960,
+      "ts": "2026-10-12T10:23:47.054Z"
+    },
+    "after_k6": {
+      "wal_bytes": 296065424,
+      "blks_read": 262563,
+      "blks_hit": 5417323,
+      "xact_commit": 10211,
+      "xact_rollback": 0,
+      "n_tup_ins": 35940,
+      "database_bytes": 162679955,
+      "events_table_bytes": 139378688,
+      "events_index_bytes": 15163392,
+      "ts": "2026-10-12T10:28:44.529Z"
+    },
+    "after_drain": {
+      "wal_bytes": 296065424,
+      "blks_read": 262611,
+      "blks_hit": 5418756,
+      "xact_commit": 10215,
+      "xact_rollback": 0,
+      "n_tup_ins": 35940,
+      "database_bytes": 162679955,
+      "events_table_bytes": 139378688,
+      "events_index_bytes": 15163392,
+      "ts": "2026-10-12T10:28:44.980Z"
+    },
+    "final": {
+      "wal_bytes": 296093694,
+      "blks_read": 265623,
+      "blks_hit": 5446926,
+      "xact_commit": 10250,
+      "xact_rollback": 0,
+      "n_tup_ins": 35960,
+      "database_bytes": 162679955,
+      "events_table_bytes": 139378688,
+      "events_index_bytes": 15163392,
+      "ts": "2026-10-12T10:28:45.982Z"
+    },
+    "rows_added_total": 35940,
+    "rows_added_by_end_of_warmup_approx": 6220,
+    "wal_bytes_run": 47051546,
+    "buffer_before_after_warmup": {
+      "hit_ratio_warmup": 0.763,
+      "hit_ratio_measure": 0.9996,
+      "note": "shared buffer hits are not proof of no physical disk I/O"
+    }
+  },
+  "server_stage_timings": {
+    "warmup": {
+      "admission_wait": {
+        "count": 480,
+        "p50_ms": 0,
+        "p95_ms": 205,
+        "max_ms": 490
+      },
+      "connection_wait": {
+        "count": 480,
+        "p50_ms": 0,
+        "p95_ms": 143,
+        "max_ms": 500
+      },
+      "commit": {
+        "count": 480,
+        "p50_ms": 22,
+        "p95_ms": 421,
+        "max_ms": 613
+      }
+    },
+    "measure": {
+      "admission_wait": {
+        "count": 2400,
+        "p50_ms": 0,
+        "p95_ms": 53,
+        "max_ms": 136
+      },
+      "connection_wait": {
+        "count": 2400,
+        "p50_ms": 0,
+        "p95_ms": 75,
+        "max_ms": 141
+      },
+      "commit": {
+        "count": 2400,
+        "p50_ms": 13,
+        "p95_ms": 146,
+        "max_ms": 227
+      }
+    },
+    "after": {
+      "admission_wait": {
+        "count": 1,
+        "p50_ms": 0,
+        "p95_ms": 0,
+        "max_ms": 0
+      },
+      "connection_wait": {
+        "count": 1,
+        "p50_ms": 0,
+        "p95_ms": 0,
+        "max_ms": 0
+      },
+      "commit": {
+        "count": 1,
+        "p50_ms": 15,
+        "p95_ms": 15,
+        "max_ms": 15
+      }
+    }
+  },
+  "hikari_pool_counters": {
+    "before": {
+      "max_active": 0,
+      "max_pending": 0,
+      "samples": 2
+    },
+    "warmup": {
+      "max_active": 4,
+      "max_pending": 4,
+      "samples": 60
+    },
+    "measure": {
+      "max_active": 4,
+      "max_pending": 4,
+      "samples": 298
+    },
+    "after": {
+      "max_active": 0,
+      "max_pending": 0,
+      "samples": 1
+    }
+  },
+  "gc": {
+    "pause_count": 0,
+    "pause_total_ms": 0,
+    "pause_max_ms": 0
+  },
+  "cgroup_deltas": {
+    "db": {
+      "cpu.stat:usage_usec": 45607048,
+      "cpu.stat:user_usec": 37460796,
+      "cpu.stat:system_usec": 8146253,
+      "cpu.stat:nice_usec": 0,
+      "cpu.stat:nr_periods": 3599,
+      "cpu.stat:nr_throttled": 91,
+      "cpu.stat:throttled_usec": 23823966,
+      "cpu.stat:nr_bursts": 0,
+      "cpu.stat:burst_usec": 0,
+      "memory.events:low": 0,
+      "memory.events:high": 0,
+      "memory.events:max": 0,
+      "memory.events:oom": 0,
+      "memory.events:oom_kill": 0,
+      "memory.events:oom_group_kill": 0,
+      "memory.events:sock_throttled": 0
+    },
+    "server": {
+      "cpu.stat:usage_usec": 33427280,
+      "cpu.stat:user_usec": 30219525,
+      "cpu.stat:system_usec": 3207755,
+      "cpu.stat:nice_usec": 0,
+      "cpu.stat:nr_periods": 3606,
+      "cpu.stat:nr_throttled": 1,
+      "cpu.stat:throttled_usec": 125817,
+      "cpu.stat:nr_bursts": 0,
+      "cpu.stat:burst_usec": 0,
+      "memory.events:low": 0,
+      "memory.events:high": 0,
+      "memory.events:max": 0,
+      "memory.events:oom": 0,
+      "memory.events:oom_kill": 0,
+      "memory.events:oom_group_kill": 0,
+      "memory.events:sock_throttled": 0
+    }
+  },
+  "cgroup_final": {
+    "db": {
+      "cpu.stat:usage_usec": 49362073,
+      "cpu.stat:user_usec": 39710153,
+      "cpu.stat:system_usec": 9651920,
+      "cpu.stat:nice_usec": 0,
+      "cpu.stat:nr_periods": 3797,
+      "cpu.stat:nr_throttled": 91,
+      "cpu.stat:throttled_usec": 23823966,
+      "cpu.stat:nr_bursts": 0,
+      "cpu.stat:burst_usec": 0,
+      "memory.events:low": 0,
+      "memory.events:high": 0,
+      "memory.events:max": 0,
+      "memory.events:oom": 0,
+      "memory.events:oom_kill": 0,
+      "memory.events:oom_group_kill": 0,
+      "memory.events:sock_throttled": 0,
+      "memory.peak": 519733248,
+      "memory.current": 188887040
+    },
+    "server": {
+      "cpu.stat:usage_usec": 34752640,
+      "cpu.stat:user_usec": 31458449,
+      "cpu.stat:system_usec": 3294191,
+      "cpu.stat:nice_usec": 0,
+      "cpu.stat:nr_periods": 3621,
+      "cpu.stat:nr_throttled": 4,
+      "cpu.stat:throttled_usec": 193412,
+      "cpu.stat:nr_bursts": 0,
+      "cpu.stat:burst_usec": 0,
+      "memory.events:low": 0,
+      "memory.events:high": 0,
+      "memory.events:max": 0,
+      "memory.events:oom": 0,
+      "memory.events:oom_kill": 0,
+      "memory.events:oom_group_kill": 0,
+      "memory.events:sock_throttled": 0,
+      "memory.peak": 238477312,
+      "memory.current": 227409920
+    }
+  },
+  "containers_measure": {
+    "samples": 59,
+    "k6_cpu_pct": {
+      "avg": 2.1,
+      "max": 18.5
+    },
+    "host_cpu_pct_sum": {
+      "avg": 224.9,
+      "max": 441.5
+    },
+    "db_cpu_pct": {
+      "avg": 11.9,
+      "max": 44.63
+    },
+    "server_cpu_pct": {
+      "avg": 6.9,
+      "max": 17.46
+    },
+    "db_mem_mib": {
+      "avg": 159.9,
+      "max": 162.0
+    },
+    "server_mem_mib": {
+      "avg": 198.7,
+      "max": 217.1
+    },
+    "k6_rss_kb": {
+      "avg": 266830.4,
+      "max": 267488
+    }
+  },
+  "metrics_collected": [
+    "per-request client latency/outcome (k6)",
+    "ACK reconciliation",
+    "DB sizes, WAL, buffer counters",
+    "server stage timings: admission_wait, connection_wait, commit, lock/statement timeout, rollback",
+    "Hikari active/idle/pending/total once per second",
+    "container CPU/memory (docker stats, 5 s)",
+    "cgroup CPU throttling and OOM counters",
+    "pg_stat_statements per statement (calls, rows, total/mean/max time): 11 statements",
+    "JVM GC pauses",
+    "generator CPU/RSS and host CPU"
+  ],
+  "metrics_not_collected": [
+    "Hikari acquire time other than the connection_wait stage",
+    "native JVM memory beyond container memory",
+    "physical disk I/O"
+  ]
+}
