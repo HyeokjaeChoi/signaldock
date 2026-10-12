@@ -24,7 +24,11 @@ ZIP="$ROOT/sdk/sdk-android/build/distributions/signaldock-sdk-android-0.1.0-mave
 
 echo "=== 2. unzip into a clean folder ==="
 REPO="${SIGNALDOCK_REPO_DIR:-$(mktemp -d)/maven-repo}"
-rm -rf "$REPO"
+# Never delete a caller-supplied directory: require it to be new or empty.
+if [ -e "$REPO" ] && [ -n "$(ls -A "$REPO")" ]; then
+  echo "FAIL: $REPO exists and is not empty; pass a new or empty SIGNALDOCK_REPO_DIR" >&2
+  exit 1
+fi
 mkdir -p "$REPO"
 unzip -q "$ZIP" -d "$REPO"
 
@@ -46,9 +50,9 @@ rm -rf "$META"
 echo "=== 3. consumer assembleRelease (R8) from the unzipped folder ==="
 # Effective Kotlin Gradle plugin must be AGP 9's default (2.2.x). Catches overrides in any form.
 KGP="$("$ROOT/compatibility/consumer-android/gradlew" -p "$ROOT/compatibility/consumer-android" \
-  -Psignaldock.repo="$REPO" buildEnvironment --no-daemon -q | grep -o 'kotlin-gradle-plugin:[0-9][0-9.]*' | sort -u)"
+  -Psignaldock.repo="$REPO" buildEnvironment :app:buildEnvironment --no-daemon -q | grep -o 'kotlin-gradle-plugin:[0-9][0-9.]*' | sort -u)"
 echo "consumer Kotlin Gradle plugin: $KGP"
-if [ "$KGP" != "kotlin-gradle-plugin:2.2.10" ] && ! echo "$KGP" | grep -qx 'kotlin-gradle-plugin:2\.2\.[0-9]*'; then
+if [ -z "$KGP" ] || echo "$KGP" | grep -qvx 'kotlin-gradle-plugin:2\.2\.[0-9]*'; then
   echo "error: consumer Kotlin is not AGP's default 2.2.x; revisit Q132 if the AGP default moved" >&2
   exit 1
 fi
