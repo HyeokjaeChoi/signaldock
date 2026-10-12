@@ -1,13 +1,13 @@
 {
   "scenario": "burst",
-  "run_id": "r20261012160829burst",
+  "run_id": "r20261012161656burst",
   "avd": "signaldock-api37",
   "meta": {
     "scenario": "burst",
-    "run_id": "r20261012160829burst",
+    "run_id": "r20261012161656burst",
     "completed_phases": true,
-    "started_utc": "2026-10-12T16:08:30Z",
-    "ended_utc": "2026-10-12T16:08:41Z",
+    "started_utc": "2026-10-12T16:16:56Z",
+    "ended_utc": "2026-10-12T16:17:08Z",
     "avd": "signaldock-api37",
     "serial": "emulator-5584",
     "build": "debug androidTest APK: SDK library debug variant, debuggable, no R8/minify (ADR-0014)",
@@ -19,10 +19,10 @@
       "model": "Apple M2 Pro",
       "cpus": "12",
       "os": "26.6.2",
-      "loadavg_before": "{ 10.56 6.83 6.77 }",
-      "loadavg_after": "{ 14.22 7.82 7.12 }"
+      "loadavg_before": "{ 6.03 8.74 8.33 }",
+      "loadavg_after": "{ 5.56 8.55 8.27 }"
     },
-    "git_revision": "5123400 (dirty)"
+    "git_revision": "5b369f4 (dirty)"
   },
   "device": "Google sdk_gphone16k_arm64",
   "api": 37,
@@ -33,19 +33,19 @@
     "target_rate_per_s": 100,
     "planned": 1000,
     "started": 1000,
-    "actual_rate_per_s": 99.98,
+    "actual_rate_per_s": 100.0,
     "span_s": 9.99,
     "max_calls_in_flight": 4,
     "start_lateness_ms": {
       "p95": 2.8,
-      "max": 10.3
+      "max": 8.7
     },
     "event_bytes": 1022
   },
   "track_ms": {
-    "p50": 1.31,
-    "p95": 2.72,
-    "max": 47.01,
+    "p50": 0.84,
+    "p95": 1.98,
+    "max": 33.67,
     "count": 1000
   },
   "errors": {
@@ -59,7 +59,7 @@
     "missing_on_server": 0,
     "not_tracked_on_server": 0,
     "duplicate_server_rows": 0,
-    "batches_sent": 420,
+    "batches_sent": 201,
     "events_sent": 1000,
     "event_ids_sent_more_than_once": 0,
     "batches_not_200": 0,
@@ -70,31 +70,31 @@
   "drain": {
     "seconds": 0.06,
     "queued_after": 0,
-    "queued_at_injection_end": 7
+    "queued_at_injection_end": 20
   },
   "files_bytes": {
     "at_injection_end": {
       "installation-id": 36,
-      "queue.db": 36864,
+      "queue.db": 49152,
       "queue.db-shm": 32768,
-      "queue.db-wal": 449112
+      "queue.db-wal": 453232
     },
     "after_drain": {
       "installation-id": 36,
-      "queue.db": 36864,
+      "queue.db": 49152,
       "queue.db-shm": 32768,
-      "queue.db-wal": 449112
+      "queue.db-wal": 453232
     }
   },
   "memory_kb": {
-    "pss_after_init_to_injection_end": 3708,
-    "pss_after_init_to_after_drain": 2700,
-    "heap_after_init_to_after_drain": -48,
+    "pss_after_init_to_injection_end": 3157,
+    "pss_after_init_to_after_drain": 2341,
+    "heap_after_init_to_after_drain": 0,
     "pss_absolute": {
-      "before_init": 39407,
-      "after_init": 38856,
-      "injection_end": 42564,
-      "after_drain": 41556
+      "before_init": 39430,
+      "after_init": 38781,
+      "injection_end": 41938,
+      "after_drain": 41122
     }
   },
   "verdict": "pass",

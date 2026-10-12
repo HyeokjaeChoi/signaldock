@@ -1,13 +1,13 @@
 {
   "scenario": "normal",
-  "run_id": "r20261012160703normal",
+  "run_id": "r20261012161530normal",
   "avd": "signaldock-api37",
   "meta": {
     "scenario": "normal",
-    "run_id": "r20261012160703normal",
+    "run_id": "r20261012161530normal",
     "completed_phases": true,
-    "started_utc": "2026-10-12T16:07:03Z",
-    "ended_utc": "2026-10-12T16:08:06Z",
+    "started_utc": "2026-10-12T16:15:30Z",
+    "ended_utc": "2026-10-12T16:16:33Z",
     "avd": "signaldock-api37",
     "serial": "emulator-5584",
     "build": "debug androidTest APK: SDK library debug variant, debuggable, no R8/minify (ADR-0014)",
@@ -19,10 +19,10 @@
       "model": "Apple M2 Pro",
       "cpus": "12",
       "os": "26.6.2",
-      "loadavg_before": "{ 5.29 5.58 6.40 }",
-      "loadavg_after": "{ 6.91 5.93 6.46 }"
+      "loadavg_before": "{ 6.97 9.63 8.57 }",
+      "loadavg_after": "{ 6.75 9.08 8.44 }"
     },
-    "git_revision": "5123400 (dirty)"
+    "git_revision": "5b369f4 (dirty)"
   },
   "device": "Google sdk_gphone16k_arm64",
   "api": 37,
@@ -37,15 +37,15 @@
     "span_s": 59.0,
     "max_calls_in_flight": 1,
     "start_lateness_ms": {
-      "p95": 3.6,
-      "max": 4.3
+      "p95": 8.7,
+      "max": 10.1
     },
     "event_bytes": 1024
   },
   "track_ms": {
-    "p50": 1.85,
-    "p95": 5.37,
-    "max": 18.95,
+    "p50": 1.58,
+    "p95": 2.23,
+    "max": 20.52,
     "count": 60
   },
   "errors": {
@@ -68,7 +68,7 @@
     }
   },
   "drain": {
-    "seconds": 2.1,
+    "seconds": 2.02,
     "queued_after": 0,
     "queued_at_injection_end": 7
   },
@@ -87,14 +87,14 @@
     }
   },
   "memory_kb": {
-    "pss_after_init_to_injection_end": 2746,
-    "pss_after_init_to_after_drain": 2218,
-    "heap_after_init_to_after_drain": -224,
+    "pss_after_init_to_injection_end": 2360,
+    "pss_after_init_to_after_drain": 2008,
+    "heap_after_init_to_after_drain": -176,
     "pss_absolute": {
-      "before_init": 38296,
-      "after_init": 38581,
-      "injection_end": 41327,
-      "after_drain": 40799
+      "before_init": 39302,
+      "after_init": 38674,
+      "injection_end": 41034,
+      "after_drain": 40682
     }
   },
   "verdict": "pass",

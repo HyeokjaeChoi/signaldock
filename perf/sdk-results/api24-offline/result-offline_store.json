@@ -1,7 +1,7 @@
 {
   "phase": "offline_store",
-  "runId": "r20261012161001offline",
-  "pid": 4885,
+  "runId": "r20261012161824offline",
+  "pid": 4896,
   "device": "Google Android SDK built for arm64",
   "api": 24,
   "release": "7.0",
@@ -10,31 +10,31 @@
   "targetRate": 0,
   "plannedEvents": 1000,
   "maxInFlight": 1,
-  "initMicros": 25889,
+  "initMicros": 11761,
   "eventBytes": 1026,
-  "injectionSeconds": 0.928954,
+  "injectionSeconds": 0.885796,
   "queued": 1000,
   "queuedBytes": 1027890,
   "lastDeliveryError": "NETWORK",
   "retryFailureCount": 1,
-  "nextAttemptInSeconds": 7.228,
+  "nextAttemptInSeconds": 8.307,
   "sdkWarnings": 0,
   "files": {
     "installation-id": 36,
-    "queue.db": 1425408,
+    "queue.db": 1437696,
     "queue.db-shm": 32768,
-    "queue.db-wal": 444992
+    "queue.db-wal": 432632
   },
   "memBeforeInit": {
-    "totalPssKb": 19273,
-    "javaHeapUsedKb": 8409
+    "totalPssKb": 19311,
+    "javaHeapUsedKb": 8415
   },
   "memAfterInit": {
-    "totalPssKb": 22955,
-    "javaHeapUsedKb": 6650
+    "totalPssKb": 22826,
+    "javaHeapUsedKb": 6643
   },
   "memAfterStore": {
-    "totalPssKb": 30937,
-    "javaHeapUsedKb": 9308
+    "totalPssKb": 30982,
+    "javaHeapUsedKb": 9343
   }
 }

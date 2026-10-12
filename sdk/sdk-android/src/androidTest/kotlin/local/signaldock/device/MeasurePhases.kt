@@ -175,6 +175,10 @@ class MeasurePhases {
         val (sdk, initMicros) = init()
         val memAfterInit = memory()
         val (calls, maxInFlight) = inject(sdk, 0, 1000)
+        // The first delivery attempt runs in the background: wait until it failed and its retry time is persisted (ADR-0014 item 6).
+        awaitTrue(60_000, "a failed delivery attempt with a persisted retry time") {
+            runBlocking { sdk.diagnostics() }.let { it.retryFailureCount > 0 && it.nextAttemptEpochMillis != null }
+        }
         val d = runBlocking { sdk.diagnostics() }
         writeCalls("offline_store", calls)
         val o = base("offline_store")
@@ -202,7 +206,7 @@ class MeasurePhases {
         val queuedBefore = runBlocking { sdk.diagnostics() }
         val waitSeconds = queuedBefore.nextAttemptEpochMillis?.let { ((it - System.currentTimeMillis()) / 1000.0).coerceAtLeast(0.0) }
         val filesBefore = files()
-        val drain = drainSeconds(sdk, 600_000)
+        val drain = drainSeconds(sdk, 600_000, start) // ADR-0014 item 7: from the SDK start
         val d = runBlocking { sdk.diagnostics() }
         val o = base("offline_drain")
             .put("queuedAtStart", queuedBefore.queuedEvents).put("retryWaitAtStartSeconds", waitSeconds ?: JSONObject.NULL)

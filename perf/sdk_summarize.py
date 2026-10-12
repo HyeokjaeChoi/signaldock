@@ -150,7 +150,7 @@ def md_run(r):
         f"- Device: {r['device']}, Android {r['release']} (API {r['api']}), {r['abi']}. Build: {r['meta']['build']}.",
         f"- Injection: target {i['target_rate_per_s']} events/s, actual {i['actual_rate_per_s']} events/s over {i['span_s']} s ({i['started']} of {i['planned']} calls); "
         f"max calls in flight {i['max_calls_in_flight']}; start lateness {i['start_lateness_ms']}; event size {i['event_bytes']} bytes.",
-        f"- track() completion (ms): p50 {t['p50']}, p95 {t['p95']}, max {t['max']} (n={t['count']}).",
+        f"- track() completion (ms): " + (f"p50 {t['p50']}, p95 {t['p95']}, max {t['max']} (n={t['count']})." if t else "not available (no successful call)."),
         f"- Errors: track() not ok {e['track_not_ok'] or 0}; SDK WARN/ERROR lines {e['sdk_warnings']}; last delivery error {e['last_delivery_error']}.",
         f"- Reconciliation with server DB: tracked ok {c['tracked_ok']}, server rows {c['server_rows']}, missing {c['missing_on_server']}, "
         f"not tracked {c['not_tracked_on_server']}, duplicate rows {c['duplicate_server_rows']}; sent on the wire {c['events_sent']} events in {c['batches_sent']} batches, "
@@ -178,7 +178,7 @@ def main():
             if "injection" not in r:
                 L.append(f"| {r['avd']} | {r['scenario']} | {r['verdict']} | - | - | - | - | - | - | - | - |")
                 continue
-            i, t, c = r["injection"], r["track_ms"], r["reconciliation"]
+            i, t, c = r["injection"], r["track_ms"] or {"p50": "-", "p95": "-", "max": "-"}, r["reconciliation"]
             fb = r["files_bytes"]["after_drain"]
             fb = f"{fb.get('queue.db', 0)} + wal {fb.get('queue.db-wal', 0)} + shm {fb.get('queue.db-shm', 0)}"
             mem = r["memory_kb"]
@@ -192,11 +192,14 @@ def main():
         (root / "summary.md").write_text("\n".join(L))
         print(f"wrote {root / 'summary.md'}")
         return
+    bad = False
     for d in a:
         r = analyze(d)
         (Path(d) / "run.json").write_text(json.dumps(r, indent=2))
         (Path(d) / "summary.md").write_text("\n".join(md_run(r)))
         print(f"{d}: {r['verdict']} {'; '.join(r['reasons'])}")
+        bad = bad or r["verdict"] != "pass"
+    sys.exit(1 if bad else 0)  # a fail or invalid run must not look like success to the script
 
 
 if __name__ == "__main__":

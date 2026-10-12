@@ -112,8 +112,7 @@ json.dump({
     "git_revision": sh("git", "rev-parse", "--short", "HEAD") + (" (dirty)" if sh("git", "status", "--porcelain", "--untracked-files=no") else ""),
 }, open(d + "/meta.json", "w"), indent=2)
 EOF
-  python3 perf/sdk_summarize.py "$dir"
-  [ "$ok" = 1 ] || return 1
+  python3 perf/sdk_summarize.py "$dir"  # exits 1 for a fail or invalid verdict; run_scenario then returns 1
 }
 
 fail=0
