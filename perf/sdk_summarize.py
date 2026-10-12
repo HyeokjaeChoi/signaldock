@@ -42,6 +42,9 @@ def analyze(d):
     run.update(device=res["device"], api=res["api"], release=res["release"], abi=res["abi"], debuggable=res["debuggable"])
 
     rows = list(csv.DictReader((d / f"calls-{first}.csv").open()))
+    if not rows:
+        run.update(verdict="invalid", reasons=["calls file has no rows"])
+        return run
     ok_rows = [r for r in rows if r["result"] == "ok"]
     bad = {}
     for r in rows:
@@ -77,6 +80,8 @@ def analyze(d):
     tracked = {r["event_id"] for r in ok_rows}
     db_lines = [x for x in (d / "db-ids.txt").read_text().split() if x]
     db = set(db_lines)
+    if not (d / "proxy.jsonl").exists():
+        reasons_invalid.append("proxy.jsonl is missing: no record of what the SDK sent")
     proxy = [json.loads(x) for x in (d / "proxy.jsonl").read_text().splitlines() if x.strip()] if (d / "proxy.jsonl").exists() else []
     sent = [i for b in proxy for i in b.get("eventIds", [])]
     ack_status = {}
@@ -93,6 +98,9 @@ def analyze(d):
         "batches_not_200": sum(1 for b in proxy if b.get("upstreamStatus") != 200), "ack_status_counts": ack_status,
     }
     rc = run["reconciliation"]
+    unseen = len(tracked - set(sent))
+    if unseen:
+        reasons_invalid.append(f"proxy log has no record of {unseen} tracked events")
     for k, msg in (("missing_on_server", "events missing on the server"), ("not_tracked_on_server", "server rows the SDK never reported"),
                    ("duplicate_server_rows", "duplicate server rows")):
         if rc[k]:
