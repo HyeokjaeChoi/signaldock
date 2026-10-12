@@ -12,7 +12,7 @@ Reduced by Q133 (2026-10-12). The user decided that a pool-size benchmark of a D
 1. The harness and pilot-1 and pilot-2, kept as a local environment record. Not an SLA, not a pool choice.
 2. ONE overload run (`perf/overload.py`): the server sheds load with HTTP 503 and a positive `Retry-After` (spec Q124) instead of timeouts or other 5xx; every ACKed event is stored exactly once; no event of a 503 request is stored; after the overload phase the server answers 2xx with latency near the baseline, without a restart. SDK behavior under 503 is not part of this run (issue 24 and the E2E harness).
 
-Not run (reason Q133): the 216-run matrix, the pool 2/4/8 comparison, repetitions, run order, pool selection. `perf/matrix.py` stays as unused working code.
+Not run (reason Q133): the 216-run matrix, the comparison of pool sizes 2, 4, and 8, repetitions, run order, pool selection. `perf/matrix.py` stays as unused working code.
 
 Done when the overload run is recorded with exact parameters, raw data, a manifest from a clean commit, and its verdict; and the docs state what is not run.
 
