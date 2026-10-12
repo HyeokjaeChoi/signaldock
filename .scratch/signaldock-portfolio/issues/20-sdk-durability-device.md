@@ -3,7 +3,7 @@
 Status: ready-for-agent
 Type: task
 Blocked by: None
-Execution: In review
+Execution: Done (merged in PR #46, 2026-10-12)
 
 ## Scope and completion criteria
 
@@ -66,7 +66,7 @@ CodeRabbit (`coderabbit review --base main --deep --agent`, commit 0c0825f): 1 m
 Limits: the update case installs the same build over itself (no SDK version or schema change; no migration exists yet); offline is a refused connection to 127.0.0.1:9, not airplane mode; restore ran on the local backup transport only (not Google, device transfer or manufacturer tools; ADR-0001); SIGKILL through `am force-stop` is not power loss; two emulator images, no physical device; both AVDs ran with the test APK as a debug build; the Compose server path through `10.0.2.2:8080` was not exercised in this issue (MockWebServer on the device instead, ADR-0011 decision 2); emulator runs are not in CI (CI only compiles `assembleDebugAndroidTest`, which also built locally). `README.md` and `architecture.md` evidence rows were left unchanged for this PR.
 
 
-## Comment 2026-10-12: CodeRabbit minor findings on PR #46
+### Comment 2026-10-12: CodeRabbit minor findings on PR #46
 
 Fixed three minor findings.
 - `scripts/device-durability.sh` kill case: right before `am force-stop`, the script now checks `adb shell pidof local.signaldock.test` is not empty and that `files/harness/acked.log` (appended and fsynced by `kill_burst_store` after each reported success) grows over a one-second interval. If not, the case fails with the pid and sizes, because collection had already ended. Host `kill -0` on the adb process was dropped as proof.
@@ -76,3 +76,7 @@ Fixed three minor findings.
 Results on emulator `signaldock-api37` (API 37, serial emulator-5554): `connectedDebugAndroidTest` BUILD SUCCESSFUL (28 tests: 22 ran, 6 skipped as before (DurabilityPhases phase tests that the script drives), 0 failed); `device-durability.sh kill restore` passed (kill: pid alive, acked.log 98753 -> 107374 bytes, acked=2914 stored=2914 integrity ok); full `device-durability.sh` passed all seven cases (kill: acked=2820 stored=2821); `testDebugUnitTest` BUILD SUCCESSFUL (UP-TO-DATE, main sources unchanged). ADR-0011 not changed: nothing in it is now wrong.
 
 CodeRabbit on the fix commit 2c1fe37: the totals line above was corrected (28 total, 22 ran, 6 skipped). A Major finding said the script switches off Backup Manager and selects LocalTransport on any serial, which would change a physical device's backup settings. Fixed with a guard: the script refuses serials that do not start with `emulator-` (the script is emulator-only; the Limits section already states no physical device was used). The Minor finding about the PR description is addressed in the PR text, not in files.
+
+2026-10-12: Merged into main in PR #46.
+
+2026-10-12: Post-fix API 24 run on main a14e761 (after PR #46, which includes all review fixes). AVD `signaldock-api24` (emulator-5572, Android 7.0, google_apis arm64), from the repository root: `ANDROID_SERIAL=emulator-5572 sdk/gradlew -p sdk :sdk-android:connectedDebugAndroidTest --no-daemon`: exit 0, JUnit XML 22 tests, 0 failures, 0 errors, 6 skipped (the process phases). `scripts/device-durability.sh emulator-5572`: "all requested cases passed on emulator-5572" (offline, kill, restart, update, clear, reinstall, restore). Both AVDs now have post-fix results (API 37 in the earlier entry).

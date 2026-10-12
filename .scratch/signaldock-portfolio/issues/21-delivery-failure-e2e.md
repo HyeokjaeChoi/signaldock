@@ -3,7 +3,7 @@
 Status: ready-for-agent
 Type: task
 Blocked by: None
-Execution: In review
+Execution: Done (merged in PR #45, 2026-10-12)
 
 ## Scope and completion criteria
 
@@ -80,3 +80,7 @@ Limit: the demo flow drives only product, then Add to cart (the demo screen show
 - New Q122 behavior test (row above). A first try with a failure on a fresh connection was not retried by OkHttp, so the test warms a pooled connection first.
 - `scripts/e2e/e2e_cases.py` case 4: name counts for both names are read before the first POST; the check is now original name `+2` and conflicting name unchanged.
 - Not run: the full e2e script (no emulator or Docker in this task).
+
+2026-10-12: Merged into main in PR #45.
+
+2026-10-12: Post-change case 4 run (after the review round 2 change to compare conflict counts with a baseline). From the repository root, Compose stack up, AVD `signaldock-api24` as the required device: `E2E_SKIP_BUILD=1 scripts/e2e-delivery.sh 4`: exit 0, "PASS case 4 content conflict"; aggregate e2e_conflict_24a68a22 +2 (original + sibling) from 0, conflicting name unchanged at 0; original row and Dashboard detail unchanged.
