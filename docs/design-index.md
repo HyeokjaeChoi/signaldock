@@ -72,7 +72,7 @@ Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 8, C. Small modules and local execution
 - 9. Technical conditions to check on entry into implementation
 
-## `demo/` (Android demo app, issue 05)
+## `sdk/demo/` (Android demo app, issue 05)
 
 Architecture (`architecture.md`):
 - Components and responsibilities
@@ -82,6 +82,17 @@ ADRs:
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 6. User screens and distribution, Demo and diagnostics
+
+## `compatibility/` (independent consumer app, issue 06)
+
+Architecture (`architecture.md`):
+- Independent distribution and verification
+
+ADRs:
+- ADR-0009 (`docs/adr/0009-maven-zip-and-consumer-app.md`)
+
+Spec (`.scratch/signaldock-portfolio/spec.md`):
+- 6. User screens and distribution, Reproduction and deliverables
 
 ## `dashboard/`
 

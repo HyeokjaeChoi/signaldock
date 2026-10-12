@@ -4,6 +4,8 @@
 # docs/design-index.md maps each area to its sections.
 # CodeRabbit learnings only calibrate the reviewer. They hold no design facts.
 
+tone_instructions: 'Per finding: defect, one failure scenario, design source section (or "no design source"), confidence. No praise or filler. If the diff gives no evidence, ask a question; do not assert. Skip style. Short ASD-STE100 sentences.'
+
 reviews:
   profile: chill
   auto_review:
@@ -16,71 +18,75 @@ reviews:
     - path: "sdk/**"
       instructions: >-
         Judge this change against the sections that docs/design-index.md
-        lists for the area `sdk/`. The design sources win over general best
-        practice. If the code and the design sources disagree, flag it. Do
+        lists for the area `sdk/`. The design sources win over general
+        best practice. If the code and the design sources disagree, flag it
+        and cite the section heading. Report a defect only if you can name the
+        input or sequence that fails. Do not report what
+        scripts/check-repo-rules.sh, detekt, or shellcheck already check. Do
+        not suggest anything listed under "Rejected alternatives".
+    - path: "sdk/demo/**"
+      instructions: >-
+        Judge this change against the sections that docs/design-index.md
+        lists for the area `sdk/demo/`. The design sources win over general
+        best practice. If the code and the design sources disagree, flag it
+        and cite the section heading. Report a defect only if you can name the
+        input or sequence that fails. Do not report what
+        scripts/check-repo-rules.sh, detekt, or shellcheck already check. Do
         not suggest anything listed under "Rejected alternatives".
     - path: "server/**"
       instructions: >-
         Judge this change against the sections that docs/design-index.md
-        lists for the area `server/`. The design sources win over general best
-        practice. If the code and the design sources disagree, flag it. Do
+        lists for the area `server/`. The design sources win over general
+        best practice. If the code and the design sources disagree, flag it
+        and cite the section heading. Report a defect only if you can name the
+        input or sequence that fails. Do not report what
+        scripts/check-repo-rules.sh, detekt, or shellcheck already check. Do
         not suggest anything listed under "Rejected alternatives".
-    - path: "openapi/**"
+    - path: "{openapi,fixtures,contract-check}/**"
       instructions: >-
         Judge this change against the sections that docs/design-index.md
-        lists for the area `openapi/`, `fixtures/`, `generated/`, `contract-check/`. The design sources win over general best
-        practice. If the code and the design sources disagree, flag it. Do
+        lists for the area `openapi/`, `fixtures/`, `generated/`, `contract-check/`. The design sources win over general
+        best practice. If the code and the design sources disagree, flag it
+        and cite the section heading. Report a defect only if you can name the
+        input or sequence that fails. Do not report what
+        scripts/check-repo-rules.sh, detekt, or shellcheck already check. Do
         not suggest anything listed under "Rejected alternatives".
-    - path: "fixtures/**"
+    - path: "compatibility/**"
       instructions: >-
         Judge this change against the sections that docs/design-index.md
-        lists for the area `openapi/`, `fixtures/`, `generated/`, `contract-check/`. The design sources win over general best
-        practice. If the code and the design sources disagree, flag it. Do
-        not suggest anything listed under "Rejected alternatives".
-    - path: "contract-check/**"
-      instructions: >-
-        Judge this change against the sections that docs/design-index.md
-        lists for the area `openapi/`, `fixtures/`, `generated/`, `contract-check/`. The design sources win over general best
-        practice. If the code and the design sources disagree, flag it. Do
+        lists for the area `compatibility/`. The design sources win over general
+        best practice. If the code and the design sources disagree, flag it
+        and cite the section heading. Report a defect only if you can name the
+        input or sequence that fails. Do not report what
+        scripts/check-repo-rules.sh, detekt, or shellcheck already check. Do
         not suggest anything listed under "Rejected alternatives".
     - path: "dashboard/**"
       instructions: >-
         Judge this change against the sections that docs/design-index.md
-        lists for the area `dashboard/`. The design sources win over general best
-        practice. If the code and the design sources disagree, flag it. Do
-        not suggest anything listed under "Rejected alternatives".
-    - path: "scripts/**"
-      instructions: >-
-        Judge this change against the sections that docs/design-index.md
-        lists for the area `scripts/`, `.githooks/`, `.github/workflows/`, `gradle/`. The design sources win over general best
-        practice. If the code and the design sources disagree, flag it. Do
-        not suggest anything listed under "Rejected alternatives".
-    - path: ".githooks/**"
-      instructions: >-
-        Judge this change against the sections that docs/design-index.md
-        lists for the area `scripts/`, `.githooks/`, `.github/workflows/`, `gradle/`. The design sources win over general best
-        practice. If the code and the design sources disagree, flag it. Do
-        not suggest anything listed under "Rejected alternatives".
-    - path: ".github/workflows/**"
-      instructions: >-
-        Judge this change against the sections that docs/design-index.md
-        lists for the area `scripts/`, `.githooks/`, `.github/workflows/`, `gradle/`. The design sources win over general best
-        practice. If the code and the design sources disagree, flag it. Do
-        not suggest anything listed under "Rejected alternatives".
-    - path: "gradle/**"
-      instructions: >-
-        Judge this change against the sections that docs/design-index.md
-        lists for the area `scripts/`, `.githooks/`, `.github/workflows/`, `gradle/`. The design sources win over general best
-        practice. If the code and the design sources disagree, flag it. Do
+        lists for the area `dashboard/`. The design sources win over general
+        best practice. If the code and the design sources disagree, flag it
+        and cite the section heading. Report a defect only if you can name the
+        input or sequence that fails. Do not report what
+        scripts/check-repo-rules.sh, detekt, or shellcheck already check. Do
         not suggest anything listed under "Rejected alternatives".
     - path: "perf/**"
       instructions: >-
         Judge this change against the sections that docs/design-index.md
-        lists for the area `perf/`, and against
-        .scratch/signaldock-portfolio/performance-plan.md. The design sources
-        win over general best practice. If the code and the design sources
-        disagree, flag it. Do not suggest anything listed under "Rejected
-        alternatives".
+        lists for the area `perf/`, and against .scratch/signaldock-portfolio/performance-plan.md. The design sources win over general
+        best practice. If the code and the design sources disagree, flag it
+        and cite the section heading. Report a defect only if you can name the
+        input or sequence that fails. Do not report what
+        scripts/check-repo-rules.sh, detekt, or shellcheck already check. Do
+        not suggest anything listed under "Rejected alternatives".
+    - path: "{scripts,.githooks,.github/workflows,gradle}/**"
+      instructions: >-
+        Judge this change against the sections that docs/design-index.md
+        lists for the area `scripts/`, `.githooks/`, `.github/workflows/`, `gradle/`. The design sources win over general
+        best practice. If the code and the design sources disagree, flag it
+        and cite the section heading. Report a defect only if you can name the
+        input or sequence that fails. Do not report what
+        scripts/check-repo-rules.sh, detekt, or shellcheck already check. Do
+        not suggest anything listed under "Rejected alternatives".
   pre_merge_checks:
     docstrings:
       mode: "off" # docstring coverage is not a project rule
