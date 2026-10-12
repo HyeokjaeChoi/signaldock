@@ -49,6 +49,8 @@ It runs the SDK `androidTest` debug build. It needs no server. See [ADR-0011](ad
 SDK on a device (ADR-0014). It needs a separate Compose project with its own ports and an env file outside the repository:
 
 ```sh
+umask 077                                          # the file holds keys and a password: owner-only
+rm -f /tmp/measure.env                             # a new file gets the owner-only mode
 cat > /tmp/measure.env <<EOT                       # values are random; keep this file out of the repository
 SIGNALDOCK_COLLECTION_KEY=$(openssl rand -hex 24)
 SIGNALDOCK_QUERY_KEY=$(openssl rand -hex 24)

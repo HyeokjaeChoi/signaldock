@@ -102,11 +102,12 @@ for v in SIGNALDOCK_COLLECTION_KEY SIGNALDOCK_QUERY_KEY SIGNALDOCK_DB_PASSWORD; 
   sed -i.bak "s|^$v=.*|$v=$(openssl rand -hex 24)|" .env
 done
 rm .env.bak
+chmod 600 .env                          # owner-only: the file holds keys and a password
 docker compose up -d --build            # PostgreSQL, server, Dashboard
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:5173/   # 200 = Dashboard is up
 ```
 
-- Dashboard: `http://127.0.0.1:5173` (`SIGNALDOCK_DASHBOARD_PORT`). The server listens on `127.0.0.1:8080`. All ports bind to `127.0.0.1`.
+- Dashboard: `http://127.0.0.1:5173` (`SIGNALDOCK_DASHBOARD_PORT`). Host server endpoint: `http://127.0.0.1:8080`. The server container binds to `0.0.0.0:8080`, and Compose publishes every host port on `127.0.0.1` only.
 - Apps send events with `SIGNALDOCK_COLLECTION_KEY`. The Dashboard holds no key: nginx proxies `GET /v1/*` and adds `SIGNALDOCK_QUERY_KEY` ([ADR-0008](docs/adr/0008-dashboard-and-compose-delivery.md)).
 - Development mode: `docker compose up -d db`, then run the server from `server/` with the variables in `.env.example` and `npm run dev` in `dashboard/`.
 
