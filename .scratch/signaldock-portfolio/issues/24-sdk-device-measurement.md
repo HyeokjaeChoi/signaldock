@@ -1,6 +1,6 @@
 # 24. SDK device measurement (part of issue 08)
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 23
 Execution: Done (merged in PR #55, 2026-10-12 UTC)

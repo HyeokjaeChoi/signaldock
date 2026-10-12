@@ -1,6 +1,6 @@
 # 06. Maven ZIP and independent consumer app
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 01, 04
 Execution: Done (merged in PR #39, 2026-10-12)

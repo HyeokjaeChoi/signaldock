@@ -1,6 +1,6 @@
 # 20. SDK durability on devices (part of issue 07)
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: None
 Execution: Done (merged in PR #46, 2026-10-12)

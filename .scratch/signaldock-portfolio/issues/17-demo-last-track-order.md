@@ -1,6 +1,6 @@
 # 17. Demo shop: keep lastTrack tied to the latest action
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: None
 Execution: Done (merged in PR #33, 2026-10-12)

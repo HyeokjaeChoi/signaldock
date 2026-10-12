@@ -1,6 +1,6 @@
 # 18. Contract: document the 720-bucket limit as PERIOD_TOO_LONG
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: None
 Execution: Done (merged in PR #32, 2026-10-12)

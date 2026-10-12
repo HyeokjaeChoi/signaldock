@@ -1,6 +1,6 @@
 # 04. SDK batch delivery and recovery
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 02, 03
 Execution: Done (merged in PR #27, 2026-10-11)

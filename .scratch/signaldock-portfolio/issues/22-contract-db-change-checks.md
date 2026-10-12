@@ -1,6 +1,6 @@
 # 22. Contract and DB change checks (part of issue 07)
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: None
 Execution: Done (merged in PR #47, 2026-10-12)

@@ -1,6 +1,6 @@
 # 15. Receipt verification Dashboard and Docker Compose (part of issue 05)
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 14
 Execution: Done (merged in PR #38, 2026-10-12)

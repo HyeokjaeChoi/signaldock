@@ -1,6 +1,6 @@
 # 03. SDK initialization and durable collection
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 01
 Execution: Done (merged in PR #11, 2026-10-11)

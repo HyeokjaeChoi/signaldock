@@ -1,6 +1,6 @@
 # 02. Durable server receipt and duplicate handling
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 01
 Execution: Done (merged in PR #12, 2026-10-11)

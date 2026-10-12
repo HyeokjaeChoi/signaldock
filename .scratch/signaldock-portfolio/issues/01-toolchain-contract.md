@@ -1,6 +1,6 @@
 # 01. Toolchain and OpenAPI round trip
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: None
 Execution: Done (merged in PR #9, 2026-10-11)

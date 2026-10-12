@@ -1,6 +1,6 @@
 # 23. Server load measurement (part of issue 08)
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: None
 Execution: Done (merged in PR #53, 2026-10-12 UTC)
