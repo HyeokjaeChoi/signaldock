@@ -72,7 +72,7 @@ Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 8, C. Small modules and local execution
 - 9. Technical conditions to check on entry into implementation
 
-## `demo/` (Android demo app, issue 05)
+## `sdk/demo/` (Android demo app, issue 05)
 
 Architecture (`architecture.md`):
 - Components and responsibilities
