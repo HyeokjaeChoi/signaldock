@@ -20,6 +20,7 @@ ADRs:
 - ADR-0003 (`docs/adr/0003-sdk-storage-decisions.md`)
 - ADR-0005 (`docs/adr/0005-module-structure.md`), section "SDK: one publication module, feature packages"
 - ADR-0006 (`docs/adr/0006-sdk-delivery-decisions.md`)
+- ADR-0011 (`docs/adr/0011-sdk-device-test-harness.md`), for `sdk/sdk-android/src/androidTest` and `scripts/device-durability.sh`
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 1. Goal and scope

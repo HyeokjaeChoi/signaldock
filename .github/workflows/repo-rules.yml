@@ -43,6 +43,8 @@ jobs:
       - run: |
           export JAVA_HOME="$PWD/.tools/$(ls .tools | grep '^jdk-')"
           sdk/gradlew -p sdk :sdk-android:testDebugUnitTest :demo:feature:shop:testDebugUnitTest :demo:feature:diagnostics:testDebugUnitTest --no-daemon
+          # Compile only: the instrumented tests need an emulator (ADR-0011, scripts/device-durability.sh).
+          sdk/gradlew -p sdk :sdk-android:assembleDebugAndroidTest --no-daemon
 
   # Maven ZIP, then the independent consumer app (R8 release) from the unzipped folder.
   # No emulator: the run on a device is a local verification (README).

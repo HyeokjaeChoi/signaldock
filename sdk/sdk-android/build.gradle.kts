@@ -15,6 +15,8 @@ android {
         minSdk = libs.versions.minSdk.get().toInt()
         // Consumers must compile against API 36 or newer (this SDK is built and tested at 36).
         aarMetadata.minCompileSdk = libs.versions.compileSdk.get().toInt()
+        // Instrumented durability tests (issue 20, ADR-0011). Not run in CI; only compiled.
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     compileOptions {
@@ -113,4 +115,10 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.androidx.work.testing)
     testImplementation(libs.okhttp.mockwebserver)
+
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.junit)
+    androidTestImplementation(libs.kotlinx.coroutines.android)
+    androidTestImplementation(libs.okhttp.mockwebserver)
 }
