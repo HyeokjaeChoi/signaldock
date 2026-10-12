@@ -1,0 +1,767 @@
+{
+  "kind": "overload",
+  "run_id": "overload-1",
+  "verdict": "pass",
+  "invalid_reasons": [],
+  "fail_reasons": [],
+  "parameters": {
+    "seed_size": 100000,
+    "dist": "recent70",
+    "window_days": 30,
+    "pool_size": 4,
+    "concurrency": 2,
+    "admission_ms": 100,
+    "base_s": 30,
+    "over_s": 30,
+    "rec_s": 60,
+    "rate": 5,
+    "over_rate": 200,
+    "heavy_rate": 150
+  },
+  "phases": {
+    "baseline": {
+      "collect": {
+        "requests": 149,
+        "status": {
+          "200": 149
+        },
+        "outcomes": {
+          "ok": 149
+        },
+        "retry_after": {},
+        "error_codes": {},
+        "p50_ms": 21.561,
+        "p95_ms": 45.087,
+        "max_ms": 129.324,
+        "p95_ok_ms": 45.087,
+        "max_ok_ms": 129.324
+      },
+      "probe": {
+        "requests": 30,
+        "status": {
+          "200": 30
+        },
+        "outcomes": {
+          "ok": 30
+        },
+        "retry_after": {},
+        "error_codes": {},
+        "p50_ms": 11.754,
+        "p95_ms": 33.749,
+        "max_ms": 398.701,
+        "p95_ok_ms": 33.749,
+        "max_ok_ms": 398.701
+      }
+    },
+    "overload": {
+      "collect": {
+        "requests": 5805,
+        "status": {
+          "200": 2102,
+          "503": 3703
+        },
+        "outcomes": {
+          "ok": 2102,
+          "shed": 3703
+        },
+        "retry_after": {
+          "1": 3703
+        },
+        "error_codes": {
+          "TEMPORARILY_UNAVAILABLE": 3703
+        },
+        "p50_ms": 102.036,
+        "p95_ms": 107.655,
+        "max_ms": 176.178,
+        "p95_ok_ms": 107.793,
+        "max_ok_ms": 176.178
+      },
+      "probe": {
+        "requests": 30,
+        "status": {
+          "200": 6,
+          "503": 24
+        },
+        "outcomes": {
+          "ok": 6,
+          "shed": 24
+        },
+        "retry_after": {
+          "1": 24
+        },
+        "error_codes": {
+          "TEMPORARILY_UNAVAILABLE": 24
+        },
+        "p50_ms": 101.114,
+        "p95_ms": 120.621,
+        "max_ms": 170.282,
+        "p95_ok_ms": 120.621,
+        "max_ok_ms": 120.621
+      },
+      "heavy": {
+        "requests": 4490,
+        "status": {
+          "200": 2047,
+          "503": 2443
+        },
+        "outcomes": {
+          "ok": 2047,
+          "shed": 2443
+        },
+        "retry_after": {
+          "1": 2443
+        },
+        "error_codes": {
+          "TEMPORARILY_UNAVAILABLE": 2443
+        },
+        "p50_ms": 104.242,
+        "p95_ms": 127.535,
+        "max_ms": 196.459,
+        "p95_ok_ms": 129.531,
+        "max_ok_ms": 196.459
+      }
+    },
+    "recovery": {
+      "collect": {
+        "requests": 305,
+        "status": {
+          "503": 1,
+          "200": 304
+        },
+        "outcomes": {
+          "shed": 1,
+          "ok": 304
+        },
+        "retry_after": {
+          "1": 1
+        },
+        "error_codes": {
+          "TEMPORARILY_UNAVAILABLE": 1
+        },
+        "p50_ms": 16.599,
+        "p95_ms": 22.919,
+        "max_ms": 103.373,
+        "p95_ok_ms": 22.886,
+        "max_ok_ms": 28.584
+      },
+      "probe": {
+        "requests": 61,
+        "status": {
+          "503": 1,
+          "200": 60
+        },
+        "outcomes": {
+          "shed": 1,
+          "ok": 60
+        },
+        "retry_after": {
+          "1": 1
+        },
+        "error_codes": {
+          "TEMPORARILY_UNAVAILABLE": 1
+        },
+        "p50_ms": 8.034,
+        "p95_ms": 15.351,
+        "max_ms": 103.517,
+        "p95_ok_ms": 13.836,
+        "max_ok_ms": 20.844
+      },
+      "heavy": {
+        "requests": 11,
+        "status": {
+          "503": 5,
+          "200": 6
+        },
+        "outcomes": {
+          "shed": 5,
+          "ok": 6
+        },
+        "retry_after": {
+          "1": 5
+        },
+        "error_codes": {
+          "TEMPORARILY_UNAVAILABLE": 5
+        },
+        "p50_ms": 115.537,
+        "p95_ms": 123.26,
+        "max_ms": 123.26,
+        "p95_ok_ms": 123.26,
+        "max_ok_ms": 123.26
+      }
+    }
+  },
+  "series_5s": [
+    [
+      0,
+      "collect",
+      24,
+      24,
+      0,
+      0,
+      55.82
+    ],
+    [
+      5,
+      "collect",
+      25,
+      25,
+      0,
+      0,
+      38.434
+    ],
+    [
+      10,
+      "collect",
+      25,
+      25,
+      0,
+      0,
+      28.114
+    ],
+    [
+      15,
+      "collect",
+      25,
+      25,
+      0,
+      0,
+      27.431
+    ],
+    [
+      20,
+      "collect",
+      25,
+      25,
+      0,
+      0,
+      23.328
+    ],
+    [
+      25,
+      "collect",
+      25,
+      25,
+      0,
+      0,
+      25.992
+    ],
+    [
+      30,
+      "collect",
+      903,
+      323,
+      580,
+      0,
+      110.601
+    ],
+    [
+      35,
+      "collect",
+      1000,
+      361,
+      639,
+      0,
+      107.153
+    ],
+    [
+      40,
+      "collect",
+      1000,
+      380,
+      620,
+      0,
+      106.673
+    ],
+    [
+      45,
+      "collect",
+      986,
+      348,
+      638,
+      0,
+      109.929
+    ],
+    [
+      50,
+      "collect",
+      1000,
+      362,
+      638,
+      0,
+      105.742
+    ],
+    [
+      55,
+      "collect",
+      916,
+      328,
+      588,
+      0,
+      106.518
+    ],
+    [
+      60,
+      "collect",
+      25,
+      24,
+      1,
+      0,
+      15.062
+    ],
+    [
+      65,
+      "collect",
+      25,
+      25,
+      0,
+      0,
+      16.095
+    ],
+    [
+      70,
+      "collect",
+      25,
+      25,
+      0,
+      0,
+      19.18
+    ],
+    [
+      75,
+      "collect",
+      25,
+      25,
+      0,
+      0,
+      18.695
+    ],
+    [
+      80,
+      "collect",
+      25,
+      25,
+      0,
+      0,
+      22.74
+    ],
+    [
+      85,
+      "collect",
+      25,
+      25,
+      0,
+      0,
+      25.359
+    ],
+    [
+      90,
+      "collect",
+      25,
+      25,
+      0,
+      0,
+      20.937
+    ],
+    [
+      95,
+      "collect",
+      25,
+      25,
+      0,
+      0,
+      21.375
+    ],
+    [
+      100,
+      "collect",
+      25,
+      25,
+      0,
+      0,
+      23.475
+    ],
+    [
+      105,
+      "collect",
+      25,
+      25,
+      0,
+      0,
+      22.193
+    ],
+    [
+      110,
+      "collect",
+      25,
+      25,
+      0,
+      0,
+      23.05
+    ],
+    [
+      115,
+      "collect",
+      25,
+      25,
+      0,
+      0,
+      27.646
+    ],
+    [
+      0,
+      "probe",
+      5,
+      5,
+      0,
+      0,
+      398.701
+    ],
+    [
+      5,
+      "probe",
+      5,
+      5,
+      0,
+      0,
+      31.68
+    ],
+    [
+      10,
+      "probe",
+      5,
+      5,
+      0,
+      0,
+      15.146
+    ],
+    [
+      15,
+      "probe",
+      5,
+      5,
+      0,
+      0,
+      13.451
+    ],
+    [
+      20,
+      "probe",
+      5,
+      5,
+      0,
+      0,
+      11.754
+    ],
+    [
+      25,
+      "probe",
+      5,
+      5,
+      0,
+      0,
+      18.291
+    ],
+    [
+      30,
+      "probe",
+      5,
+      2,
+      3,
+      0,
+      120.621
+    ],
+    [
+      35,
+      "probe",
+      5,
+      0,
+      5,
+      0,
+      107.838
+    ],
+    [
+      40,
+      "probe",
+      5,
+      2,
+      3,
+      0,
+      103.775
+    ],
+    [
+      45,
+      "probe",
+      5,
+      1,
+      4,
+      0,
+      170.282
+    ],
+    [
+      50,
+      "probe",
+      5,
+      0,
+      5,
+      0,
+      102.455
+    ],
+    [
+      55,
+      "probe",
+      5,
+      1,
+      4,
+      0,
+      101.145
+    ],
+    [
+      60,
+      "probe",
+      5,
+      4,
+      1,
+      0,
+      103.517
+    ],
+    [
+      65,
+      "probe",
+      5,
+      5,
+      0,
+      0,
+      8.034
+    ],
+    [
+      70,
+      "probe",
+      5,
+      5,
+      0,
+      0,
+      8.217
+    ],
+    [
+      75,
+      "probe",
+      5,
+      5,
+      0,
+      0,
+      7.961
+    ],
+    [
+      80,
+      "probe",
+      5,
+      5,
+      0,
+      0,
+      10.906
+    ],
+    [
+      85,
+      "probe",
+      5,
+      5,
+      0,
+      0,
+      15.351
+    ],
+    [
+      90,
+      "probe",
+      5,
+      5,
+      0,
+      0,
+      13.836
+    ],
+    [
+      95,
+      "probe",
+      5,
+      5,
+      0,
+      0,
+      9.32
+    ],
+    [
+      100,
+      "probe",
+      5,
+      5,
+      0,
+      0,
+      12.775
+    ],
+    [
+      105,
+      "probe",
+      5,
+      5,
+      0,
+      0,
+      11.364
+    ],
+    [
+      110,
+      "probe",
+      5,
+      5,
+      0,
+      0,
+      8.671
+    ],
+    [
+      115,
+      "probe",
+      5,
+      5,
+      0,
+      0,
+      20.844
+    ],
+    [
+      30,
+      "heavy",
+      750,
+      310,
+      440,
+      0,
+      128.875
+    ],
+    [
+      35,
+      "heavy",
+      750,
+      347,
+      403,
+      0,
+      127.432
+    ],
+    [
+      40,
+      "heavy",
+      750,
+      346,
+      404,
+      0,
+      127.268
+    ],
+    [
+      45,
+      "heavy",
+      740,
+      344,
+      396,
+      0,
+      127.753
+    ],
+    [
+      50,
+      "heavy",
+      750,
+      346,
+      404,
+      0,
+      127.569
+    ],
+    [
+      55,
+      "heavy",
+      750,
+      354,
+      396,
+      0,
+      126.897
+    ],
+    [
+      60,
+      "heavy",
+      11,
+      6,
+      5,
+      0,
+      123.26
+    ]
+  ],
+  "dropped_iterations": 0,
+  "reconciliation": {
+    "requests": 6259,
+    "rows_for_run_ids": 51100,
+    "ok_requests": 2555,
+    "ok_requests_not_fully_stored": 0,
+    "shed_requests": 3704,
+    "rows_stored_for_shed_requests": 0,
+    "other_requests": 0,
+    "rows_stored_for_other_requests": 0,
+    "rows_for_ids_without_result": 0,
+    "duplicate_ids_in_db": 0
+  },
+  "aggregate_check": {
+    "names_ok": true,
+    "days_ok": true,
+    "list_first_page_ok": true,
+    "sql_total": 100000,
+    "api_total": 100000
+  },
+  "seed_rows_after_run": 100000,
+  "recovery": {
+    "first_clean_5s_window_after_overload_s": 5,
+    "last_30s_collect_p95_ms": 23.079,
+    "baseline_collect_p95_ms": 45.087,
+    "limit_ms": 90.174,
+    "last_30s_requests": 186,
+    "last_30s_non_200": 0
+  },
+  "server_state": {
+    "before": "2026-10-12T10:59:23.107865603Z 0",
+    "after": "2026-10-12T10:59:23.107865603Z 0",
+    "note": "StartedAt and RestartCount of the server container"
+  },
+  "cgroup_deltas": {
+    "db": {
+      "cpu.stat:usage_usec": 55758084,
+      "cpu.stat:user_usec": 51991725,
+      "cpu.stat:system_usec": 3766358,
+      "cpu.stat:nice_usec": 0,
+      "cpu.stat:nr_periods": 1209,
+      "cpu.stat:nr_throttled": 8,
+      "cpu.stat:throttled_usec": 2194869,
+      "cpu.stat:nr_bursts": 0,
+      "cpu.stat:burst_usec": 0,
+      "memory.events:low": 0,
+      "memory.events:high": 0,
+      "memory.events:max": 0,
+      "memory.events:oom": 0,
+      "memory.events:oom_kill": 0,
+      "memory.events:oom_group_kill": 0,
+      "memory.events:sock_throttled": 0
+    },
+    "server": {
+      "cpu.stat:usage_usec": 23587523,
+      "cpu.stat:user_usec": 21478845,
+      "cpu.stat:system_usec": 2108678,
+      "cpu.stat:nice_usec": 0,
+      "cpu.stat:nr_periods": 1219,
+      "cpu.stat:nr_throttled": 2,
+      "cpu.stat:throttled_usec": 38867,
+      "cpu.stat:nr_bursts": 0,
+      "cpu.stat:burst_usec": 0,
+      "memory.events:low": 0,
+      "memory.events:high": 0,
+      "memory.events:max": 0,
+      "memory.events:oom": 0,
+      "memory.events:oom_kill": 0,
+      "memory.events:oom_group_kill": 0,
+      "memory.events:sock_throttled": 0
+    }
+  },
+  "gc": {
+    "pause_count": 0,
+    "pause_total_ms": 0,
+    "pause_max_ms": 0
+  }
+}

@@ -101,6 +101,25 @@ Spec (`.scratch/signaldock-portfolio/spec.md`):
 
 Also read `.scratch/signaldock-portfolio/dashboard-verification-defaults.md`.
 
+## `perf/` (server load measurement harness, issue 23)
+
+Architecture (`architecture.md`):
+- DB time budgets and queries
+
+ADRs:
+- ADR-0004
+- ADR-0007
+- ADR-0008
+- ADR-0012
+- ADR-0013 (`docs/adr/0013-server-load-measurement-harness.md`)
+
+Spec (`.scratch/signaldock-portfolio/spec.md`):
+- 7. Completion criteria and verification plan
+- 11. Delegated performance measurement decisions
+- Q124 and Q125 (normal-operation waits stay separate from benchmark values)
+
+Also read `.scratch/signaldock-portfolio/performance-plan.md`; it is authoritative for the fixed conditions, load, and acceptance.
+
 ## `scripts/`, `.githooks/`, `.github/workflows/`, `gradle/`
 
 Architecture (`architecture.md`):

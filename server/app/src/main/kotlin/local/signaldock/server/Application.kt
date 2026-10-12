@@ -24,6 +24,7 @@ import org.openapitools.client.models.ErrorResponse
 import java.io.ByteArrayOutputStream
 import local.signaldock.ingestion.RequestFailure
 import local.signaldock.persistence.Database
+import local.signaldock.persistence.DatabaseLimits
 import local.signaldock.persistence.DatabaseObserver
 import local.signaldock.persistence.DatabaseUnavailable
 import local.signaldock.query.parseProjectZone
@@ -79,6 +80,30 @@ internal fun Application.ingestionModule(
     }
 }
 
+/**
+ * Optional overrides of the local defaults, used by the issue 23 measurement harness. With no variable
+ * set the result equals `DatabaseLimits()`. Normal runtime values stay undecided (ADR-0004, ADR-0013).
+ */
+internal fun databaseLimitsFromEnv(env: (String) -> String?): DatabaseLimits {
+    val d = DatabaseLimits()
+    // A variable that is set but malformed must not silently fall back: a run would measure the wrong limits.
+    fun long(name: String, default: Long) = env(name)?.let { requireNotNull(it.toLongOrNull()) { "$name is not an integer" } } ?: default
+    fun int(name: String, default: Int) = env(name)?.let { requireNotNull(it.toIntOrNull()) { "$name is not an integer" } } ?: default
+    return DatabaseLimits(
+        concurrency = int("SIGNALDOCK_DB_CONCURRENCY", d.concurrency),
+        poolSize = int("SIGNALDOCK_DB_POOL_SIZE", d.poolSize),
+        minimumIdle = int("SIGNALDOCK_DB_POOL_MIN_IDLE", d.minimumIdle),
+        admissionMs = long("SIGNALDOCK_DB_ADMISSION_MS", d.admissionMs),
+        connectionMs = long("SIGNALDOCK_DB_CONNECTION_MS", d.connectionMs),
+        lockMs = long("SIGNALDOCK_DB_LOCK_MS", d.lockMs),
+        statementMs = long("SIGNALDOCK_DB_STATEMENT_MS", d.statementMs),
+    )
+}
+
+/** Pool statistics period for the harness: absent means off; a set value must be a positive integer. */
+internal fun poolStatsPeriodFromEnv(env: (String) -> String?): Long? =
+    env("SIGNALDOCK_POOL_STATS_MS")?.let { requireNotNull(it.toLongOrNull()?.takeIf { p -> p > 0 }) { "SIGNALDOCK_POOL_STATS_MS is not a positive integer" } }
+
 /** Q131: both keys are required and non-blank, and they differ. Errors name variables, never values. */
 internal fun resolveKeys(collectionKey: String?, queryKey: String?): Pair<String, String> {
     require(!collectionKey.isNullOrBlank()) { "SIGNALDOCK_COLLECTION_KEY is missing or blank" }
@@ -91,9 +116,16 @@ fun main() {
     fun required(name: String) = requireNotNull(System.getenv(name)) { "Missing $name" }
     val (collectionKey, queryKey) = resolveKeys(System.getenv("SIGNALDOCK_COLLECTION_KEY"), System.getenv("SIGNALDOCK_QUERY_KEY"))
     val database = Database(required("SIGNALDOCK_JDBC_URL"), required("SIGNALDOCK_DB_USER"), required("SIGNALDOCK_DB_PASSWORD"),
+        limits = databaseLimitsFromEnv(System::getenv),
         observer = DatabaseObserver { stage, millis ->
             org.slf4j.LoggerFactory.getLogger("ingestion.database").info("stage={} elapsedMs={}", stage, millis)
         })
+    poolStatsPeriodFromEnv(System::getenv)?.let { period ->
+        Thread({
+            val log = org.slf4j.LoggerFactory.getLogger("ingestion.pool")
+            while (true) { Thread.sleep(period); log.info("pool {}", database.poolStats()) }
+        }, "pool-stats").apply { isDaemon = true }.start()
+    }
     try {
         database.migrate()
         embeddedServer(Netty, host = System.getenv("SIGNALDOCK_BIND_HOST") ?: "127.0.0.1", port = System.getenv("PORT")?.toInt() ?: 8080) {
