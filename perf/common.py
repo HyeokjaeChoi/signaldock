@@ -62,7 +62,7 @@ def compose(*args, env=None, check=True, **kw):
     return subprocess.run(
         ["docker", "compose", "-p", PROJECT, "--env-file", str(ENV_FILE), "-f", "docker-compose.yml",
          "-f", "perf/compose.perf.yml", *args],
-        cwd=ROOT, text=True, capture_output=True, check=check, env={**os.environ, **(env or {})}, **kw)
+        cwd=ROOT, text=True, capture_output=True, check=check, env={**os.environ, **ensure_env(), **(env or {})}, **kw)
 
 
 def psql(sql, db=BENCH_DB, check=True, stdin=None):

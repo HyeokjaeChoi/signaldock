@@ -70,7 +70,7 @@ The criteria below are project targets set before measurement, not an external S
 - Results (JSON/CSV): per-request or histogram source data, per-run summaries, errors and ACK reconciliation, DB row/file sizes, Hikari active/idle/pending/acquire times, admission waits, DB query times, and CPU/memory/throttling/GC metrics. State which metrics were collected and which were not.
 - Produce a Markdown result summary and comparison figures with standard plotting tools. Do not record credentials such as API keys.
 - Preserve completed runs with manifests/hashes so execution can resume under the same conditions after an interruption. Preserve invalid runs with their reasons too.
-- Tool installation, code implementation, DB creation, measurement, and scheduled execution have not started. Implement after the final understanding check for the full grilling process, then perform the main measurements after technical verification.
+- Historical note (written before implementation, 2026-10-08): tool installation, code implementation, DB creation, measurement, and scheduled execution had not started. Current status: see "Q133 scope" at the top; only the harness, two pilots, and one overload run are delivered. Implement after the final understanding check for the full grilling process, then perform the main measurements after technical verification (the main measurements are not run, Q133).
 
 ## Official sources checked
 

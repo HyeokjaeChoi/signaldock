@@ -33,6 +33,18 @@ def meta_path(size, dist):
     return c.WORK / "seeds" / f"{seed_name(size, dist)}.json"
 
 
+def metadata_is_valid(size, dist, day):
+    """A seed database is reused only with complete metadata for the same size, distribution, and T."""
+    try:
+        meta = json.loads(meta_path(size, dist).read_text())
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return False
+    required = {"name", "size", "dist", "generator_seed", "reference_time_T", "reference_time_T_utc", "csv_sha256", "csv_bytes",
+                "event_json_bytes_min_avg_max", "name_counts", "installations", "table_bytes", "index_bytes", "database_bytes", "build_seconds"}
+    return (isinstance(meta, dict) and required.issubset(meta) and meta["name"] == seed_name(size, dist) and meta["size"] == size
+            and meta["dist"] == dist and meta["reference_time_T"] == c.reference_time(day).isoformat())
+
+
 def generate(size, dist, T, out):
     rng = random.Random(f"{SEED}/{size}/{dist}")
     t_ms = int(T.timestamp() * 1000)
@@ -90,8 +102,12 @@ def wait_health(timeout=90):
 def ensure_base_schema():
     """Flyway migrates through the real server, so the template has the product's own schema and history."""
     if c.psql("SELECT 1 FROM pg_database WHERE datname='base_schema'", db="postgres"):
-        ensure_extension("base_schema")
-        return
+        # An interrupted first build can leave an empty template; reuse it only when Flyway created the events table.
+        if c.psql("SELECT to_regclass('public.events') IS NOT NULL", db="base_schema") == "t":
+            ensure_extension("base_schema")
+            return
+        c.log("base_schema exists but is not migrated; rebuilding it")
+        c.psql("DROP DATABASE base_schema", db="postgres")
     c.log("building server image (first run takes a few minutes)")
     c.compose("build", "server")
     c.psql("CREATE DATABASE base_schema", db="postgres")
@@ -111,8 +127,10 @@ def build(size, dist, day, force):
     exists = c.psql(f"SELECT 1 FROM pg_database WHERE datname='{name}'", db="postgres")
     if exists and not force:
         ensure_extension(name)
-        c.log(f"{name} exists; use --force to rebuild")
-        return
+        if metadata_is_valid(size, dist, day):
+            c.log(f"{name} exists; use --force to rebuild")
+            return
+        c.log(f"{name} exists but its metadata is missing, incomplete, or for another T; rebuilding")
     ensure_base_schema()
     T = c.reference_time(day)
     csv_path = c.WORK / "seeds" / f"{name}.csv"
