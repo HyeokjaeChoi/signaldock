@@ -3,7 +3,7 @@
 Status: ready-for-agent
 Type: task
 Blocked by: 01
-Execution: Implemented and verified locally. Git branch creation and commit are not complete because the sandbox denied writes to the worktree's common Git metadata.
+Execution: Done (merged in PR #12, 2026-10-11)
 
 ## Scope and completion criteria
 
@@ -102,3 +102,5 @@ Final verification commands and results:
 - `(cd server && JAVA_HOME=$PWD/../.tools/jdk-17.0.20.1+1 GRADLE_USER_HOME=$PWD/../.tools/gradle-home ./gradlew test verifyJooq --no-daemon)` — passed; all 20 server tests passed, Flyway applied `V1` to PostgreSQL 17.6, and jOOQ 3.19.39 regenerated all 7 expected files without drift.
 - `JAVA_HOME=$PWD/.tools/jdk-17.0.20.1+1 GRADLE_USER_HOME=$PWD/.tools/gradle-home npm_config_cache=$PWD/.tools/npm-cache scripts/verify-contract.sh` — passed; codegen drift, baseline, 5 Kotlin fixture tests, TypeScript type/contract checks, and independent SDK/server builds passed; ended with `ALL CONTRACT CHECKS PASSED`.
 - Commit — not run as requested.
+
+2026-10-12: Record reconciled. Merged into main in PR #12 on 2026-10-11. Earlier branch and push notes above describe the state before that merge.

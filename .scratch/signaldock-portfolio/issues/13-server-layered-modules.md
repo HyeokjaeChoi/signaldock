@@ -3,7 +3,7 @@
 Status: ready-for-agent
 Type: task
 Blocked by: 11
-Execution: Implemented on branch impl/13-server-layered-modules (local commit, not pushed, no PR)
+Execution: Done (merged in PR #23, 2026-10-11)
 
 ## Scope and completion criteria
 
@@ -34,3 +34,5 @@ Commands and results (JDK 21.0.12.1+1 from `scripts/setup-toolchain.sh`):
 - `(cd server && ./gradlew test verifyJooq --no-daemon --rerun-tasks)`: BUILD SUCCESSFUL. Tests: `:app` 19 (8 parser + 11 integration), `:ingestion` 4, `:persistence` 3. Before the split: 21 tests (8 + 13). All 21 run again (19 in `:app`, 2 moved to `:persistence`), plus 5 new.
 - `(cd server && ./gradlew :ingestion:dependencies --configuration compileClasspath --no-daemon)`: only `org.jetbrains.kotlin:kotlin-stdlib:2.4.21` and `org.jetbrains:annotations:13.0`. `runtimeClasspath` shows the same. No Ktor, jOOQ, Flyway, JDBC, or serialization.
 - `scripts/verify-contract.sh`: exit 0, "ALL CONTRACT CHECKS PASSED".
+
+2026-10-12: Record reconciled. Merged into main in PR #23 on 2026-10-11. Earlier branch and push notes above describe the state before that merge.

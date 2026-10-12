@@ -3,7 +3,7 @@
 Status: ready-for-agent
 Type: task
 Blocked by: 01, 04
-Execution: In review
+Execution: Done (merged in PR #39, 2026-10-12)
 
 ## Scope and completion criteria
 
@@ -59,3 +59,5 @@ Commands and results:
 Limits: consumers on AGP 8.x or a Kotlin older than 2.2 are not verified. The SDK still uses the 2.4.21 compiler (R8 9.1.29 or newer is needed only for that compiler).
 
 CodeRabbit (`coderabbit review --base main --deep --agent`, 2026-10-12, Q132 change): 3 findings, all valid and fixed. Major: the plugin-override check was a text grep only; `verify-consumer.sh` now also reads the effective Kotlin Gradle plugin from `buildEnvironment` and fails unless it is 2.2.x. Minor: the metadata scan now covers every class in the AAR, not only `local/`. Minor: the stale "Kotlin 2.4 or newer" limit in this issue now says 2.2 (Q132).
+
+2026-10-12: Record reconciled. Merged into main in PR #39 on 2026-10-12. Earlier branch and push notes above describe the state before that merge.

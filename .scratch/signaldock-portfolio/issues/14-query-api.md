@@ -3,7 +3,7 @@
 Status: ready-for-agent
 Type: task
 Blocked by: None
-Execution: In review
+Execution: Done (merged in PR #32, 2026-10-12)
 
 ## Scope and completion criteria
 
@@ -88,3 +88,5 @@ Against this branch's previous baseline (the contract at commit bfe881b), `oasdi
 Commands and results (JDK 21.0.12.1+1):
 - `(cd server && ./gradlew test verifyJooq --no-daemon)`: BUILD SUCCESSFUL. Tests per module (JUnit XML): `:app` 33, `:ingestion` 5, `:persistence` 12, `:query` 12. 0 failures, 0 errors, 0 skipped. `verifyJooq` passed.
 - `scripts/verify-contract.sh`: "ALL CONTRACT CHECKS PASSED".
+
+2026-10-12: Record reconciled. Merged into main in PR #32 on 2026-10-12. Earlier branch and push notes above describe the state before that merge.

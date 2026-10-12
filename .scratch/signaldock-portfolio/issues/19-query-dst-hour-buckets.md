@@ -3,7 +3,7 @@
 Status: ready-for-agent
 Type: task
 Blocked by: None
-Execution: Done
+Execution: Done (merged in PR #32, 2026-10-12)
 
 ## Scope and completion criteria
 
@@ -24,3 +24,5 @@ Done when a `QueryStoreTest` case in `America/New_York` across 2026-11-01 01:00-
 - New test `QueryStoreTest` "hour buckets keep both repeated local hours at a DST fall-back": zone `America/New_York`, rows around 2026-11-01 01:00-02:00 local; expected buckets 04:00Z=1, 05:00Z=2, 06:00Z=3, 07:00Z=1. The existing `Asia/Seoul` tests pass unchanged.
 - `(cd server && ./gradlew test verifyJooq --no-daemon)` with JAVA_HOME=`.tools/jdk-21.0.12.1+1` -> BUILD SUCCESSFUL; QueryStoreTest result file: tests=9, skipped=0, failures=0.
 - `scripts/verify-contract.sh` -> `ALL CONTRACT CHECKS PASSED`.
+
+2026-10-12: Record reconciled. Merged into main in PR #32 on 2026-10-12. Earlier branch and push notes above describe the state before that merge.

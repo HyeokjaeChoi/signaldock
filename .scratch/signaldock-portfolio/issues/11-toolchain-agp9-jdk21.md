@@ -3,7 +3,7 @@
 Status: ready-for-review
 Type: task
 Blocked by: None
-Execution: Implemented on branch impl/11-toolchain-agp9-jdk21
+Execution: Done (merged in PR #20, 2026-10-11)
 
 ## Scope and completion criteria
 
@@ -25,3 +25,5 @@ Commands and results:
 - `(cd server && ./gradlew test verifyJooq --no-daemon)`: first run failed at `verifyJooq` with "jOOQ source drift" (expected after the jOOQ bump); after `./gradlew generateJooq --no-daemon` the same command: BUILD SUCCESSFUL (tests passed, drift check passed).
 - `scripts/verify-contract.sh`: ALL CONTRACT CHECKS PASSED (codegen drift, oasdiff, contract-check Gradle tests, dashboard TS checks, `help` for sdk and server).
 - R8: a temporary `isMinifyEnabled = true` run succeeded (`:sdk-android:minifyReleaseWithR8` executed) but no R8 version was printed; the bundled R8 version is not verified. The temporary change was reverted.
+
+2026-10-12: Record reconciled. Merged into main in PR #20 on 2026-10-11. Earlier branch and push notes above describe the state before that merge.

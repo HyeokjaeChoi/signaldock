@@ -3,7 +3,7 @@
 Status: ready-for-agent
 Type: task
 Blocked by: 14
-Execution: In review
+Execution: Done (merged in PR #38, 2026-10-12)
 
 ## Scope and completion criteria
 
@@ -43,3 +43,5 @@ Commands and results (JDK 21.0.12.1+1 from `.tools`; Node v24.14.1 locally, Dock
 - `coderabbit review --base main --deep --agent`: 2 findings. Rejected: Gradle wrapper "missing" (tracked in `server/gradle/wrapper`, and the image build ran). Deferred: the PR description must name the ADR-0008 decisions (no PR opened yet).
 
 Limits: no browser-level test of the full page; Dashboard tests use a fake `Api`, jsdom, and mocked charts. A `Today` period that rolls over to a new date while a past page is shown is not special-cased. Query time budgets stay undecided (ADR-0007). The hidden-tab rule is covered by unit tests only, not checked by hand in a browser. Compose was verified on macOS with OrbStack only.
+
+2026-10-12: Record reconciled. Merged into main in PR #38 on 2026-10-12. Earlier branch and push notes above describe the state before that merge.

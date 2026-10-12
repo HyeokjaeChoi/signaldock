@@ -3,7 +3,7 @@
 Status: ready-for-agent
 Type: task
 Blocked by: 02, 03
-Execution: Done on branch impl/10-whitespace-contract (not pushed)
+Execution: Done (merged in PR #26, 2026-10-11)
 
 ## Scope and completion criteria
 
@@ -38,3 +38,5 @@ Done when:
 No changes to report, but the specs are different.
 Run 'oasdiff diff' to see structural differences.
 ```
+
+2026-10-12: Record reconciled. Merged into main in PR #26 on 2026-10-11. Earlier branch and push notes above describe the state before that merge.
