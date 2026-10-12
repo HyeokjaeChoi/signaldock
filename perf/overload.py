@@ -237,7 +237,7 @@ def execute(a, out):
 
     ph = phase_stats(rows)
     over_end = (P["base_s"] + P["over_s"]) * 1000
-    last = [r for r in rows if r["ep"] in ("collect", "probe") and int(r["at_ms"]) >= (total_s - 30) * 1000]
+    last = [r for r in rows if r["ep"] in ("collect", "probe") and (total_s - 30) * 1000 <= int(r["at_ms"]) < total_s * 1000]
     last_collect = sorted(float(r["duration_ms"]) for r in last if r["ep"] == "collect")
     base = ph.get("baseline", {})
     base_p95 = base.get("collect", {}).get("p95_ms")

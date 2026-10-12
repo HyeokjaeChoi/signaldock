@@ -41,6 +41,10 @@ def run(cmd, check=True, **kw):
 def ensure_env():
     """Random test credentials for this local benchmark only. They live in perf/work (gitignored), never in a manifest."""
     if not ENV_FILE.exists():
+        # The DB volume keeps the password it was created with: new credentials would not match it.
+        if run(["docker", "volume", "ls", "-q", "--filter", f"label=com.docker.compose.project={PROJECT}"]).stdout.strip():
+            sys.exit(f"{ENV_FILE} is missing but {PROJECT} volumes exist: restore the file, "
+                     f"or remove the volumes yourself (docker compose -p {PROJECT} down --volumes) to start over")
         WORK.mkdir(parents=True, exist_ok=True)
         ENV_FILE.write_text("\n".join([
             f"SIGNALDOCK_COLLECTION_KEY=perf-c-{secrets.token_hex(12)}",

@@ -29,4 +29,13 @@ class DatabaseLimitsEnvTest {
         }
         assertEquals("SIGNALDOCK_DB_POOL_SIZE is not an integer", error.message)
     }
+
+    @Test
+    fun `pool statistics are off when absent and fail when not a positive integer`() {
+        assertEquals(null, poolStatsPeriodFromEnv { null })
+        assertEquals(5000L, poolStatsPeriodFromEnv(mapOf("SIGNALDOCK_POOL_STATS_MS" to "5000")::get))
+        for (bad in listOf("0", "-1", "x", "")) {
+            kotlin.test.assertFailsWith<IllegalArgumentException>(bad) { poolStatsPeriodFromEnv(mapOf("SIGNALDOCK_POOL_STATS_MS" to bad)::get) }
+        }
+    }
 }

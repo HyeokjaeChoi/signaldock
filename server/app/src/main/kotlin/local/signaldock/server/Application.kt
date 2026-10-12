@@ -100,6 +100,10 @@ internal fun databaseLimitsFromEnv(env: (String) -> String?): DatabaseLimits {
     )
 }
 
+/** Pool statistics period for the harness: absent means off; a set value must be a positive integer. */
+internal fun poolStatsPeriodFromEnv(env: (String) -> String?): Long? =
+    env("SIGNALDOCK_POOL_STATS_MS")?.let { requireNotNull(it.toLongOrNull()?.takeIf { p -> p > 0 }) { "SIGNALDOCK_POOL_STATS_MS is not a positive integer" } }
+
 /** Q131: both keys are required and non-blank, and they differ. Errors name variables, never values. */
 internal fun resolveKeys(collectionKey: String?, queryKey: String?): Pair<String, String> {
     require(!collectionKey.isNullOrBlank()) { "SIGNALDOCK_COLLECTION_KEY is missing or blank" }
@@ -116,7 +120,7 @@ fun main() {
         observer = DatabaseObserver { stage, millis ->
             org.slf4j.LoggerFactory.getLogger("ingestion.database").info("stage={} elapsedMs={}", stage, millis)
         })
-    System.getenv("SIGNALDOCK_POOL_STATS_MS")?.toLongOrNull()?.takeIf { it > 0 }?.let { period ->
+    poolStatsPeriodFromEnv(System::getenv)?.let { period ->
         Thread({
             val log = org.slf4j.LoggerFactory.getLogger("ingestion.pool")
             while (true) { Thread.sleep(period); log.info("pool {}", database.poolStats()) }
