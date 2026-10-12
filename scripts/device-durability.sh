@@ -87,6 +87,17 @@ case_kill() {
   adb shell am instrument -w -e class local.signaldock.device.DurabilityPhases -e phase kill_burst_store "$RUNNER" >/dev/null &
   bg=$!
   sleep 12
+  # Prove collection is still running on the device right before the kill: the instrumented process is alive
+  # and the fsynced acked.log (written by kill_burst_store after each reported success) is still growing.
+  size1="$(adb shell run-as "$PKG" wc -c files/harness/acked.log 2>/dev/null | tr -d '\r' | awk '{print $1}')"
+  sleep 1
+  size2="$(adb shell run-as "$PKG" wc -c files/harness/acked.log 2>/dev/null | tr -d '\r' | awk '{print $1}')"
+  pid="$(adb shell pidof "$PKG" | tr -d '\r')"
+  if [ -z "$pid" ] || [ -z "${size1:-}" ] || [ -z "${size2:-}" ] || [ "$size2" -le "$size1" ]; then
+    echo "kill_burst_store was not collecting at kill time (pid='${pid:-}', acked.log ${size1:-?} -> ${size2:-?} bytes)" >&2
+    exit 1
+  fi
+  echo "  collecting before kill: pid $pid, acked.log $size1 -> $size2 bytes"
   adb shell am force-stop "$PKG"
   wait "$bg" || true
   sleep 2
@@ -107,7 +118,9 @@ case_restore() {
   adb shell bmgr wipe "$transport" "$PKG" >/dev/null 2>&1 || true
   echo "  transport: $transport"
   adb shell bmgr backupnow "$PKG" | tr -d '\r' | grep -q "Package $PKG with result: Success" || { echo "backup did not succeed" >&2; exit 1; }
-  token="$(adb shell bmgr list sets | tr -d '\r' | head -1 | awk '{print $1}')"
+  # LocalTransport names its current restore set with token 1; list order does not mark it.
+  adb shell bmgr list sets | tr -d '\r' | awk '{print $1}' | grep -qx 1 || { echo "restore set token 1 not found: backup set missing" >&2; exit 1; }
+  token=1
   adb uninstall "$PKG" >/dev/null
   adb install -t "$APK" >/dev/null
   adb shell bmgr restore "$token" "$PKG" >/dev/null

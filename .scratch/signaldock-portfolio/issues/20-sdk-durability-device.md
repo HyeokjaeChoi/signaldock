@@ -65,3 +65,12 @@ CodeRabbit (`coderabbit review --base main --deep --agent`, commit 0c0825f): 1 m
 
 Limits: the update case installs the same build over itself (no SDK version or schema change; no migration exists yet); offline is a refused connection to 127.0.0.1:9, not airplane mode; restore ran on the local backup transport only (not Google, device transfer or manufacturer tools; ADR-0001); SIGKILL through `am force-stop` is not power loss; two emulator images, no physical device; both AVDs ran with the test APK as a debug build; the Compose server path through `10.0.2.2:8080` was not exercised in this issue (MockWebServer on the device instead, ADR-0011 decision 2); emulator runs are not in CI (CI only compiles `assembleDebugAndroidTest`, which also built locally). `README.md` and `architecture.md` evidence rows were left unchanged for this PR.
 
+
+## Comment 2026-10-12: CodeRabbit minor findings on PR #46
+
+Fixed three minor findings.
+- `scripts/device-durability.sh` kill case: right before `am force-stop`, the script now checks `adb shell pidof local.signaldock.test` is not empty and that `files/harness/acked.log` (appended and fsynced by `kill_burst_store` after each reported success) grows over a one-second interval. If not, the case fails with the pid and sizes, because collection had already ended. Host `kill -0` on the adb process was dropped as proof.
+- `scripts/device-durability.sh` restore case: the set token is `1` (LocalTransport current set), not the first line of `bmgr list sets`. The script fails before `bmgr restore` if `1` is not listed.
+- `DeviceSupport.kt` `Rig.close()`: deletes the rig directory under `noBackupFilesDir` after cancelling the scope, the WorkManager work and the server. The SDK has no `close()` API, so Room's connection is released when the process ends; unlinking the open files is safe on Android. Rooms and sidecar files no longer accumulate across connected runs.
+
+Results on emulator `signaldock-api37` (API 37, serial emulator-5554): `connectedDebugAndroidTest` BUILD SUCCESSFUL (26 of 28 run, 6 skipped as before: DurabilityPhases phase tests that the script drives, 0 failed); `device-durability.sh kill restore` passed (kill: pid alive, acked.log 98753 -> 107374 bytes, acked=2914 stored=2914 integrity ok); full `device-durability.sh` passed all seven cases (kill: acked=2820 stored=2821); `testDebugUnitTest` BUILD SUCCESSFUL (UP-TO-DATE, main sources unchanged). ADR-0011 not changed: nothing in it is now wrong.

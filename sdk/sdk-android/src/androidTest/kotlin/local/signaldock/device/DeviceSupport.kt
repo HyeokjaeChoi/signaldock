@@ -147,6 +147,8 @@ internal class Rig(
         InitCoordinator.default = savedDefault
         runCatching { WorkManager.getInstance(targetContext).cancelAllWork().result.get(10, TimeUnit.SECONDS) }
         server.close()
+        // Delete the rig's directory (Room database and sidecar files) so repeated runs do not accumulate them.
+        runCatching { context.noBackupFilesDir.deleteRecursively() }
     }
 }
 
