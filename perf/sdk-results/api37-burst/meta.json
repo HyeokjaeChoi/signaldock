@@ -1,9 +1,9 @@
 {
   "scenario": "burst",
-  "run_id": "r20261012161656burst",
+  "run_id": "r20261012162441burst",
   "completed_phases": true,
-  "started_utc": "2026-10-12T16:16:56Z",
-  "ended_utc": "2026-10-12T16:17:08Z",
+  "started_utc": "2026-10-12T16:24:41Z",
+  "ended_utc": "2026-10-12T16:24:53Z",
   "avd": "signaldock-api37",
   "serial": "emulator-5584",
   "build": "debug androidTest APK: SDK library debug variant, debuggable, no R8/minify (ADR-0014)",
@@ -15,8 +15,8 @@
     "model": "Apple M2 Pro",
     "cpus": "12",
     "os": "26.6.2",
-    "loadavg_before": "{ 6.03 8.74 8.33 }",
-    "loadavg_after": "{ 5.56 8.55 8.27 }"
+    "loadavg_before": "{ 5.35 5.92 6.98 }",
+    "loadavg_after": "{ 6.02 6.06 7.01 }"
   },
-  "git_revision": "5b369f4 (dirty)"
+  "git_revision": "edaa14c (dirty)"
 }

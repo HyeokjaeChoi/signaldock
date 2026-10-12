@@ -36,7 +36,7 @@ def analyze(d):
     drain_res = jload(d / "result-offline_drain.json") if sc == "offline" else None
     run = {"scenario": sc, "run_id": meta["run_id"], "avd": meta["avd"], "meta": meta}
     reasons_invalid, reasons_fail = [], []
-    if not meta["completed_phases"] or res is None or (sc == "offline" and drain_res is None):
+    if not meta["completed_phases"] or res is None or (sc == "offline" and drain_res is None) or not (d / f"calls-{first}.csv").exists():
         run.update(verdict="invalid", reasons=["an instrumentation phase did not finish (see the script output)"])
         return run
     run.update(device=res["device"], api=res["api"], release=res["release"], abi=res["abi"], debuggable=res["debuggable"])

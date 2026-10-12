@@ -7,7 +7,7 @@ Measured in this environment (emulators, Compose server on one Mac). Not an SLA.
 | signaldock-api24 | burst | pass | 100 / 99.97 | 1 | 1.15 / 2.25 / 7.0 | 0 | 0 / 0 | 0.06 | 57344 + wal 436752 + shm 32768 | 6797 |
 | signaldock-api24 | normal | pass | 1 / 1.0 | 1 | 1.87 / 3.8 / 7.08 | 0 | 0 / 0 | 0.92 | 36864 + wal 420272 + shm 32768 | 7032 |
 | signaldock-api24 | offline | pass | back to back / 1127.8 | 1 | 0.76 / 1.66 / 6.08 | 0 | 0 / 0 | 16.29 | 626688 + wal 465592 + shm 32768 | 8156 |
-| signaldock-api37 | burst | pass | 100 / 100.0 | 4 | 0.84 / 1.98 / 33.67 | 0 | 0 / 0 | 0.06 | 49152 + wal 453232 + shm 32768 | 2341 |
+| signaldock-api37 | burst | pass | 100 / 99.99 | 4 | 0.85 / 2.29 / 52.14 | 0 | 0 / 0 | 0.06 | 36864 + wal 502672 + shm 32768 | 2702 |
 | signaldock-api37 | normal | pass | 1 / 1.0 | 1 | 1.58 / 2.23 / 20.52 | 0 | 0 / 0 | 2.02 | 36864 + wal 424392 + shm 32768 | 2008 |
 | signaldock-api37 | offline | pass | back to back / 1175.22 | 1 | 0.64 / 2.35 / 16.78 | 0 | 0 / 0 | 16.8 | 626688 + wal 473832 + shm 32768 | 3384 |
 
@@ -52,14 +52,14 @@ Offline row: track() numbers are the offline store phase (endpoint unreachable, 
 ### signaldock-api37 (API 37) - burst: **pass**
 
 - Device: Google sdk_gphone16k_arm64, Android 17 (API 37), arm64-v8a. Build: debug androidTest APK: SDK library debug variant, debuggable, no R8/minify (ADR-0014).
-- Injection: target 100 events/s, actual 100.0 events/s over 9.99 s (1000 of 1000 calls); max calls in flight 4; start lateness {'p95': 2.8, 'max': 8.7}; event size 1022 bytes.
-- track() completion (ms): p50 0.84, p95 1.98, max 33.67 (n=1000).
+- Injection: target 100 events/s, actual 99.99 events/s over 9.99 s (1000 of 1000 calls); max calls in flight 4; start lateness {'p95': 2.7, 'max': 6.4}; event size 1022 bytes.
+- track() completion (ms): p50 0.85, p95 2.29, max 52.14 (n=1000).
 - Errors: track() not ok 0; SDK WARN/ERROR lines 0; last delivery error None.
-- Reconciliation with server DB: tracked ok 1000, server rows 1000, missing 0, not tracked 0, duplicate rows 0; sent on the wire 1000 events in 201 batches, IDs sent more than once 0, batches not 200: 0, ACK statuses {'accepted': 1000}.
-- Queue drain: {'seconds': 0.06, 'queued_after': 0, 'queued_at_injection_end': 20}.
-- Files (bytes): {'at_injection_end': {'installation-id': 36, 'queue.db': 49152, 'queue.db-shm': 32768, 'queue.db-wal': 453232}, 'after_drain': {'installation-id': 36, 'queue.db': 49152, 'queue.db-shm': 32768, 'queue.db-wal': 453232}}.
-- Memory (KiB): {'pss_after_init_to_injection_end': 3157, 'pss_after_init_to_after_drain': 2341, 'heap_after_init_to_after_drain': 0, 'pss_absolute': {'before_init': 39430, 'after_init': 38781, 'injection_end': 41938, 'after_drain': 41122}}.
-- Host: Apple M2 Pro, 12 CPUs, load average before { 6.03 8.74 8.33 }, after { 5.56 8.55 8.27 }. Run 2026-10-12T16:16:56Z to 2026-10-12T16:17:08Z, git 5b369f4 (dirty).
+- Reconciliation with server DB: tracked ok 1000, server rows 1000, missing 0, not tracked 0, duplicate rows 0; sent on the wire 1000 events in 180 batches, IDs sent more than once 0, batches not 200: 0, ACK statuses {'accepted': 1000}.
+- Queue drain: {'seconds': 0.06, 'queued_after': 0, 'queued_at_injection_end': 16}.
+- Files (bytes): {'at_injection_end': {'installation-id': 36, 'queue.db': 36864, 'queue.db-shm': 32768, 'queue.db-wal': 502672}, 'after_drain': {'installation-id': 36, 'queue.db': 36864, 'queue.db-shm': 32768, 'queue.db-wal': 502672}}.
+- Memory (KiB): {'pss_after_init_to_injection_end': 3934, 'pss_after_init_to_after_drain': 2702, 'heap_after_init_to_after_drain': 16, 'pss_absolute': {'before_init': 38209, 'after_init': 38582, 'injection_end': 42516, 'after_drain': 41284}}.
+- Host: Apple M2 Pro, 12 CPUs, load average before { 5.35 5.92 6.98 }, after { 6.02 6.06 7.01 }. Run 2026-10-12T16:24:41Z to 2026-10-12T16:24:53Z, git edaa14c (dirty).
 
 ### signaldock-api37 (API 37) - normal: **pass**
 

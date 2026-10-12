@@ -91,12 +91,11 @@ run_scenario() {
   load_after="$(sysctl -n vm.loadavg)"
   kill "$proxy_pid" 2>/dev/null || true
   wait "$proxy_pid" 2>/dev/null || true
-  if [ "$ok" = 1 ]; then
-    for f in $(adb shell run-as "$PKG" ls "files/measure/$runId" | tr -d '\r'); do
-      adb exec-out run-as "$PKG" cat "files/measure/$runId/$f" > "$dir/$f"
-    done
-    psql_ids "$runId" > "$dir/db-ids.txt"
-  fi
+  # Pull what exists even when a phase failed, so that the evidence survives the next `pm clear`.
+  for f in $(adb shell run-as "$PKG" ls "files/measure/$runId" 2>/dev/null | tr -d '\r'); do
+    adb exec-out run-as "$PKG" cat "files/measure/$runId/$f" > "$dir/$f" || rm -f "$dir/$f"
+  done
+  psql_ids "$runId" > "$dir/db-ids.txt" || { echo "warning: could not read event IDs from the database" >&2; : > "$dir/db-ids.txt"; }
   python3 - "$dir" "$sc" "$runId" "$ok" "$started" "$ended" "$load_before" "$load_after" "$avd" "$serial" <<'EOF'
 import json, subprocess, sys
 d, sc, run_id, ok, t0, t1, l0, l1, avd, serial = sys.argv[1:]
