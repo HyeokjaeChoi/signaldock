@@ -108,6 +108,11 @@ def analyze(d):
             unreadable_acks += 1  # the record still counts for sent-ID reconciliation
     if unreadable_acks:
         reasons_invalid.append(f"{unreadable_acks} proxy records have no readable ACK response")
+    if ack_status.get("rejected"):
+        reasons_fail.append(f"{ack_status['rejected']} events were rejected by the server")
+    unknown = {k: v for k, v in ack_status.items() if k not in ("accepted", "duplicate", "rejected")}
+    if unknown:
+        reasons_invalid.append(f"unknown ACK statuses {unknown}")
     run["reconciliation"] = {
         "tracked_ok": len(tracked), "server_rows": len(db_lines), "missing_on_server": len(tracked - db), "not_tracked_on_server": len(db - tracked),
         "duplicate_server_rows": len(db_lines) - len(db),
