@@ -202,6 +202,8 @@ def execute(a, out):
     cg1 = {"db": ro.cgroup(c.DB_CONTAINER), "server": ro.cgroup(c.SERVER_CONTAINER)}
 
     rows, counters = read_raw(raw)
+    if not any(r["ep"] == "collect" for r in rows):
+        raise RuntimeError("k6 recorded no collection requests (startup failure or wrong BASE_URL); see k6.log. The run directory is kept with ERROR.txt")
     k6s = json.loads((out / "k6-summary.json").read_text())
     dropped = k6s["metrics"].get("dropped_iterations", {})
     dropped = dropped.get("count", dropped.get("values", {}).get("count", 0))
