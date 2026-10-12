@@ -141,6 +141,28 @@ class RoundTripTest {
         }
     }
 
+    // Q68 / spec section 7 "new-response fixture compatibility": the generated models are the ones
+    // the SDK (AckValidator) uses, with the same Json settings. A newer server adds fields; the prior
+    // models read the ACK unchanged. An unknown status or a missing field is still an error.
+    @Test
+    fun `new ACK with added fields is read by the prior models, bad ACKs are not`() {
+        val prior = Json { ignoreUnknownKeys = true }
+        val raw = File("../fixtures/compat/new-ack-added-fields.json").readText()
+        val ack = prior.decodeFromString<BatchAckResponse>(raw)
+        assertEquals(listOf(ItemAck.Status.ACCEPTED, ItemAck.Status.DUPLICATE), ack.results.map { it.status })
+        assertEquals("0f1e2d3c-4b5a-4968-8778-695a4b3c2d1e", ack.results[0].eventId)
+        assertFailsWith<kotlinx.serialization.SerializationException> {
+            prior.decodeFromString<BatchAckResponse>("""{"results":[{"index":0,"status":"queued","eventId":"x"}]}""")
+        }
+        assertFailsWith<kotlinx.serialization.SerializationException> {
+            prior.decodeFromString<BatchAckResponse>("""{"results":[{"index":0,"eventId":"x"}]}""")
+        }
+        // the prior request fixture is itself valid for the request models (the server replays it in
+        // PriorRequestFixtureTest, server/app)
+        val request = json.decodeFromString<BatchIngestRequest>(File("../fixtures/compat/prior-request-v1.json").readText())
+        assertEquals(2, request.events.size)
+    }
+
     @Test
     fun `null property value is rejected`() {
         val bad = """{"eventId":"e1","name":"n","occurredAt":"2026-10-09T21:30:00.123Z",

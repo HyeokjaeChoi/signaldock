@@ -99,6 +99,8 @@ Docker 29.4.0 and Compose v5.1.2 (OrbStack) ran `docker compose up -d --build`.
 - Contract source: `openapi/contract-v1.yaml` (oasdiff compares it with `fixtures/contract/contract-v1.baseline.yaml`)
 - Generated models (tracked per Q91): `generated/kotlin/`, `generated/typescript/`
 - Round-trip fixtures: `fixtures/roundtrip/`
+- Compatibility fixtures: `fixtures/compat/` (frozen prior request replayed against the server, new ACK read by prior models; ADR-0012)
+- DB change check: `server/persistence` `SchemaUpgradeTest` and `src/test/resources/db/previous-data/V<n>.sql` (ADR-0012)
 - Verification build: `contract-check/` (compiles generated Kotlin, runs fixture tests)
 - Independent builds: `sdk/`, `server/`, `compatibility/consumer-android/` (own settings + wrappers, shared catalog; the consumer takes the SDK only from the Maven ZIP). `server/` has the modules `:app`, `:ingestion`, `:persistence`; `cd server && ./gradlew test verifyJooq` runs all of them
 - Root scripts: `scripts/codegen.sh`, `scripts/verify-contract.sh`
