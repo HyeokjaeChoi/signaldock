@@ -24,6 +24,7 @@ import kotlin.math.min
 data class DatabaseLimits(
     val concurrency: Int = 4,
     val poolSize: Int = 4,
+    val minimumIdle: Int = 0,
     val requestMs: Long = 5_000,
     val admissionMs: Long = 250,
     val connectionMs: Long = 500,
@@ -33,7 +34,7 @@ data class DatabaseLimits(
     val responseMs: Long = 250,
 ) {
     init {
-        require(concurrency in 1..64 && poolSize in 2..64)
+        require(concurrency in 1..64 && poolSize in 2..64 && minimumIdle in 0..poolSize)
         require(connectionMs >= 250 && admissionMs > 0 && lockMs > 0)
         require(lockMs < statementMs && cleanupMs > 0 && responseMs > 0)
         require(requestMs > admissionMs + connectionMs + statementMs + cleanupMs + responseMs)
@@ -77,7 +78,7 @@ class Database(
         this.username = username
         this.password = password
         maximumPoolSize = limits.poolSize
-        minimumIdle = 0
+        minimumIdle = limits.minimumIdle
         connectionTimeout = limits.connectionMs
         validationTimeout = 250
         initializationFailTimeout = -1
@@ -86,6 +87,11 @@ class Database(
         addDataSourceProperty("cancelSignalTimeout", "1")
         poolName = "ingestion"
     })
+
+    /** Pool counters for diagnostics (issue 23 measurement); not part of any contract. */
+    fun poolStats(): String = dataSource.hikariPoolMXBean.let {
+        "active=${it.activeConnections} idle=${it.idleConnections} pending=${it.threadsAwaitingConnection} total=${it.totalConnections}"
+    }
 
     fun migrate() {
         Flyway.configure().dataSource(dataSource).load().migrate()

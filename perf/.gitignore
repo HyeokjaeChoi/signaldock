@@ -1,0 +1,4 @@
+# Generated credentials, seed CSVs, and raw k6 output stay local.
+work/
+results/**/k6-raw.json*
+results/**/server.log*

@@ -73,6 +73,14 @@ reviews:
         lists for the area `scripts/`, `.githooks/`, `.github/workflows/`, `gradle/`. The design sources win over general best
         practice. If the code and the design sources disagree, flag it. Do
         not suggest anything listed under "Rejected alternatives".
+    - path: "perf/**"
+      instructions: >-
+        Judge this change against the sections that docs/design-index.md
+        lists for the area `perf/`, and against
+        .scratch/signaldock-portfolio/performance-plan.md. The design sources
+        win over general best practice. If the code and the design sources
+        disagree, flag it. Do not suggest anything listed under "Rejected
+        alternatives".
   pre_merge_checks:
     docstrings:
       mode: "off" # docstring coverage is not a project rule

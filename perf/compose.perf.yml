@@ -1,0 +1,31 @@
+# Benchmark override for issue 23 (ADR-0013). Never used by the default `docker compose up`.
+# Run it only through perf/*.py, which pass: -p signaldock-perf --env-file perf/work/env
+#   -f docker-compose.yml -f perf/compose.perf.yml
+# A separate project name gives separate containers, network, and volume (signaldock-perf_signaldock-db).
+# Resource limits are the fixed conditions of performance-plan.md: DB 2 CPUs / 2 GiB, Ktor 2 CPUs / 1 GiB.
+services:
+  db:
+    cpus: 2
+    mem_limit: 2g
+    memswap_limit: 2g
+    # No DB settings are changed: fsync, synchronous_commit, full_page_writes, planner and memory stay at the
+    # defaults of the pinned image. perf/run_one.py saves the effective settings in every manifest.
+  server:
+    image: signaldock-perf-server:local
+    cpus: 2
+    mem_limit: 1g
+    memswap_limit: 1g
+    environment:
+      JAVA_TOOL_OPTIONS: -Xmx512m -Xlog:gc:file=/tmp/gc.log:time,uptime -Dorg.slf4j.simpleLogger.showDateTime=true -Dorg.slf4j.simpleLogger.dateTimeFormat=HH:mm:ss.SSS
+      SIGNALDOCK_POOL_STATS_MS: "1000"
+      # Benchmark profile (performance-plan.md "Pool comparison and limits"). The pool size comes from the runner.
+      SIGNALDOCK_DB_POOL_SIZE: ${PERF_POOL_SIZE:-4}
+      SIGNALDOCK_DB_POOL_MIN_IDLE: ${PERF_POOL_SIZE:-4}
+      SIGNALDOCK_DB_CONCURRENCY: "8"
+      SIGNALDOCK_DB_ADMISSION_MS: "1000"
+      SIGNALDOCK_DB_CONNECTION_MS: "1000"
+      SIGNALDOCK_DB_STATEMENT_MS: "2000"
+      SIGNALDOCK_DB_LOCK_MS: "500"
+  dashboard:
+    # Not part of the measurement; the runner starts only db and server.
+    profiles: ["unused"]
