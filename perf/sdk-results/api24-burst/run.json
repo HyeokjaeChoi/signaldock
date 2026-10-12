@@ -1,0 +1,102 @@
+{
+  "scenario": "burst",
+  "run_id": "r20261012155936burst",
+  "avd": "signaldock-api24",
+  "meta": {
+    "scenario": "burst",
+    "run_id": "r20261012155936burst",
+    "completed_phases": true,
+    "started_utc": "2026-10-12T15:59:36Z",
+    "ended_utc": "2026-10-12T15:59:47Z",
+    "avd": "signaldock-api24",
+    "serial": "emulator-5586",
+    "build": "debug androidTest APK: SDK library debug variant, debuggable, no R8/minify (ADR-0014)",
+    "server": {
+      "stack": "Docker Compose, real Ktor server + PostgreSQL 17.6, default product settings, project separate from the default stack",
+      "path": "device -> 10.0.2.2 -> fault-proxy (pass mode) -> 127.0.0.1 -> server container"
+    },
+    "host": {
+      "model": "Apple M2 Pro",
+      "cpus": "12",
+      "os": "26.6.2",
+      "loadavg_before": "{ 7.68 7.33 7.32 }",
+      "loadavg_after": "{ 7.21 7.24 7.29 }"
+    },
+    "git_revision": "6bd96af (dirty)"
+  },
+  "device": "Google Android SDK built for arm64",
+  "api": 24,
+  "release": "7.0",
+  "abi": "arm64-v8a",
+  "debuggable": true,
+  "injection": {
+    "target_rate_per_s": 100,
+    "planned": 1000,
+    "started": 1000,
+    "actual_rate_per_s": 100.01,
+    "span_s": 9.99,
+    "max_calls_in_flight": 3,
+    "start_lateness_ms": {
+      "p95": 1.7,
+      "max": 4.7
+    },
+    "event_bytes": 1024
+  },
+  "track_ms": {
+    "p50": 0.96,
+    "p95": 2.06,
+    "max": 24.21,
+    "count": 1000
+  },
+  "errors": {
+    "track_not_ok": {},
+    "sdk_warnings": 0,
+    "last_delivery_error": null
+  },
+  "reconciliation": {
+    "tracked_ok": 1000,
+    "server_rows": 1000,
+    "missing_on_server": 0,
+    "not_tracked_on_server": 0,
+    "duplicate_server_rows": 0,
+    "batches_sent": 181,
+    "events_sent": 1000,
+    "event_ids_sent_more_than_once": 0,
+    "batches_not_200": 0,
+    "ack_status_counts": {
+      "accepted": 1000
+    }
+  },
+  "drain": {
+    "seconds": 0.07,
+    "queued_after": 0,
+    "queued_at_injection_end": 18
+  },
+  "files_bytes": {
+    "at_injection_end": {
+      "installation-id": 36,
+      "queue.db": 57344,
+      "queue.db-shm": 32768,
+      "queue.db-wal": 436752
+    },
+    "after_drain": {
+      "installation-id": 36,
+      "queue.db": 57344,
+      "queue.db-shm": 32768,
+      "queue.db-wal": 436752
+    }
+  },
+  "memory_kb": {
+    "pss_after_init_to_injection_end": 7466,
+    "pss_after_init_to_after_drain": 7462,
+    "heap_after_init_to_after_drain": 3794,
+    "pss_absolute": {
+      "before_init": 19381,
+      "after_init": 22772,
+      "injection_end": 30238,
+      "after_drain": 30234
+    }
+  },
+  "verdict": "pass",
+  "reasons": []
+}

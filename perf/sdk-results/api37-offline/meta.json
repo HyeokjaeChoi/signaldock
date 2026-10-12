@@ -1,0 +1,22 @@
+{
+  "scenario": "offline",
+  "run_id": "r20261012155659offline",
+  "completed_phases": true,
+  "started_utc": "2026-10-12T15:56:59Z",
+  "ended_utc": "2026-10-12T15:57:21Z",
+  "avd": "signaldock-api37",
+  "serial": "emulator-5584",
+  "build": "debug androidTest APK: SDK library debug variant, debuggable, no R8/minify (ADR-0014)",
+  "server": {
+    "stack": "Docker Compose, real Ktor server + PostgreSQL 17.6, default product settings, project separate from the default stack",
+    "path": "device -> 10.0.2.2 -> fault-proxy (pass mode) -> 127.0.0.1 -> server container"
+  },
+  "host": {
+    "model": "Apple M2 Pro",
+    "cpus": "12",
+    "os": "26.6.2",
+    "loadavg_before": "{ 6.98 7.08 7.24 }",
+    "loadavg_after": "{ 8.01 7.33 7.33 }"
+  },
+  "git_revision": "6bd96af (dirty)"
+}
