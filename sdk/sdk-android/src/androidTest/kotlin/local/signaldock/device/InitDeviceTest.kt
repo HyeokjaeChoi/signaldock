@@ -53,12 +53,17 @@ class InitDeviceTest {
             }
         }
         main.post(ticker)
-        val queued = withContext(Dispatchers.Main) {
-            val sdk = r.initialize()
-            repeat(200) { check(sdk.track("main_thread") { property("n", it) } is TrackResult.Success) }
-            sdk.diagnostics().queuedEvents
+        val queued = try {
+            withContext(Dispatchers.Main) {
+                val sdk = r.initialize()
+                repeat(200) { check(sdk.track("main_thread") { property("n", it) } is TrackResult.Success) }
+                sdk.diagnostics().queuedEvents
+            }
+        } finally {
+            // Stop the ticker even when the test fails, so it does not run into later tests.
+            running.set(false)
+            main.removeCallbacks(ticker)
         }
-        running.set(false)
         assertEquals(200, queued)
         assertTrue("main thread ticked $ticks times", ticks > 5)
         assertTrue("main thread stalled for $maxGap ms", maxGap < 1_000)
