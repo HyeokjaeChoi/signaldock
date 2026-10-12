@@ -98,6 +98,9 @@ case_kill() {
   pid="$(adb shell pidof "$PKG" | tr -d '\r')"
   if [ -z "$pid" ] || [ -z "${size1:-}" ] || [ -z "${size2:-}" ] || [ "$size2" -le "$size1" ]; then
     echo "kill_burst_store was not collecting at kill time (pid='${pid:-}', acked.log ${size1:-?} -> ${size2:-?} bytes)" >&2
+    # Do not leave the phase running into the next case.
+    adb shell am force-stop "$PKG"
+    wait "$bg" || true
     exit 1
   fi
   echo "  collecting before kill: pid $pid, acked.log $size1 -> $size2 bytes"
