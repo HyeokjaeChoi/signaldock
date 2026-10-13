@@ -76,7 +76,7 @@ Steps to run, stop, and reset the stack, to build the Maven ZIP, and to run the 
 
 ## Reproduce from a clean clone
 
-Every command in this section was run in a fresh clone. The record (commands, results, wall times) is in [issue 25](.scratch/signaldock-portfolio/issues/25-reproduction-readme-video.md). The longer guide (demo app, E2E, device scripts, measurements, physical device, reset, limits) is [docs/reproduce.md](docs/reproduce.md).
+The commands in this section were run in a fresh clone, except `docker compose down --volumes` (the reset), which was not run on purpose. The record (commands, results, wall times) is in [issue 25](.scratch/signaldock-portfolio/issues/25-reproduction-readme-video.md). The longer guide (demo app, E2E, device scripts, measurements, physical device, reset, limits) is [docs/reproduce.md](docs/reproduce.md).
 A short video of demo `track()` to Dashboard receipt is in [`.scratch/signaldock-portfolio/evidence/25-demo-track-to-dashboard.mp4`](.scratch/signaldock-portfolio/evidence/25-demo-track-to-dashboard.mp4).
 The first run downloads the JDK, Docker images, Gradle dependencies, and npm packages. It is not fully offline.
 

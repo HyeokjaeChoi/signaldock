@@ -50,6 +50,7 @@ SDK on a device (ADR-0014). It needs a separate Compose project with its own por
 
 ```sh
 umask 077                                          # the file holds keys and a password: owner-only
+MEASURE_PROJECT="signaldock-measure-$(date +%s)"   # one project, one volume, one password per run
 MEASURE_ENV="$(mktemp)"                            # a new private file outside the repository
 cat > "$MEASURE_ENV" <<EOT                         # values are random
 SIGNALDOCK_COLLECTION_KEY=$(openssl rand -hex 24)
@@ -60,10 +61,10 @@ SIGNALDOCK_DB_PASSWORD=$(openssl rand -hex 24)
 SIGNALDOCK_DB_PORT=15434
 SIGNALDOCK_SERVER_PORT=18090
 EOT
-docker compose -p signaldock-measure --env-file "$MEASURE_ENV" up -d --build db server
-MEASURE_PROJECT=signaldock-measure SIGNALDOCK_ENV_FILE="$MEASURE_ENV" \
+docker compose -p "$MEASURE_PROJECT" --env-file "$MEASURE_ENV" up -d --build db server
+MEASURE_PROJECT="$MEASURE_PROJECT" SIGNALDOCK_ENV_FILE="$MEASURE_ENV" \
   scripts/device-measure.sh emulator-5584 normal          # or: normal offline burst (default: all three)
-docker compose -p signaldock-measure --env-file "$MEASURE_ENV" down      # keeps the volume
+docker compose -p "$MEASURE_PROJECT" --env-file "$MEASURE_ENV" down      # keeps the volume
 ```
 
 It writes `perf/sdk-results/<api>-<scenario>/` and `perf/sdk-results/summary.md` (the committed results came from the owner's runs; a new run overwrites that folder in your clone, so use a scratch clone). The `normal` scenario ran for this guide. `offline` and `burst` did not.
@@ -89,7 +90,7 @@ The harness needs `k6` and Python 3. A full pilot or overload run takes several 
 | Physical device, same Wi-Fi | `http://<host LAN address>:8080`. Compose publishes the server on `127.0.0.1` only, so run the server from the host (`docker compose up -d db`, then Ktor from `server/`) with `SIGNALDOCK_BIND_HOST=0.0.0.0` ([ADR-0008](adr/0008-dashboard-and-compose-delivery.md)) | not verified here: no physical device |
 | Physical device, USB | `adb reverse tcp:8080 tcp:8080`, then the app reaches the server as `127.0.0.1:8080`. Remove it with `adb reverse --remove tcp:8080` | the `adb reverse` command ran against an emulator only; not verified on a device |
 
-The apps allow cleartext HTTP to `10.0.2.2` only (network security config). For a physical device, both routes above give a network path, but the apps still refuse plain HTTP to a LAN address or `127.0.0.1`. Use an HTTPS endpoint, or add your address to the app's network security config. That is a code change and is outside this release. Opening the Dashboard from another machine is also not supported: it binds to `127.0.0.1`.
+The apps allow cleartext HTTP to `10.0.2.2` only (network security config). For a physical device, both routes above give a network path, but the apps still refuse plain HTTP to a LAN address or `127.0.0.1`. Use an HTTPS endpoint (for example a TLS proxy in front of the server). Do not send the collection key over plain HTTP on a shared network. Opening the Dashboard from another machine is also not supported: it binds to `127.0.0.1`.
 
 ## Shutdown and reset
 
