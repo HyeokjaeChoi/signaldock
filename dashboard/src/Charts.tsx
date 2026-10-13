@@ -1,8 +1,8 @@
-import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Legend, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { EventNameCounts, EventTimeCounts } from "../../generated/typescript/models";
 import { useTranslation } from "./i18n";
 import { formatNumber } from "../../web-shared/i18n";
-import { AXIS, GRID, SERIES, TOOLTIP } from "../../web-shared/theme";
+import { AXIS, GRID, LEGEND, SERIES, TOOLTIP } from "../../web-shared/theme";
 
 // Counts per name: every bar carries its number, so the chart does not rely on color or on reading the axis.
 // A per-name trend is not derivable: by-time counts are not split by name (Q140 allows it only if derivable; ADR-0016).
@@ -19,6 +19,7 @@ export function NameChart({ counts }: { counts: EventNameCounts }) {
           <XAxis {...AXIS} type="number" allowDecimals={false} tickFormatter={number} />
           <YAxis {...AXIS} type="category" dataKey="name" width={150} interval={0} />
           <Tooltip {...TOOLTIP} formatter={number} />
+          <Legend {...LEGEND} />
           <Bar dataKey="count" name={t("counts.series")} fill={SERIES[0]} radius={[0, 3, 3, 0]} isAnimationActive={false}>
             <LabelList dataKey="count" position="right" formatter={number} fill="var(--fg)" fontSize={12} />
           </Bar>
@@ -40,6 +41,7 @@ export function TimeChart({ counts, label }: { counts: EventTimeCounts; label: (
         <XAxis {...AXIS} dataKey="label" minTickGap={16} />
         <YAxis {...AXIS} allowDecimals={false} tickFormatter={number} width={44} />
         <Tooltip {...TOOLTIP} formatter={number} />
+        <Legend {...LEGEND} />
         <Bar dataKey="count" name={t("counts.series")} fill={SERIES[0]} radius={[3, 3, 0, 0]} isAnimationActive={false} />
       </BarChart>
     </ResponsiveContainer>

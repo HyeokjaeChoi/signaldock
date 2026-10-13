@@ -5,9 +5,11 @@ import { dateIn } from "./period";
 import type { QueryState } from "./polling";
 
 /** Events received on calendar date `day` (`YYYY-MM-DD`, project timezone): the sum of by-time buckets that start on that date.
- *  `undefined` when the shown period has no bucket on that date (a past custom range). Filters in force apply to the counts. */
+ *  `undefined` when the shown period has no bucket on that date (a past custom range), and when the server reports another
+ *  timezone: its day buckets then start on other dates, so no exact total for the project date can be built (the page shows
+ *  the mismatch notice). Filters in force apply to the counts. */
 export function receivedOnDay(counts: EventTimeCounts | undefined, day: string, timeZone: string): number | undefined {
-  if (!counts) return undefined;
+  if (!counts || counts.timeZone !== timeZone) return undefined;
   const buckets = counts.items.filter((b) => dateIn(new Date(b.start).getTime(), timeZone) === day);
   return buckets.length ? buckets.reduce((sum, b) => sum + b.count, 0) : undefined;
 }

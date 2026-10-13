@@ -19,6 +19,10 @@ describe("receivedOnDay", () => {
     expect(receivedOnDay(undefined, "2026-10-13", TZ)).toBeUndefined();
     expect(receivedOnDay(hourly([["2026-10-01T00:00:00Z", 5]]), "2026-10-13", TZ)).toBeUndefined();
   });
+  it("is withheld when the server reports another timezone (its day buckets start on other dates)", () => {
+    const counts = { ...hourly([["2026-10-12T15:00:00Z", 3]]), timeZone: "America/Los_Angeles" } as EventTimeCounts;
+    expect(receivedOnDay(counts, "2026-10-13", TZ)).toBeUndefined();
+  });
   it("is 0 for a bucket of the day with no events", () => {
     expect(receivedOnDay(hourly([["2026-10-12T15:00:00Z", 0]]), "2026-10-13", TZ)).toBe(0);
   });
