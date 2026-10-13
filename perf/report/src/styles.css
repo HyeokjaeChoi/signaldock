@@ -33,7 +33,7 @@ td .badge { margin-left: 0; }
 td .note { min-width: 15rem; margin: var(--space-1) 0 0; }
 /* SDK table: detail lines are small notes with a narrow max width; the Drain note sits right under its value. */
 .sdk-table thead th { white-space: normal; vertical-align: bottom; min-width: 5rem; }
-.sdk-table td:nth-child(1), .sdk-table td:nth-child(2) { min-width: 11rem; }
+.sdk-table td:nth-child(1), .sdk-table td:nth-child(2) { min-width: 10.5rem; }
 .sdk-table td .note { min-width: 0; max-width: 15rem; font-size: var(--text-xs); }
 .sdk-table td.num .note { margin-left: auto; text-align: right; max-width: 10rem; }
 .nowrap { white-space: nowrap; }

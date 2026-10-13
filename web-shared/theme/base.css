@@ -63,7 +63,7 @@ button.link:active:not(:disabled) { transform: none; }
 button.link[aria-current="true"] { font-weight: 650; }
 /* Copy: one look everywhere. Ghost at rest on hover devices, border shown when its row/definition is hovered or focused; touch always shows the border.
    min-width reserves room for "Copied" and "Copy failed", so the label change does not move its neighbours. */
-button.copy { min-height: 1.25rem; min-width: 5rem; padding: 0 0.5rem; font-size: var(--text-xs); color: var(--fg-muted); vertical-align: middle; text-align: center; }
+button.copy { margin-left: 0.5rem; min-height: 1.25rem; min-width: 4.5rem; padding: 0 0.5rem; font-size: var(--text-xs); color: var(--fg-muted); vertical-align: middle; text-align: center; }
 @media (hover: hover) and (pointer: fine) {
   button.copy { border-color: transparent; background: transparent; }
   tr:hover button.copy, tr:focus-within button.copy, dd:hover button.copy, dd:focus-within button.copy, h3:hover button.copy, h3:focus-within button.copy { border-color: var(--line-strong); background: var(--surface-raised); }
@@ -77,7 +77,7 @@ label { color: var(--fg-muted); font-size: var(--text-sm); }
 
 /* Segmented switch (theme) */
 .seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); overflow: hidden; }
-.seg button { border: 0; border-radius: 0; background: transparent; color: var(--fg-muted); min-height: calc(2rem - 2px); }
+.seg button { min-width: 3.5rem; border: 0; border-radius: 0; background: transparent; color: var(--fg-muted); min-height: calc(2rem - 2px); }
 .seg button:active:not(:disabled) { transform: none; }
 .seg button:focus-visible { outline-offset: -2px; }
 .seg button + button { border-left: 1px solid var(--line-strong); }

@@ -14,9 +14,9 @@ main { max-width: 1440px; margin: 0 auto; padding: var(--space-4) var(--space-4)
 .toolbar-form { display: contents; }
 .toolbar .field input { width: clamp(7.5rem, 11vw, 11rem); }
 /* The three buttons stay together (never one alone on row 2) and sit at the end of the row. */
-.toolbar-actions { display: flex; gap: var(--space-2); align-items: flex-end; margin-left: auto; }
+.toolbar-actions { display: flex; gap: var(--space-2); align-items: flex-end; }
 .toolbar-actions button { white-space: nowrap; }
-.toolbar-note { margin: 0; align-self: flex-end; min-height: 2rem; display: flex; align-items: center; }
+.toolbar-note { margin: 0; flex-basis: 100%; }
 .toolbar p.error { margin: var(--space-2) 0 0; }
 
 .statusbar { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-5); margin-bottom: var(--space-4); }
@@ -25,7 +25,7 @@ main { max-width: 1440px; margin: 0 auto; padding: var(--space-4) var(--space-4)
 .status strong { color: var(--fg); font-weight: 600; }
 
 /* Split layout: event table left, selected event right */
-.split { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(22rem, 1fr); gap: var(--space-4); align-items: start; margin-bottom: var(--space-4); }
+.split { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(22rem, 1fr); gap: var(--space-4); align-items: start; margin-bottom: var(--space-4); }
 .pane-scroll, .detail-pane > .card { max-height: max(30rem, calc(100dvh - 13rem)); overflow: auto; }
 .list-card .note { margin-bottom: var(--space-3); }
 .list-card td { white-space: nowrap; }
@@ -34,9 +34,11 @@ main { max-width: 1440px; margin: 0 auto; padding: var(--space-4) var(--space-4)
 .detail-head h2 { margin: 0; }
 .detail h3 { margin-top: var(--space-4); }
 .detail-empty { display: grid; place-items: center; min-height: 12rem; text-align: center; }
-dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-1) var(--space-5); margin: 0; font-size: var(--text-sm); }
+dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-1) var(--space-4); margin: 0; font-size: var(--text-sm); }
 dt { color: var(--fg-muted); }
-dd { margin: 0; overflow-wrap: anywhere; }
+dd { margin: 0; overflow-wrap: anywhere; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); }
+dd code { font-size: var(--text-xs); min-width: 0; }
+dd button.copy { margin-left: 0; min-width: 4rem; }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr)); gap: var(--space-4); align-items: stretch; }
 /* The chart fills its card, so two cards in a row have equal height and no dead space. */

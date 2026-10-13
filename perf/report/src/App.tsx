@@ -123,10 +123,20 @@ function Chart({ title, children, height = 240 }: { title: string; children: Rea
   );
 }
 
-/** Y headroom: ~10 % above the tallest bar, so bars never touch the top edge. */
-const headroom = (max: number) => Math.ceil(max * 1.1);
-/** Seconds axis: starts at 0, whole numbers, rounded up to a multiple of 10. */
-const secondsAxis = { type: "number", allowDecimals: false, tickCount: 7, domain: [0, (max: number) => Math.ceil(max / 10) * 10] } as const;
+/**
+ * Y axis with ~10 % headroom, a top that is a multiple of a 1-2-2.5-5 step (x10^n), and evenly spaced ticks (at most 5 intervals).
+ * Spread the result into YAxis.
+ */
+function niceY(values: (number | null | undefined)[], pad = 1.1) {
+  const max = Math.max(0, ...values.filter((v): v is number => typeof v === "number" && Number.isFinite(v)));
+  const target = max * pad || 1;
+  let step = 1;
+  for (let e = -3; e <= 12 && target / step > 5; e++) step = [1, 2, 2.5, 5].map((m) => m * 10 ** e).find((c) => target / c <= 5) ?? step;
+  const intervals = Math.ceil(target / step - 1e-9);
+  return { domain: [0, intervals * step] as [number, number], ticks: Array.from({ length: intervals + 1 }, (_, i) => +(i * step).toFixed(6)), allowDecimals: step < 1 || undefined };
+}
+/** Seconds axis: starts at 0 (never below, even if a sample has t < 0), whole numbers, evenly spaced nice ticks. */
+const secondsX = (ts: number[]) => ({ type: "number", allowDataOverflow: true, ...niceY(ts, 1) }) as const;
 
 /** Horizontal grouped bars: one row per run, so long run names never collide on an axis (issue 28). */
 const rowHeight = (rows: number, perRow: number) => Math.max(150, rows * perRow + 64);
@@ -144,7 +154,7 @@ function Compare({ runs, targets }: { runs: Run[]; targets: Record<string, numbe
       <div className="grid">
         {EPS.map((ep) => (
           <Chart key={ep} title={t("compare.chart", { endpoint: ep, target: n(targets[ep]) })} height={rowHeight(sel.length, 70)}>
-            <BarChart layout="vertical" data={sel.map((r) => ({ name: `${runLabel(t, n, r)} (${r.run_id})`, p50: r.endpoints[ep].p50_ms, p95: r.endpoints[ep].p95_ms, max: r.endpoints[ep].max_ms }))} margin={{ left: 8, right: 24 }}>
+            <BarChart layout="vertical" data={sel.map((r) => ({ name: `${runLabel(t, n, r)} (${r.run_id})`, p50: r.endpoints[ep].p50_ms, p95: r.endpoints[ep].p95_ms, max: r.endpoints[ep].max_ms }))} margin={{ top: 18, left: 8, right: 24 }}>
               <PatternDefs />
               <CartesianGrid {...GRID} horizontal={false} />
               <XAxis {...AXIS} type="number" tickFormatter={n} />
@@ -194,11 +204,11 @@ function Detail({ r }: { r: Run }) {
         <Chart title={t("detail.hikariChart")}>
           <LineChart data={r.hikari_series.map(([ts, active, idle, pending]) => ({ t: ts, active, idle, pending }))}>
             <CartesianGrid {...GRID} />
-            <XAxis {...AXIS} {...secondsAxis} dataKey="t" height={AXIS_LABEL_HEIGHT} label={axisLabel(t("axis.seconds"))} />
-            <YAxis {...AXIS} allowDecimals={false} />
+            <XAxis {...AXIS} {...secondsX(r.hikari_series.map((h) => h[0]))} dataKey="t" height={AXIS_LABEL_HEIGHT} label={axisLabel(t("axis.seconds"))} />
+            <YAxis {...AXIS} {...niceY(r.hikari_series.flatMap(([, a, i, p]) => [a, i, p]))} />
             <Tooltip {...TOOLTIP} />
             <Legend {...LEGEND} />
-            <ReferenceLine x={r.warmup_s} stroke="var(--fg-muted)" strokeDasharray="4 4" />
+            <ReferenceLine x={r.warmup_s} stroke="var(--fg-muted)" strokeDasharray="4 4" label={{ value: t("detail.measurementStart"), fontSize: 11, fill: "var(--fg-muted)", position: "insideTopRight" }} />
             <Line dataKey="active" stroke={SERIES[0]} strokeDasharray={SERIES_DASH[0]} strokeWidth={2} dot={false} isAnimationActive={false} />
             <Line dataKey="idle" stroke={SERIES[1]} strokeDasharray={SERIES_DASH[1]} strokeWidth={2} dot={false} isAnimationActive={false} />
             <Line dataKey="pending" stroke="var(--bad)" strokeDasharray={SERIES_DASH[2]} strokeWidth={2} dot={false} isAnimationActive={false} />
@@ -210,8 +220,8 @@ function Detail({ r }: { r: Run }) {
         <Chart title={t("detail.cpuChart")}>
           <LineChart data={r.container_series}>
             <CartesianGrid {...GRID} />
-            <XAxis {...AXIS} {...secondsAxis} dataKey="t" height={AXIS_LABEL_HEIGHT} label={axisLabel(t("axis.seconds"))} />
-            <YAxis {...AXIS} />
+            <XAxis {...AXIS} {...secondsX(r.container_series.map((c) => c.t))} dataKey="t" height={AXIS_LABEL_HEIGHT} label={axisLabel(t("axis.seconds"))} />
+            <YAxis {...AXIS} {...niceY(r.container_series.flatMap((c) => [c.server_cpu_pct, c.db_cpu_pct]))} />
             <Tooltip {...TOOLTIP} />
             <Legend {...LEGEND} />
             <Line dataKey="server_cpu_pct" name={t("detail.server")} stroke={SERIES[0]} strokeDasharray={SERIES_DASH[0]} strokeWidth={2} dot={false} isAnimationActive={false} />
@@ -221,8 +231,8 @@ function Detail({ r }: { r: Run }) {
         <Chart title={t("detail.memChart")}>
           <LineChart data={r.container_series}>
             <CartesianGrid {...GRID} />
-            <XAxis {...AXIS} {...secondsAxis} dataKey="t" height={AXIS_LABEL_HEIGHT} label={axisLabel(t("axis.seconds"))} />
-            <YAxis {...AXIS} />
+            <XAxis {...AXIS} {...secondsX(r.container_series.map((c) => c.t))} dataKey="t" height={AXIS_LABEL_HEIGHT} label={axisLabel(t("axis.seconds"))} />
+            <YAxis {...AXIS} {...niceY(r.container_series.flatMap((c) => [c.server_mem_mib, c.db_mem_mib]))} />
             <Tooltip {...TOOLTIP} />
             <Legend {...LEGEND} />
             <Line dataKey="server_mem_mib" name={t("detail.server")} stroke={SERIES[0]} strokeDasharray={SERIES_DASH[0]} strokeWidth={2} dot={false} isAnimationActive={false} />
@@ -309,7 +319,7 @@ function OverloadRun({ o }: { o: Overload }) {
               <CartesianGrid {...GRID} vertical={false} />
               {phaseBands(t, p, rows.map((r) => r.t), false)}
               <XAxis {...AXIS} dataKey="t" interval="preserveStartEnd" minTickGap={24} height={AXIS_LABEL_HEIGHT} label={axisLabel(t("axis.seconds"))} />
-              <YAxis {...AXIS} allowDecimals={false} width={44} domain={[0, headroom]} />
+              <YAxis {...AXIS} width={44} {...niceY(rows.map((r) => r.n))} />
               <Tooltip {...TOOLTIP} />
               <Legend {...LEGEND} />
               <Bar dataKey="200" stackId="a" isAnimationActive={false} fill={BAR_FILL.ok} />
@@ -322,8 +332,8 @@ function OverloadRun({ o }: { o: Overload }) {
           <LineChart data={p95Rows} margin={{ top: 22 }}>
             <CartesianGrid {...GRID} vertical={false} />
             {phaseBands(t, p, p95Rows.map((r) => r.t), true)}
-            <XAxis {...AXIS} {...secondsAxis} dataKey="t" height={AXIS_LABEL_HEIGHT} label={axisLabel(t("axis.seconds"))} />
-            <YAxis {...AXIS} width={44} domain={[0, headroom]} />
+            <XAxis {...AXIS} {...secondsX(p95Rows.map((r) => r.t))} dataKey="t" height={AXIS_LABEL_HEIGHT} label={axisLabel(t("axis.seconds"))} />
+            <YAxis {...AXIS} width={44} {...niceY(p95Rows.map((r) => r.p95))} />
             <Tooltip {...TOOLTIP} />
             <Line dataKey="p95" stroke={SERIES[0]} strokeDasharray={SERIES_DASH[0]} strokeWidth={2} dot={false} isAnimationActive={false} />
           </LineChart>
@@ -373,8 +383,8 @@ function SdkResults({ data, error }: { data: SdkData | null; error: string }) {
                   <td className="nowrap">{r.actual_rate_per_s == null ? t("common.na") : `${r.target_rate_per_s == null ? t("sdk.backToBack") : n(r.target_rate_per_s)} / ${n(r.actual_rate_per_s)}`}</td>
                   <td className="nowrap">{tm ? `${f1(tm.p50)} / ${f1(tm.p95)} / ${f1(tm.max)}` : t("common.na")}</td>
                   <td className="num">{r.drain?.seconds == null ? t("common.na") : <span className="nowrap">{f1(r.drain.seconds)}</span>}{r.drain?.seconds != null && wait != null && <div className="note">{t("sdk.drainWait", { wait: f1(wait) })}</div>}</td>
-                  <td>{fb ? t("sdk.filesValue", { db: n(fb["queue.db"] ?? 0), wal: n(fb["queue.db-wal"] ?? 0), shm: n(fb["queue.db-shm"] ?? 0) }) : t("common.na")}</td>
-                  <td>{r.pss_delta_kib == null ? t("common.na") : t(r.memory_basis === "store" ? "sdk.memoryStore" : "sdk.memoryDrain", { pss: n(r.pss_delta_kib), heap: r.heap_delta_kib == null ? t("common.na") : n(r.heap_delta_kib) })}</td>
+                  <td className="nowrap">{fb ? <><div>{t("sdk.filesDb", { value: n(fb["queue.db"] ?? 0) })}</div><div>{t("sdk.filesWal", { value: n(fb["queue.db-wal"] ?? 0) })}</div><div>{t("sdk.filesShm", { value: n(fb["queue.db-shm"] ?? 0) })}</div></> : t("common.na")}</td>
+                  <td className="nowrap">{r.pss_delta_kib == null ? t("common.na") : <><div>{t("sdk.memoryPss", { value: n(r.pss_delta_kib) })}</div><div>{t("sdk.memoryHeap", { value: r.heap_delta_kib == null ? t("common.na") : n(r.heap_delta_kib) })}</div>{r.memory_basis === "store" && <div className="note">{t("sdk.memoryStoreNote")}</div>}</>}</td>
                   <td className="nowrap">{r.missing_on_server == null ? t("common.na") : `${n(r.missing_on_server)} / ${r.duplicate_server_rows == null ? t("common.na") : n(r.duplicate_server_rows)}`}</td>
                 </tr>);
             })}</tbody>
