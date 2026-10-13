@@ -354,7 +354,7 @@ function SdkResults({ data, error }: { data: SdkData | null; error: string }) {
       {!data && <p className="note">{error || t("app.loading")}</p>}
       {data && (
         <>
-          <div className="table-wrap"><table>
+          <div className="table-wrap"><table className="sdk-table">
             <thead>
               <tr>
                 <th scope="col">{t("sdk.avd")}</th><th scope="col">{t("sdk.scenarioHeader")}</th><th scope="col">{t("sdk.verdict")}</th><th scope="col">{t("sdk.rate")}</th><th scope="col">{t("sdk.track")}</th><th scope="col" className="num">{t("sdk.drain")}</th>
@@ -373,7 +373,7 @@ function SdkResults({ data, error }: { data: SdkData | null; error: string }) {
                   <td className="nowrap">{r.actual_rate_per_s == null ? t("common.na") : `${r.target_rate_per_s == null ? t("sdk.backToBack") : n(r.target_rate_per_s)} / ${n(r.actual_rate_per_s)}`}</td>
                   <td className="nowrap">{tm ? `${f1(tm.p50)} / ${f1(tm.p95)} / ${f1(tm.max)}` : t("common.na")}</td>
                   <td className="num">{r.drain?.seconds == null ? t("common.na") : <span className="nowrap">{f1(r.drain.seconds)}</span>}{r.drain?.seconds != null && wait != null && <div className="note">{t("sdk.drainWait", { wait: f1(wait) })}</div>}</td>
-                  <td className="nowrap">{fb ? t("sdk.filesValue", { db: n(fb["queue.db"] ?? 0), wal: n(fb["queue.db-wal"] ?? 0), shm: n(fb["queue.db-shm"] ?? 0) }) : t("common.na")}</td>
+                  <td>{fb ? t("sdk.filesValue", { db: n(fb["queue.db"] ?? 0), wal: n(fb["queue.db-wal"] ?? 0), shm: n(fb["queue.db-shm"] ?? 0) }) : t("common.na")}</td>
                   <td>{r.pss_delta_kib == null ? t("common.na") : t(r.memory_basis === "store" ? "sdk.memoryStore" : "sdk.memoryDrain", { pss: n(r.pss_delta_kib), heap: r.heap_delta_kib == null ? t("common.na") : n(r.heap_delta_kib) })}</td>
                   <td className="nowrap">{r.missing_on_server == null ? t("common.na") : `${n(r.missing_on_server)} / ${r.duplicate_server_rows == null ? t("common.na") : n(r.duplicate_server_rows)}`}</td>
                 </tr>);
