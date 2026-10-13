@@ -59,7 +59,8 @@ function useFmt() {
     /** One decimal place, in the number format of the selected language. */
     f1: (v: number | null | undefined) => (v == null ? t("common.na") : formatNumber(v, lang, { minimumFractionDigits: 1, maximumFractionDigits: 1 })),
     n: (v: number) => formatNumber(v, lang),
-    pct: (v: number) => formatNumber(v, lang, { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
+    /** `v` is already a percentage (63.8 means 63.8 %); Intl adds the sign in the style of the language. */
+    pct: (v: number) => formatNumber(v / 100, lang, { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 }),
   };
 }
 
@@ -171,9 +172,9 @@ function Detail({ r }: { r: Run }) {
       {reasons(t, r.invalid_reasons, r.fail_reasons).map((x) => <p key={x} className="reason">{x}</p>)}
       <h3>{t("detail.latency")}</h3>
       <div className="table-wrap"><table>
-        <thead><tr><th>{t("detail.endpoint")}</th><th>{t("detail.samples")}</th><th>p50</th><th>p95</th><th>{t("common.max")}</th><th>{t("detail.targetP95")}</th><th>{t("detail.outcomes")}</th></tr></thead>
+        <thead><tr><th>{t("detail.endpoint")}</th><th className="num">{t("detail.samples")}</th><th className="num">p50</th><th className="num">p95</th><th className="num">{t("common.max")}</th><th className="num">{t("detail.targetP95")}</th><th>{t("detail.outcomes")}</th></tr></thead>
         <tbody>{EPS.map((ep) => { const x = r.endpoints[ep]; return (
-          <tr key={ep}><td>{ep}</td><td>{n(x.samples)}</td><td>{f1(x.p50_ms)}</td><td className={x.p95_ms != null && x.p95_ms > x.target_p95_ms ? "bad" : ""}>{f1(x.p95_ms)}</td><td>{f1(x.max_ms)}</td><td>{n(x.target_p95_ms)}</td><td>{JSON.stringify(x.outcomes)}</td></tr>); })}</tbody>
+          <tr key={ep}><td>{ep}</td><td className="num">{n(x.samples)}</td><td className="num">{f1(x.p50_ms)}</td><td className={x.p95_ms != null && x.p95_ms > x.target_p95_ms ? "num bad" : "num"}>{f1(x.p95_ms)}</td><td className="num">{f1(x.max_ms)}</td><td className="num">{n(x.target_p95_ms)}</td><td>{JSON.stringify(x.outcomes)}</td></tr>); })}</tbody>
       </table></div>
       <h3>{t("detail.validity")}</h3>
       <ul>
@@ -226,18 +227,18 @@ function Detail({ r }: { r: Run }) {
       </div>
       <div className="table-wrap"><table>
         <caption>{t("detail.throttling")}</caption>
-        <thead><tr><th>{t("detail.container")}</th><th>{t("detail.periods")}</th><th>{t("detail.throttledPeriods")}</th><th>{t("detail.throttledMs")}</th></tr></thead>
+        <thead><tr><th>{t("detail.container")}</th><th className="num">{t("detail.periods")}</th><th className="num">{t("detail.throttledPeriods")}</th><th className="num">{t("detail.throttledMs")}</th></tr></thead>
         <tbody>{Object.entries(r.cgroup).map(([k, v]) => (
-          <tr key={k}><td>{k}</td><td>{v.nr_periods == null ? t("common.na") : n(v.nr_periods)}</td><td>{v.nr_throttled == null ? t("common.na") : n(v.nr_throttled)}</td><td>{v.throttled_usec == null ? t("common.na") : f1(v.throttled_usec / 1000)}</td></tr>))}</tbody>
+          <tr key={k}><td>{k}</td><td className="num">{v.nr_periods == null ? t("common.na") : n(v.nr_periods)}</td><td className="num">{v.nr_throttled == null ? t("common.na") : n(v.nr_throttled)}</td><td className="num">{v.throttled_usec == null ? t("common.na") : f1(v.throttled_usec / 1000)}</td></tr>))}</tbody>
       </table></div>
       <h3>{t("detail.statements")}</h3>
       {r.statements ? (
         <>
           <p className="note">{t("detail.statementsNote", { statements: n(r.statements.statements), harness: n(r.statements.harness_statements) })}</p>
           <div className="table-wrap"><table>
-            <thead><tr><th>{t("detail.calls")}</th><th>{t("detail.rows")}</th><th>{t("detail.totalMs")}</th><th>{t("detail.meanMs")}</th><th>{t("detail.maxMs")}</th><th>{t("detail.query")}</th></tr></thead>
+            <thead><tr><th className="num">{t("detail.calls")}</th><th className="num">{t("detail.rows")}</th><th className="num">{t("detail.totalMs")}</th><th className="num">{t("detail.meanMs")}</th><th className="num">{t("detail.maxMs")}</th><th>{t("detail.query")}</th></tr></thead>
             <tbody>{top.map((s, i) => (
-              <tr key={i}><td>{n(s.calls)}</td><td>{n(s.rows)}</td><td>{f1(s.total_exec_ms)}</td><td>{f1(s.mean_exec_ms)}</td><td>{f1(s.max_exec_ms)}</td><td><code>{s.query}</code></td></tr>))}</tbody>
+              <tr key={i}><td className="num">{n(s.calls)}</td><td className="num">{n(s.rows)}</td><td className="num">{f1(s.total_exec_ms)}</td><td className="num">{f1(s.mean_exec_ms)}</td><td className="num">{f1(s.max_exec_ms)}</td><td><code>{s.query}</code></td></tr>))}</tbody>
           </table></div>
         </>
       ) : <p className="note">{t("detail.noStatements")}</p>}
@@ -288,9 +289,9 @@ function OverloadRun({ o }: { o: Overload }) {
       {reasons(t, o.invalid_reasons, o.fail_reasons).map((x) => <p key={x} className="reason">{x}</p>)}
       <h3>{t("overload.perPhase")}</h3>
       <div className="table-wrap"><table>
-        <thead><tr><th>{t("overload.phase")}</th><th>{t("overload.endpoint")}</th><th>{t("overload.requests")}</th><th>{t("overload.statusCounts")}</th><th>{t("overload.retryAfter")}</th><th>{t("overload.errorCodes")}</th><th>p50</th><th>p95</th><th>{t("overload.p95Ok")}</th><th>{t("common.max")}</th></tr></thead>
+        <thead><tr><th>{t("overload.phase")}</th><th>{t("overload.endpoint")}</th><th className="num">{t("overload.requests")}</th><th>{t("overload.statusCounts")}</th><th>{t("overload.retryAfter")}</th><th>{t("overload.errorCodes")}</th><th className="num">p50</th><th className="num">p95</th><th className="num">{t("overload.p95Ok")}</th><th className="num">{t("common.max")}</th></tr></thead>
         <tbody>{PHASES.flatMap((ph) => OEPS.filter((ep) => o.phases[ph]?.[ep]).map((ep) => { const x = o.phases[ph][ep]; return (
-          <tr key={ph + ep}><td>{t(`overload.phases.${ph}`)}</td><td>{ep}</td><td>{n(x.requests)}</td><td>{counts(x.status)}</td><td>{counts(x.retry_after)}</td><td>{counts(x.error_codes)}</td><td>{f1(x.p50_ms)}</td><td>{f1(x.p95_ms)}</td><td>{f1(x.p95_ok_ms)}</td><td>{f1(x.max_ms)}</td></tr>); }))}</tbody>
+          <tr key={ph + ep}><td>{t(`overload.phases.${ph}`)}</td><td>{ep}</td><td className="num">{n(x.requests)}</td><td>{counts(x.status)}</td><td>{counts(x.retry_after)}</td><td>{counts(x.error_codes)}</td><td className="num">{f1(x.p50_ms)}</td><td className="num">{f1(x.p95_ms)}</td><td className="num">{f1(x.p95_ok_ms)}</td><td className="num">{f1(x.max_ms)}</td></tr>); }))}</tbody>
       </table></div>
       <h3>{t("overload.series", { from: n(p.base_s), to: n(p.base_s + p.over_s) })}</h3>
       <div className="grid">
@@ -476,7 +477,7 @@ function KpiStrip({ data, current }: { data: Data; current: Run | undefined }) {
         sub={collect && current ? t("kpi.p95Sub", { run: current.run_id, target: n(collect.target_p95_ms) }) : undefined} />
       <Kpi href={current ? "#latency" : undefined} label={t("kpi.max")} value={collect?.max_ms == null ? na : t("kpi.ms", { value: f1(collect.max_ms) })}
         sub={collect && current ? t("kpi.maxSub", { run: current.run_id }) : undefined} />
-      <Kpi href={overload ? "#overload" : undefined} label={t("kpi.shed")} value={shed503 === undefined ? na : t("kpi.percent", { value: pct(shed503) })}
+      <Kpi href={overload ? "#overload" : undefined} label={t("kpi.shed")} value={shed503 === undefined ? na : pct(shed503)}
         sub={shed503 === undefined || !overload ? undefined : t("kpi.shedSub", { run: overload.run_id })} />
       <Kpi href="#runs" label={t("kpi.dropped")} value={n(dropped)} sub={t("kpi.droppedSub")} />
       <Kpi href="#runs" label={t("kpi.runs")} value={n(data.runs.length + (data.overload ?? []).length)}
@@ -520,12 +521,12 @@ export function App() {
           <section className="card section" id="runs">
             <h2>{t("runs.title")}</h2>
             <div className="table-wrap"><table>
-              <thead><tr><th>{t("runs.run")}</th><th>{t("runs.status")}</th><th>{t("runs.combination")}</th><th>{t("runs.pool")}</th><th>{t("runs.rep")}</th><th>{t("runs.injection")}</th><th>{t("runs.dropped")}</th><th>{t("runs.nonOk")}</th><th>{t("runs.skippedTicks")}</th></tr></thead>
+              <thead><tr><th>{t("runs.run")}</th><th>{t("runs.status")}</th><th>{t("runs.combination")}</th><th className="num">{t("runs.pool")}</th><th className="num">{t("runs.rep")}</th><th className="num">{t("runs.injection")}</th><th className="num">{t("runs.dropped")}</th><th>{t("runs.nonOk")}</th><th className="num">{t("runs.skippedTicks")}</th></tr></thead>
               <tbody>{data.runs.map((r) => (
                 <tr key={r.run_id} className={r.run_id === current?.run_id ? "sel" : ""}>
-                  <td><button type="button" aria-pressed={r.run_id === current?.run_id} onClick={() => setId(r.run_id)}>{r.run_id}</button></td><td><Badge r={r} /></td><td>{comboLabel(t, n, r)}</td><td>{n(r.pool_size)}</td><td>{n(r.repetition)}</td>
-                  <td>{n(r.injection.started)} / {n(r.injection.scheduled)}</td><td>{n(r.injection.dropped)}</td>
-                  <td>{Object.keys(r.non_ok_outcomes).length ? t("common.yes") : n(0)}</td><td>{n(Object.values(r.skipped_ticks).reduce((a, b) => a + b, 0))}</td>
+                  <td><button type="button" aria-pressed={r.run_id === current?.run_id} onClick={() => setId(r.run_id)}>{r.run_id}</button></td><td><Badge r={r} /></td><td>{comboLabel(t, n, r)}</td><td className="num">{n(r.pool_size)}</td><td className="num">{n(r.repetition)}</td>
+                  <td className="num">{n(r.injection.started)} / {n(r.injection.scheduled)}</td><td className="num">{n(r.injection.dropped)}</td>
+                  <td>{Object.keys(r.non_ok_outcomes).length ? t("common.yes") : n(0)}</td><td className="num">{n(Object.values(r.skipped_ticks).reduce((a, b) => a + b, 0))}</td>
                 </tr>))}</tbody>
             </table></div>
           </section>

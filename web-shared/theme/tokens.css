@@ -4,6 +4,8 @@
    status colors (--ok, --warn, --bad) and --accent are at least 4.5:1 on --surface. */
 :root {
   color-scheme: dark;
+  /* Select chevron: a data URI cannot read a variable, so each theme holds its own stroke (the --fg-muted value). */
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%239ba7b6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5'/%3E%3C/svg%3E");
 
   /* Surfaces and lines */
   --bg: #0d1117;
@@ -73,6 +75,7 @@
 
 :root[data-theme="light"] {
   color-scheme: light;
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%23566377' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5'/%3E%3C/svg%3E");
 
   --bg: #f4f6f9;
   --surface: #ffffff;

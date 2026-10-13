@@ -125,6 +125,7 @@ describe("language", () => {
     expect(within(kpis).getByText("screen_opened")).toBeTruthy();
     expect(within(kpis).getByText(translate(en, "en", "kpi.topCount", { value: "9" }))).toBeTruthy();
     expect(within(kpis).getByText(en.kpi.live)).toBeTruthy();
+    expect(screen.getByText(en.status.events).parentElement!.querySelector(".badge")).toBeNull(); // the status bar badge shows only when not live
     expect(api.countsByName).toHaveBeenCalledTimes(1); // the cards add no request
   });
 

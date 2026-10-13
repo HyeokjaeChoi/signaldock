@@ -29,7 +29,6 @@ export const en = {
     runs: "Runs",
     runsSub: "{{pilot}} pilot, {{overload}} overload",
     ms: "{{value}} ms",
-    percent: "{{value}} %",
   },
   common: {
     na: "n/a",

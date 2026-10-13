@@ -27,7 +27,6 @@ export const ko = {
     runs: "실행 수",
     runsSub: "파일럿 {{pilot}}개, 과부하 {{overload}}개",
     ms: "{{value}} ms",
-    percent: "{{value}} %",
   },
   common: {
     na: "해당 없음",

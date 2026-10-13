@@ -32,7 +32,7 @@ function Status<D>({ label, state, tz, onRefresh, polled = true }: { label: stri
   const { health } = queryHealth([state], polled);
   return (
     <div className="status">
-      <span className={`badge ${HEALTH_BADGE[health]}`}>{t(`kpi.${health}`)}</span>
+      {health !== "live" && <span className={`badge ${HEALTH_BADGE[health]}`}>{t(`kpi.${health}`)}</span>}
       <strong>{label}</strong>:{" "}
       {state.lastSuccessAt ? t("status.lastSuccess", { time: clock(state.lastSuccessAt) }) : state.loading ? t("status.loading") : t("status.noData")}
       {state.error && (
@@ -233,16 +233,16 @@ export function App({ api = realApi }: { api?: Api }) {
             </select>
           </label>
           <form onSubmit={applyFilters} className="toolbar-form">
-            <label className="field">{t("controls.eventName")} <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></label>
-            <label className="field">installationId <input value={draft.installationId} onChange={(e) => setDraft({ ...draft, installationId: e.target.value })} /></label>
-            <label className="field">eventId <input value={draft.eventId} onChange={(e) => setDraft({ ...draft, eventId: e.target.value })} /></label>
+            <label className="field">{t("controls.eventName")} <input name="eventName" autoComplete="off" spellCheck={false} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></label>
+            <label className="field">installationId <input name="installationId" autoComplete="off" spellCheck={false} aria-invalid={filterError === "filter.installationIdUuid" || undefined} aria-describedby={filterError === "filter.installationIdUuid" ? "filter-error" : undefined} value={draft.installationId} onChange={(e) => setDraft({ ...draft, installationId: e.target.value })} /></label>
+            <label className="field">eventId <input name="eventId" autoComplete="off" spellCheck={false} aria-invalid={filterError === "filter.eventIdUuid" || undefined} aria-describedby={filterError === "filter.eventIdUuid" ? "filter-error" : undefined} value={draft.eventId} onChange={(e) => setDraft({ ...draft, eventId: e.target.value })} /></label>
             <button type="submit" className="primary">{t("controls.apply")}</button>
             <button type="button" onClick={() => { setDraft(EMPTY); setApplied(EMPTY); setFilterError(""); resetPaging(); }}>{t("controls.clear")}</button>
           </form>
           <button type="button" onClick={refreshAll}>{t("controls.refresh")}</button>
           <p className="note toolbar-note">{t("controls.exactOnly")}</p>
         </div>
-        {filterError && <p className="error" role="alert">{t(filterError)}</p>}
+        {filterError && <p id="filter-error" className="error" role="alert">{t(filterError)}</p>}
         {!period.ok && <p className="error" role="alert">{periodMessage(t, period)}</p>}
       </section>
 
@@ -294,11 +294,11 @@ export function App({ api = realApi }: { api?: Api }) {
       </div>
 
       <div className="grid">
-        <section className="card" aria-label={t("counts.byName")}>
+        <section className="card chart-card" aria-label={t("counts.byName")}>
           <h2>{t("counts.byName")}</h2>
           {byName.state.data && (byName.state.data.items.length ? <NameChart counts={byName.state.data} /> : <p>{t("counts.empty")}</p>)}
         </section>
-        <section className="card" aria-label={t("status.byTime")}>
+        <section className="card chart-card" aria-label={t("status.byTime")}>
           <h2>{t("counts.byTime", { bucket: byTime.state.data ? t(`buckets.${byTime.state.data.bucket}`) : "-" })}</h2>
           {byTime.state.data && <TimeChart counts={byTime.state.data} label={timeLabel} />}
         </section>

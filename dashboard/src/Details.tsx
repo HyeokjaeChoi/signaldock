@@ -25,9 +25,12 @@ export function CopyButton({ text, label }: { text: string; label: string }) {
     }
   };
   return (
-    <button type="button" className="copy" onClick={copy} aria-label={label}>
-      {result ? t(`copy.${result}`) : t("copy.copy")}
-    </button>
+    <>
+      <button type="button" className="copy" onClick={copy} aria-label={label}>
+        {result ? t(`copy.${result}`) : t("copy.copy")}
+      </button>
+      <span className="sr-only" role="status">{result ? t(`copy.${result}`) : ""}</span>
+    </>
   );
 }
 
@@ -92,7 +95,7 @@ function DetailBody({ detail, timeZone }: { detail: EventReceiptDetail; timeZone
               {Object.entries(detail.properties).map(([k, v]) => (
                 <tr key={k}>
                   <th scope="row">{k}</th>
-                  <td>{typeof v} </td>
+                  <td>{typeof v === "string" ? t("details.typeString") : typeof v === "number" ? t("details.typeNumber") : t("details.typeBoolean")}</td>
                   <td>{String(v)}</td>
                 </tr>
               ))}
