@@ -78,7 +78,7 @@ export function App({ api = realApi }: { api?: Api }) {
   const [customEnd, setCustomEnd] = useState("");
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [applied, setApplied] = useState<Draft>(EMPTY);
-  const [filterError, setFilterError] = useState("");
+  const [filterError, setFilterError] = useState<"filter.installationIdUuid" | "filter.eventIdUuid" | "">("");
   const [sort, setSort] = useState<Sort>("receivedAt_desc");
   // Cursor stack: [] is the first page. Only the first page polls (Q77); a past page refreshes manually and never jumps to the latest page.
   const [cursors, setCursors] = useState<string[]>([]);
@@ -105,8 +105,8 @@ export function App({ api = realApi }: { api?: Api }) {
   const resetPaging = () => setCursors([]);
   const applyFilters = (e: React.FormEvent) => {
     e.preventDefault();
-    if (draft.installationId && !UUID.test(draft.installationId)) return setFilterError(t("filter.installationIdUuid"));
-    if (draft.eventId && !UUID.test(draft.eventId)) return setFilterError(t("filter.eventIdUuid"));
+    if (draft.installationId && !UUID.test(draft.installationId)) return setFilterError("filter.installationIdUuid");
+    if (draft.eventId && !UUID.test(draft.eventId)) return setFilterError("filter.eventIdUuid");
     setFilterError("");
     setApplied(draft);
     resetPaging();
@@ -164,7 +164,7 @@ export function App({ api = realApi }: { api?: Api }) {
           <button type="button" onClick={() => { setDraft(EMPTY); setApplied(EMPTY); setFilterError(""); resetPaging(); }}>{t("controls.clear")}</button>
           <span className="note"> {t("controls.exactOnly")}</span>
         </form>
-        {filterError && <p className="error" role="alert">{filterError}</p>}
+        {filterError && <p className="error" role="alert">{t(filterError)}</p>}
         {!period.ok && <p className="error" role="alert">{periodMessage(t, period)}</p>}
       </section>
 

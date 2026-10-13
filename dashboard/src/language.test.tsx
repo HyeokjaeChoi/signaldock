@@ -117,4 +117,15 @@ describe("language", () => {
     await flush();
     expect(screen.getByRole("alert").textContent).toBe(translate(ko, "ko", "period.tooLong", { count: 30 }));
   });
+
+  it("keeps a filter error in step with a language switch", async () => {
+    mount(fakeApi(), "en");
+    await flush();
+    fireEvent.change(screen.getByLabelText("installationId"), { target: { value: "nope" } });
+    fireEvent.click(screen.getByRole("button", { name: en.controls.apply }));
+    expect(screen.getByRole("alert").textContent).toBe(en.filter.installationIdUuid);
+    fireEvent.change(screen.getByRole("combobox", { name: en.language.label }), { target: { value: "ko" } });
+    await flush();
+    expect(screen.getByRole("alert").textContent).toBe(ko.filter.installationIdUuid);
+  });
 });
