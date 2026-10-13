@@ -390,7 +390,7 @@ export function App() {
         <table>
           <thead><tr><th>{t("runs.run")}</th><th>{t("runs.status")}</th><th>{t("runs.combination")}</th><th>{t("runs.pool")}</th><th>{t("runs.rep")}</th><th>{t("runs.injection")}</th><th>{t("runs.dropped")}</th><th>{t("runs.nonOk")}</th><th>{t("runs.skippedTicks")}</th></tr></thead>
           <tbody>{data.runs.map((r) => (
-            <tr key={r.run_id} className={r.run_id === current.run_id ? "sel" : ""}>
+            <tr key={r.run_id} className={r.run_id === current?.run_id ? "sel" : ""}>
               <td><button onClick={() => setId(r.run_id)}>{r.run_id}</button></td><td><Badge r={r} /></td><td>{comboLabel(t, n, r)}</td><td>{r.pool_size}</td><td>{r.repetition}</td>
               <td>{r.injection.started} / {r.injection.scheduled}</td><td>{r.injection.dropped}</td>
               <td>{Object.keys(r.non_ok_outcomes).length ? t("common.yes") : "0"}</td><td>{Object.values(r.skipped_ticks).reduce((a, b) => a + b, 0)}</td>
