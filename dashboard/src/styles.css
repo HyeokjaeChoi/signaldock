@@ -12,7 +12,10 @@ main { max-width: 1440px; margin: 0 auto; padding: var(--space-4) var(--space-4)
 }
 .toolbar-row { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-end; }
 .toolbar-form { display: contents; }
-.toolbar .field input { width: 11rem; }
+.toolbar .field input { width: clamp(7.5rem, 11vw, 11rem); }
+/* The three buttons stay together (never one alone on row 2) and sit at the end of the row. */
+.toolbar-actions { display: flex; gap: var(--space-2); align-items: flex-end; margin-left: auto; }
+.toolbar-actions button { white-space: nowrap; }
 .toolbar-note { margin: 0; align-self: flex-end; min-height: 2rem; display: flex; align-items: center; }
 .toolbar p.error { margin: var(--space-2) 0 0; }
 
@@ -23,14 +26,15 @@ main { max-width: 1440px; margin: 0 auto; padding: var(--space-4) var(--space-4)
 
 /* Split layout: event table left, selected event right */
 .split { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(22rem, 1fr); gap: var(--space-4); align-items: start; margin-bottom: var(--space-4); }
-.pane-scroll, .detail-pane > .card { max-height: max(30rem, calc(100vh - 13rem)); overflow: auto; }
+.pane-scroll, .detail-pane > .card { max-height: max(30rem, calc(100dvh - 13rem)); overflow: auto; }
 .list-card .note { margin-bottom: var(--space-3); }
 .list-card td { white-space: nowrap; }
 .pager { margin: var(--space-3) 0 0; display: flex; gap: var(--space-2); flex-wrap: wrap; }
-.detail-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.detail-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3); }
+.detail-head h2 { margin: 0; }
 .detail h3 { margin-top: var(--space-4); }
 .detail-empty { display: grid; place-items: center; min-height: 12rem; text-align: center; }
-dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-1) var(--space-4); margin: 0; font-size: var(--text-sm); }
+dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-1) var(--space-5); margin: 0; font-size: var(--text-sm); }
 dt { color: var(--fg-muted); }
 dd { margin: 0; overflow-wrap: anywhere; }
 
@@ -53,7 +57,10 @@ dd { margin: 0; overflow-wrap: anywhere; }
   .toolbar-row { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--space-2) var(--space-3); align-items: stretch; }
   .toolbar-row > .field { grid-column: span 3; }
   .toolbar-form .field { grid-column: span 6; }
-  .toolbar-row button { grid-column: span 2; width: 100%; }
+  /* Apply gets a full row; Clear and Refresh split the next one. */
+  .toolbar-actions { grid-column: span 6; display: grid; grid-template-columns: 1fr 1fr; margin-left: 0; }
+  .toolbar-actions .primary { grid-column: 1 / -1; }
+  .toolbar-actions button { width: 100%; }
   .toolbar-note { grid-column: 1 / -1; min-height: 0; }
   .grid { grid-template-columns: minmax(0, 1fr); }
 }

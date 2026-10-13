@@ -56,11 +56,12 @@ export function Details({ api, eventId, timeZone, onClose }: { api: Api; eventId
 
   return (
     <section className="card detail" aria-label={t("details.label")}>
-      <h2 className="detail-head">
-        {t("details.title")} <button type="button" onClick={onClose}>{t("details.close")}</button>
-      </h2>
-      {load.status === "loading" && <p>{t("details.loading")}</p>}
-      {load.status === "notFound" && <p>{t("details.notFound")}</p>}
+      <div className="detail-head">
+        <h2>{t("details.title")}</h2>
+        <button type="button" onClick={onClose}>{t("details.close")}</button>
+      </div>
+      {load.status === "loading" && <p role="status">{t("details.loading")}</p>}
+      {load.status === "notFound" && <p role="status">{t("details.notFound")}</p>}
       {load.status === "error" && (
         <p className="error" role="alert">
           {errorText(t, load.error)} <button type="button" onClick={() => setAttempt((n) => n + 1)}>{t("status.retry")}</button>

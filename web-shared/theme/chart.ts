@@ -16,7 +16,11 @@ export const TOOLTIP = {
   itemStyle: { color: "var(--fg)" },
   cursor: { fill: "var(--chart-cursor)" },
 } as const;
-export const LEGEND = { wrapperStyle: { fontSize: 12, color: "var(--fg-muted)" } } as const;
+// itemSorter null: legend items keep series order (p50, p95, max), not alphabetical order.
+export const LEGEND = { wrapperStyle: { fontSize: 12, color: "var(--fg-muted)" }, itemSorter: null } as const;
+/** Axis title (the unit) under a number axis; give that XAxis `height={AXIS_LABEL_HEIGHT}`. */
+export const AXIS_LABEL_HEIGHT = 44;
+export const axisLabel = (value: string) => ({ value, position: "insideBottom", offset: 0, fill: "var(--chart-axis)", fontSize: 11 }) as const;
 
 export const SERIES = ["var(--c1)", "var(--c2)", "var(--c3)"] as const;
 /** Same order as `SERIES`: solid, dashed, dotted. */

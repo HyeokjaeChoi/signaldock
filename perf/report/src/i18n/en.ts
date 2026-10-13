@@ -40,6 +40,7 @@ export const en = {
     reasonInvalid: "invalid: {{reason}}",
     reasonFail: "fail: {{reason}}",
   },
+  axis: { seconds: "seconds" },
   verdict: { pass: "pass", fail: "fail", invalid: "invalid" },
   badge: { pilot: "pilot: not counted" },
   combo: {
@@ -134,7 +135,8 @@ export const en = {
     backToBack: "back to back",
     track: "track() p50 / p95 / max (ms)",
     drain: "Drain (s)",
-    drainOffline: "{{seconds}} (including {{wait}} persisted retry wait)",
+    drainWait: "including {{wait}} persisted retry wait",
+    targetLine: "target rate",
     files: "Files after drain (bytes)",
     filesValue: "queue.db {{db}} + wal {{wal}} + shm {{shm}}",
     memory: "Memory change (KiB)",

@@ -38,6 +38,7 @@ export const ko = {
     reasonInvalid: "무효: {{reason}}",
     reasonFail: "실패: {{reason}}",
   },
+  axis: { seconds: "초" },
   verdict: { pass: "통과", fail: "실패", invalid: "무효" },
   badge: { pilot: "파일럿: 집계 제외" },
   combo: {
@@ -132,7 +133,8 @@ export const ko = {
     backToBack: "연속 호출",
     track: "track() p50 / p95 / 최대 (ms)",
     drain: "비우기 (초)",
-    drainOffline: "{{seconds}} (저장된 재시도 대기 {{wait}} 포함)",
+    drainWait: "저장된 재시도 대기 {{wait}} 포함",
+    targetLine: "목표 속도",
     files: "비운 뒤 파일 크기 (바이트)",
     filesValue: "queue.db {{db}} + wal {{wal}} + shm {{shm}}",
     memory: "메모리 변화 (KiB)",

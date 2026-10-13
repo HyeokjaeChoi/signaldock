@@ -14,11 +14,10 @@ export function NameChart({ counts }: { counts: EventNameCounts }) {
   const number = (v: unknown) => (typeof v === "number" ? formatNumber(v, i18n.language) : String(v ?? ""));
   return (
     <>
-      <div className="chart-fill" style={{ "--chart-min": `${Math.max(160, counts.items.length * ROW_PX + 36)}px` } as CSSProperties}>
+      <div className="chart-fill" style={{ "--chart-min": `${Math.max(120, counts.items.length * ROW_PX + 12)}px` } as CSSProperties}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={counts.items} layout="vertical" margin={{ left: 0, right: 40 }}>
-          <CartesianGrid {...GRID} horizontal={false} />
-          <XAxis {...AXIS} type="number" allowDecimals={false} tickFormatter={number} />
+          <XAxis type="number" hide />
           <YAxis {...AXIS} type="category" dataKey="name" width={150} interval={0} />
           <Tooltip {...TOOLTIP} formatter={number} />
           <Bar dataKey="count" name={t("counts.series")} fill={SERIES[0]} radius={[0, 3, 3, 0]} isAnimationActive={false}>

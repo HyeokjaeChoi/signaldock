@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { LANGUAGES, formatNumber } from "../../../web-shared/i18n";
 import type { Language } from "../../../web-shared/i18n";
-import { AXIS, BAR_FILL, GRID, LEGEND, PatternDefs, SERIES, SERIES_DASH, THEMES, TOOLTIP, useTheme } from "../../../web-shared/theme";
+import { AXIS, AXIS_LABEL_HEIGHT, BAR_FILL, GRID, LEGEND, PatternDefs, SERIES, SERIES_DASH, THEMES, TOOLTIP, axisLabel, useTheme } from "../../../web-shared/theme";
 import type { Theme } from "../../../web-shared/theme";
 import { useTranslation } from "./i18n";
 import type { T } from "./i18n";
@@ -123,6 +123,11 @@ function Chart({ title, children, height = 240 }: { title: string; children: Rea
   );
 }
 
+/** Y headroom: ~10 % above the tallest bar, so bars never touch the top edge. */
+const headroom = (max: number) => Math.ceil(max * 1.1);
+/** Seconds axis: starts at 0, whole numbers, rounded up to a multiple of 10. */
+const secondsAxis = { type: "number", allowDecimals: false, tickCount: 7, domain: [0, (max: number) => Math.ceil(max / 10) * 10] } as const;
+
 /** Horizontal grouped bars: one row per run, so long run names never collide on an axis (issue 28). */
 const rowHeight = (rows: number, perRow: number) => Math.max(150, rows * perRow + 64);
 
@@ -172,7 +177,7 @@ function Detail({ r }: { r: Run }) {
       {reasons(t, r.invalid_reasons, r.fail_reasons).map((x) => <p key={x} className="reason">{x}</p>)}
       <h3>{t("detail.latency")}</h3>
       <div className="table-wrap"><table>
-        <thead><tr><th>{t("detail.endpoint")}</th><th className="num">{t("detail.samples")}</th><th className="num">p50</th><th className="num">p95</th><th className="num">{t("common.max")}</th><th className="num">{t("detail.targetP95")}</th><th>{t("detail.outcomes")}</th></tr></thead>
+        <thead><tr><th scope="col">{t("detail.endpoint")}</th><th scope="col" className="num">{t("detail.samples")}</th><th scope="col" className="num">p50</th><th scope="col" className="num">p95</th><th scope="col" className="num">{t("common.max")}</th><th scope="col" className="num">{t("detail.targetP95")}</th><th scope="col">{t("detail.outcomes")}</th></tr></thead>
         <tbody>{EPS.map((ep) => { const x = r.endpoints[ep]; return (
           <tr key={ep}><td>{ep}</td><td className="num">{n(x.samples)}</td><td className="num">{f1(x.p50_ms)}</td><td className={x.p95_ms != null && x.p95_ms > x.target_p95_ms ? "num bad" : "num"}>{f1(x.p95_ms)}</td><td className="num">{f1(x.max_ms)}</td><td className="num">{n(x.target_p95_ms)}</td><td>{JSON.stringify(x.outcomes)}</td></tr>); })}</tbody>
       </table></div>
@@ -189,7 +194,7 @@ function Detail({ r }: { r: Run }) {
         <Chart title={t("detail.hikariChart")}>
           <LineChart data={r.hikari_series.map(([ts, active, idle, pending]) => ({ t: ts, active, idle, pending }))}>
             <CartesianGrid {...GRID} />
-            <XAxis {...AXIS} dataKey="t" type="number" domain={["dataMin", "dataMax"]} />
+            <XAxis {...AXIS} {...secondsAxis} dataKey="t" height={AXIS_LABEL_HEIGHT} label={axisLabel(t("axis.seconds"))} />
             <YAxis {...AXIS} allowDecimals={false} />
             <Tooltip {...TOOLTIP} />
             <Legend {...LEGEND} />
@@ -205,7 +210,7 @@ function Detail({ r }: { r: Run }) {
         <Chart title={t("detail.cpuChart")}>
           <LineChart data={r.container_series}>
             <CartesianGrid {...GRID} />
-            <XAxis {...AXIS} dataKey="t" type="number" domain={["dataMin", "dataMax"]} />
+            <XAxis {...AXIS} {...secondsAxis} dataKey="t" height={AXIS_LABEL_HEIGHT} label={axisLabel(t("axis.seconds"))} />
             <YAxis {...AXIS} />
             <Tooltip {...TOOLTIP} />
             <Legend {...LEGEND} />
@@ -216,7 +221,7 @@ function Detail({ r }: { r: Run }) {
         <Chart title={t("detail.memChart")}>
           <LineChart data={r.container_series}>
             <CartesianGrid {...GRID} />
-            <XAxis {...AXIS} dataKey="t" type="number" domain={["dataMin", "dataMax"]} />
+            <XAxis {...AXIS} {...secondsAxis} dataKey="t" height={AXIS_LABEL_HEIGHT} label={axisLabel(t("axis.seconds"))} />
             <YAxis {...AXIS} />
             <Tooltip {...TOOLTIP} />
             <Legend {...LEGEND} />
@@ -227,7 +232,7 @@ function Detail({ r }: { r: Run }) {
       </div>
       <div className="table-wrap"><table>
         <caption>{t("detail.throttling")}</caption>
-        <thead><tr><th>{t("detail.container")}</th><th className="num">{t("detail.periods")}</th><th className="num">{t("detail.throttledPeriods")}</th><th className="num">{t("detail.throttledMs")}</th></tr></thead>
+        <thead><tr><th scope="col">{t("detail.container")}</th><th scope="col" className="num">{t("detail.periods")}</th><th scope="col" className="num">{t("detail.throttledPeriods")}</th><th scope="col" className="num">{t("detail.throttledMs")}</th></tr></thead>
         <tbody>{Object.entries(r.cgroup).map(([k, v]) => (
           <tr key={k}><td>{k}</td><td className="num">{v.nr_periods == null ? t("common.na") : n(v.nr_periods)}</td><td className="num">{v.nr_throttled == null ? t("common.na") : n(v.nr_throttled)}</td><td className="num">{v.throttled_usec == null ? t("common.na") : f1(v.throttled_usec / 1000)}</td></tr>))}</tbody>
       </table></div>
@@ -236,7 +241,7 @@ function Detail({ r }: { r: Run }) {
         <>
           <p className="note">{t("detail.statementsNote", { statements: n(r.statements.statements), harness: n(r.statements.harness_statements) })}</p>
           <div className="table-wrap"><table>
-            <thead><tr><th className="num">{t("detail.calls")}</th><th className="num">{t("detail.rows")}</th><th className="num">{t("detail.totalMs")}</th><th className="num">{t("detail.meanMs")}</th><th className="num">{t("detail.maxMs")}</th><th>{t("detail.query")}</th></tr></thead>
+            <thead><tr><th scope="col" className="num">{t("detail.calls")}</th><th scope="col" className="num">{t("detail.rows")}</th><th scope="col" className="num">{t("detail.totalMs")}</th><th scope="col" className="num">{t("detail.meanMs")}</th><th scope="col" className="num">{t("detail.maxMs")}</th><th scope="col">{t("detail.query")}</th></tr></thead>
             <tbody>{top.map((s, i) => (
               <tr key={i}><td className="num">{n(s.calls)}</td><td className="num">{n(s.rows)}</td><td className="num">{f1(s.total_exec_ms)}</td><td className="num">{f1(s.mean_exec_ms)}</td><td className="num">{f1(s.max_exec_ms)}</td><td><code>{s.query}</code></td></tr>))}</tbody>
           </table></div>
@@ -289,9 +294,9 @@ function OverloadRun({ o }: { o: Overload }) {
       {reasons(t, o.invalid_reasons, o.fail_reasons).map((x) => <p key={x} className="reason">{x}</p>)}
       <h3>{t("overload.perPhase")}</h3>
       <div className="table-wrap"><table>
-        <thead><tr><th>{t("overload.phase")}</th><th>{t("overload.endpoint")}</th><th className="num">{t("overload.requests")}</th><th>{t("overload.statusCounts")}</th><th>{t("overload.retryAfter")}</th><th>{t("overload.errorCodes")}</th><th className="num">p50</th><th className="num">p95</th><th className="num">{t("overload.p95Ok")}</th><th className="num">{t("common.max")}</th></tr></thead>
+        <thead><tr><th scope="col">{t("overload.phase")}</th><th scope="col">{t("overload.endpoint")}</th><th scope="col" className="num">{t("overload.requests")}</th><th scope="col">{t("overload.statusCounts")}</th><th scope="col" className="num">{t("overload.retryAfter")}</th><th scope="col">{t("overload.errorCodes")}</th><th scope="col" className="num">p50</th><th scope="col" className="num">p95</th><th scope="col" className="num">{t("overload.p95Ok")}</th><th scope="col" className="num">{t("common.max")}</th></tr></thead>
         <tbody>{PHASES.flatMap((ph) => OEPS.filter((ep) => o.phases[ph]?.[ep]).map((ep) => { const x = o.phases[ph][ep]; return (
-          <tr key={ph + ep}><td>{t(`overload.phases.${ph}`)}</td><td>{ep}</td><td className="num">{n(x.requests)}</td><td>{counts(x.status)}</td><td>{counts(x.retry_after)}</td><td>{counts(x.error_codes)}</td><td className="num">{f1(x.p50_ms)}</td><td className="num">{f1(x.p95_ms)}</td><td className="num">{f1(x.p95_ok_ms)}</td><td className="num">{f1(x.max_ms)}</td></tr>); }))}</tbody>
+          <tr key={ph + ep}><td>{t(`overload.phases.${ph}`)}</td><td>{ep}</td><td className="num">{n(x.requests)}</td><td>{counts(x.status)}</td><td className="num">{counts(x.retry_after)}</td><td>{counts(x.error_codes)}</td><td className="num">{f1(x.p50_ms)}</td><td className="num">{f1(x.p95_ms)}</td><td className="num">{f1(x.p95_ok_ms)}</td><td className="num">{f1(x.max_ms)}</td></tr>); }))}</tbody>
       </table></div>
       <h3>{t("overload.series", { from: n(p.base_s), to: n(p.base_s + p.over_s) })}</h3>
       <div className="grid">
@@ -303,8 +308,8 @@ function OverloadRun({ o }: { o: Overload }) {
               <PatternDefs />
               <CartesianGrid {...GRID} vertical={false} />
               {phaseBands(t, p, rows.map((r) => r.t), false)}
-              <XAxis {...AXIS} dataKey="t" interval="preserveStartEnd" minTickGap={24} />
-              <YAxis {...AXIS} allowDecimals={false} width={44} />
+              <XAxis {...AXIS} dataKey="t" interval="preserveStartEnd" minTickGap={24} height={AXIS_LABEL_HEIGHT} label={axisLabel(t("axis.seconds"))} />
+              <YAxis {...AXIS} allowDecimals={false} width={44} domain={[0, headroom]} />
               <Tooltip {...TOOLTIP} />
               <Legend {...LEGEND} />
               <Bar dataKey="200" stackId="a" isAnimationActive={false} fill={BAR_FILL.ok} />
@@ -317,10 +322,9 @@ function OverloadRun({ o }: { o: Overload }) {
           <LineChart data={p95Rows} margin={{ top: 22 }}>
             <CartesianGrid {...GRID} vertical={false} />
             {phaseBands(t, p, p95Rows.map((r) => r.t), true)}
-            <XAxis {...AXIS} dataKey="t" type="number" domain={["dataMin", "dataMax"]} />
-            <YAxis {...AXIS} width={44} />
+            <XAxis {...AXIS} {...secondsAxis} dataKey="t" height={AXIS_LABEL_HEIGHT} label={axisLabel(t("axis.seconds"))} />
+            <YAxis {...AXIS} width={44} domain={[0, headroom]} />
             <Tooltip {...TOOLTIP} />
-            <Legend {...LEGEND} />
             <Line dataKey="p95" stroke={SERIES[0]} strokeDasharray={SERIES_DASH[0]} strokeWidth={2} dot={false} isAnimationActive={false} />
           </LineChart>
         </Chart>
@@ -353,8 +357,8 @@ function SdkResults({ data, error }: { data: SdkData | null; error: string }) {
           <div className="table-wrap"><table>
             <thead>
               <tr>
-                <th>{t("sdk.avd")}</th><th>{t("sdk.scenarioHeader")}</th><th>{t("sdk.verdict")}</th><th>{t("sdk.rate")}</th><th>{t("sdk.track")}</th><th>{t("sdk.drain")}</th>
-                <th>{t("sdk.files")}</th><th>{t("sdk.memory")}</th><th>{t("sdk.rows")}</th>
+                <th scope="col">{t("sdk.avd")}</th><th scope="col">{t("sdk.scenarioHeader")}</th><th scope="col">{t("sdk.verdict")}</th><th scope="col">{t("sdk.rate")}</th><th scope="col">{t("sdk.track")}</th><th scope="col" className="num">{t("sdk.drain")}</th>
+                <th scope="col">{t("sdk.files")}</th><th scope="col">{t("sdk.memory")}</th><th scope="col">{t("sdk.rows")}</th>
               </tr>
             </thead>
             <tbody>{runs.map((r) => {
@@ -366,12 +370,12 @@ function SdkResults({ data, error }: { data: SdkData | null; error: string }) {
                   <td>{r.avd}{r.api != null && <div className="note">{t("sdk.device", { device: r.device ?? "", release: r.release ?? "", api: String(r.api), abi: r.abi ?? "" })}</div>}</td>
                   <td>{t(`sdk.scenario.${r.scenario}`)}{r.started != null && r.planned != null && <div className="note">{t("sdk.events", { started: n(r.started), planned: n(r.planned), bytes: r.event_bytes == null ? t("common.na") : n(r.event_bytes), inflight: r.max_calls_in_flight == null ? t("common.na") : n(r.max_calls_in_flight), notOk: n(r.track_not_ok ?? 0) })}</div>}</td>
                   <td><span className={`badge ${r.verdict}`}>{verdictText(t, r.verdict)}</span>{r.reasons.map((x) => <div key={x} className="reason">{x}</div>)}</td>
-                  <td>{r.actual_rate_per_s == null ? t("common.na") : `${r.target_rate_per_s == null ? t("sdk.backToBack") : n(r.target_rate_per_s)} / ${n(r.actual_rate_per_s)}`}</td>
-                  <td>{tm ? `${f1(tm.p50)} / ${f1(tm.p95)} / ${f1(tm.max)}` : t("common.na")}</td>
-                  <td>{r.drain?.seconds == null ? t("common.na") : wait != null ? t("sdk.drainOffline", { seconds: f1(r.drain.seconds), wait: f1(wait) }) : f1(r.drain.seconds)}</td>
-                  <td>{fb ? t("sdk.filesValue", { db: n(fb["queue.db"] ?? 0), wal: n(fb["queue.db-wal"] ?? 0), shm: n(fb["queue.db-shm"] ?? 0) }) : t("common.na")}</td>
+                  <td className="nowrap">{r.actual_rate_per_s == null ? t("common.na") : `${r.target_rate_per_s == null ? t("sdk.backToBack") : n(r.target_rate_per_s)} / ${n(r.actual_rate_per_s)}`}</td>
+                  <td className="nowrap">{tm ? `${f1(tm.p50)} / ${f1(tm.p95)} / ${f1(tm.max)}` : t("common.na")}</td>
+                  <td className="num">{r.drain?.seconds == null ? t("common.na") : <span className="nowrap">{f1(r.drain.seconds)}</span>}{r.drain?.seconds != null && wait != null && <div className="note">{t("sdk.drainWait", { wait: f1(wait) })}</div>}</td>
+                  <td className="nowrap">{fb ? t("sdk.filesValue", { db: n(fb["queue.db"] ?? 0), wal: n(fb["queue.db-wal"] ?? 0), shm: n(fb["queue.db-shm"] ?? 0) }) : t("common.na")}</td>
                   <td>{r.pss_delta_kib == null ? t("common.na") : t(r.memory_basis === "store" ? "sdk.memoryStore" : "sdk.memoryDrain", { pss: n(r.pss_delta_kib), heap: r.heap_delta_kib == null ? t("common.na") : n(r.heap_delta_kib) })}</td>
-                  <td>{r.missing_on_server == null ? t("common.na") : `${n(r.missing_on_server)} / ${r.duplicate_server_rows == null ? t("common.na") : n(r.duplicate_server_rows)}`}</td>
+                  <td className="nowrap">{r.missing_on_server == null ? t("common.na") : `${n(r.missing_on_server)} / ${r.duplicate_server_rows == null ? t("common.na") : n(r.duplicate_server_rows)}`}</td>
                 </tr>);
             })}</tbody>
           </table></div>
@@ -391,14 +395,13 @@ function SdkResults({ data, error }: { data: SdkData | null; error: string }) {
               </BarChart>
             </Chart>
             <Chart title={t("sdk.rateChart")} height={rowHeight(rateRows.length, 40)}>
-              <BarChart layout="vertical" data={rateRows} margin={{ left: 8, right: 24 }}>
+              <BarChart layout="vertical" data={rateRows} margin={{ top: 16, left: 8, right: 24 }}>
               <PatternDefs />
                 <CartesianGrid {...GRID} horizontal={false} />
-                <XAxis {...AXIS} type="number" domain={[0, 110]} />
+                <XAxis {...AXIS} type="number" domain={[0, 110]} ticks={[0, 20, 40, 60, 80, 100]} />
                 <YAxis {...AXIS} type="category" dataKey="name" width={190} interval={0} />
                 <Tooltip {...TOOLTIP} />
-                <Legend {...LEGEND} />
-                <ReferenceLine x={100} stroke="var(--bad)" strokeDasharray="6 4" />
+                <ReferenceLine x={100} stroke="var(--bad)" strokeDasharray="6 4" label={{ value: t("sdk.targetLine"), fontSize: 11, fill: "var(--bad)", position: "top" }} />
                 <Bar dataKey="percent" name={t("sdk.percent")} isAnimationActive={false} fill={SERIES[0]} />
               </BarChart>
             </Chart>
@@ -520,13 +523,13 @@ export function App() {
         <div className="content">
           <section className="card section" id="runs">
             <h2>{t("runs.title")}</h2>
-            <div className="table-wrap"><table>
-              <thead><tr><th>{t("runs.run")}</th><th>{t("runs.status")}</th><th>{t("runs.combination")}</th><th className="num">{t("runs.pool")}</th><th className="num">{t("runs.rep")}</th><th className="num">{t("runs.injection")}</th><th className="num">{t("runs.dropped")}</th><th>{t("runs.nonOk")}</th><th className="num">{t("runs.skippedTicks")}</th></tr></thead>
+            <div className="table-wrap"><table className="runs-table">
+              <thead><tr><th scope="col">{t("runs.run")}</th><th scope="col">{t("runs.status")}</th><th scope="col">{t("runs.combination")}</th><th scope="col" className="num">{t("runs.pool")}</th><th scope="col" className="num">{t("runs.rep")}</th><th scope="col" className="num">{t("runs.injection")}</th><th scope="col" className="num">{t("runs.dropped")}</th><th scope="col" className="num">{t("runs.nonOk")}</th><th scope="col" className="num">{t("runs.skippedTicks")}</th></tr></thead>
               <tbody>{data.runs.map((r) => (
                 <tr key={r.run_id} className={r.run_id === current?.run_id ? "sel" : ""}>
                   <td><button type="button" aria-pressed={r.run_id === current?.run_id} onClick={() => setId(r.run_id)}>{r.run_id}</button></td><td><Badge r={r} /></td><td>{comboLabel(t, n, r)}</td><td className="num">{n(r.pool_size)}</td><td className="num">{n(r.repetition)}</td>
                   <td className="num">{n(r.injection.started)} / {n(r.injection.scheduled)}</td><td className="num">{n(r.injection.dropped)}</td>
-                  <td>{Object.keys(r.non_ok_outcomes).length ? t("common.yes") : n(0)}</td><td className="num">{n(Object.values(r.skipped_ticks).reduce((a, b) => a + b, 0))}</td>
+                  <td className="num">{Object.keys(r.non_ok_outcomes).length ? t("common.yes") : n(0)}</td><td className="num">{n(Object.values(r.skipped_ticks).reduce((a, b) => a + b, 0))}</td>
                 </tr>))}</tbody>
             </table></div>
           </section>

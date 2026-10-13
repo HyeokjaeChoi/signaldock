@@ -38,9 +38,9 @@
   --chart-axis: #9ba7b6;
   --chart-grid: #29323e;
   --chart-cursor: rgba(255, 255, 255, 0.06);
-  --band-baseline: color-mix(in srgb, var(--fg-muted) 10%, transparent);
-  --band-overload: color-mix(in srgb, var(--bad) 14%, transparent);
-  --band-recovery: color-mix(in srgb, var(--ok) 12%, transparent);
+  --band-baseline: transparent;
+  --band-overload: color-mix(in srgb, var(--bad) 11%, transparent);
+  --band-recovery: transparent;
 
   /* Spacing (4 px grid) */
   --space-1: 0.25rem;

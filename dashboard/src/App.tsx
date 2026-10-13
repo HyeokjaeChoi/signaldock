@@ -136,10 +136,16 @@ export function App({ api = realApi }: { api?: Api }) {
   const byTime = usePolledQuery(filterKey && `time|${filterKey}`, (s) => api.countsByTime(filters!, s));
 
   const resetPaging = () => setCursors([]);
-  const applyFilters = (e: React.FormEvent) => {
+  const applyFilters = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (draft.installationId && !UUID.test(draft.installationId)) return setFilterError("filter.installationIdUuid");
-    if (draft.eventId && !UUID.test(draft.eventId)) return setFilterError("filter.eventIdUuid");
+    const form = e.currentTarget;
+    // Move focus to the invalid field, so a keyboard or screen reader user lands on it.
+    const invalid = (field: "installationId" | "eventId", key: "filter.installationIdUuid" | "filter.eventIdUuid") => {
+      setFilterError(key);
+      (form.elements.namedItem(field) as HTMLInputElement | null)?.focus();
+    };
+    if (draft.installationId && !UUID.test(draft.installationId)) return invalid("installationId", "filter.installationIdUuid");
+    if (draft.eventId && !UUID.test(draft.eventId)) return invalid("eventId", "filter.eventIdUuid");
     setFilterError("");
     setApplied(draft);
     resetPaging();
@@ -236,10 +242,12 @@ export function App({ api = realApi }: { api?: Api }) {
             <label className="field">{t("controls.eventName")} <input name="eventName" autoComplete="off" spellCheck={false} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></label>
             <label className="field">installationId <input name="installationId" autoComplete="off" spellCheck={false} aria-invalid={filterError === "filter.installationIdUuid" || undefined} aria-describedby={filterError === "filter.installationIdUuid" ? "filter-error" : undefined} value={draft.installationId} onChange={(e) => setDraft({ ...draft, installationId: e.target.value })} /></label>
             <label className="field">eventId <input name="eventId" autoComplete="off" spellCheck={false} aria-invalid={filterError === "filter.eventIdUuid" || undefined} aria-describedby={filterError === "filter.eventIdUuid" ? "filter-error" : undefined} value={draft.eventId} onChange={(e) => setDraft({ ...draft, eventId: e.target.value })} /></label>
-            <button type="submit" className="primary">{t("controls.apply")}</button>
-            <button type="button" onClick={() => { setDraft(EMPTY); setApplied(EMPTY); setFilterError(""); resetPaging(); }}>{t("controls.clear")}</button>
+            <div className="toolbar-actions">
+              <button type="submit" className="primary">{t("controls.apply")}</button>
+              <button type="button" onClick={() => { setDraft(EMPTY); setApplied(EMPTY); setFilterError(""); resetPaging(); }}>{t("controls.clear")}</button>
+              <button type="button" onClick={refreshAll}>{t("controls.refresh")}</button>
+            </div>
           </form>
-          <button type="button" onClick={refreshAll}>{t("controls.refresh")}</button>
           <p className="note toolbar-note">{t("controls.exactOnly")}</p>
         </div>
         {filterError && <p id="filter-error" className="error" role="alert">{t(filterError)}</p>}
@@ -261,7 +269,7 @@ export function App({ api = realApi }: { api?: Api }) {
             <div className="table-wrap pane-scroll">
               <table>
                 <thead>
-                  <tr><th>receivedAt</th><th>{t("list.name")}</th><th>{t("list.eventId")}</th><th>{t("list.installationId")}</th><th>{t("list.sdk")}</th></tr>
+                  <tr><th scope="col">receivedAt</th><th scope="col">{t("list.name")}</th><th scope="col">{t("list.eventId")}</th><th scope="col">{t("list.installationId")}</th><th scope="col">{t("list.sdk")}</th></tr>
                 </thead>
                 <tbody>
                   {page.items.map((ev) => (

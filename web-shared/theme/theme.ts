@@ -26,6 +26,8 @@ export const currentTheme = (): Theme => {
 
 export function applyTheme(theme: Theme): void {
   document.documentElement.dataset.theme = theme;
+  // Browser chrome color follows the page (same values as --bg in tokens.css).
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "light" ? "#f4f6f9" : "#0d1117");
 }
 
 /** Call once before the first render. */
