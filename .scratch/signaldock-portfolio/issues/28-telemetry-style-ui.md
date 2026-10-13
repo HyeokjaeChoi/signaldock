@@ -20,10 +20,10 @@ Constraints:
 - Keep the existing pins unless a change is needed (TOOLCHAIN.md); a new dependency needs a reason.
 - Accessibility basics: contrast, keyboard use, readable charts without color alone.
 
-Open questions (decide before implementation):
-1. Which vendor patterns to adopt for each view: overview, event list and detail, time series, benchmark runs.
-2. Light and dark theme, and design tokens shared by the two pages.
-3. How much of the benchmark report changes (layout only, or new views such as run comparison).
+Decided questions (do not reopen):
+1. Vendor patterns per view: decided by Q140 (see `issue-28-design-references.md`).
+2. Theme and tokens: decided by Q140 (dark default, light switch, shared design tokens).
+3. Benchmark report scope: decided by Q139 and Q140 (presentation only; no A/B run compare).
 
 Done when both pages follow the recorded design decisions, existing tests pass, before and after screenshots in both languages are in the evidence folder, and a design critique (for example with `impeccable`) finds no major issue.
 
