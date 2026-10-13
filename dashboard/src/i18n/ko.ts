@@ -4,6 +4,7 @@ import type { en } from "./en";
 export const ko = {
   app: {
     title: "SignalDock 대시보드",
+    skip: "본문으로 건너뛰기",
     note: "서버에 저장된 기록을 receivedAt 기준으로 보여 줍니다. 프로젝트 시간대는 {{tz}}입니다 (오늘은 {{today}}).",
     tzMismatch: "서버는 {{serverTz}}를 보고했지만, 이 화면의 기간 경계는 {{tz}}를 씁니다.",
     separateQueries:

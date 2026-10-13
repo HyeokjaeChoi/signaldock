@@ -20,7 +20,7 @@ Spec Q139 and Q140 (2026-10-13) fix the scope and the pattern set: presentation 
 
 4. **Contrast.** Text, muted text, accent, and status colors are at least 4.5:1 on every surface token in both themes; the three chart series are at least 3:1. `web-shared/theme/contrast.test.ts` reads `tokens.css` and computes the WCAG ratios, also for status text on its soft badge background and for text on the selected row. The focus ring (`:focus-visible`, 2 px `--accent`) is on every control. Motion is limited to hover, press, and color changes (140 ms, `ease-out`); focus does not animate; smooth scrolling runs only without `prefers-reduced-motion: reduce`.
 
-5. **Controls.** A `select` has `appearance: none` and a chevron from the token `--chevron` (one data-URI value per theme, because a data URI cannot read `--fg-muted`; `padding-right: 2rem`; `option` colors from the tokens). With `(pointer: coarse)` controls are at least 44 px high and Copy buttons at least 36 px. In the event table, Copy buttons have no border or background until the row is hovered or has focus (`(hover: hover)` devices only; touch and keyboard focus always show them), and event-name links are underlined only on hover and focus. At 720 px or less, Period and Sort share a row and Apply, Clear, and Refresh stay in one row. Press scale is off with `prefers-reduced-motion: reduce`.
+5. **Controls.** A `select` has `appearance: none` and a chevron from the token `--chevron` (one data-URI value per theme, because a data URI cannot read `--fg-muted`; `padding-right: 2rem`; `option` colors from the tokens). With `(pointer: coarse)` controls, Copy buttons, and event-name links are at least 44 px high (issue 29; Copy was 36 px). Desktop rows keep their height. In the event table, Copy buttons have no border or background until the row is hovered or has focus (`(hover: hover)` devices only; touch and keyboard focus always show them), and event-name links are underlined only on hover and focus. At 720 px or less, Period and Sort share a row and Apply, Clear, and Refresh stay in one row. Press scale is off with `prefers-reduced-motion: reduce`.
 
 6. **Layout breakpoints.** A CSS variable cannot be used in a media query, so the values are written in the CSS files and named here: 1100 px (Dashboard: the event table and the detail stack; report: the table of contents becomes a sticky bar) and 720 px (Dashboard: the toolbar stops being sticky and its controls fill the width; both: one column of charts and a single-column header). Chart grids use `auto-fit` with a minimum of 22 rem (Dashboard) and 26 rem (report).
 
@@ -38,7 +38,16 @@ Spec Q139 and Q140 (2026-10-13) fix the scope and the pattern set: presentation 
    - The x-axis labels of the SDK charts overlapped. The charts with long run names (SDK track, SDK rate, and the latency per run charts) are now horizontal bars with the names on the y-axis.
    - The report CSS moved from `index.html` to `perf/report/src/styles.css` (Vite inlines it into the bundle, so the page still opens from `file://`).
 
-9. **Not changed.** The query API, polling, retry, and contract-error behavior (ADR-0007, Q107 to Q109), the views, the message catalog rules (ADR-0015), the dependencies and pins. No A/B run compare (Q139: a new view).
+9. **Accessibility and layout follow-up (issue 29).** Presentation only (Q139).
+   - Every table has a name: a visually hidden `<caption className="sr-only">` with the text of the heading above it (Dashboard event table and property table; report Runs, per-phase overload, SDK, latency, and statements tables; the throttling table already had a visible caption).
+   - Each page starts with a skip link (`.skip-link`, visible on focus) to `<main id="main" tabIndex={-1}>`; the text is `app.skip`.
+   - Opening an event moves focus to the details heading (`tabIndex={-1}`); Close returns focus to the event link that opened it (the link is found by event id, so a poll that re-renders the row does not lose it). If the row is no longer on the page, focus stays where the browser puts it.
+   - The `" | "` separators of the status line are `aria-hidden`.
+   - `.pane-scroll` and the detail pane use `overscroll-behavior: contain` and `dvh` heights with a `vh` fallback. The sticky toolbar has an opaque `--surface` background and no `backdrop-filter`.
+   - Report latency charts: the y-axis shows the run id; the tooltip title keeps the full "pool, repetition, pilot (run id)" text. The Runs table run id button has no min-height or block padding on a fine pointer, so its rows match the other tables.
+   - Decisions 5 changed (Copy and event-name link 44 px on touch). Not changed: the style choices that issue 30 holds.
+
+10. **Not changed.** The query API, polling, retry, and contract-error behavior (ADR-0007, Q107 to Q109), the views, the message catalog rules (ADR-0015), the dependencies and pins. No A/B run compare (Q139: a new view).
 
 ## Verification
 

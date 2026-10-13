@@ -106,6 +106,60 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
     for (const part of parts("status.nextAttempt")) expect(status.textContent).toContain(part);
   });
 
+  it("has a skip link as the first focusable element, and it targets the main region (issue 29)", async () => {
+    const { container } = render(fakeApi());
+    await flush();
+    const first = container.querySelector<HTMLElement>("a[href], button, select, input, [tabindex='0']")!;
+    expect(first.textContent).toBe(t("app.skip"));
+    expect(first.getAttribute("href")).toBe("#main");
+    expect(screen.getByRole("main").id).toBe("main");
+  });
+
+  it("moves focus to the details heading on open and back to the opening link on Close (issue 29)", async () => {
+    render(fakeApi());
+    await flush();
+    const link = screen.getByRole("button", { name: "event_2" });
+    fireEvent.click(link);
+    await flush();
+    expect(document.activeElement).toBe(screen.getByRole("heading", { level: 2, name: t("details.title") }));
+    fireEvent.click(screen.getByRole("button", { name: t("details.close") }));
+    await flush();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "event_2" }));
+    // Opening another event moves focus to the heading again.
+    fireEvent.click(screen.getByRole("button", { name: "event_1" }));
+    await flush();
+    fireEvent.click(screen.getByRole("button", { name: "event_2" }));
+    await flush();
+    expect(document.activeElement).toBe(screen.getByRole("heading", { level: 2, name: t("details.title") }));
+  });
+
+  it("does not expose the status separators to a screen reader (issue 29)", async () => {
+    let fail = false;
+    const api = fakeApi({
+      listEvents: vi.fn(async () => {
+        if (fail) throw new QueryError("HTTP 503", 503);
+        return { items: [summary(1)] };
+      }) as never,
+    });
+    render(api);
+    await flush();
+    fail = true;
+    await advance(5000);
+    const status = screen.getByText(t("status.events")).parentElement!.cloneNode(true) as HTMLElement;
+    expect(status.textContent).toContain("|");
+    status.querySelectorAll("[aria-hidden='true']").forEach((el) => el.remove());
+    expect(status.textContent).not.toContain("|");
+  });
+
+  it("labels the event table and the property table (issue 29)", async () => {
+    render(fakeApi());
+    await flush();
+    fireEvent.click(screen.getByRole("button", { name: "event_1" }));
+    await flush();
+    expect(screen.getByRole("table", { name: t("list.title", { page: "1" }) })).toBeTruthy();
+    expect(screen.getByRole("table", { name: t("details.properties") })).toBeTruthy();
+  });
+
   it("shows the empty-result text and the not-found text", async () => {
     const api = fakeApi({
       listEvents: vi.fn(async () => ({ items: [] })) as never,

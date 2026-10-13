@@ -5,6 +5,7 @@ import type { Messages } from "../../../web-shared/i18n";
 export const en = {
   app: {
     title: "SignalDock Dashboard",
+    skip: "Skip to content",
     note: "Stored server records by receivedAt, project timezone {{tz}} (today is {{today}}).",
     tzMismatch: "The server reports {{serverTz}}; period boundaries here use {{tz}}.",
     separateQueries:

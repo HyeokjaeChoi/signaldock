@@ -154,12 +154,12 @@ function Compare({ runs, targets }: { runs: Run[]; targets: Record<string, numbe
       <div className="grid">
         {EPS.map((ep) => (
           <Chart key={ep} title={t("compare.chart", { endpoint: ep, target: n(targets[ep]) })} height={rowHeight(sel.length, 70)}>
-            <BarChart layout="vertical" data={sel.map((r) => ({ name: `${runLabel(t, n, r)} (${r.run_id})`, p50: r.endpoints[ep].p50_ms, p95: r.endpoints[ep].p95_ms, max: r.endpoints[ep].max_ms }))} margin={{ top: 18, left: 8, right: 24 }}>
+            <BarChart layout="vertical" data={sel.map((r) => ({ name: r.run_id, full: `${runLabel(t, n, r)} (${r.run_id})`, p50: r.endpoints[ep].p50_ms, p95: r.endpoints[ep].p95_ms, max: r.endpoints[ep].max_ms }))} margin={{ top: 18, left: 8, right: 24 }}>
               <PatternDefs />
               <CartesianGrid {...GRID} horizontal={false} />
               <XAxis {...AXIS} type="number" tickFormatter={n} />
               <YAxis {...AXIS} type="category" dataKey="name" width={150} interval={0} />
-              <Tooltip {...TOOLTIP} />
+              <Tooltip {...TOOLTIP} labelFormatter={(label, payload) => payload?.[0]?.payload?.full ?? label} />
               <Legend {...LEGEND} />
               <ReferenceLine x={targets[ep]} ifOverflow="extendDomain" stroke="var(--bad)" strokeDasharray="6 4" label={{ value: `${targets[ep]} ms`, fontSize: 11, fill: "var(--bad)", position: "top" }} />
               <Bar dataKey="p50" isAnimationActive={false} fill={BAR_FILL.p50} />
@@ -187,6 +187,7 @@ function Detail({ r }: { r: Run }) {
       {reasons(t, r.invalid_reasons, r.fail_reasons).map((x) => <p key={x} className="reason">{x}</p>)}
       <h3>{t("detail.latency")}</h3>
       <div className="table-wrap"><table>
+        <caption className="sr-only">{t("detail.latency")}</caption>
         <thead><tr><th scope="col">{t("detail.endpoint")}</th><th scope="col" className="num">{t("detail.samples")}</th><th scope="col" className="num">p50</th><th scope="col" className="num">p95</th><th scope="col" className="num">{t("common.max")}</th><th scope="col" className="num">{t("detail.targetP95")}</th><th scope="col">{t("detail.outcomes")}</th></tr></thead>
         <tbody>{EPS.map((ep) => { const x = r.endpoints[ep]; return (
           <tr key={ep}><td>{ep}</td><td className="num">{n(x.samples)}</td><td className="num">{f1(x.p50_ms)}</td><td className={x.p95_ms != null && x.p95_ms > x.target_p95_ms ? "num bad" : "num"}>{f1(x.p95_ms)}</td><td className="num">{f1(x.max_ms)}</td><td className="num">{n(x.target_p95_ms)}</td><td>{JSON.stringify(x.outcomes)}</td></tr>); })}</tbody>
@@ -251,6 +252,7 @@ function Detail({ r }: { r: Run }) {
         <>
           <p className="note">{t("detail.statementsNote", { statements: n(r.statements.statements), harness: n(r.statements.harness_statements) })}</p>
           <div className="table-wrap"><table>
+            <caption className="sr-only">{t("detail.statements")}</caption>
             <thead><tr><th scope="col" className="num">{t("detail.calls")}</th><th scope="col" className="num">{t("detail.rows")}</th><th scope="col" className="num">{t("detail.totalMs")}</th><th scope="col" className="num">{t("detail.meanMs")}</th><th scope="col" className="num">{t("detail.maxMs")}</th><th scope="col">{t("detail.query")}</th></tr></thead>
             <tbody>{top.map((s, i) => (
               <tr key={i}><td className="num">{n(s.calls)}</td><td className="num">{n(s.rows)}</td><td className="num">{f1(s.total_exec_ms)}</td><td className="num">{f1(s.mean_exec_ms)}</td><td className="num">{f1(s.max_exec_ms)}</td><td><code>{s.query}</code></td></tr>))}</tbody>
@@ -304,6 +306,7 @@ function OverloadRun({ o }: { o: Overload }) {
       {reasons(t, o.invalid_reasons, o.fail_reasons).map((x) => <p key={x} className="reason">{x}</p>)}
       <h3>{t("overload.perPhase")}</h3>
       <div className="table-wrap"><table>
+        <caption className="sr-only">{t("overload.perPhase")}</caption>
         <thead><tr><th scope="col">{t("overload.phase")}</th><th scope="col">{t("overload.endpoint")}</th><th scope="col" className="num">{t("overload.requests")}</th><th scope="col">{t("overload.statusCounts")}</th><th scope="col" className="num">{t("overload.retryAfter")}</th><th scope="col">{t("overload.errorCodes")}</th><th scope="col" className="num">p50</th><th scope="col" className="num">p95</th><th scope="col" className="num">{t("overload.p95Ok")}</th><th scope="col" className="num">{t("common.max")}</th></tr></thead>
         <tbody>{PHASES.flatMap((ph) => OEPS.filter((ep) => o.phases[ph]?.[ep]).map((ep) => { const x = o.phases[ph][ep]; return (
           <tr key={ph + ep}><td>{t(`overload.phases.${ph}`)}</td><td>{ep}</td><td className="num">{n(x.requests)}</td><td>{counts(x.status)}</td><td className="num">{counts(x.retry_after)}</td><td>{counts(x.error_codes)}</td><td className="num">{f1(x.p50_ms)}</td><td className="num">{f1(x.p95_ms)}</td><td className="num">{f1(x.p95_ok_ms)}</td><td className="num">{f1(x.max_ms)}</td></tr>); }))}</tbody>
@@ -365,6 +368,7 @@ function SdkResults({ data, error }: { data: SdkData | null; error: string }) {
       {data && (
         <>
           <div className="table-wrap"><table className="sdk-table">
+            <caption className="sr-only">{t("sdk.title")}</caption>
             <thead>
               <tr>
                 <th scope="col">{t("sdk.avd")}</th><th scope="col">{t("sdk.scenarioHeader")}</th><th scope="col">{t("sdk.verdict")}</th><th scope="col">{t("sdk.rate")}</th><th scope="col">{t("sdk.track")}</th><th scope="col" className="num">{t("sdk.drain")}</th>
@@ -514,7 +518,8 @@ export function App() {
       </div>
     </header>
   );
-  if (!data) return <main>{header}<p>{error || t("app.loading")}</p><SdkResults data={sdk} error={sdkError} /></main>;
+  const skip = <a className="skip-link" href="#main">{t("app.skip")}</a>;
+  if (!data) return <>{skip}<main id="main" tabIndex={-1}>{header}<p>{error || t("app.loading")}</p><SdkResults data={sdk} error={sdkError} /></main></>;
   const current = data.runs.find((r) => r.run_id === id) ?? data.runs[data.runs.length - 1];
   const overload = data.overload ?? [];
   const toc = [
@@ -524,7 +529,9 @@ export function App() {
     ...(current ? [{ id: "latency", label: t("toc.latency") }] : []),
   ];
   return (
-    <main>
+    <>
+    {skip}
+    <main id="main" tabIndex={-1}>
       {header}
       <p className="note">{t("app.source")}</p>
       <KpiStrip data={data} current={current} />
@@ -534,6 +541,7 @@ export function App() {
           <section className="card section" id="runs">
             <h2>{t("runs.title")}</h2>
             <div className="table-wrap"><table className="runs-table">
+              <caption className="sr-only">{t("runs.title")}</caption>
               <thead><tr><th scope="col">{t("runs.run")}</th><th scope="col">{t("runs.status")}</th><th scope="col">{t("runs.combination")}</th><th scope="col" className="num">{t("runs.pool")}</th><th scope="col" className="num">{t("runs.rep")}</th><th scope="col" className="num">{t("runs.injection")}</th><th scope="col" className="num">{t("runs.dropped")}</th><th scope="col" className="num">{t("runs.nonOk")}</th><th scope="col" className="num">{t("runs.skippedTicks")}</th></tr></thead>
               <tbody>{data.runs.map((r) => (
                 <tr key={r.run_id} className={r.run_id === current?.run_id ? "sel" : ""}>
@@ -549,5 +557,6 @@ export function App() {
         </div>
       </div>
     </main>
+    </>
   );
 }

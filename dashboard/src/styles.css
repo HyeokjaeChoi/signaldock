@@ -8,7 +8,6 @@ main { max-width: 1440px; margin: 0 auto; padding: var(--space-4) var(--space-4)
 /* One sticky toolbar: period, filters, apply, clear, refresh */
 .toolbar {
   position: sticky; top: 0; z-index: 10; margin-bottom: var(--space-3); padding: var(--space-3) var(--space-4);
-  background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(8px);
 }
 .toolbar-row { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-end; }
 .toolbar-form { display: contents; }
@@ -26,7 +25,11 @@ main { max-width: 1440px; margin: 0 auto; padding: var(--space-4) var(--space-4)
 
 /* Split layout: event table left, selected event right */
 .split { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(22rem, 1fr); gap: var(--space-4); align-items: start; margin-bottom: var(--space-4); }
-.pane-scroll, .detail-pane > .card { max-height: max(30rem, calc(100dvh - 13rem)); overflow: auto; }
+.pane-scroll, .detail-pane > .card {
+  max-height: max(30rem, calc(100vh - 13rem)); /* fallback for browsers without dvh */
+  max-height: max(30rem, calc(100dvh - 13rem));
+  overflow: auto; overscroll-behavior: contain;
+}
 .list-card .note { margin-bottom: var(--space-3); }
 .list-card td { white-space: nowrap; }
 .pager { margin: var(--space-3) 0 0; display: flex; gap: var(--space-2); flex-wrap: wrap; }
