@@ -1,6 +1,6 @@
 # 10. Whitespace set in the contract and fixtures
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 02, 03
 Execution: Done (merged in PR #26, 2026-10-11)

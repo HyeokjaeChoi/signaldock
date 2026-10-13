@@ -1,6 +1,6 @@
 # 14. Receipt query API (part of issue 05)
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: None
 Execution: Done (merged in PR #32, 2026-10-12)

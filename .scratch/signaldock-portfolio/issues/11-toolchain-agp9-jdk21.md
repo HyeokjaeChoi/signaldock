@@ -1,6 +1,6 @@
 # 11. Toolchain upgrade: AGP 9.3, Gradle 9.7, JDK 21
 
-Status: ready-for-review
+Status: resolved
 Type: task
 Blocked by: None
 Execution: Done (merged in PR #20, 2026-10-11)

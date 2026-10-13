@@ -1,6 +1,6 @@
 # 09. Verification evidence record for issue 01
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: None
 Execution: Done (merged in PR #24, 2026-10-11)

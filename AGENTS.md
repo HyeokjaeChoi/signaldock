@@ -38,7 +38,7 @@ Before creating or reading an issue, read `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
-Use the five default status names.
+Use the five default status names, and `resolved` for merged work.
 Before evaluating or changing an issue's status, read `docs/agents/triage-labels.md`.
 
 ### Domain docs

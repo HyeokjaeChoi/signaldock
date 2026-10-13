@@ -1,6 +1,6 @@
 # 13. Server layered Gradle modules
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 11
 Execution: Done (merged in PR #23, 2026-10-11)

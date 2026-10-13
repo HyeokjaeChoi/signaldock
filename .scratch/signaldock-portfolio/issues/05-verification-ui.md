@@ -1,9 +1,9 @@
 # 05. Demo and receipt verification Dashboard
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 02, 04
-Execution: Done
+Execution: Done (children 14, 15, 16 merged in PR #32, #38, #33)
 
 ## Scope and completion criteria
 
