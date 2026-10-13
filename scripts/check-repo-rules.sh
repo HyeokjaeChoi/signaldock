@@ -30,6 +30,9 @@ for f in $(git ls-files -- '.scratch/*/issues/*.md'); do
   if git show ":$f" | grep -q '^Execution: Done' && [ "$status" != resolved ]; then
     echo "error: $f says Execution: Done but Status is '$status'; set Status: resolved" >&2; fail=1
   fi
+  if git show ":$f" | grep -q '^Execution: Done' && ! git show ":$f" | grep -q '^Execution: Done (.*PR #[0-9]'; then
+    echo "error: $f says Execution: Done but names no merged PR (issue-tracker.md)" >&2; fail=1
+  fi
 done
 
 exit "$fail"
