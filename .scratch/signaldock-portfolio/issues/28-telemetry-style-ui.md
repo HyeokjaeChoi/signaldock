@@ -1,6 +1,6 @@
 # 28. Telemetry-style redesign of the Dashboard and the benchmark report
 
-Status: needs-triage
+Status: ready-for-agent
 Type: task
 Blocked by: 27
 Execution: Not started
@@ -20,13 +20,17 @@ Constraints:
 - Keep the existing pins unless a change is needed (TOOLCHAIN.md); a new dependency needs a reason.
 - Accessibility basics: contrast, keyboard use, readable charts without color alone.
 
-Open questions (decide before implementation):
-1. Which vendor patterns to adopt for each view: overview, event list and detail, time series, benchmark runs.
-2. Light and dark theme, and design tokens shared by the two pages.
-3. How much of the benchmark report changes (layout only, or new views such as run comparison).
+Decided questions (do not reopen):
+1. Vendor patterns per view: decided by Q140 (see `issue-28-design-references.md`).
+2. Theme and tokens: decided by Q140 (dark default, light switch, shared design tokens).
+3. Benchmark report scope: decided by Q139 and Q140 (presentation only; no A/B run compare).
 
 Done when both pages follow the recorded design decisions, existing tests pass, before and after screenshots in both languages are in the evidence folder, and a design critique (for example with `impeccable`) finds no major issue.
 
 ## Comments
 
 2026-10-13: Created at the user's request (GitHub mirror: #62). Ordered after issue 27 so that the redesign uses the message catalog from the start.
+
+2026-10-13: Q139 decides the scope: presentation layer only (tokens, light and dark theme, layout, chart style, status states, summary cards); views and behavior stay. Issue 27 is done (PR #64), so this issue is unblocked. Reference research (Lazyweb reports on the current Dashboard and benchmark report screenshots) started.
+
+2026-10-13: Reference research done: `issue-28-design-references.md` (Lazyweb reports on both pages, Mobbin captures of Sentry and Vercel kept outside the repo). Q140 fixes the pattern set. Ready for implementation.

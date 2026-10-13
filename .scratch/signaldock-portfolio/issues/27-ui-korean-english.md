@@ -1,9 +1,9 @@
 # 27. Korean and English UI for the Dashboard and the benchmark report
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Implemented on branch impl/27-ui-korean-english, PR pending
+Execution: Done (merged in PR #64, 2026-10-13 UTC)
 
 ## Scope and completion criteria
 
