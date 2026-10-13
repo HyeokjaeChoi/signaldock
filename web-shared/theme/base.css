@@ -67,11 +67,11 @@ label { color: var(--fg-muted); font-size: var(--text-sm); }
 }
 .badge::before { content: ""; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: currentColor; flex: none; }
 .badge.ok, .badge.pass { color: var(--ok); background: var(--ok-soft); border-color: transparent; }
-.badge.warn, .badge.pilot { color: var(--warn); background: var(--warn-soft); border-color: transparent; }
+.badge.warn { color: var(--warn); background: var(--warn-soft); border-color: transparent; }
 .badge.bad, .badge.fail, .badge.invalid { color: var(--bad); background: var(--bad-soft); border-color: transparent; }
 .badge.fail::before, .badge.invalid::before, .badge.bad::before { border-radius: 1px; transform: rotate(45deg) scale(0.9); }
 .badge.pilot::before, .badge.warn::before { border-radius: 0; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
-.badge.idle { color: var(--fg-muted); }
+.badge.idle, .badge.pilot { color: var(--fg-muted); }
 
 /* Cards and KPIs */
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); padding: var(--space-4); min-width: 0; }
@@ -85,7 +85,15 @@ a.kpi:active { transform: scale(0.985); }
 @media (hover: hover) and (pointer: fine) { a.kpi:hover { border-color: var(--accent); } }
 
 /* Tables: dense, readable */
-.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.table-wrap {
+  overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius-sm);
+  /* Edge shadows show that the table scrolls sideways (they fade out at the ends). */
+  background:
+    linear-gradient(to right, var(--surface) 30%, transparent) left / 2rem 100% no-repeat local,
+    linear-gradient(to left, var(--surface) 30%, transparent) right / 2rem 100% no-repeat local,
+    linear-gradient(to right, var(--line-strong), transparent) left / 0.75rem 100% no-repeat scroll,
+    linear-gradient(to left, var(--line-strong), transparent) right / 0.75rem 100% no-repeat scroll;
+}
 table { border-collapse: collapse; width: 100%; font-size: var(--text-sm); }
 th, td { text-align: left; padding: 0.3125rem 0.75rem; border-bottom: 1px solid var(--line); vertical-align: top; }
 thead th { position: sticky; top: 0; z-index: 1; background: var(--surface-raised); color: var(--fg-muted); font-weight: 600; white-space: nowrap; border-bottom-color: var(--line-strong); }

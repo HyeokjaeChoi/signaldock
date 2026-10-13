@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { LANGUAGES, formatNumber } from "../../../web-shared/i18n";
 import type { Language } from "../../../web-shared/i18n";
-import { AXIS, GRID, LEGEND, SERIES, SERIES_DASH, THEMES, TOOLTIP, useTheme } from "../../../web-shared/theme";
+import { AXIS, BAR_FILL, GRID, LEGEND, PatternDefs, SERIES, SERIES_DASH, THEMES, TOOLTIP, useTheme } from "../../../web-shared/theme";
 import type { Theme } from "../../../web-shared/theme";
 import { useTranslation } from "./i18n";
 import type { T } from "./i18n";
@@ -139,15 +139,16 @@ function Compare({ runs, targets }: { runs: Run[]; targets: Record<string, numbe
         {EPS.map((ep) => (
           <Chart key={ep} title={t("compare.chart", { endpoint: ep, target: n(targets[ep]) })} height={rowHeight(sel.length, 70)}>
             <BarChart layout="vertical" data={sel.map((r) => ({ name: `${runLabel(t, n, r)} (${r.run_id})`, p50: r.endpoints[ep].p50_ms, p95: r.endpoints[ep].p95_ms, max: r.endpoints[ep].max_ms }))} margin={{ left: 8, right: 24 }}>
+              <PatternDefs />
               <CartesianGrid {...GRID} horizontal={false} />
               <XAxis {...AXIS} type="number" tickFormatter={n} />
               <YAxis {...AXIS} type="category" dataKey="name" width={150} interval={0} />
               <Tooltip {...TOOLTIP} />
               <Legend {...LEGEND} />
               <ReferenceLine x={targets[ep]} ifOverflow="extendDomain" stroke="var(--bad)" strokeDasharray="6 4" label={{ value: `${targets[ep]} ms`, fontSize: 11, fill: "var(--bad)", position: "top" }} />
-              <Bar dataKey="p50" isAnimationActive={false} fill={SERIES[0]} />
-              <Bar dataKey="p95" isAnimationActive={false} fill={SERIES[1]} />
-              <Bar dataKey="max" name={t("common.max")} isAnimationActive={false} fill={SERIES[2]} />
+              <Bar dataKey="p50" isAnimationActive={false} fill={BAR_FILL.p50} />
+              <Bar dataKey="p95" isAnimationActive={false} fill={BAR_FILL.p95} />
+              <Bar dataKey="max" name={t("common.max")} isAnimationActive={false} fill={BAR_FILL.max} />
             </BarChart>
           </Chart>
         ))}
@@ -298,15 +299,16 @@ function OverloadRun({ o }: { o: Overload }) {
           return (
           <Chart key={ep} title={t("overload.responses", { endpoint: ep })}>
             <BarChart data={rows} margin={{ top: 22 }}>
+              <PatternDefs />
               <CartesianGrid {...GRID} vertical={false} />
               {phaseBands(t, p, rows.map((r) => r.t), false)}
               <XAxis {...AXIS} dataKey="t" interval="preserveStartEnd" minTickGap={24} />
               <YAxis {...AXIS} allowDecimals={false} width={44} />
               <Tooltip {...TOOLTIP} />
               <Legend {...LEGEND} />
-              <Bar dataKey="200" stackId="a" isAnimationActive={false} fill="var(--ok)" />
-              <Bar dataKey="503" stackId="a" isAnimationActive={false} fill={SERIES[1]} />
-              <Bar dataKey="other" name={t("common.other")} stackId="a" isAnimationActive={false} fill="var(--bad)" />
+              <Bar dataKey="200" stackId="a" isAnimationActive={false} fill={BAR_FILL.ok} />
+              <Bar dataKey="503" stackId="a" isAnimationActive={false} fill={BAR_FILL.shed} />
+              <Bar dataKey="other" name={t("common.other")} stackId="a" isAnimationActive={false} fill={BAR_FILL.other} />
             </BarChart>
           </Chart>);
         })}
@@ -375,18 +377,20 @@ function SdkResults({ data, error }: { data: SdkData | null; error: string }) {
           <div className="grid grid-wide">
             <Chart title={t("sdk.trackChart")} height={rowHeight(measured.length, 62)}>
               <BarChart layout="vertical" data={measured.map((r) => ({ name: name(r), p50: r.track_ms!.p50, p95: r.track_ms!.p95, max: r.track_ms!.max }))} margin={{ left: 8, right: 24 }}>
+              <PatternDefs />
                 <CartesianGrid {...GRID} horizontal={false} />
                 <XAxis {...AXIS} type="number" />
                 <YAxis {...AXIS} type="category" dataKey="name" width={190} interval={0} />
                 <Tooltip {...TOOLTIP} />
                 <Legend {...LEGEND} />
-                <Bar dataKey="p50" isAnimationActive={false} fill={SERIES[0]} />
-                <Bar dataKey="p95" isAnimationActive={false} fill={SERIES[1]} />
-                <Bar dataKey="max" name={t("common.max")} isAnimationActive={false} fill={SERIES[2]} />
+                <Bar dataKey="p50" isAnimationActive={false} fill={BAR_FILL.p50} />
+                <Bar dataKey="p95" isAnimationActive={false} fill={BAR_FILL.p95} />
+                <Bar dataKey="max" name={t("common.max")} isAnimationActive={false} fill={BAR_FILL.max} />
               </BarChart>
             </Chart>
             <Chart title={t("sdk.rateChart")} height={rowHeight(rateRows.length, 40)}>
               <BarChart layout="vertical" data={rateRows} margin={{ left: 8, right: 24 }}>
+              <PatternDefs />
                 <CartesianGrid {...GRID} horizontal={false} />
                 <XAxis {...AXIS} type="number" domain={[0, 110]} />
                 <YAxis {...AXIS} type="category" dataKey="name" width={190} interval={0} />

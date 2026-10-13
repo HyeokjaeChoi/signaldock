@@ -1,9 +1,9 @@
 # 28. Telemetry-style redesign of the Dashboard and the benchmark report
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: 27
-Execution: Not started
+Execution: Implemented on branch impl/28-telemetry-style-ui, PR pending
 
 ## Scope and completion criteria
 
