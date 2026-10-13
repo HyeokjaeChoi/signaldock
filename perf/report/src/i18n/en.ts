@@ -31,6 +31,7 @@ export const en = {
     runs: "Runs",
     noRunSub: "No run data",
     noOverloadSub: "No overload run",
+    noRateSub: "No overload rate",
     runsSub: "{{pilot}} pilot, {{overload}} overload",
     ms: "{{value}} ms",
   },

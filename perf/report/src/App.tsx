@@ -495,7 +495,7 @@ function KpiStrip({ data, current }: { data: Data; current: Run | undefined }) {
       <Kpi href={current ? "#latency" : undefined} label={t("kpi.max")} value={collect?.max_ms == null ? na : t("kpi.ms", { value: f1(collect.max_ms) })}
         sub={collect && current ? t("kpi.maxSub", { run: current.run_id }) : t("kpi.noRunSub")} />
       <Kpi href={overload ? "#overload" : undefined} label={t("kpi.shed")} value={shed503 === undefined ? na : pct(shed503)}
-        sub={shed503 === undefined || !overload ? t("kpi.noOverloadSub") : t("kpi.shedSub", { run: overload.run_id })} />
+        sub={!overload ? t("kpi.noOverloadSub") : shed503 === undefined ? t("kpi.noRateSub") : t("kpi.shedSub", { run: overload.run_id })} />
       <Kpi href="#runs" label={t("kpi.dropped")} value={n(dropped)} sub={t("kpi.droppedSub")} />
       <Kpi href="#runs" label={t("kpi.runs")} value={n(data.runs.length + (data.overload ?? []).length)}
         sub={t("kpi.runsSub", { pilot: n(data.runs.filter((r) => !r.counted).length), overload: n((data.overload ?? []).length) })} />

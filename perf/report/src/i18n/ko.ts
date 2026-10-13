@@ -28,6 +28,7 @@ export const ko = {
     runs: "실행 수",
     noRunSub: "실행 데이터 없음",
     noOverloadSub: "과부하 실행 없음",
+    noRateSub: "과부하 비율 없음",
     runsSub: "파일럿 {{pilot}}개, 과부하 {{overload}}개",
     ms: "{{value}} ms",
   },
