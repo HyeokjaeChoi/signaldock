@@ -44,7 +44,7 @@ Wall times are from a warm machine: the Docker layer cache and `~/.gradle` alrea
 Run in full: the clean-clone path (toolchain, Compose, ZIP, consumer R8 on emulator, demo app). Represented by one short command each: E2E (case 1 of 4), device durability (`offline` of 7 cases), SDK device measurement (`normal` of 3 scenarios, API 37 only).
 
 Not verified, with reasons:
-- Physical device (LAN address with `SIGNALDOCK_BIND_HOST`, `adb reverse` on a device): no physical device attached. The README says so. Both apps allow cleartext to `10.0.2.2` only, so a physical device needs HTTPS or a changed network security config (a code change, outside this release).
+- Physical device (LAN address with `SIGNALDOCK_BIND_HOST`, `adb reverse` on a device): no physical device attached. The README says so. This first version of the comment said a physical device needs HTTPS; Q134 (below) replaced that: a physical device uses `adb reverse` and `http://127.0.0.1:PORT`, a LAN address over HTTP is unsupported, and physical-device operation remains unverified.
 - Server pilots and the overload run (`perf/run_one.py`, `perf/overload.py`): not run. The harness uses a fixed Compose project `signaldock-perf` and volume that already exist on this machine from the earlier runs; a new clone would write new random passwords, so the old database would probably reject them, and the volume must not be deleted. Only `--help` ran. The committed results in `perf/results/` are from issue 23.
 - E2E cases 2 to 4, durability cases other than `offline`, `device-measure.sh` scenarios `offline` and `burst`, API 24: not re-run; results are in issues 20, 21, and 24.
 - `docker compose down --volumes` (reset): not run, by rule. The README warns that it deletes data.
