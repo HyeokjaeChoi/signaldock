@@ -1,9 +1,9 @@
 # 29. Accessibility and layout follow-up for the Dashboard and the benchmark report
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: 28
-Execution: Implemented on branch impl/29-ui-accessibility-follow-up, PR pending
+Execution: Done (merged in PR #72, 2026-10-14 UTC)
 
 ## Scope and completion criteria
 
@@ -31,3 +31,7 @@ Verification:
 - Screenshots (Playwright with Chrome, en and ko, dark and light, 1440 and 390 with touch emulation) of the changed areas, with measured touch sizes and page `scrollWidth` at 390 px.
 
 Out of scope: visual style choices (radius, palette, card structure, toolbar form, KPI size, run id chip style, monospace timestamps, mobile filter collapse). See issue 30.
+
+## Comments
+
+- 2026-10-14: Verification evidence (PR #72 description, run on ebcca52). Playwright with Chrome, 390 px with touch emulation, en and ko, dark and light: table Copy, event-name links, detail Copy, toolbar, pager, theme buttons, selects, and inputs measured 44 px high; page `scrollWidth` 390 of 390 on both pages. At 1440 px: Dashboard rows 31 px, report Runs rows 30 px, `scrollWidth` 1440 of 1440. Real-browser focus checks: the first Tab is the skip link, Enter focuses `main`, opening an event focuses the details heading, Close returns focus to the opener. Dashboard tests: 115 pass (new tests for items 2, 3, and 5). The screenshots were kept in the session scratchpad and are not committed; the measurements above are the record.
