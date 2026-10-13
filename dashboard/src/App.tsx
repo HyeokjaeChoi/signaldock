@@ -165,7 +165,7 @@ export function App({ api = realApi }: { api?: Api }) {
   const receivedToday = receivedOnDay(byTime.state.data, dateIn(now, tz), tz);
   const lastAt = lastReceipt(page, sort, cursors.length === 0);
   const top = topEvent(byName.state.data);
-  const { health, nextEligibleAt } = queryHealth([list.state, byName.state, byTime.state], cursors.length === 0);
+  const { health, nextEligibleAt } = queryHealth([list.state, byName.state, byTime.state], [cursors.length === 0, true, true]);
   const lastSuccess = Math.max(0, list.state.lastSuccessAt ?? 0, byName.state.lastSuccessAt ?? 0, byTime.state.lastSuccessAt ?? 0);
   const clock = (ms: number) => formatClock(ms, tz, lang);
 

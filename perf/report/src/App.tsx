@@ -475,7 +475,7 @@ function KpiStrip({ data, current }: { data: Data; current: Run | undefined }) {
   return (
     <section className="kpis" aria-label={t("kpi.label")}>
       <Kpi href="#runs" label={t("kpi.verdict")} value={<span className={`badge ${verdict}`}>{verdictText(t, verdict)}</span>}
-        sub={t("kpi.verdictSub", { pass: n(verdicts.filter((v) => v === "pass").length), total: n(verdicts.length) })} />
+        sub={t("kpi.verdictSub", { count: verdicts.length, pass: n(verdicts.filter((v) => v === "pass").length), total: n(verdicts.length) })} />
       <Kpi href={current ? "#latency" : undefined} label={t("kpi.p95")} value={collect?.p95_ms == null ? na : t("kpi.ms", { value: f1(collect.p95_ms) })}
         sub={collect && current ? t("kpi.p95Sub", { run: current.run_id, target: n(collect.target_p95_ms) }) : undefined} />
       <Kpi href={current ? "#latency" : undefined} label={t("kpi.max")} value={collect?.max_ms == null ? na : t("kpi.ms", { value: f1(collect.max_ms) })}

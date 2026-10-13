@@ -17,7 +17,8 @@ export const en = {
   kpi: {
     label: "Key numbers",
     verdict: "Verdict",
-    verdictSub: "{{pass}} of {{total}} runs pass",
+    verdictSub_one: "{{pass}} of {{total}} run passes",
+    verdictSub_other: "{{pass}} of {{total}} runs pass",
     p95: "Collection p95",
     p95Sub: "{{run}}, target {{target}} ms",
     max: "Collection max",

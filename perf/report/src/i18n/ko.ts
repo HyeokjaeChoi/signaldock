@@ -15,7 +15,7 @@ export const ko = {
   kpi: {
     label: "핵심 수치",
     verdict: "판정",
-    verdictSub: "{{total}}개 실행 중 {{pass}}개 통과",
+    verdictSub_other: "{{total}}개 실행 중 {{pass}}개 통과",
     p95: "수집 p95",
     p95Sub: "{{run}}, 목표 {{target}} ms",
     max: "수집 최댓값",

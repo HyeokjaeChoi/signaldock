@@ -31,13 +31,17 @@ export type Health = "live" | "paused" | "loading" | "retrying" | "stopped" | "i
 
 /**
  * One state for the three queries. A contract stop (Q108) wins over a retry wait (Q109), which wins over loading.
- * `polled` is false when a query does not update by itself (a list page after the first, Q77): then success is "paused", not "live".
+ * `polled` (one flag, or one per state) is false when a query does not update by itself (a list page after the
+ * first, Q77). Such a query never retries by itself, so its success or failure is "paused", never "live" or "retrying".
  */
-export function queryHealth(states: QueryState<unknown>[], polled = true): { health: Health; nextEligibleAt?: number } {
+export function queryHealth(states: QueryState<unknown>[], polled: boolean | boolean[] = true): { health: Health; nextEligibleAt?: number } {
+  const auto = (i: number) => (Array.isArray(polled) ? polled[i] ?? true : polled);
   if (states.some((s) => s.stopped)) return { health: "stopped" };
-  const waits = states.filter((s) => s.error).map((s) => s.nextEligibleAt).filter((x): x is number => x !== undefined);
-  if (states.some((s) => s.error)) return { health: "retrying", nextEligibleAt: waits.length ? Math.max(...waits) : undefined };
+  const retrying = states.filter((s, i) => s.error && auto(i));
+  const waits = retrying.map((s) => s.nextEligibleAt).filter((x): x is number => x !== undefined);
+  if (retrying.length > 0) return { health: "retrying", nextEligibleAt: waits.length ? Math.max(...waits) : undefined };
   if (states.some((s) => s.loading && !s.lastSuccessAt)) return { health: "loading" };
-  if (states.every((s) => s.lastSuccessAt)) return { health: polled ? "live" : "paused" };
+  if (states.some((s) => s.error)) return { health: "paused" };
+  if (states.every((s) => s.lastSuccessAt)) return { health: states.every((_, i) => auto(i)) ? "live" : "paused" };
   return { health: "idle" };
 }
