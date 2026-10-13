@@ -4,24 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SignalDock server load report</title>
-    <style>
-      :root { --bg: #fff; --fg: #1d2330; --muted: #6b7280; --line: #d9dde5; --c1: #2563eb; --c2: #d97706; --c3: #7c3aed; --bad: #c0392b; --ok: #1e8a4c; }
-      @media (prefers-color-scheme: dark) { :root { --bg: #14171f; --fg: #e5e7ee; --muted: #9aa1b2; --line: #333a49; --c1: #6ea0ff; --c2: #f0a23c; --c3: #b794f6; --bad: #ff7b6b; --ok: #4fd18b; } }
-      body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.45 system-ui, sans-serif; }
-      main { max-width: 1200px; margin: 0 auto; padding: 16px; }
-      h1 { font-size: 22px; } h2 { font-size: 18px; margin-top: 28px; } h3 { font-size: 15px; margin-top: 20px; }
-      .note { color: var(--muted); } .reason, .bad { color: var(--bad); }
-      table { border-collapse: collapse; width: 100%; margin: 8px 0; display: block; overflow-x: auto; }
-      th, td { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
-      caption { text-align: left; color: var(--muted); padding: 4px 0; } code { white-space: pre-wrap; word-break: break-word; font-size: 12px; }
-      tr.sel { background: color-mix(in srgb, var(--c1) 12%, transparent); }
-      button, select { font: inherit; color: inherit; background: transparent; border: 1px solid var(--line); border-radius: 4px; padding: 2px 8px; cursor: pointer; }
-      .badge { display: inline-block; border-radius: 10px; padding: 0 8px; margin-right: 4px; font-size: 12px; border: 1px solid var(--line); }
-      .badge.pass { color: var(--ok); } .badge.fail, .badge.invalid { color: var(--bad); } .badge.pilot { color: var(--c2); }
-      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px; }
-      figure { margin: 8px 0; } figcaption { font-weight: 600; margin-bottom: 4px; }
-      @media (max-width: 480px) { .grid { grid-template-columns: 1fr; } }
-    </style>
+    <!-- Theme before the first paint (ADR-0016). Same key as web-shared/theme/theme.ts; dark is the default. -->
+    <script>try{if(localStorage.getItem("signaldock.theme")==="light")document.documentElement.dataset.theme="light"}catch(e){}</script>
   </head>
   <body>
     <div id="root"></div>

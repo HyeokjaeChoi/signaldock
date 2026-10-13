@@ -1,5 +1,5 @@
 // Issue 27: the language of the Dashboard (Q135, Q136). The tests of the texts in each language are in App.test.tsx.
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { EventReceiptDetail, EventReceiptSummary } from "../../generated/typescript/models";
 import { leaves, translate } from "../../web-shared/i18n";
@@ -40,6 +40,7 @@ afterEach(() => {
   cleanup();
   vi.useRealTimers();
   window.localStorage.clear();
+  delete document.documentElement.dataset.theme;
 });
 
 /** Text and accessible names on screen. */
@@ -96,6 +97,35 @@ describe("language", () => {
     expect(document.title).toBe(ko.app.title);
     expect(window.localStorage.getItem("signaldock.lang")).toBe("ko");
     expect(screen.getByRole("combobox", { name: ko.language.label })).toBeTruthy();
+  });
+
+  it("the theme switch is labelled, defaults to dark, changes <html data-theme>, and saves the choice", async () => {
+    mount(fakeApi(), "en");
+    await flush();
+    const group = screen.getByRole("group", { name: en.theme.label });
+    const dark = within(group).getByRole("button", { name: en.theme.dark });
+    const light = within(group).getByRole("button", { name: en.theme.light });
+    expect(document.documentElement.dataset.theme ?? "dark").toBe("dark");
+    expect(dark.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(light);
+    await flush();
+    expect(document.documentElement.dataset.theme).toBe("light");
+    expect(light.getAttribute("aria-pressed")).toBe("true");
+    expect(dark.getAttribute("aria-pressed")).toBe("false");
+    expect(window.localStorage.getItem("signaldock.theme")).toBe("light");
+  });
+
+  it("shows the KPI cards from the data the page already fetched", async () => {
+    const api = fakeApi({
+      countsByName: vi.fn(async () => ({ items: [{ name: "add_to_cart", count: 3 }, { name: "screen_opened", count: 9 }], truncated: false })) as never,
+    });
+    mount(api, "en");
+    await flush();
+    const kpis = screen.getByRole("region", { name: en.kpi.label });
+    expect(within(kpis).getByText("screen_opened")).toBeTruthy();
+    expect(within(kpis).getByText(translate(en, "en", "kpi.topCount", { value: "9" }))).toBeTruthy();
+    expect(within(kpis).getByText(en.kpi.live)).toBeTruthy();
+    expect(api.countsByName).toHaveBeenCalledTimes(1); // the cards add no request
   });
 
   it("shows a known API error code in the selected language and keeps the code", async () => {

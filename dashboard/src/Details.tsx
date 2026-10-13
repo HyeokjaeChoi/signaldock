@@ -52,8 +52,8 @@ export function Details({ api, eventId, timeZone, onClose }: { api: Api; eventId
   }, [api, eventId, attempt]);
 
   return (
-    <section className="panel" aria-label={t("details.label")}>
-      <h2>
+    <section className="card detail" aria-label={t("details.label")}>
+      <h2 className="detail-head">
         {t("details.title")} <button type="button" onClick={onClose}>{t("details.close")}</button>
       </h2>
       {load.status === "loading" && <p>{t("details.loading")}</p>}
@@ -86,17 +86,19 @@ function DetailBody({ detail, timeZone }: { detail: EventReceiptDetail; timeZone
       {Object.keys(detail.properties).length === 0 ? (
         <p className="note">{t("details.noProperties")}</p>
       ) : (
-        <table>
-          <tbody>
-            {Object.entries(detail.properties).map(([k, v]) => (
-              <tr key={k}>
-                <th scope="row">{k}</th>
-                <td>{typeof v} </td>
-                <td>{String(v)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="table-wrap">
+          <table>
+            <tbody>
+              {Object.entries(detail.properties).map(([k, v]) => (
+                <tr key={k}>
+                  <th scope="row">{k}</th>
+                  <td>{typeof v} </td>
+                  <td>{String(v)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
       <h3>
         {t("details.json")} <CopyButton text={json} label={t("copy.json")} />
