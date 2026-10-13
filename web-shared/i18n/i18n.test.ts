@@ -135,9 +135,11 @@ describe.each([
   });
 
   it("both languages use the same {{placeholders}} for each key", () => {
-    const slots = (m: Messages) =>
-      new Map(leaves(m).map(([k, v]) => [base(k), [...new Set((v as string).match(/\{\{\s*[\w.]+\s*\}\}/g) ?? [])].map((s) => s.replace(/[{}\s]/g, "")).sort().join(",")]));
-    const en = slots(dictionaries.en);
-    for (const [key, ko] of slots(dictionaries.ko)) expect(ko, key).toBe(en.get(key));
+    // Every plural form must use the same placeholders as every other form of the key, in both languages.
+    const names = (v: string) => [...new Set(v.match(/\{\{\s*[\w.]+\s*\}\}/g) ?? [])].map((x) => x.replace(/[{}\s]/g, "")).sort().join(",");
+    const forms = new Map<string, Set<string>>();
+    for (const m of [dictionaries.en, dictionaries.ko])
+      for (const [k, v] of leaves(m)) forms.set(base(k), (forms.get(base(k)) ?? new Set()).add(names(v as string)));
+    for (const [key, set] of forms) expect([...set], key).toHaveLength(1);
   });
 });

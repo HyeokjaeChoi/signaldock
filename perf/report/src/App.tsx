@@ -313,13 +313,13 @@ function SdkResults({ data, error }: { data: SdkData | null; error: string }) {
               return (
                 <tr key={r.run_id}>
                   <td>{r.avd}{r.api != null && <div className="note">{t("sdk.device", { device: r.device ?? "", release: r.release ?? "", api: r.api, abi: r.abi ?? "" })}</div>}</td>
-                  <td>{t(`sdk.scenario.${r.scenario}`)}{r.started != null && r.planned != null && <div className="note">{t("sdk.events", { started: n(r.started), planned: n(r.planned), bytes: r.event_bytes ?? t("common.na"), inflight: r.max_calls_in_flight ?? 0, notOk: r.track_not_ok ?? 0 })}</div>}</td>
+                  <td>{t(`sdk.scenario.${r.scenario}`)}{r.started != null && r.planned != null && <div className="note">{t("sdk.events", { started: n(r.started), planned: n(r.planned), bytes: r.event_bytes ?? t("common.na"), inflight: r.max_calls_in_flight == null ? t("common.na") : n(r.max_calls_in_flight), notOk: r.track_not_ok ?? 0 })}</div>}</td>
                   <td><span className={`badge ${r.verdict}`}>{verdictText(t, r.verdict)}</span>{r.reasons.map((x) => <div key={x} className="reason">{x}</div>)}</td>
                   <td>{r.actual_rate_per_s == null ? t("common.na") : `${r.target_rate_per_s == null ? t("sdk.backToBack") : n(r.target_rate_per_s)} / ${n(r.actual_rate_per_s)}`}</td>
                   <td>{tm ? `${f1(tm.p50)} / ${f1(tm.p95)} / ${f1(tm.max)}` : t("common.na")}</td>
                   <td>{r.drain?.seconds == null ? t("common.na") : wait ? t("sdk.drainOffline", { seconds: f1(r.drain.seconds), wait: f1(wait) }) : f1(r.drain.seconds)}</td>
                   <td>{fb ? t("sdk.filesValue", { db: n(fb["queue.db"] ?? 0), wal: n(fb["queue.db-wal"] ?? 0), shm: n(fb["queue.db-shm"] ?? 0) }) : t("common.na")}</td>
-                  <td>{r.pss_delta_kib == null ? t("common.na") : t(r.memory_basis === "store" ? "sdk.memoryStore" : "sdk.memoryDrain", { pss: n(r.pss_delta_kib), heap: n(r.heap_delta_kib ?? 0) })}</td>
+                  <td>{r.pss_delta_kib == null ? t("common.na") : t(r.memory_basis === "store" ? "sdk.memoryStore" : "sdk.memoryDrain", { pss: n(r.pss_delta_kib), heap: r.heap_delta_kib == null ? t("common.na") : n(r.heap_delta_kib) })}</td>
                   <td>{r.missing_on_server == null ? t("common.na") : `${r.missing_on_server} / ${r.duplicate_server_rows}`}</td>
                 </tr>);
             })}</tbody>
