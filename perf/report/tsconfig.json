@@ -11,5 +11,6 @@
     "target": "ES2022",
     "types": ["vite/client"]
   },
-  "include": ["src/**/*", "../../web-shared/**/*.ts"]
+  "include": ["src/**/*", "../../web-shared/**/*.ts"],
+  "exclude": ["../../web-shared/**/*.test.ts"]
 }
