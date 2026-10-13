@@ -418,7 +418,7 @@ function useJson<D>(initial: D | undefined, url: string, noResults: string): [D 
   return [data, error ? noResults : ""];
 }
 
-const worstVerdict = (verdicts: string[]) => (verdicts.includes("fail") ? "fail" : verdicts.every((v) => v === "pass") ? "pass" : "invalid");
+const worstVerdict = (verdicts: string[]) => (verdicts.includes("fail") ? "fail" : verdicts.length > 0 && verdicts.every((v) => v === "pass") ? "pass" : "invalid");
 
 function Toc({ items }: { items: { id: string; label: string }[] }) {
   const { t } = useTranslation();
