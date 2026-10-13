@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NameChart, TimeChart } from "./Charts";
 import { CopyButton, Details } from "./Details";
 import { realApi } from "./api";
@@ -24,12 +24,12 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 interface Draft { name: string; installationId: string; eventId: string }
 const EMPTY: Draft = { name: "", installationId: "", eventId: "" };
 
-const HEALTH_BADGE: Record<Health, string> = { live: "ok", loading: "idle", retrying: "warn", stopped: "bad", idle: "idle" };
+const HEALTH_BADGE: Record<Health, string> = { live: "ok", paused: "idle", loading: "idle", retrying: "warn", stopped: "bad", idle: "idle" };
 
-function Status<D>({ label, state, tz, onRefresh }: { label: string; state: QueryState<D>; tz: string; onRefresh: () => void }) {
+function Status<D>({ label, state, tz, onRefresh, polled = true }: { label: string; state: QueryState<D>; tz: string; onRefresh: () => void; polled?: boolean }) {
   const { t, i18n } = useTranslation();
   const clock = (ms: number) => formatClock(ms, tz, i18n.language);
-  const { health } = queryHealth([state]);
+  const { health } = queryHealth([state], polled);
   return (
     <div className="status">
       <span className={`badge ${HEALTH_BADGE[health]}`}>{t(`kpi.${health}`)}</span>
@@ -159,9 +159,23 @@ export function App({ api = realApi }: { api?: Api }) {
   const receivedToday = receivedOnDay(byTime.state.data, dateIn(now, tz), tz);
   const lastAt = lastReceipt(page, sort, cursors.length === 0);
   const top = topEvent(byName.state.data);
-  const { health, nextEligibleAt } = queryHealth([list.state, byName.state, byTime.state]);
+  const { health, nextEligibleAt } = queryHealth([list.state, byName.state, byTime.state], cursors.length === 0);
   const lastSuccess = Math.max(0, list.state.lastSuccessAt ?? 0, byName.state.lastSuccessAt ?? 0, byTime.state.lastSuccessAt ?? 0);
   const clock = (ms: number) => formatClock(ms, tz, lang);
+
+  // Scroll offset = rendered toolbar height (it wraps and grows with errors), so focus never lands under it.
+  const toolbarRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = toolbarRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const root = document.documentElement;
+    const observer = new ResizeObserver(() => root.style.setProperty("--toolbar-height", `${el.offsetHeight + 16}px`));
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty("--toolbar-height");
+    };
+  }, []);
 
   return (
     <main>
@@ -185,7 +199,7 @@ export function App({ api = realApi }: { api?: Api }) {
           label={t("kpi.state")}
           value={<span className={`badge ${HEALTH_BADGE[health]}`}>{t(`kpi.${health}`)}</span>}
           sub={
-            health === "live" ? t("kpi.liveSub", { time: clock(lastSuccess) })
+            health === "live" || health === "paused" ? t("kpi.liveSub", { time: clock(lastSuccess) })
             : health === "retrying" ? (nextEligibleAt ? t("kpi.retrySub", { time: clock(nextEligibleAt) }) : undefined)
             : health === "stopped" ? t("kpi.stoppedSub")
             : undefined
@@ -194,7 +208,7 @@ export function App({ api = realApi }: { api?: Api }) {
         <Kpi label={t("kpi.top")} value={top ? <code className="kpi-name">{top.name}</code> : <span className="kpi-none">{t("kpi.none")}</span>} sub={top ? t("kpi.topCount", { value: formatNumber(top.count, lang) }) : undefined} />
       </section>
 
-      <section className="toolbar card" aria-label={t("controls.label")}>
+      <section ref={toolbarRef} className="toolbar card" aria-label={t("controls.label")}>
         <div className="toolbar-row">
           <label className="field">
             {t("controls.period")}{" "}
@@ -233,7 +247,7 @@ export function App({ api = realApi }: { api?: Api }) {
       </section>
 
       <div className="statusbar">
-        <Status label={t("status.events")} state={list.state} tz={tz} onRefresh={list.refresh} />
+        <Status label={t("status.events")} state={list.state} tz={tz} onRefresh={list.refresh} polled={cursors.length === 0} />
         <Status label={t("status.byName")} state={byName.state} tz={tz} onRefresh={byName.refresh} />
         <Status label={t("status.byTime")} state={byTime.state} tz={tz} onRefresh={byTime.refresh} />
       </div>

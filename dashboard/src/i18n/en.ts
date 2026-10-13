@@ -23,6 +23,7 @@ export const en = {
     topCount: "Count {{value}}",
     none: "No data",
     live: "Live",
+    paused: "Not updating",
     loading: "Loading",
     retrying: "Retrying",
     stopped: "Stopped",

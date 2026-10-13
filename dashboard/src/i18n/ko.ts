@@ -22,6 +22,7 @@ export const ko = {
     topCount: "건수 {{value}}",
     none: "데이터 없음",
     live: "정상",
+    paused: "자동 갱신 안 함",
     loading: "불러오는 중",
     retrying: "재시도 중",
     stopped: "중지됨",

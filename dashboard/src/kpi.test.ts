@@ -52,6 +52,7 @@ describe("lastReceipt", () => {
 describe("queryHealth", () => {
   const ok: QueryState<unknown> = { stopped: false, loading: false, lastSuccessAt: 1 };
   it("is live when every query has succeeded", () => expect(queryHealth([ok, ok]).health).toBe("live"));
+  it("is paused, not live, when a query does not poll (past list page, Q77)", () => expect(queryHealth([ok, ok], false).health).toBe("paused"));
   it("is loading before the first success", () => expect(queryHealth([ok, { stopped: false, loading: true }]).health).toBe("loading"));
   it("is idle when nothing runs (invalid period)", () => expect(queryHealth([{ stopped: false, loading: false }]).health).toBe("idle"));
   it("is retrying with the latest next-attempt time after a failure (Q109)", () => {

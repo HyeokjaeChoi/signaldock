@@ -27,14 +27,17 @@ export function lastReceipt(page: EventReceiptPage | undefined, sort: Sort, onFi
   return Math.max(...page.items.map((e) => new Date(e.receivedAt).getTime()));
 }
 
-export type Health = "live" | "loading" | "retrying" | "stopped" | "idle";
+export type Health = "live" | "paused" | "loading" | "retrying" | "stopped" | "idle";
 
-/** One state for the three queries. A contract stop (Q108) wins over a retry wait (Q109), which wins over loading. */
-export function queryHealth(states: QueryState<unknown>[]): { health: Health; nextEligibleAt?: number } {
+/**
+ * One state for the three queries. A contract stop (Q108) wins over a retry wait (Q109), which wins over loading.
+ * `polled` is false when a query does not update by itself (a list page after the first, Q77): then success is "paused", not "live".
+ */
+export function queryHealth(states: QueryState<unknown>[], polled = true): { health: Health; nextEligibleAt?: number } {
   if (states.some((s) => s.stopped)) return { health: "stopped" };
   const waits = states.filter((s) => s.error).map((s) => s.nextEligibleAt).filter((x): x is number => x !== undefined);
   if (states.some((s) => s.error)) return { health: "retrying", nextEligibleAt: waits.length ? Math.max(...waits) : undefined };
   if (states.some((s) => s.loading && !s.lastSuccessAt)) return { health: "loading" };
-  if (states.every((s) => s.lastSuccessAt)) return { health: "live" };
+  if (states.every((s) => s.lastSuccessAt)) return { health: polled ? "live" : "paused" };
   return { health: "idle" };
 }

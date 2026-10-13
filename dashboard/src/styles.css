@@ -1,5 +1,5 @@
 /* Dashboard layout (issue 28, ADR-0016). Tokens and element styles come from web-shared/theme. */
-html { scroll-padding-top: 9rem; }
+html { scroll-padding-top: var(--toolbar-height, 9rem); }
 main { max-width: 1440px; margin: 0 auto; padding: var(--space-4) var(--space-4) var(--space-7); }
 
 .kpi-none { color: var(--fg-muted); font-size: var(--text-lg); font-weight: 500; }
@@ -43,6 +43,7 @@ dd { margin: 0; overflow-wrap: anywhere; }
 }
 @media (max-width: 720px) {
   main { padding: var(--space-3); }
+  html { scroll-padding-top: 0; }
   .toolbar { position: static; }
   .toolbar .field, .toolbar .field input, .toolbar .field select { width: 100%; }
   .toolbar-row { align-items: stretch; }
