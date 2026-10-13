@@ -1,10 +1,11 @@
 # Build context is the repository root (docker-compose.yml sets it).
-# The Dashboard imports ../generated/typescript.
+# The Dashboard imports ../generated/typescript and ../web-shared.
 FROM node:24.20.0-alpine3.24@sha256:e67514e5d0f6c46656005e1b693b2ec9d52e80b641307de684d4a015ba7a4eaf AS build
 WORKDIR /repo/dashboard
 COPY dashboard/package.json dashboard/package-lock.json ./
 RUN npm ci
 COPY generated /repo/generated
+COPY web-shared /repo/web-shared
 COPY dashboard ./
 # Not a secret: the project time zone only sets period boundaries. The query key is never a build input.
 ARG VITE_SIGNALDOCK_TIME_ZONE=Asia/Seoul

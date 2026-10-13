@@ -5,6 +5,9 @@ import { defineConfig } from "vite";
 // build one IIFE bundle and load it as a classic deferred script.
 export default defineConfig({
   base: "./",
+  // web-shared/ (Q137) has no node_modules: its import of react resolves to this page's copy.
+  resolve: { dedupe: ["react", "react-dom"] },
+  server: { fs: { allow: ["../.."] } },
   plugins: [
     react(),
     {

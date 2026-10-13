@@ -3,10 +3,15 @@ import { NameChart, TimeChart } from "./Charts";
 import { CopyButton, Details } from "./Details";
 import { realApi } from "./api";
 import type { Api, Filters, Sort } from "./api";
-import { dateIn, formatInstant, resolvePeriod } from "./period";
+import { dateIn, resolvePeriod } from "./period";
 import type { Preset } from "./period";
 import { usePolledQuery } from "./polling";
 import type { QueryState } from "./polling";
+import { errorText } from "./errorText";
+import { useTranslation } from "./i18n";
+import type { T } from "./i18n";
+import { LANGUAGES, formatBucketLabel, formatClock, formatDateTime } from "../../web-shared/i18n";
+import type { Language } from "../../web-shared/i18n";
 
 // Project timezone (Q78, Q79). Compose passes SIGNALDOCK_TIME_ZONE as a build argument.
 export const PROJECT_TIME_ZONE: string = import.meta.env.VITE_SIGNALDOCK_TIME_ZONE ?? "Asia/Seoul";
@@ -15,26 +20,26 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 interface Draft { name: string; installationId: string; eventId: string }
 const EMPTY: Draft = { name: "", installationId: "", eventId: "" };
 
-const clock = (ms: number, tz: string) => new Intl.DateTimeFormat("en-GB", { timeZone: tz, hourCycle: "h23", timeStyle: "medium" }).format(ms);
-
-function Status<T>({ label, state, tz, onRefresh }: { label: string; state: QueryState<T>; tz: string; onRefresh: () => void }) {
+function Status<D>({ label, state, tz, onRefresh }: { label: string; state: QueryState<D>; tz: string; onRefresh: () => void }) {
+  const { t, i18n } = useTranslation();
+  const clock = (ms: number) => formatClock(ms, tz, i18n.language);
   return (
     <div className="status">
       <strong>{label}</strong>:{" "}
-      {state.lastSuccessAt ? `last success ${clock(state.lastSuccessAt, tz)}` : state.loading ? "loading..." : "no data yet"}
+      {state.lastSuccessAt ? t("status.lastSuccess", { time: clock(state.lastSuccessAt) }) : state.loading ? t("status.loading") : t("status.noData")}
       {state.error && (
         <span className="error" role="alert">
-          {" "}
-          | query failed: {state.error.message}
+          {" | "}
+          {t("status.queryFailed", { message: errorText(t, state.error) })}
           {state.stopped
-            ? " | Updates stopped: this Dashboard and the server use different contract versions. Existing data is kept. "
+            ? ` | ${t("status.stopped")} `
             : state.nextEligibleAt
-              ? ` | next attempt after ${clock(state.nextEligibleAt, tz)} `
+              ? ` | ${t("status.nextAttempt", { time: clock(state.nextEligibleAt) })} `
               : " "}
           {state.stopped ? (
-            <button type="button" onClick={() => window.location.reload()}>Reload page</button>
+            <button type="button" onClick={() => window.location.reload()}>{t("status.reload")}</button>
           ) : (
-            <button type="button" onClick={onRefresh}>Retry</button>
+            <button type="button" onClick={onRefresh}>{t("status.retry")}</button>
           )}
         </span>
       )}
@@ -42,8 +47,26 @@ function Status<T>({ label, state, tz, onRefresh }: { label: string; state: Quer
   );
 }
 
+function LanguageSwitch() {
+  const { t, i18n } = useTranslation();
+  return (
+    <label className="lang">
+      {t("language.label")}{" "}
+      <select value={i18n.language} onChange={(e) => i18n.changeLanguage(e.target.value as Language)}>
+        {LANGUAGES.map((l) => <option key={l} value={l}>{t(`language.${l}`)}</option>)}
+      </select>
+    </label>
+  );
+}
+
+const periodMessage = (t: T, p: { key: "period.chooseDates" | "period.endBeforeStart" | "period.tooLong"; count?: number }) =>
+  t(p.key, p.count === undefined ? undefined : { count: p.count });
+
 export function App({ api = realApi }: { api?: Api }) {
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language;
   const tz = PROJECT_TIME_ZONE;
+  useEffect(() => { document.title = t("app.title"); }, [t]);
   const [, setTick] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setTick((n) => n + 1), 1000);
@@ -82,8 +105,8 @@ export function App({ api = realApi }: { api?: Api }) {
   const resetPaging = () => setCursors([]);
   const applyFilters = (e: React.FormEvent) => {
     e.preventDefault();
-    if (draft.installationId && !UUID.test(draft.installationId)) return setFilterError("installationId must be a UUID.");
-    if (draft.eventId && !UUID.test(draft.eventId)) return setFilterError("eventId must be a UUID.");
+    if (draft.installationId && !UUID.test(draft.installationId)) return setFilterError(t("filter.installationIdUuid"));
+    if (draft.eventId && !UUID.test(draft.eventId)) return setFilterError(t("filter.eventIdUuid"));
     setFilterError("");
     setApplied(draft);
     resetPaging();
@@ -93,97 +116,89 @@ export function App({ api = realApi }: { api?: Api }) {
     byName.refresh();
     byTime.refresh();
   };
-  const timeLabel = (iso: string, bucket: string) => {
-    const t = formatInstant(iso, tz); // "dd/mm/yyyy, hh:mm:ss.mmm"
-    return bucket === "hour" ? t.slice(12, 17) : t.slice(0, 5);
-  };
+  const timeLabel = (iso: string, bucket: string) => formatBucketLabel(iso, bucket === "hour", tz, lang);
 
   const page = list.state.data;
   const today = dateIn(now, tz);
   return (
     <main>
       <header>
-        <h1>SignalDock Dashboard</h1>
+        <h1>{t("app.title")}</h1>
+        <LanguageSwitch />
         <p className="note">
-          Stored server records by receivedAt, project timezone {tz} (today is {today}).
-          {byTime.state.data && byTime.state.data.timeZone !== tz && ` The server reports ${byTime.state.data.timeZone}; period boundaries here use ${tz}.`}
-          {" "}Counts and lists are separate queries and can reflect different times. They are not the SDK's ACK counts or queue state.
+          {t("app.note", { tz, today })}
+          {byTime.state.data && byTime.state.data.timeZone !== tz && ` ${t("app.tzMismatch", { serverTz: byTime.state.data.timeZone, tz })}`}
+          {" "}{t("app.separateQueries")}
         </p>
       </header>
 
-      <section className="controls" aria-label="Period and filters">
+      <section className="controls" aria-label={t("controls.label")}>
         <label>
-          Period{" "}
+          {t("controls.period")}{" "}
           <select value={preset} onChange={(e) => { setPreset(e.target.value as Preset); resetPaging(); }}>
-            <option value="today">Today</option>
-            <option value="7d">Last 7 days</option>
-            <option value="30d">Last 30 days</option>
-            <option value="custom">Custom range</option>
+            <option value="today">{t("controls.today")}</option>
+            <option value="7d">{t("controls.last7")}</option>
+            <option value="30d">{t("controls.last30")}</option>
+            <option value="custom">{t("controls.custom")}</option>
           </select>
         </label>
         {preset === "custom" && (
           <>
-            <label>From <input type="date" value={customStart} onChange={(e) => { setCustomStart(e.target.value); resetPaging(); }} /></label>
-            <label>To <input type="date" value={customEnd} onChange={(e) => { setCustomEnd(e.target.value); resetPaging(); }} /></label>
+            <label>{t("controls.from")} <input type="date" value={customStart} onChange={(e) => { setCustomStart(e.target.value); resetPaging(); }} /></label>
+            <label>{t("controls.to")} <input type="date" value={customEnd} onChange={(e) => { setCustomEnd(e.target.value); resetPaging(); }} /></label>
           </>
         )}
         <label>
-          Sort{" "}
+          {t("controls.sort")}{" "}
           <select value={sort} onChange={(e) => { setSort(e.target.value as Sort); resetPaging(); }}>
-            <option value="receivedAt_desc">Newest first</option>
-            <option value="receivedAt_asc">Oldest first</option>
+            <option value="receivedAt_desc">{t("controls.newest")}</option>
+            <option value="receivedAt_asc">{t("controls.oldest")}</option>
           </select>
         </label>
-        <button type="button" onClick={refreshAll}>Refresh</button>
+        <button type="button" onClick={refreshAll}>{t("controls.refresh")}</button>
         <form onSubmit={applyFilters}>
-          <label>Event name <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></label>
+          <label>{t("controls.eventName")} <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></label>
           <label>installationId <input value={draft.installationId} onChange={(e) => setDraft({ ...draft, installationId: e.target.value })} /></label>
           <label>eventId <input value={draft.eventId} onChange={(e) => setDraft({ ...draft, eventId: e.target.value })} /></label>
-          <button type="submit">Apply filters</button>
-          <button type="button" onClick={() => { setDraft(EMPTY); setApplied(EMPTY); setFilterError(""); resetPaging(); }}>Clear</button>
-          <span className="note"> Exact values only.</span>
+          <button type="submit">{t("controls.apply")}</button>
+          <button type="button" onClick={() => { setDraft(EMPTY); setApplied(EMPTY); setFilterError(""); resetPaging(); }}>{t("controls.clear")}</button>
+          <span className="note"> {t("controls.exactOnly")}</span>
         </form>
         {filterError && <p className="error" role="alert">{filterError}</p>}
-        {!period.ok && <p className="error" role="alert">{period.message}</p>}
+        {!period.ok && <p className="error" role="alert">{periodMessage(t, period)}</p>}
       </section>
 
-      <Status label="Events" state={list.state} tz={tz} onRefresh={list.refresh} />
-      <Status label="Counts by name" state={byName.state} tz={tz} onRefresh={byName.refresh} />
-      <Status label="Counts by time" state={byTime.state} tz={tz} onRefresh={byTime.refresh} />
+      <Status label={t("status.events")} state={list.state} tz={tz} onRefresh={list.refresh} />
+      <Status label={t("status.byName")} state={byName.state} tz={tz} onRefresh={byName.refresh} />
+      <Status label={t("status.byTime")} state={byTime.state} tz={tz} onRefresh={byTime.refresh} />
 
       <div className="grid">
-        <section className="panel" aria-label="Counts by name">
-          <h2>Counts by name</h2>
-          {byName.state.data && (byName.state.data.items.length ? <NameChart counts={byName.state.data} /> : <p>No events received during this period</p>)}
+        <section className="panel" aria-label={t("counts.byName")}>
+          <h2>{t("counts.byName")}</h2>
+          {byName.state.data && (byName.state.data.items.length ? <NameChart counts={byName.state.data} /> : <p>{t("counts.empty")}</p>)}
         </section>
-        <section className="panel" aria-label="Counts by time">
-          <h2>Counts by time ({byTime.state.data?.bucket ?? "-"})</h2>
+        <section className="panel" aria-label={t("status.byTime")}>
+          <h2>{t("counts.byTime", { bucket: byTime.state.data ? t(`buckets.${byTime.state.data.bucket}`) : "-" })}</h2>
           {byTime.state.data && <TimeChart counts={byTime.state.data} label={timeLabel} />}
         </section>
       </div>
 
-      <section className="panel" aria-label="Event list">
-        <h2>Events, page {cursors.length + 1}</h2>
-        <p className="note">
-          One page is not the full event list. Only the first page updates by itself; use Refresh on other pages. The view never returns to the first page by itself.
-        </p>
-        {page && page.items.length === 0 && (
-          <p>
-            No events received during this period. Check the dates and filters, and generate events in the demo app.
-          </p>
-        )}
+      <section className="panel" aria-label={t("list.label")}>
+        <h2>{t("list.title", { page: cursors.length + 1 })}</h2>
+        <p className="note">{t("list.note")}</p>
+        {page && page.items.length === 0 && <p>{t("list.empty")}</p>}
         {page && page.items.length > 0 && (
           <table>
             <thead>
-              <tr><th>receivedAt</th><th>Name</th><th>Event ID</th><th>Installation ID</th><th>SDK</th></tr>
+              <tr><th>receivedAt</th><th>{t("list.name")}</th><th>{t("list.eventId")}</th><th>{t("list.installationId")}</th><th>{t("list.sdk")}</th></tr>
             </thead>
             <tbody>
               {page.items.map((ev) => (
                 <tr key={ev.eventId} className={ev.eventId === selected ? "selected" : undefined}>
-                  <td>{formatInstant(ev.receivedAt, tz)}</td>
+                  <td>{formatDateTime(ev.receivedAt, tz, lang)}</td>
                   <td><button type="button" className="link" onClick={() => setSelected(ev.eventId)}>{ev.name}</button></td>
-                  <td><code>{ev.eventId.slice(0, 8)}</code> <CopyButton text={ev.eventId} label={`Copy event ID ${ev.eventId}`} /></td>
-                  <td><code>{ev.installationId.slice(0, 8)}</code> <CopyButton text={ev.installationId} label={`Copy installation ID ${ev.installationId}`} /></td>
+                  <td><code>{ev.eventId.slice(0, 8)}</code> <CopyButton text={ev.eventId} label={t("copy.eventIdOf", { id: ev.eventId })} /></td>
+                  <td><code>{ev.installationId.slice(0, 8)}</code> <CopyButton text={ev.installationId} label={t("copy.installationIdOf", { id: ev.installationId })} /></td>
                   <td>{ev.sdkVersion}</td>
                 </tr>
               ))}
@@ -191,9 +206,9 @@ export function App({ api = realApi }: { api?: Api }) {
           </table>
         )}
         <p>
-          <button type="button" disabled={cursors.length === 0} onClick={() => setCursors(cursors.slice(0, -1))}>Previous page</button>{" "}
-          <button type="button" disabled={cursors.length === 0} onClick={resetPaging}>First page</button>{" "}
-          <button type="button" disabled={!page?.nextCursor} onClick={() => page?.nextCursor && setCursors([...cursors, page.nextCursor])}>Next page</button>
+          <button type="button" disabled={cursors.length === 0} onClick={() => setCursors(cursors.slice(0, -1))}>{t("list.previous")}</button>{" "}
+          <button type="button" disabled={cursors.length === 0} onClick={resetPaging}>{t("list.first")}</button>{" "}
+          <button type="button" disabled={!page?.nextCursor} onClick={() => page?.nextCursor && setCursors([...cursors, page.nextCursor])}>{t("list.next")}</button>
         </p>
       </section>
 

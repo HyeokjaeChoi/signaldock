@@ -3,7 +3,9 @@
 export type Preset = "today" | "7d" | "30d" | "custom";
 export const MAX_DATES = 30;
 
-export type Period = { ok: true; from: string; to: string } | { ok: false; message: string };
+/** A failed period names a message key (and a count for plurals); the UI shows it in the selected language. */
+export type PeriodError = { key: "period.chooseDates" | "period.endBeforeStart" | "period.tooLong"; count?: number };
+export type Period = { ok: true; from: string; to: string } | ({ ok: false } & PeriodError);
 
 const parts = (ms: number, timeZone: string) => {
   const f = new Intl.DateTimeFormat("en-CA", {
@@ -47,10 +49,10 @@ export function resolvePeriod(
   if (preset === "7d") start = addDays(today, -6);
   if (preset === "30d") start = addDays(today, -(MAX_DATES - 1));
   if (preset === "custom") {
-    if (!customStart || !customEnd) return { ok: false, message: "Choose a start and an end date." };
-    if (customEnd < customStart) return { ok: false, message: "The end date is before the start date." };
+    if (!customStart || !customEnd) return { ok: false, key: "period.chooseDates" };
+    if (customEnd < customStart) return { ok: false, key: "period.endBeforeStart" };
     if (daysBetween(customStart, customEnd) + 1 > MAX_DATES) {
-      return { ok: false, message: `A query can cover at most ${MAX_DATES} calendar dates.` };
+      return { ok: false, key: "period.tooLong", count: MAX_DATES };
     }
     start = customStart;
     end = customEnd;
@@ -60,11 +62,4 @@ export function resolvePeriod(
     from: new Date(midnight(start, timeZone)).toISOString(),
     to: new Date(midnight(addDays(end, 1), timeZone)).toISOString(),
   };
-}
-
-export function formatInstant(iso: string, timeZone: string): string {
-  return new Intl.DateTimeFormat("en-GB", {
-    timeZone, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", second: "2-digit", fractionalSecondDigits: 3,
-  }).format(new Date(iso));
 }

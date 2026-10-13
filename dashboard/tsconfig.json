@@ -5,10 +5,11 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "noEmit": true,
+    "paths": { "react": ["./node_modules/@types/react"], "vitest": ["./node_modules/vitest"] },
     "skipLibCheck": true,
     "strict": true,
     "target": "ES2022",
     "types": ["node", "vite/client"]
   },
-  "include": ["src/**/*", "vite.config.mts", "../generated/typescript/**/*"]
+  "include": ["src/**/*", "vite.config.mts", "../generated/typescript/**/*", "../web-shared/**/*"]
 }
