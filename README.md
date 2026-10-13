@@ -5,9 +5,8 @@ An Android event SDK designed to save events on the device and confirm server re
 This monorepo contains the design for the SDK and a local data processing server.
 Review the path from an app's `track()` call through a durable queue, retries, server deduplication, and independent artifact installation.
 
-> **Status: 2026-10-12**
-> Implementation is in progress. The SDK, the server, the Android demo app, and the Dashboard are implemented. The server and Dashboard run with Docker Compose, the SDK builds into a local Maven ZIP, and an independent consumer app uses that ZIP with an R8 release build (see below).
-> Delivery failure E2E (normal, ACK loss, partial rejection, content conflict) runs with `scripts/e2e-delivery.sh` (see below; results in issue 21). Offline recovery on devices, contract and DB change checks, and performance results are not yet available.
+> **Status: 2026-10-13**
+> The SDK, the server, the Android demo app, and the Dashboard are implemented. Delivery failure E2E, device durability, server load measurement, and SDK device measurement have scripts and recorded results (issues 20, 21, 23, 24). [Reproduce from a clean clone](#reproduce-from-a-clean-clone) lists the commands that were run in a fresh clone, and what was not verified (physical device, full measurement runs).
 
 ## Start here
 
@@ -71,37 +70,92 @@ The first release covers a native Android SDK and one local project.
 The demo follows product view, cart, and simulated purchase. The Dashboard helps verify SDK integration.
 iOS / Flutter, automatic events, `identify`, campaign / push, funnels, multiple accounts, public internet operation, and Maven Central are outside this release.
 
-Functional verification is pending. The [completion criteria](.scratch/signaldock-portfolio/spec.md#7-completion-criteria-and-verification-plan) require environment records, source revision/hash, and event ID comparisons.
+The [completion criteria](.scratch/signaldock-portfolio/spec.md#7-completion-criteria-and-verification-plan) require environment records, source revision/hash, and event ID comparisons. Each implementation issue in `.scratch/signaldock-portfolio/issues/` records what ran and what did not.
 Load and latency values in the [performance plan](.scratch/signaldock-portfolio/performance-plan.md) are targets, not measured results or an SLA.
-Steps to run and stop the server and Dashboard, to build the Maven ZIP, and to run the consumer app are below.
+Steps to run, stop, and reset the stack, to build the Maven ZIP, and to run the consumer app are below.
 
-## Run the server and Dashboard
+## Reproduce from a clean clone
 
-Needs Docker with Compose. The first build downloads base images and dependencies, so it is not fully offline.
+The commands in this section were run in a fresh clone, except `docker compose down --volumes` (the reset), which was not run on purpose. The record (commands, results, wall times) is in [issue 25](.scratch/signaldock-portfolio/issues/25-reproduction-readme-video.md). The longer guide (demo app, E2E, device scripts, measurements, physical device, reset, limits) is [docs/reproduce.md](docs/reproduce.md).
+A short video of demo `track()` to Dashboard receipt is in [`.scratch/signaldock-portfolio/evidence/25-demo-track-to-dashboard.mp4`](.scratch/signaldock-portfolio/evidence/25-demo-track-to-dashboard.mp4).
+The first run downloads the JDK, Docker images, Gradle dependencies, and npm packages. It is not fully offline.
 
-```sh
-cp .env.example .env                 # change the example keys and password
-docker compose up -d --build         # PostgreSQL, server, Dashboard
-open http://127.0.0.1:5173           # Dashboard (SIGNALDOCK_DASHBOARD_PORT)
-docker compose stop                  # stop; the DB volume is kept
-docker compose down --volumes        # RESET: deletes the DB volume and all events
-```
+You need: macOS or Linux, Docker with Compose, Python 3, `curl`, `openssl`, and an Android SDK with platform `android-36` (`ANDROID_HOME`). The device scripts also need an emulator (AVD). `scripts/device-measure.sh` also needs macOS.
 
-- The server listens on `127.0.0.1:8080`. An Android emulator reaches it as `http://10.0.2.2:8080`. Send events with `SIGNALDOCK_COLLECTION_KEY`.
-- The Dashboard holds no key. nginx proxies `GET /v1/*` and adds `SIGNALDOCK_QUERY_KEY` ([ADR-0008](docs/adr/0008-dashboard-and-compose-delivery.md)). All ports bind to `127.0.0.1`.
-- Local development: `docker compose up -d db`, then run the server from `server/` with the variables in `.env.example` and `npm run dev` in `dashboard/` (the Vite proxy adds the query key from `SIGNALDOCK_QUERY_KEY`).
-
-## Build the Maven ZIP
-
-Needs JDK 21 (`scripts/setup-toolchain.sh` installs it into `.tools/`) and an Android SDK with platform `android-36` (`ANDROID_HOME`).
+### 1. Toolchain and hooks
 
 ```sh
-export JAVA_HOME="$PWD/.tools/jdk-21.0.12.1+1"
-sdk/gradlew -p sdk :sdk-android:signaldockMavenZip --no-daemon
-# -> sdk/sdk-android/build/distributions/signaldock-sdk-android-0.1.0-maven.zip
+git clone https://github.com/HyeokjaeChoi/signaldock.git && cd signaldock
+git config core.hooksPath .githooks     # once per clone
+scripts/setup-toolchain.sh              # JDK 21, oasdiff, OpenAPI generator -> .tools/
 ```
 
-The ZIP is a Maven folder repository: AAR, sources jar, POM, and Gradle module metadata for `local.signaldock:sdk-android:0.1.0`. The first build downloads dependencies, so it is not fully offline.
+Versions and hashes: [TOOLCHAIN.md](TOOLCHAIN.md). The Gradle scripts use `.tools/jdk-21.0.12.1+1` when `JAVA_HOME` is not set.
+
+### 2. Server, PostgreSQL, and Dashboard (Compose)
+
+Create `.env` and give each secret a random value. The two keys must differ (the server refuses to start otherwise). Never commit `.env`.
+
+```sh
+cp .env.example .env
+for v in SIGNALDOCK_COLLECTION_KEY SIGNALDOCK_QUERY_KEY SIGNALDOCK_DB_PASSWORD; do
+  sed -i.bak "s|^$v=.*|$v=$(openssl rand -hex 24)|" .env
+done
+rm .env.bak
+chmod 600 .env                          # owner-only: the file holds keys and a password
+docker compose up -d --build            # PostgreSQL, server, Dashboard
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:5173/   # 200 = Dashboard is up
+```
+
+- Dashboard: `http://127.0.0.1:5173` (`SIGNALDOCK_DASHBOARD_PORT`). Host server endpoint: `http://127.0.0.1:8080`. The server container binds to `0.0.0.0:8080`, and Compose publishes every host port on `127.0.0.1` only.
+- Apps send events with `SIGNALDOCK_COLLECTION_KEY`. The Dashboard holds no key: nginx proxies `GET /v1/*` and adds `SIGNALDOCK_QUERY_KEY` ([ADR-0008](docs/adr/0008-dashboard-and-compose-delivery.md)).
+- Development mode: `docker compose up -d db`, then run the server from `server/` with the variables in `.env.example` and `npm run dev` in `dashboard/`.
+
+### 3. SDK Maven ZIP and the independent consumer app
+
+```sh
+export ANDROID_HOME="$HOME/Library/Android/sdk"     # your Android SDK path
+scripts/verify-consumer.sh
+```
+
+The script builds `signaldockMavenZip`, unzips it into a clean temporary folder, and builds `compatibility/consumer-android/` from that folder only, by the coordinate `local.signaldock:sdk-android:0.1.0`, as an R8 release. It checks the AAR Kotlin metadata version and prints the ZIP, folder, and APK paths. To keep the folder, set `SIGNALDOCK_REPO_DIR` to a new empty path first. The ZIP alone: `sdk/gradlew -p sdk :sdk-android:signaldockMavenZip --no-daemon` (output `sdk/sdk-android/build/distributions/signaldock-sdk-android-0.1.0-maven.zip`). See [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md).
+
+Now run the R8 release APK on an emulator and let it reach the server. The collection key is baked in at build time:
+
+```sh
+SIGNALDOCK_REPO_DIR=/tmp/signaldock-maven scripts/verify-consumer.sh   # new or empty folder
+set -a; . ./.env; set +a
+compatibility/consumer-android/gradlew -p compatibility/consumer-android \
+  -Psignaldock.repo=/tmp/signaldock-maven -Psignaldock.collectionKey="$SIGNALDOCK_COLLECTION_KEY" :app:assembleRelease
+"$ANDROID_HOME/emulator/emulator" -avd signaldock-api37 -no-window -no-audio -no-boot-anim -no-snapshot-save -port 5584 &
+adb -s emulator-5584 install -r compatibility/consumer-android/app/build/outputs/apk/release/app-release.apk
+adb -s emulator-5584 shell am start -n local.signaldock.consumer/.MainActivity
+```
+
+Tap "Track consumer_ping", wait about 15 seconds, then tap "Show diagnostics": `lastAck` shows `accepted=1`, and the event is in the Dashboard. The default endpoint is `http://10.0.2.2:8080` (the emulator's name for the host). Override it with `-Psignaldock.endpoint=...`. The app allows cleartext for `10.0.2.2`, `127.0.0.1`, and `localhost` only. For a physical device over USB, run `adb -s <device-serial> reverse tcp:8080 tcp:8080` (the serial from `adb devices`; needed when an emulator is also connected) and build with `-Psignaldock.endpoint=http://127.0.0.1:8080` (see [docs/reproduce.md](docs/reproduce.md)).
+
+### 4. Demo app, E2E, device checks, and measurements
+
+See [docs/reproduce.md](docs/reproduce.md). The demo app builds with `sdk/gradlew -p sdk -Psignaldock.collectionKey=... :demo:app:assembleDebug`. `scripts/e2e-delivery.sh` runs the delivery failure cases. `scripts/device-durability.sh` and `scripts/device-measure.sh` run on an emulator. `perf/` holds the server load harness.
+
+### 5. Stop and reset
+
+```sh
+docker compose stop                     # stop; the DB volume is kept
+docker compose down                     # remove containers; the DB volume is kept
+docker compose down --volumes           # RESET: deletes the DB volume and ALL stored events
+```
+
+Warning: `--volumes` deletes the PostgreSQL data. You cannot undo it. Use it only when you want an empty database. Stop the emulator with `adb -s emulator-5584 emu kill`.
+
+### Limitations
+
+- Local only. The stack binds to `127.0.0.1`, uses example-grade secrets, and has no TLS. It is not for the public internet.
+- Performance numbers are measurements of one Mac with Docker limits. They are not an SLA and not a pool-size choice ([ADR-0013](docs/adr/0013-server-load-measurement-harness.md)).
+- SDK device measurement uses a debug build of the SDK (no R8) on emulators ([ADR-0014](docs/adr/0014-sdk-device-measurement-harness.md)).
+- Cleartext HTTP works only for `10.0.2.2`, `127.0.0.1`, and `localhost` (physical device: `adb reverse`, see [docs/reproduce.md](docs/reproduce.md)). A LAN address over HTTP is not supported. The `adb reverse` route was tested on an emulator only; no physical device was used.
+- The scripts accept emulators only. `scripts/device-measure.sh` needs macOS.
+- Deduplication lasts while the server row exists. The design does not claim exactly-once delivery.
 
 ## Add the SDK to an app
 
@@ -129,41 +183,6 @@ Requirements of the 0.1.0 AAR:
 - Kotlin 2.2 or newer and AGP 9.x. The SDK metadata is 2.2, so AGP 9's default built-in Kotlin works with no extra Kotlin plugin ([ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md), Q132).
 - The host app declares `INTERNET`. The SDK needs no R8 rules of its own. The SDK reaches the server over HTTPS unless the app allows cleartext for that host.
 - Call `SignalDock.initialize(context, SignalDockConfig(endpoint, collectionKey))` once (for example in `Application.onCreate`), then `track("name") { property("key", value) }` and `diagnostics()` on the returned instance.
-
-## Run the consumer app
-
-`compatibility/consumer-android/` is a separate Gradle build. It depends only on the unzipped folder repository, compiles with API 36, and builds a release APK with R8. One command builds the ZIP, unzips it into a clean temporary folder, and builds the APK:
-
-```sh
-export ANDROID_HOME="$HOME/Library/Android/sdk"
-scripts/verify-consumer.sh
-```
-
-To run it against the Compose stack on an emulator (the collection key is baked in at build time; use your `.env` value):
-
-```sh
-cp .env.example .env && docker compose up -d --build
-SIGNALDOCK_REPO_DIR=/tmp/signaldock-maven scripts/verify-consumer.sh   # keep the unzipped folder
-compatibility/consumer-android/gradlew -p compatibility/consumer-android \
-  -Psignaldock.repo=/tmp/signaldock-maven -Psignaldock.collectionKey=<SIGNALDOCK_COLLECTION_KEY> :app:assembleRelease
-adb install -r compatibility/consumer-android/app/build/outputs/apk/release/app-release.apk
-adb shell am start -n local.signaldock.consumer/.MainActivity
-```
-
-Tap "Track consumer_ping", wait about 15 seconds, then tap "Show diagnostics": `lastAck` shows `accepted=1`. The app allows cleartext for `10.0.2.2` only. The default endpoint is `http://10.0.2.2:8080`; override it with `-Psignaldock.endpoint=...`. For a physical device, use a reachable HTTPS endpoint.
-
-## Run the delivery failure checks
-
-`scripts/e2e-delivery.sh` runs four cases against the Compose stack and the consumer app on an emulator: normal E2E, ACK loss (a fault proxy drops the response after the server commits), partial rejection, and content conflict ([ADR-0010](docs/adr/0010-delivery-failure-e2e-harness.md)). Case 1 uses both apps: the demo app (product, then add to cart: the path the spec names) and the consumer app (the R8 build of the published AAR; cases 2 and 3 use it for exact `diagnostics()` values). It builds and installs both. It needs Python 3, `.env`, the running stack, and a booted emulator. It is local only and not part of CI.
-
-```sh
-export ANDROID_HOME="$HOME/Library/Android/sdk"
-docker compose up -d --build
-"$ANDROID_HOME/emulator/emulator" -avd signaldock-api37 -no-window -no-audio -no-boot-anim &
-scripts/e2e-delivery.sh          # all cases; or: scripts/e2e-delivery.sh 2 3
-```
-
-It prints the environment, the event ID comparisons, and a PASS/FAIL summary. The events stay in the DB.
 
 ## Repository guide
 

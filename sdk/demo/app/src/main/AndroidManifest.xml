@@ -3,7 +3,7 @@
     <!-- The SDK manifest declares no permissions; the host app owns INTERNET. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- Release is HTTPS only. The debug source set adds a cleartext rule for the emulator host. -->
+    <!-- Release is HTTPS only. The debug source set adds a cleartext rule for the emulator host and loopback (Q134). -->
     <application
         android:name=".DemoApplication"
         android:allowBackup="false"
