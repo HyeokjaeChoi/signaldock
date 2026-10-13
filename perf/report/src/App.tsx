@@ -319,6 +319,7 @@ function OverloadRun({ o }: { o: Overload }) {
             <XAxis {...AXIS} dataKey="t" type="number" domain={["dataMin", "dataMax"]} />
             <YAxis {...AXIS} width={44} />
             <Tooltip {...TOOLTIP} />
+            <Legend {...LEGEND} />
             <Line dataKey="p95" stroke={SERIES[0]} strokeDasharray={SERIES_DASH[0]} strokeWidth={2} dot={false} isAnimationActive={false} />
           </LineChart>
         </Chart>
@@ -464,7 +465,7 @@ function KpiStrip({ data, current }: { data: Data; current: Run | undefined }) {
   const verdict = worstVerdict(verdicts);
   const collect = current?.endpoints.collect;
   const shed = overload?.phases.overload?.collect;
-  const shed503 = shed ? (shed.status["503"] ?? 0) / Math.max(1, shed.requests) * 100 : undefined;
+  const shed503 = shed && shed.requests > 0 ? (shed.status["503"] ?? 0) / shed.requests * 100 : undefined;
   const dropped = data.runs.reduce((sum, r) => sum + r.injection.dropped, 0) + (data.overload ?? []).reduce((sum, o) => sum + o.dropped_iterations, 0);
   const na = <span className="kpi-none">{t("common.na")}</span>;
   return (

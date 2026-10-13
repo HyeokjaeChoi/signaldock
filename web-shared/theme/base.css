@@ -54,6 +54,7 @@ label { color: var(--fg-muted); font-size: var(--text-sm); }
 /* Segmented switch (theme) */
 .seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); overflow: hidden; }
 .seg button { border: 0; border-radius: 0; background: transparent; color: var(--fg-muted); }
+.seg button:focus-visible { outline-offset: -2px; }
 .seg button + button { border-left: 1px solid var(--line-strong); }
 .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--fg); font-weight: 600; }
 .switch-group { display: flex; align-items: center; gap: var(--space-2); }
