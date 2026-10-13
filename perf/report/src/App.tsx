@@ -324,7 +324,7 @@ function SdkResults({ data, error }: { data: SdkData | null; error: string }) {
                 </tr>);
             })}</tbody>
           </table>
-          <p className="note">{t("sdk.memoryNote")}</p>
+          <p className="note">{t("sdk.memoryNote")} {t("sdk.rateNote")}</p>
           <div className="grid">
             <Chart title={t("sdk.trackChart")}>
               <BarChart data={measured.map((r) => ({ name: name(r), p50: r.track_ms!.p50, p95: r.track_ms!.p95, max: r.track_ms!.max }))}>
@@ -339,14 +339,14 @@ function SdkResults({ data, error }: { data: SdkData | null; error: string }) {
               </BarChart>
             </Chart>
             <Chart title={t("sdk.rateChart")}>
-              <BarChart data={measured.filter((r) => r.scenario !== "offline").map((r) => ({ name: name(r), target: r.target_rate_per_s, actual: r.actual_rate_per_s }))}>
+              <BarChart data={measured.filter((r) => r.target_rate_per_s && r.actual_rate_per_s != null).map((r) => ({ name: name(r), percent: Math.round((1000 * r.actual_rate_per_s!) / r.target_rate_per_s!) / 10 }))}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} />
-                <YAxis />
+                <YAxis domain={[0, 110]} />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="target" name={t("sdk.target")} isAnimationActive={false} fill="var(--c3)" />
-                <Bar dataKey="actual" name={t("sdk.actual")} isAnimationActive={false} fill="var(--c1)" />
+                <ReferenceLine y={100} stroke="var(--bad)" strokeDasharray="6 4" />
+                <Bar dataKey="percent" name={t("sdk.percent")} isAnimationActive={false} fill="var(--c1)" />
               </BarChart>
             </Chart>
           </div>
