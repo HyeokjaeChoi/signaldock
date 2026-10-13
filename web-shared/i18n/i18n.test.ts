@@ -143,3 +143,15 @@ describe.each([
     for (const [key, set] of forms) expect([...set], key).toHaveLength(1);
   });
 });
+
+// ADR-0015: `t()` takes shown values as strings; only `count` may be a number. Checked by `tsc` (dashboard typecheck).
+import type { I18n } from "./react";
+describe("t() option types", () => {
+  it("rejects a raw number except count", () => {
+    const t: I18n<Messages>["t"] = (key) => key;
+    t("k" as never, { page: formatNumber(3, "en"), count: 3 });
+    // @ts-expect-error a raw number must be formatted first
+    t("k" as never, { page: 3 });
+    expect(true).toBe(true);
+  });
+});

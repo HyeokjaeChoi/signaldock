@@ -63,8 +63,8 @@ function useFmt() {
 const verdictText = (t: T, v: string) => (v === "pass" || v === "fail" || v === "invalid" ? t(`verdict.${v}`) : v);
 const comboId = (r: Run) => `${r.combination.seed_size}|${r.combination.distribution}|${r.combination.window_days}|${r.combination.clients}`;
 const comboLabel = (t: T, n: (v: number) => string, r: Run) =>
-  t("combo.label", { rows: n(r.combination.seed_size), distribution: r.combination.distribution, days: r.combination.window_days, clients: r.combination.clients });
-const runLabel = (t: T, r: Run) => t(r.counted ? "combo.run" : "combo.runPilot", { pool: r.pool_size, rep: r.repetition });
+  t("combo.label", { rows: n(r.combination.seed_size), distribution: r.combination.distribution, days: n(r.combination.window_days), clients: n(r.combination.clients) });
+const runLabel = (t: T, n: (v: number) => string, r: Run) => t(r.counted ? "combo.run" : "combo.runPilot", { pool: n(r.pool_size), rep: n(r.repetition) });
 const dirty = (t: T, d: boolean) => (d ? ` ${t("common.dirty")}` : "");
 const reasons = (t: T, invalid: string[], fail: string[]) => [
   ...invalid.map((reason) => t("common.reasonInvalid", { reason })),
@@ -116,8 +116,8 @@ function Compare({ runs, targets }: { runs: Run[]; targets: Record<string, numbe
       <label>{t("compare.combination")} <select value={combo} onChange={(e) => setCombo(e.target.value)}>{combos.map((r) => <option key={comboId(r)} value={comboId(r)}>{comboLabel(t, n, r)}</option>)}</select></label>
       <div className="grid">
         {EPS.map((ep) => (
-          <Chart key={ep} title={t("compare.chart", { endpoint: ep, target: targets[ep] })}>
-            <BarChart data={sel.map((r) => ({ name: `${runLabel(t, r)} (${r.run_id})`, p50: r.endpoints[ep].p50_ms, p95: r.endpoints[ep].p95_ms, max: r.endpoints[ep].max_ms }))}>
+          <Chart key={ep} title={t("compare.chart", { endpoint: ep, target: n(targets[ep]) })}>
+            <BarChart data={sel.map((r) => ({ name: `${runLabel(t, n, r)} (${r.run_id})`, p50: r.endpoints[ep].p50_ms, p95: r.endpoints[ep].p95_ms, max: r.endpoints[ep].max_ms }))}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} />
               <YAxis tickFormatter={n} />
@@ -144,7 +144,7 @@ function Detail({ r }: { r: Run }) {
     <section>
       <h2>{r.run_id} <Badge r={r} /></h2>
       <p className="note">
-        {t("detail.note", { combo: comboLabel(t, n, r), pool: r.pool_size, rep: r.repetition, warmup: r.warmup_s, measure: r.measure_s, git: `${r.git.revision}${dirty(t, r.git.dirty)}` })}
+        {t("detail.note", { combo: comboLabel(t, n, r), pool: n(r.pool_size), rep: n(r.repetition), warmup: n(r.warmup_s), measure: n(r.measure_s), git: `${r.git.revision}${dirty(t, r.git.dirty)}` })}
       </p>
       {reasons(t, r.invalid_reasons, r.fail_reasons).map((x) => <p key={x} className="reason">{x}</p>)}
       <h3>{t("detail.latency")}</h3>
@@ -156,12 +156,12 @@ function Detail({ r }: { r: Run }) {
       <h3>{t("detail.validity")}</h3>
       <ul>
         <li className={r.injection.started === r.injection.scheduled && !r.injection.dropped ? "" : "bad"}>
-          {t("detail.iterations", { started: r.injection.started, scheduled: r.injection.scheduled, dropped: r.injection.dropped })}
+          {t("detail.iterations", { started: n(r.injection.started), scheduled: n(r.injection.scheduled), dropped: n(r.injection.dropped) })}
         </li>
         <li className={nonOk.length ? "bad" : ""}>{t("detail.nonOk", { value: nonOk.length ? JSON.stringify(Object.fromEntries(nonOk)) : t("common.none") })}</li>
         <li className={skipped.length ? "bad" : ""}>{t("detail.skipped", { value: skipped.length ? JSON.stringify(Object.fromEntries(skipped)) : t("common.none") })}</li>
       </ul>
-      <h3>{t("detail.hikari", { warmup: r.warmup_s })}</h3>
+      <h3>{t("detail.hikari", { warmup: n(r.warmup_s) })}</h3>
       {r.hikari_series.length ? (
         <Chart title={t("detail.hikariChart")}>
           <LineChart data={r.hikari_series.map(([ts, active, idle, pending]) => ({ t: ts, active, idle, pending }))}>
@@ -211,7 +211,7 @@ function Detail({ r }: { r: Run }) {
       <h3>{t("detail.statements")}</h3>
       {r.statements ? (
         <>
-          <p className="note">{t("detail.statementsNote", { statements: r.statements.statements, harness: r.statements.harness_statements })}</p>
+          <p className="note">{t("detail.statementsNote", { statements: n(r.statements.statements), harness: n(r.statements.harness_statements) })}</p>
           <table>
             <thead><tr><th>{t("detail.calls")}</th><th>{t("detail.rows")}</th><th>{t("detail.totalMs")}</th><th>{t("detail.meanMs")}</th><th>{t("detail.maxMs")}</th><th>{t("detail.query")}</th></tr></thead>
             <tbody>{top.map((s, i) => (
@@ -236,8 +236,8 @@ function OverloadRun({ o }: { o: Overload }) {
       <h2>{t("overload.title", { id: o.run_id })} <span className={`badge ${o.verdict}`}>{verdictText(t, o.verdict)}</span></h2>
       <p className="note">
         {t("overload.note", {
-          concurrency: p.concurrency, admission: p.admission_ms, pool: p.pool_size, rows: n(p.seed_size), dist: p.dist, days: p.window_days,
-          base: p.base_s, over: p.over_s, rec: p.rec_s, rate: p.rate, overRate: p.over_rate, heavyRate: p.heavy_rate, git: `${o.git.revision}${dirty(t, o.git.dirty)}`,
+          concurrency: n(p.concurrency), admission: n(p.admission_ms), pool: n(p.pool_size), rows: n(p.seed_size), dist: p.dist, days: n(p.window_days),
+          base: n(p.base_s), over: n(p.over_s), rec: n(p.rec_s), rate: n(p.rate), overRate: n(p.over_rate), heavyRate: n(p.heavy_rate), git: `${o.git.revision}${dirty(t, o.git.dirty)}`,
         })}
       </p>
       {reasons(t, o.invalid_reasons, o.fail_reasons).map((x) => <p key={x} className="reason">{x}</p>)}
@@ -247,7 +247,7 @@ function OverloadRun({ o }: { o: Overload }) {
         <tbody>{PHASES.flatMap((ph) => OEPS.filter((ep) => o.phases[ph]?.[ep]).map((ep) => { const x = o.phases[ph][ep]; return (
           <tr key={ph + ep}><td>{t(`overload.phases.${ph}`)}</td><td>{ep}</td><td>{n(x.requests)}</td><td>{counts(x.status)}</td><td>{counts(x.retry_after)}</td><td>{counts(x.error_codes)}</td><td>{f1(x.p50_ms)}</td><td>{f1(x.p95_ms)}</td><td>{f1(x.p95_ok_ms)}</td><td>{f1(x.max_ms)}</td></tr>); }))}</tbody>
       </table>
-      <h3>{t("overload.series", { from: p.base_s, to: p.base_s + p.over_s })}</h3>
+      <h3>{t("overload.series", { from: n(p.base_s), to: n(p.base_s + p.over_s) })}</h3>
       <div className="grid">
         {OEPS.map((ep) => (
           <Chart key={ep} title={t("overload.responses", { endpoint: ep })}>
@@ -277,9 +277,9 @@ function OverloadRun({ o }: { o: Overload }) {
       </div>
       <h3>{t("overload.recovery")}</h3>
       <ul>
-        <li>{t("overload.firstClean", { seconds: o.recovery.first_clean_5s_window_after_overload_s ?? t("common.na") })}</li>
-        <li>{t("overload.last30", { requests: o.recovery.last_30s_requests, non200: o.recovery.last_30s_non_200, p95: f1(o.recovery.last_30s_collect_p95_ms), baseline: f1(o.recovery.baseline_collect_p95_ms), limit: f1(o.recovery.limit_ms) })}</li>
-        <li>{t("overload.storage", { ok: n(rc.ok_requests), notStored: n(rc.ok_requests_not_fully_stored), shed: n(rc.shed_requests), shedRows: n(rc.rows_stored_for_shed_requests), other: n(rc.other_requests), duplicates: n(rc.duplicate_ids_in_db), dropped: o.dropped_iterations })}</li>
+        <li>{t("overload.firstClean", { seconds: o.recovery.first_clean_5s_window_after_overload_s == null ? t("common.na") : n(o.recovery.first_clean_5s_window_after_overload_s) })}</li>
+        <li>{t("overload.last30", { requests: n(o.recovery.last_30s_requests), non200: n(o.recovery.last_30s_non_200), p95: f1(o.recovery.last_30s_collect_p95_ms), baseline: f1(o.recovery.baseline_collect_p95_ms), limit: f1(o.recovery.limit_ms) })}</li>
+        <li>{t("overload.storage", { ok: n(rc.ok_requests), notStored: n(rc.ok_requests_not_fully_stored), shed: n(rc.shed_requests), shedRows: n(rc.rows_stored_for_shed_requests), other: n(rc.other_requests), duplicates: n(rc.duplicate_ids_in_db), dropped: n(o.dropped_iterations) })}</li>
       </ul>
     </section>
   );
@@ -312,8 +312,8 @@ function SdkResults({ data, error }: { data: SdkData | null; error: string }) {
               const fb = r.files_bytes_after_drain;
               return (
                 <tr key={r.run_id}>
-                  <td>{r.avd}{r.api != null && <div className="note">{t("sdk.device", { device: r.device ?? "", release: r.release ?? "", api: r.api, abi: r.abi ?? "" })}</div>}</td>
-                  <td>{t(`sdk.scenario.${r.scenario}`)}{r.started != null && r.planned != null && <div className="note">{t("sdk.events", { started: n(r.started), planned: n(r.planned), bytes: r.event_bytes ?? t("common.na"), inflight: r.max_calls_in_flight == null ? t("common.na") : n(r.max_calls_in_flight), notOk: r.track_not_ok ?? 0 })}</div>}</td>
+                  <td>{r.avd}{r.api != null && <div className="note">{t("sdk.device", { device: r.device ?? "", release: r.release ?? "", api: String(r.api), abi: r.abi ?? "" })}</div>}</td>
+                  <td>{t(`sdk.scenario.${r.scenario}`)}{r.started != null && r.planned != null && <div className="note">{t("sdk.events", { started: n(r.started), planned: n(r.planned), bytes: r.event_bytes == null ? t("common.na") : n(r.event_bytes), inflight: r.max_calls_in_flight == null ? t("common.na") : n(r.max_calls_in_flight), notOk: n(r.track_not_ok ?? 0) })}</div>}</td>
                   <td><span className={`badge ${r.verdict}`}>{verdictText(t, r.verdict)}</span>{r.reasons.map((x) => <div key={x} className="reason">{x}</div>)}</td>
                   <td>{r.actual_rate_per_s == null ? t("common.na") : `${r.target_rate_per_s == null ? t("sdk.backToBack") : n(r.target_rate_per_s)} / ${n(r.actual_rate_per_s)}`}</td>
                   <td>{tm ? `${f1(tm.p50)} / ${f1(tm.p95)} / ${f1(tm.max)}` : t("common.na")}</td>

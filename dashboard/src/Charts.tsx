@@ -19,7 +19,7 @@ export function NameChart({ counts }: { counts: EventNameCounts }) {
           <Bar dataKey="count" name={t("counts.series")} fill="#2f6fed" isAnimationActive={false} />
         </BarChart>
       </ResponsiveContainer>
-      {counts.truncated && <p className="note">{t("counts.truncated", { limit: 100 })}</p>}
+      {counts.truncated && <p className="note">{t("counts.truncated", { limit: number(100) })}</p>}
     </>
   );
 }

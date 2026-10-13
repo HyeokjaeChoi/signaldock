@@ -10,7 +10,7 @@ import type { QueryState } from "./polling";
 import { errorText } from "./errorText";
 import { useTranslation } from "./i18n";
 import type { T } from "./i18n";
-import { LANGUAGES, formatBucketLabel, formatClock, formatDate, formatDateTime } from "../../web-shared/i18n";
+import { LANGUAGES, formatBucketLabel, formatClock, formatDate, formatDateTime, formatNumber } from "../../web-shared/i18n";
 import type { Language } from "../../web-shared/i18n";
 
 // Project timezone (Q78, Q79). Compose passes SIGNALDOCK_TIME_ZONE as a build argument.
@@ -184,7 +184,7 @@ export function App({ api = realApi }: { api?: Api }) {
       </div>
 
       <section className="panel" aria-label={t("list.label")}>
-        <h2>{t("list.title", { page: cursors.length + 1 })}</h2>
+        <h2>{t("list.title", { page: formatNumber(cursors.length + 1, i18n.language) })}</h2>
         <p className="note">{t("list.note")}</p>
         {page && page.items.length === 0 && <p>{t("list.empty")}</p>}
         {page && page.items.length > 0 && (

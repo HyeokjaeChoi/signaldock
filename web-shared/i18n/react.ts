@@ -6,8 +6,14 @@ import type { Language, MessageKey, Messages } from "./messages";
 import { translate } from "./translate";
 import type { TOptions } from "./translate";
 
+/**
+ * Values shown on screen must be strings, already formatted for the language (`formatNumber`, `formatDate`).
+ * Only `count` may be a number: it selects the plural form. A raw number elsewhere fails `tsc` (ADR-0015).
+ */
+export type ShownValues<O> = { [K in keyof O]: K extends "count" ? number : string | undefined };
+
 export interface I18n<M extends Messages> {
-  t: (key: MessageKey<M>, options?: TOptions) => string;
+  t: <O extends TOptions>(key: MessageKey<M>, options?: O & ShownValues<O>) => string;
   i18n: { language: Language; changeLanguage: (language: Language) => void };
 }
 
