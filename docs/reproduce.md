@@ -50,8 +50,8 @@ SDK on a device (ADR-0014). It needs a separate Compose project with its own por
 
 ```sh
 umask 077                                          # the file holds keys and a password: owner-only
-rm -f /tmp/measure.env                             # a new file gets the owner-only mode
-cat > /tmp/measure.env <<EOT                       # values are random; keep this file out of the repository
+MEASURE_ENV="$(mktemp)"                            # a new private file outside the repository
+cat > "$MEASURE_ENV" <<EOT                         # values are random
 SIGNALDOCK_COLLECTION_KEY=$(openssl rand -hex 24)
 SIGNALDOCK_QUERY_KEY=$(openssl rand -hex 24)
 SIGNALDOCK_DB_NAME=signaldock
@@ -60,10 +60,10 @@ SIGNALDOCK_DB_PASSWORD=$(openssl rand -hex 24)
 SIGNALDOCK_DB_PORT=15434
 SIGNALDOCK_SERVER_PORT=18090
 EOT
-docker compose -p signaldock-measure --env-file /tmp/measure.env up -d --build db server
-MEASURE_PROJECT=signaldock-measure SIGNALDOCK_ENV_FILE=/tmp/measure.env \
+docker compose -p signaldock-measure --env-file "$MEASURE_ENV" up -d --build db server
+MEASURE_PROJECT=signaldock-measure SIGNALDOCK_ENV_FILE="$MEASURE_ENV" \
   scripts/device-measure.sh emulator-5584 normal          # or: normal offline burst (default: all three)
-docker compose -p signaldock-measure --env-file /tmp/measure.env down      # keeps the volume
+docker compose -p signaldock-measure --env-file "$MEASURE_ENV" down      # keeps the volume
 ```
 
 It writes `perf/sdk-results/<api>-<scenario>/` and `perf/sdk-results/summary.md` (the committed results came from the owner's runs; a new run overwrites that folder in your clone, so use a scratch clone). The `normal` scenario ran for this guide. `offline` and `burst` did not.

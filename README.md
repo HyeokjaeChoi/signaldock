@@ -80,7 +80,7 @@ Every command in this section was run in a fresh clone. The record (commands, re
 A short video of demo `track()` to Dashboard receipt is in [`.scratch/signaldock-portfolio/evidence/25-demo-track-to-dashboard.mp4`](.scratch/signaldock-portfolio/evidence/25-demo-track-to-dashboard.mp4).
 The first run downloads the JDK, Docker images, Gradle dependencies, and npm packages. It is not fully offline.
 
-You need: macOS or Linux, Docker with Compose, Python 3, `curl`, `openssl`, and an Android SDK with platform `android-36` (`ANDROID_HOME`). The device scripts also need an emulator (AVD) and macOS.
+You need: macOS or Linux, Docker with Compose, Python 3, `curl`, `openssl`, and an Android SDK with platform `android-36` (`ANDROID_HOME`). The device scripts also need an emulator (AVD). `scripts/device-measure.sh` also needs macOS.
 
 ### 1. Toolchain and hooks
 
