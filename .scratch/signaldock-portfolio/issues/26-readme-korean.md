@@ -1,9 +1,9 @@
 # 26. README Korean version
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Implemented on branch impl/26-readme-korean, PR pending
+Execution: Done (merged in PR #60, 2026-10-13 UTC)
 
 ## Scope and completion criteria
 
