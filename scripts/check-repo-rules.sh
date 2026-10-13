@@ -22,10 +22,10 @@ if git grep --cached -nE '(issue|PR) #([^0-9]|$)' -- '*.md' >&2; then
   fail=1
 fi
 
-# Issue status: one of the triage names or resolved; Done work must be resolved (PR #56 review).
+# Issue status: a triage name, or claimed/resolved (issue-tracker.md); Done work must be resolved (PR #56 review).
 for f in $(git ls-files -- '.scratch/*/issues/*.md'); do
   status="$(git show ":$f" | sed -n 's/^Status: //p' | head -1)"
-  case "$status" in needs-triage|needs-info|ready-for-agent|ready-for-human|wontfix|resolved) ;;
+  case "$status" in needs-triage|needs-info|ready-for-agent|ready-for-human|wontfix|claimed|resolved) ;;
     *) echo "error: $f has unknown Status '$status'" >&2; fail=1 ;; esac
   if git show ":$f" | grep -q '^Execution: Done' && [ "$status" != resolved ]; then
     echo "error: $f says Execution: Done but Status is '$status'; set Status: resolved" >&2; fail=1
