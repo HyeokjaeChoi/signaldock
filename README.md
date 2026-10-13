@@ -132,7 +132,7 @@ adb -s emulator-5584 install -r compatibility/consumer-android/app/build/outputs
 adb -s emulator-5584 shell am start -n local.signaldock.consumer/.MainActivity
 ```
 
-Tap "Track consumer_ping", wait about 15 seconds, then tap "Show diagnostics": `lastAck` shows `accepted=1`, and the event is in the Dashboard. The default endpoint is `http://10.0.2.2:8080` (the emulator's name for the host). Override it with `-Psignaldock.endpoint=...`. The app allows cleartext for `10.0.2.2`, `127.0.0.1`, and `localhost` only. For a physical device over USB, run `adb reverse tcp:8080 tcp:8080` and build with `-Psignaldock.endpoint=http://127.0.0.1:8080` (see [docs/reproduce.md](docs/reproduce.md)).
+Tap "Track consumer_ping", wait about 15 seconds, then tap "Show diagnostics": `lastAck` shows `accepted=1`, and the event is in the Dashboard. The default endpoint is `http://10.0.2.2:8080` (the emulator's name for the host). Override it with `-Psignaldock.endpoint=...`. The app allows cleartext for `10.0.2.2`, `127.0.0.1`, and `localhost` only. For a physical device over USB, run `adb -s <device-serial> reverse tcp:8080 tcp:8080` (the serial from `adb devices`; needed when an emulator is also connected) and build with `-Psignaldock.endpoint=http://127.0.0.1:8080` (see [docs/reproduce.md](docs/reproduce.md)).
 
 ### 4. Demo app, E2E, device checks, and measurements
 
