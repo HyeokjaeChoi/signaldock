@@ -60,7 +60,7 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 button.link { background: none; border: 0; padding: 0; min-height: 0; color: var(--accent); text-align: left; }
 button.link:active:not(:disabled) { transform: none; }
 @media (hover: hover) and (pointer: fine) { button.link:hover:not(:disabled) { background: none; } }
-button.link[aria-current="true"] { font-weight: 650; }
+button.link[aria-current="true"], button.link[aria-pressed="true"] { font-weight: 650; }
 /* Copy: one look everywhere. Ghost at rest on hover devices, border shown when its row/definition is hovered or focused; touch always shows the border.
    min-width reserves room for "Copied" and "Copy failed", so the label change does not move its neighbours. */
 button.copy { margin-left: 0.5rem; min-height: 1.25rem; min-width: 4.5rem; padding: 0 0.5rem; font-size: var(--text-xs); color: var(--fg-muted); vertical-align: middle; text-align: center; }
@@ -102,13 +102,16 @@ label { color: var(--fg-muted); font-size: var(--text-sm); }
 /* Cards and KPIs */
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); padding: var(--space-4); min-width: 0; }
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4); }
-.kpi { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-3) var(--space-4); text-decoration: none; color: var(--fg); min-width: 0; }
+.kpi { display: flex; flex-direction: column; gap: 0.125rem; padding: var(--space-2) var(--space-3); text-decoration: none; color: var(--fg); min-width: 0; }
 .kpi-label { color: var(--fg-muted); font-size: var(--text-sm); }
-.kpi-value { font-size: var(--text-kpi); line-height: 1.2; font-weight: 650; letter-spacing: -0.01em; overflow-wrap: anywhere; min-height: 1.9rem; display: flex; align-items: center; }
+.kpi-value { font-size: var(--text-kpi); line-height: 1.2; font-weight: 650; letter-spacing: -0.01em; overflow-wrap: anywhere; min-height: 1.75rem; display: flex; align-items: center; }
 .kpi-sub { color: var(--fg-muted); font-size: var(--text-xs); overflow-wrap: anywhere; }
 a.kpi { transition: border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out); }
 a.kpi:active { transform: scale(0.985); }
 @media (hover: hover) and (pointer: fine) { a.kpi:hover { border-color: var(--accent); } }
+
+/* A table or code block inside a card has no border of its own: a card in a card reads as noise (Q142). */
+.card .table-wrap, .card pre { border: 0; }
 
 /* Tables: dense, readable */
 .table-wrap {
@@ -131,6 +134,9 @@ tr.selected, tr.sel { background: var(--accent-soft); }
 tr.selected td:first-child, tr.sel td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
 @media (hover: hover) and (pointer: fine) { tbody tr:hover { background: color-mix(in srgb, var(--fg) 5%, transparent); } }
 td.bad { font-weight: 600; }
+/* Timestamp (Q146): monospace, the date part dimmed so the time of day stands out. */
+.stamp { font-family: var(--font-mono); font-size: var(--text-xs); }
+.stamp-date { color: var(--fg-muted); }
 th.num, td.num { text-align: right; }
 
 /* Touch devices: larger targets (44px controls, Copy, and links in tables); desktop rows keep their height */

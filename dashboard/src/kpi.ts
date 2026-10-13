@@ -14,6 +14,11 @@ export function receivedOnDay(counts: EventTimeCounts | undefined, day: string, 
   return buckets.length ? buckets.reduce((sum, b) => sum + b.count, 0) : undefined;
 }
 
+/** Events of the whole shown period: the sum of all by-time buckets (Q144). `undefined` before the first result. Filters in force apply. */
+export function periodTotal(counts: EventTimeCounts | undefined): number | undefined {
+  return counts ? counts.items.reduce((sum, b) => sum + b.count, 0) : undefined;
+}
+
 /** The name with the largest count. A tie keeps the first name in server order. */
 export function topEvent(counts: EventNameCounts | undefined): { name: string; count: number } | undefined {
   let top: { name: string; count: number } | undefined;

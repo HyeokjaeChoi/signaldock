@@ -5,9 +5,10 @@ main { max-width: 1440px; margin: 0 auto; padding: var(--space-4) var(--space-4)
 .kpi-none { color: var(--fg-muted); font-size: var(--text-lg); font-weight: 500; }
 .kpi-name { font-size: var(--text-lg); font-weight: 600; }
 
-/* One sticky toolbar: period, filters, apply, clear, refresh */
+/* One sticky toolbar: period, filters, apply, clear, refresh. A flat bar with a bottom border, not a card (Q142); opaque, so rows do not show through (issue 29). */
 .toolbar {
-  position: sticky; top: 0; z-index: 10; margin-bottom: var(--space-3); padding: var(--space-3) var(--space-4);
+  position: sticky; top: 0; z-index: 10; margin-bottom: var(--space-3); padding: var(--space-3) 0;
+  background: var(--bg); border-bottom: 1px solid var(--line);
 }
 .toolbar-row { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-end; }
 .toolbar-form { display: contents; }
@@ -61,7 +62,18 @@ dd button.copy { margin-left: 0; min-width: 4rem; }
   /* Six columns: Period and Sort take three each, filter fields six, the three buttons two each. */
   .toolbar-row { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--space-2) var(--space-3); align-items: stretch; }
   .toolbar-row > .field { grid-column: span 3; }
-  .toolbar-form .field { grid-column: span 6; }
+  .toolbar-form > .field { grid-column: span 6; }
+  /* "More filters" disclosure (Q147): the three exact filters. The summary is a full-width control. */
+  .more-filters { grid-column: span 6; }
+  .more-filters summary {
+    display: flex; align-items: center; min-height: 2rem; padding: 0.25rem 0.625rem; cursor: pointer; list-style: none;
+    background: var(--surface-raised); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); color: var(--fg);
+  }
+  .more-filters summary::-webkit-details-marker { display: none; }
+  .more-filters summary::after { content: ""; margin-left: auto; width: 0.75rem; height: 0.75rem; background: var(--chevron) center / contain no-repeat; }
+  @media (pointer: coarse) { .more-filters summary { min-height: 2.75rem; } }
+  .more-filters[open] summary::after { transform: rotate(180deg); }
+  .more-filters-body { display: grid; gap: var(--space-2); margin-top: var(--space-2); }
   /* Apply gets a full row; Clear and Refresh split the next one. */
   .toolbar-actions { grid-column: span 6; display: grid; grid-template-columns: 1fr 1fr; margin-left: 0; }
   .toolbar-actions .primary { grid-column: 1 / -1; }

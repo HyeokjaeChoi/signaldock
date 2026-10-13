@@ -464,12 +464,12 @@ function Toc({ items }: { items: { id: string; label: string }[] }) {
 }
 
 /** A card links to its section; without a section on the page (no overload run, no run) it is plain content. */
-function Kpi({ href, label, value, sub }: { href?: string; label: string; value: React.ReactNode; sub?: string }) {
+function Kpi({ href, label, value, sub }: { href?: string; label: string; value: React.ReactNode; sub: string }) {
   const body = (
     <>
       <span className="kpi-label">{label}</span>
       <span className="kpi-value">{value}</span>
-      {sub && <span className="kpi-sub">{sub}</span>}
+      <span className="kpi-sub">{sub}</span>
     </>
   );
   return href ? <a className="card kpi" href={href}>{body}</a> : <div className="card kpi">{body}</div>;
@@ -491,11 +491,11 @@ function KpiStrip({ data, current }: { data: Data; current: Run | undefined }) {
       <Kpi href="#runs" label={t("kpi.verdict")} value={<span className={`badge ${verdict}`}>{verdictText(t, verdict)}</span>}
         sub={t("kpi.verdictSub", { count: verdicts.length, pass: n(verdicts.filter((v) => v === "pass").length), total: n(verdicts.length) })} />
       <Kpi href={current ? "#latency" : undefined} label={t("kpi.p95")} value={collect?.p95_ms == null ? na : t("kpi.ms", { value: f1(collect.p95_ms) })}
-        sub={collect && current ? t("kpi.p95Sub", { run: current.run_id, target: n(collect.target_p95_ms) }) : undefined} />
+        sub={collect && current ? t("kpi.p95Sub", { run: current.run_id, target: n(collect.target_p95_ms) }) : t("kpi.noRunSub")} />
       <Kpi href={current ? "#latency" : undefined} label={t("kpi.max")} value={collect?.max_ms == null ? na : t("kpi.ms", { value: f1(collect.max_ms) })}
-        sub={collect && current ? t("kpi.maxSub", { run: current.run_id }) : undefined} />
+        sub={collect && current ? t("kpi.maxSub", { run: current.run_id }) : t("kpi.noRunSub")} />
       <Kpi href={overload ? "#overload" : undefined} label={t("kpi.shed")} value={shed503 === undefined ? na : pct(shed503)}
-        sub={shed503 === undefined || !overload ? undefined : t("kpi.shedSub", { run: overload.run_id })} />
+        sub={shed503 === undefined || !overload ? t("kpi.noOverloadSub") : t("kpi.shedSub", { run: overload.run_id })} />
       <Kpi href="#runs" label={t("kpi.dropped")} value={n(dropped)} sub={t("kpi.droppedSub")} />
       <Kpi href="#runs" label={t("kpi.runs")} value={n(data.runs.length + (data.overload ?? []).length)}
         sub={t("kpi.runsSub", { pilot: n(data.runs.filter((r) => !r.counted).length), overload: n((data.overload ?? []).length) })} />
@@ -545,7 +545,7 @@ export function App() {
               <thead><tr><th scope="col">{t("runs.run")}</th><th scope="col">{t("runs.status")}</th><th scope="col">{t("runs.combination")}</th><th scope="col" className="num">{t("runs.pool")}</th><th scope="col" className="num">{t("runs.rep")}</th><th scope="col" className="num">{t("runs.injection")}</th><th scope="col" className="num">{t("runs.dropped")}</th><th scope="col" className="num">{t("runs.nonOk")}</th><th scope="col" className="num">{t("runs.skippedTicks")}</th></tr></thead>
               <tbody>{data.runs.map((r) => (
                 <tr key={r.run_id} className={r.run_id === current?.run_id ? "sel" : ""}>
-                  <td><button type="button" aria-pressed={r.run_id === current?.run_id} onClick={() => setId(r.run_id)}>{r.run_id}</button></td><td><Badge r={r} /></td><td>{comboLabel(t, n, r)}</td><td className="num">{n(r.pool_size)}</td><td className="num">{n(r.repetition)}</td>
+                  <td><button type="button" className="link" aria-pressed={r.run_id === current?.run_id} onClick={() => setId(r.run_id)}>{r.run_id}</button></td><td><Badge r={r} /></td><td>{comboLabel(t, n, r)}</td><td className="num">{n(r.pool_size)}</td><td className="num">{n(r.repetition)}</td>
                   <td className="num">{n(r.injection.started)} / {n(r.injection.scheduled)}</td><td className="num">{n(r.injection.dropped)}</td>
                   <td className="num">{Object.keys(r.non_ok_outcomes).length ? t("common.yes") : n(0)}</td><td className="num">{n(Object.values(r.skipped_ticks).reduce((a, b) => a + b, 0))}</td>
                 </tr>))}</tbody>

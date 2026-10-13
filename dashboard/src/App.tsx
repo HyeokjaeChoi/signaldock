@@ -8,11 +8,11 @@ import type { Preset } from "./period";
 import { usePolledQuery } from "./polling";
 import type { QueryState } from "./polling";
 import { errorText } from "./errorText";
-import { lastReceipt, queryHealth, receivedOnDay, topEvent } from "./kpi";
+import { lastReceipt, periodTotal, queryHealth, receivedOnDay, topEvent } from "./kpi";
 import type { Health } from "./kpi";
 import { useTranslation } from "./i18n";
 import type { T } from "./i18n";
-import { LANGUAGES, formatBucketLabel, formatClock, formatDate, formatDateTime, formatNumber } from "../../web-shared/i18n";
+import { LANGUAGES, formatBucketLabel, formatClock, formatDate, formatDateTimeParts, formatNumber } from "../../web-shared/i18n";
 import type { Language } from "../../web-shared/i18n";
 import { THEMES, useTheme } from "../../web-shared/theme";
 import type { Theme } from "../../web-shared/theme";
@@ -95,6 +95,28 @@ function Kpi({ label, value, sub, className }: { label: string; value: React.Rea
   );
 }
 
+/** Table timestamp (Q146): monospace, date dimmed. The `time` element keeps the exact instant for machines. */
+function Stamp({ iso, tz, lang }: { iso: string | Date; tz: string; lang: Language }) {
+  const { date, time } = formatDateTimeParts(iso, tz, lang);
+  return <time className="stamp" dateTime={new Date(iso).toISOString()}><span className="stamp-date">{date}</span> {time}</time>;
+}
+
+/** The toolbar breakpoint of styles.css (ADR-0016 decision 6). The narrow layout needs a different element (a disclosure), not only other CSS. */
+const NARROW = "(max-width: 720px)";
+function useNarrow() {
+  const has = typeof window !== "undefined" && typeof window.matchMedia === "function";
+  const [narrow, setNarrow] = useState(() => has && window.matchMedia(NARROW).matches);
+  useEffect(() => {
+    if (!has) return;
+    const mq = window.matchMedia(NARROW);
+    const update = () => setNarrow(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, [has]);
+  return narrow;
+}
+
 const periodMessage = (t: T, p: { key: "period.chooseDates" | "period.endBeforeStart" | "period.tooLong"; count?: number }) =>
   t(p.key, p.count === undefined ? undefined : { count: p.count });
 
@@ -173,11 +195,17 @@ export function App({ api = realApi }: { api?: Api }) {
 
   // KPI values: derived from the three queries above (Q140). No extra request.
   const receivedToday = receivedOnDay(byTime.state.data, dateIn(now, tz), tz);
+  const shownTotal = periodTotal(byTime.state.data);
   const lastAt = lastReceipt(page, sort, cursors.length === 0);
   const top = topEvent(byName.state.data);
   const { health, nextEligibleAt } = queryHealth([list.state, byName.state, byTime.state], [cursors.length === 0, true, true]);
   const lastSuccess = Math.max(0, list.state.lastSuccessAt ?? 0, byName.state.lastSuccessAt ?? 0, byTime.state.lastSuccessAt ?? 0);
   const clock = (ms: number) => formatClock(ms, tz, lang);
+
+  // At 720 px or less the three exact filters sit in a disclosure that is open while a filter is in force (Q147).
+  const narrow = useNarrow();
+  const [moreOpen, setMoreOpen] = useState(false);
+  useEffect(() => { setMoreOpen(filtered); }, [filtered]);
 
   // Scroll offset = rendered toolbar height (it wraps and grows with errors), so focus never lands under it.
   const toolbarRef = useRef<HTMLElement>(null);
@@ -192,6 +220,14 @@ export function App({ api = realApi }: { api?: Api }) {
       root.style.removeProperty("--toolbar-height");
     };
   }, []);
+
+  const filterFields = (
+    <>
+      <label className="field">{t("controls.eventName")} <input name="eventName" autoComplete="off" spellCheck={false} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></label>
+      <label className="field">installationId <input name="installationId" autoComplete="off" spellCheck={false} aria-invalid={filterError === "filter.installationIdUuid" || undefined} aria-describedby={filterError === "filter.installationIdUuid" ? "filter-error" : undefined} value={draft.installationId} onChange={(e) => setDraft({ ...draft, installationId: e.target.value })} /></label>
+      <label className="field">eventId <input name="eventId" autoComplete="off" spellCheck={false} aria-invalid={filterError === "filter.eventIdUuid" || undefined} aria-describedby={filterError === "filter.eventIdUuid" ? "filter-error" : undefined} value={draft.eventId} onChange={(e) => setDraft({ ...draft, eventId: e.target.value })} /></label>
+    </>
+  );
 
   return (
     <>
@@ -211,22 +247,22 @@ export function App({ api = realApi }: { api?: Api }) {
       </header>
 
       <section className="kpis" aria-label={t("kpi.label")}>
-        <Kpi label={t("kpi.today")} value={receivedToday === undefined ? <span className="kpi-none">{t("kpi.none")}</span> : formatNumber(receivedToday, lang)} sub={filtered ? t("kpi.todayHint") : undefined} />
+        <Kpi label={t("kpi.today")} value={receivedToday === undefined ? <span className="kpi-none">{t("kpi.none")}</span> : formatNumber(receivedToday, lang)} sub={shownTotal === undefined ? t("kpi.todayHint") : t(filtered ? "kpi.todaySubFiltered" : "kpi.todaySub", { value: formatNumber(shownTotal, lang) })} />
         <Kpi label={t("kpi.lastReceipt")} value={lastAt === undefined ? <span className="kpi-none">{t("kpi.none")}</span> : formatClock(lastAt, tz, lang)} sub={lastAt === undefined ? t("kpi.lastReceiptHint") : formatDate(lastAt, tz, lang)} />
         <Kpi
           label={t("kpi.state")}
           value={<span className={`badge ${HEALTH_BADGE[health]}`}>{t(`kpi.${health}`)}</span>}
           sub={
             health === "live" || health === "paused" ? t("kpi.liveSub", { time: clock(lastSuccess) })
-            : health === "retrying" ? (nextEligibleAt ? t("kpi.retrySub", { time: clock(nextEligibleAt) }) : undefined)
+            : health === "retrying" ? (nextEligibleAt ? t("kpi.retrySub", { time: clock(nextEligibleAt) }) : t("kpi.noSuccessSub"))
             : health === "stopped" ? t("kpi.stoppedSub")
-            : undefined
+            : t("kpi.noSuccessSub")
           }
         />
-        <Kpi label={t("kpi.top")} value={top ? <code className="kpi-name">{top.name}</code> : <span className="kpi-none">{t("kpi.none")}</span>} sub={top ? t("kpi.topCount", { value: formatNumber(top.count, lang) }) : undefined} />
+        <Kpi label={t("kpi.top")} value={top ? <code className="kpi-name">{top.name}</code> : <span className="kpi-none">{t("kpi.none")}</span>} sub={top ? t("kpi.topCount", { value: formatNumber(top.count, lang) }) : t("kpi.topNoneSub")} />
       </section>
 
-      <section ref={toolbarRef} className="toolbar card" aria-label={t("controls.label")}>
+      <section ref={toolbarRef} className="toolbar" aria-label={t("controls.label")}>
         <div className="toolbar-row">
           <label className="field">
             {t("controls.period")}{" "}
@@ -251,9 +287,12 @@ export function App({ api = realApi }: { api?: Api }) {
             </select>
           </label>
           <form onSubmit={applyFilters} className="toolbar-form">
-            <label className="field">{t("controls.eventName")} <input name="eventName" autoComplete="off" spellCheck={false} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></label>
-            <label className="field">installationId <input name="installationId" autoComplete="off" spellCheck={false} aria-invalid={filterError === "filter.installationIdUuid" || undefined} aria-describedby={filterError === "filter.installationIdUuid" ? "filter-error" : undefined} value={draft.installationId} onChange={(e) => setDraft({ ...draft, installationId: e.target.value })} /></label>
-            <label className="field">eventId <input name="eventId" autoComplete="off" spellCheck={false} aria-invalid={filterError === "filter.eventIdUuid" || undefined} aria-describedby={filterError === "filter.eventIdUuid" ? "filter-error" : undefined} value={draft.eventId} onChange={(e) => setDraft({ ...draft, eventId: e.target.value })} /></label>
+            {narrow ? (
+              <details className="more-filters" open={moreOpen} onToggle={(e) => setMoreOpen(e.currentTarget.open)}>
+                <summary>{t("controls.moreFilters")}</summary>
+                <div className="more-filters-body">{filterFields}</div>
+              </details>
+            ) : filterFields}
             <div className="toolbar-actions">
               <button type="submit" className="primary">{t("controls.apply")}</button>
               <button type="button" onClick={() => { setDraft(EMPTY); setApplied(EMPTY); setFilterError(""); resetPaging(); }}>{t("controls.clear")}</button>
@@ -287,7 +326,7 @@ export function App({ api = realApi }: { api?: Api }) {
                 <tbody>
                   {page.items.map((ev) => (
                     <tr key={ev.eventId} className={ev.eventId === selected ? "selected" : undefined}>
-                      <td>{formatDateTime(ev.receivedAt, tz, lang)}</td>
+                      <td><Stamp iso={ev.receivedAt} tz={tz} lang={lang} /></td>
                       <td><button type="button" className="link" ref={(el) => { if (el) rowLinks.current.set(ev.eventId, el); else rowLinks.current.delete(ev.eventId); }} aria-current={ev.eventId === selected ? "true" : undefined} onClick={() => setSelected(ev.eventId)}>{ev.name}</button></td>
                       <td><code>{ev.eventId.slice(0, 8)}</code> <CopyButton text={ev.eventId} label={t("copy.eventIdOf", { id: ev.eventId })} /></td>
                       <td><code>{ev.installationId.slice(0, 8)}</code> <CopyButton text={ev.installationId} label={t("copy.installationIdOf", { id: ev.installationId })} /></td>

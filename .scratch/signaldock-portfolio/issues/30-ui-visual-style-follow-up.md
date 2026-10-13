@@ -1,9 +1,9 @@
 # 30. Visual style follow-up for the Dashboard and the benchmark report
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: 29
-Execution: Not started
+Execution: Implemented on branch impl/30-ui-visual-style, PR pending
 
 ## Scope and completion criteria
 

@@ -1,12 +1,20 @@
 import { describe, expect, it } from "vitest";
 import type { EventReceiptPage, EventTimeCounts } from "../../generated/typescript/models";
-import { lastReceipt, queryHealth, receivedOnDay, topEvent } from "./kpi";
+import { lastReceipt, periodTotal, queryHealth, receivedOnDay, topEvent } from "./kpi";
 import { QueryError } from "./polling";
 import type { QueryState } from "./polling";
 
 const TZ = "Asia/Seoul";
 const hourly = (items: [string, number][]): EventTimeCounts =>
   ({ timeZone: TZ, bucket: "hour", items: items.map(([start, count]) => ({ start, count })) }) as never;
+
+describe("periodTotal", () => {
+  it("sums every bucket of the shown period, and is undefined before the first result (Q144)", () => {
+    expect(periodTotal(hourly([["2026-10-12T14:00:00Z", 7], ["2026-10-01T00:00:00Z", 5]]))).toBe(12);
+    expect(periodTotal(hourly([]))).toBe(0);
+    expect(periodTotal(undefined)).toBeUndefined();
+  });
+});
 
 describe("receivedOnDay", () => {
   it("sums the buckets that start on the day in the project timezone", () => {

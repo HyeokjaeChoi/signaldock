@@ -29,6 +29,8 @@ export const en = {
     dropped: "Dropped iterations",
     droppedSub: "all server runs",
     runs: "Runs",
+    noRunSub: "No run data",
+    noOverloadSub: "No overload run",
     runsSub: "{{pilot}} pilot, {{overload}} overload",
     ms: "{{value}} ms",
   },
