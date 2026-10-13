@@ -265,6 +265,19 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
       expect(d.contains(screen.getByRole("combobox", { name: new RegExp(t("controls.sort")) }))).toBe(false);
     });
 
+    it("opens the disclosure and focuses the field when Apply finds an invalid installationId", async () => {
+      const { container } = render(fakeApi());
+      await flush();
+      const input = container.querySelector<HTMLInputElement>("input[name='installationId']")!;
+      fireEvent.change(input, { target: { value: "not-a-uuid" } });
+      disclosure(container).open = false;
+      fireEvent(disclosure(container), new Event("toggle"));
+      fireEvent.click(screen.getByRole("button", { name: t("controls.apply") }));
+      await flush();
+      expect(disclosure(container).open).toBe(true);
+      expect(document.activeElement).toBe(input);
+    });
+
     it("closes on Clear also when the draft was never applied", async () => {
       const { container } = render(fakeApi());
       await flush();

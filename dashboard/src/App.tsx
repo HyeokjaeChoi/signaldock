@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { NameChart, TimeChart } from "./Charts";
 import { CopyButton, Details } from "./Details";
 import { realApi } from "./api";
@@ -173,7 +174,8 @@ export function App({ api = realApi }: { api?: Api }) {
     const form = e.currentTarget;
     // Move focus to the invalid field, so a keyboard or screen reader user lands on it.
     const invalid = (field: "installationId" | "eventId", key: "filter.installationIdUuid" | "filter.eventIdUuid") => {
-      setFilterError(key);
+      // The field may sit in the closed "More filters" disclosure: open it first, in the same commit, so it can take focus (Q147).
+      flushSync(() => { setFilterError(key); setMoreOpen(true); });
       (form.elements.namedItem(field) as HTMLInputElement | null)?.focus();
     };
     if (draft.installationId && !UUID.test(draft.installationId)) return invalid("installationId", "filter.installationIdUuid");
