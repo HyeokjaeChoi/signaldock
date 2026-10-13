@@ -17,6 +17,13 @@ const ROOTS = [here, join(here, "../../perf/report/src")];
 const VISIBLE_ATTRIBUTES = new Set(["aria-label", "aria-description", "title", "placeholder", "alt", "label", "name"]);
 const ALLOWED = new Set(["receivedAt", "installationId", "eventId", "ms", "Hikari"]);
 
+// A field that holds a count, size, or duration (by its name) must be shown through n() / f1() (ADR-0015).
+const NUMERIC_FIELD = /(_s|_ms|_kib|_size|size|count|counts|repetition|started|scheduled|dropped|requests|samples|rows|days|clients|calls)$/i;
+const rawNumber = (e: Node): string | null =>
+  e.type === "Literal" && typeof e.value === "number" ? String(e.value)
+  : e.type === "MemberExpression" && !e.computed && NUMERIC_FIELD.test((e.property as { name: string }).name) ? (e.property as { name: string }).name
+  : null;
+
 const hasWord = (text: string) => text.split(/[^\p{L}\p{N}_]+/u).some((w) => /\p{L}{2,}/u.test(w) && !ALLOWED.has(w));
 
 type Node = { type: string; [key: string]: unknown };
@@ -48,6 +55,8 @@ function findings(file: string, code = readFileSync(file, "utf8")): string[] {
     if (n.type === "JSXText" && hasWord(n.value as string)) found.push(`JSX text ${JSON.stringify((n.value as string).trim())}`);
     if (n.type === "JSXExpressionContainer" && (n.expression as Node).type !== "JSXEmptyExpression") {
       for (const s of literals(n.expression as Node)) if (hasWord(s)) found.push(`string in JSX expression ${JSON.stringify(s)}`);
+      const raw = rawNumber(n.expression as Node);
+      if (raw) found.push(`unformatted number in JSX {${raw}}`);
     }
     if (n.type === "JSXAttribute") {
       const name = (n.name as { name?: string }).name ?? "";
@@ -82,6 +91,10 @@ describe("hard-coded visible strings", () => {
       'string in JSX expression "yes sir"',
       'string in JSX expression "xy "',
       'string in JSX expression " tail"',
+    ]);
+    expect(findings("num.tsx", "export const A = () => <td>{r.pool_size}{0}{n(r.pool_size)}{r.run_id}</td>;")).toEqual([
+      "unformatted number in JSX {pool_size}",
+      "unformatted number in JSX {0}",
     ]);
     const good = 'export const A = () => <p title={t("a")} className={ok ? "a b" : "c d"} data-k="some value">{t("b")} {" | "} {n} ms <code>receivedAt</code></p>;';
     expect(findings("good.tsx", good)).toEqual([]);

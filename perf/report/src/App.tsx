@@ -151,7 +151,7 @@ function Detail({ r }: { r: Run }) {
       <table>
         <thead><tr><th>{t("detail.endpoint")}</th><th>{t("detail.samples")}</th><th>p50</th><th>p95</th><th>{t("common.max")}</th><th>{t("detail.targetP95")}</th><th>{t("detail.outcomes")}</th></tr></thead>
         <tbody>{EPS.map((ep) => { const x = r.endpoints[ep]; return (
-          <tr key={ep}><td>{ep}</td><td>{n(x.samples)}</td><td>{f1(x.p50_ms)}</td><td className={x.p95_ms != null && x.p95_ms > x.target_p95_ms ? "bad" : ""}>{f1(x.p95_ms)}</td><td>{f1(x.max_ms)}</td><td>{x.target_p95_ms}</td><td>{JSON.stringify(x.outcomes)}</td></tr>); })}</tbody>
+          <tr key={ep}><td>{ep}</td><td>{n(x.samples)}</td><td>{f1(x.p50_ms)}</td><td className={x.p95_ms != null && x.p95_ms > x.target_p95_ms ? "bad" : ""}>{f1(x.p95_ms)}</td><td>{f1(x.max_ms)}</td><td>{n(x.target_p95_ms)}</td><td>{JSON.stringify(x.outcomes)}</td></tr>); })}</tbody>
       </table>
       <h3>{t("detail.validity")}</h3>
       <ul>
@@ -391,9 +391,9 @@ export function App() {
           <thead><tr><th>{t("runs.run")}</th><th>{t("runs.status")}</th><th>{t("runs.combination")}</th><th>{t("runs.pool")}</th><th>{t("runs.rep")}</th><th>{t("runs.injection")}</th><th>{t("runs.dropped")}</th><th>{t("runs.nonOk")}</th><th>{t("runs.skippedTicks")}</th></tr></thead>
           <tbody>{data.runs.map((r) => (
             <tr key={r.run_id} className={r.run_id === current?.run_id ? "sel" : ""}>
-              <td><button onClick={() => setId(r.run_id)}>{r.run_id}</button></td><td><Badge r={r} /></td><td>{comboLabel(t, n, r)}</td><td>{r.pool_size}</td><td>{r.repetition}</td>
-              <td>{r.injection.started} / {r.injection.scheduled}</td><td>{r.injection.dropped}</td>
-              <td>{Object.keys(r.non_ok_outcomes).length ? t("common.yes") : "0"}</td><td>{Object.values(r.skipped_ticks).reduce((a, b) => a + b, 0)}</td>
+              <td><button onClick={() => setId(r.run_id)}>{r.run_id}</button></td><td><Badge r={r} /></td><td>{comboLabel(t, n, r)}</td><td>{n(r.pool_size)}</td><td>{n(r.repetition)}</td>
+              <td>{n(r.injection.started)} / {n(r.injection.scheduled)}</td><td>{n(r.injection.dropped)}</td>
+              <td>{Object.keys(r.non_ok_outcomes).length ? t("common.yes") : n(0)}</td><td>{n(Object.values(r.skipped_ticks).reduce((a, b) => a + b, 0))}</td>
             </tr>))}</tbody>
         </table>
       </section>
