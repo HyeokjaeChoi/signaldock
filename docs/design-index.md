@@ -104,16 +104,31 @@ Architecture (`architecture.md`):
 ADRs:
 - ADR-0002
 - ADR-0007 (`docs/adr/0007-dashboard-query-api.md`)
+- ADR-0008 (`docs/adr/0008-dashboard-and-compose-delivery.md`)
+- ADR-0015 (`docs/adr/0015-web-ui-languages.md`), for the UI texts, the language switch, and `web-shared/`
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 6. User screens and distribution, Dashboard
 - 8, B. Errors, ACKs, and data representation
 - 11. Delegated performance measurement decisions
 - 12. Dashboard role confirmation and default delegation
+- Q78 and Q79 (project timezone), Q107 to Q109 (contract errors and retry), Q135 to Q137 (UI languages)
 
 Also read `.scratch/signaldock-portfolio/dashboard-verification-defaults.md`.
 
-## `perf/` (server load measurement harness, issue 23; SDK device measurement results, issue 24)
+## `web-shared/` (code that `dashboard/` and `perf/report/` share, issue 27)
+
+Plain TypeScript with no `package.json` and no `node_modules`. Both pages import it by relative path. Its tests run with the Dashboard (`cd dashboard && npm test`).
+
+ADRs:
+- ADR-0015 (`docs/adr/0015-web-ui-languages.md`)
+- ADR-0008 and ADR-0013, for the separate builds and lockfiles that it must not merge
+
+Spec (`.scratch/signaldock-portfolio/spec.md`):
+- Q78 and Q79 (project timezone)
+- Q135 to Q137 (UI languages)
+
+## `perf/` (server load measurement harness, issue 23; SDK device measurement results, issue 24; report page, issues 23 and 27)
 
 For issue 24 (`perf/sdk_summarize.py`, `perf/sdk-results/`, `scripts/device-measure.sh`) read ADR-0014 (`docs/adr/0014-sdk-device-measurement-harness.md`) and spec section 7 (the load sentences under the table).
 
@@ -126,11 +141,14 @@ ADRs:
 - ADR-0008
 - ADR-0012
 - ADR-0013 (`docs/adr/0013-server-load-measurement-harness.md`)
+- ADR-0014 (`docs/adr/0014-sdk-device-measurement-harness.md`), for the SDK results that `perf/report/` shows
+- ADR-0015 (`docs/adr/0015-web-ui-languages.md`), for the report page languages and `web-shared/`
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 7. Completion criteria and verification plan
 - 11. Delegated performance measurement decisions
 - Q124 and Q125 (normal-operation waits stay separate from benchmark values)
+- Q135 to Q137 (UI languages)
 
 Also read `.scratch/signaldock-portfolio/performance-plan.md`; it is authoritative for the fixed conditions, load, and acceptance.
 

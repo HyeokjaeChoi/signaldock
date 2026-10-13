@@ -1,9 +1,9 @@
 # 27. Korean and English UI for the Dashboard and the benchmark report
 
-Status: needs-triage
+Status: ready-for-agent
 Type: task
 Blocked by: None
-Execution: Not started
+Execution: Implemented on branch impl/27-ui-korean-english, PR pending
 
 ## Scope and completion criteria
 
@@ -26,3 +26,11 @@ Done when both pages render fully in each language with no hard-coded visible st
 ## Comments
 
 2026-10-13: Created at the user's request. GitHub mirror: #61.
+
+2026-10-13: Decisions agreed with the user and recorded as spec Q135 (own typed dictionary, i18next-compatible), Q136 (URL, then saved choice, then browser language), Q137 (shared code in `web-shared/i18n/`). ADR-0015 records the implementation. Implemented on branch `impl/27-ui-korean-english`.
+- `cd dashboard && npm ci && npm run typecheck && npm test && npm run build`: pass (62 tests, including the shared tests, the hard-coded string scan, and the Dashboard tests in both languages). `npm run check-bundle-key` and `npm run contract-check`: pass.
+- `cd perf/report && npm ci && npm run typecheck && npm run build`: pass.
+- `python3 perf/sdk_summarize.py --index perf/sdk-results perf/results/sdk-index.json`: 6 runs. `python3 -m py_compile perf/*.py` and `scripts/check-repo-rules.sh`: pass.
+- Dashboard screenshots: Compose project `signaldock-i18n` (own env file outside the repo, ports 18170 to 18172), 15 seeded events, stopped with `docker compose -p signaldock-i18n down` (no volume deleted). Evidence: `.scratch/signaldock-portfolio/evidence/27-dashboard-en.png`, `27-dashboard-ko.png`, `27-perf-report-en.png`, `27-perf-report-ko.png`.
+- Not done: texts that the Python summaries write into the JSON stay in English (ADR-0015 "Not done").
+

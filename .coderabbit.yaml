@@ -69,6 +69,15 @@ reviews:
         input or sequence that fails. Do not report what
         scripts/check-repo-rules.sh, detekt, or shellcheck already check. Do
         not suggest anything listed under "Rejected alternatives".
+    - path: "web-shared/**"
+      instructions: >-
+        Judge this change against the sections that docs/design-index.md
+        lists for the area `web-shared/`. The design sources win over general
+        best practice. If the code and the design sources disagree, flag it
+        and cite the section heading. Report a defect only if you can name the
+        input or sequence that fails. Do not report what
+        scripts/check-repo-rules.sh, detekt, or shellcheck already check. Do
+        not suggest anything listed under "Rejected alternatives".
     - path: "perf/**"
       instructions: >-
         Judge this change against the sections that docs/design-index.md
