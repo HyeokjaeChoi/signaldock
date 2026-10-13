@@ -95,4 +95,26 @@ then
   fail=1
 fi
 
+# docs/design-index.md is the one source of area guidance (Q138; no per-area .claude/rules files).
+# Every top-level directory is named in a `## ` heading, and every path a heading names exists.
+if ! python3 - <<'PY'
+import re, subprocess, sys
+
+EXEMPT = {".claude", ".scratch", "docs"}  # agent settings, issue tracker, and the design sources themselves
+files = subprocess.run(["git", "ls-files"], capture_output=True, text=True, check=True).stdout.splitlines()
+index = subprocess.run(["git", "show", ":docs/design-index.md"], capture_output=True, text=True, check=True).stdout
+named = [p.rstrip("/") for line in index.splitlines() if line.startswith("## ") for p in re.findall(r"`([^`]+/)`", line)]
+tops = {f.split("/")[0] for f in files if "/" in f} - EXEMPT
+bad = [f"top-level directory {d}/ has no section in docs/design-index.md" for d in sorted(tops)
+       if not any(n == d or n.startswith(d + "/") for n in named)]
+bad += [f"docs/design-index.md names {n}/, which has no tracked file" for n in named
+        if not any(f.startswith(n + "/") for f in files)]
+for b in bad:
+    print("error: " + b, file=sys.stderr)
+sys.exit(1 if bad else 0)
+PY
+then
+  fail=1
+fi
+
 exit "$fail"

@@ -2,6 +2,7 @@
 
 Read the listed sections before you edit or review files in an area.
 Refer to sections by heading text.
+This file is the only place for area guidance (no per-area `.claude/rules` files). Each `##` heading names its paths in backticks. `scripts/check-repo-rules.sh` fails when a top-level directory has no section or a named path has no files. To add an area, add a section here.
 
 ## `sdk/`
 
