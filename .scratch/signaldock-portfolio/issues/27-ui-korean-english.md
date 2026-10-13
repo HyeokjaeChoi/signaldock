@@ -25,4 +25,4 @@ Done when both pages render fully in each language with no hard-coded visible st
 
 ## Comments
 
-2026-10-13: Created at the user's request.
+2026-10-13: Created at the user's request. GitHub mirror: #61.

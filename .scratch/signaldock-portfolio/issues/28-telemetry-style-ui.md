@@ -29,4 +29,4 @@ Done when both pages follow the recorded design decisions, existing tests pass, 
 
 ## Comments
 
-2026-10-13: Created at the user's request. Ordered after issue 27 so that the redesign uses the message catalog from the start.
+2026-10-13: Created at the user's request (GitHub mirror: #62). Ordered after issue 27 so that the redesign uses the message catalog from the start.
