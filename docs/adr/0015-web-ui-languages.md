@@ -16,10 +16,10 @@ Issue 27 makes every visible string of `dashboard/` and `perf/report/` available
    | Dotted keys | `translate()` walks the path and ignores inherited properties (`constructor`) |
    | `ko` has the keys of `en`, no more, no less | `SameKeys<typeof en, typeof ko>` in each `ko.ts`; a difference makes `tsc` fail (checked by hand with a removed key and an extra key); the format test checks the same at run time |
    | `t()` accepts only keys of `en` | `MessageKey<typeof en>` type: all leaf paths, with a plural pair `x_one` and `x_other` addressed as `x` |
-   | `{{name}}` interpolation | `translate()`; the format test allows no `{` or `}` outside `{{name}}`, and checks that `en` and `ko` use the same placeholders for each key |
+   | `{{name}}` interpolation | `translate()`; the format test allows no `{` or `}` outside `{{name}}`, and checks that every form of a key (each plural form, both languages) uses the same placeholders. Like i18next's default, `translate()` inserts a value as `String(value)` and does not format it; a caller formats a number or date with the `format.ts` helpers before passing it |
    | Plurals `key_one` and `key_other` with `count` | `translate()` uses `Intl.PluralRules`, then `_other`, then the plain key; the format test requires a complete set for the language (English: `one` and `other`; Korean: `other`) and no plain key beside a plural set |
    | `t(key, options?)` and `useTranslation()` returning `{ t, i18n: { language, changeLanguage } }` | `createI18n()` in `web-shared/i18n/react.ts` |
-   | Numbers and dates through `Intl`, times in the project timezone | `formatNumber`, `formatDateTime`, `formatClock`, `formatBucketLabel` in `web-shared/i18n/format.ts`; the timezone is an argument, so the browser timezone is never used (Q78, Q79) |
+   | Numbers and dates through `Intl`, times in the project timezone | `formatNumber`, `formatDate`, `formatDateTime`, `formatClock`, `formatBucketLabel` in `web-shared/i18n/format.ts`; the timezone is an argument, so the browser timezone is never used (Q78, Q79) |
    | No context variants, no `$t()` nesting, no ICU | The format test rejects `$t(`. The code has no context or ICU path. Needing one is the trigger to switch |
 
    English texts keep the ASD-STE100 style. The Korean texts follow the English meaning and add no new content.

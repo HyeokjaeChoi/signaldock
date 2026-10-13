@@ -13,6 +13,10 @@ export const formatDateTime = (instant: number | string | Date, timeZone: string
     hour: "2-digit", minute: "2-digit", second: "2-digit", fractionalSecondDigits: 3,
   }).format(new Date(instant));
 
+/** Calendar date only, in `timeZone`. */
+export const formatDate = (instant: number | string | Date, timeZone: string, language: Language): string =>
+  new Intl.DateTimeFormat(LOCALE[language], { timeZone, dateStyle: "medium" }).format(new Date(instant));
+
 /** Time of day with seconds, in `timeZone`. */
 export const formatClock = (instant: number | string | Date, timeZone: string, language: Language): string =>
   new Intl.DateTimeFormat(LOCALE[language], { timeZone, hourCycle: "h23", timeStyle: "medium" }).format(new Date(instant));

@@ -1,4 +1,4 @@
-export { formatBucketLabel, formatClock, formatDateTime, formatNumber } from "./format";
+export { formatBucketLabel, formatClock, formatDate, formatDateTime, formatNumber } from "./format";
 export { STORAGE_KEY, resolveFromBrowser, resolveLanguage } from "./language";
 export { LANGUAGES } from "./messages";
 export type { Language, MessageKey, Messages, SameKeys } from "./messages";

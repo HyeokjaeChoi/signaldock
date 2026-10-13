@@ -3,14 +3,14 @@ import { NameChart, TimeChart } from "./Charts";
 import { CopyButton, Details } from "./Details";
 import { realApi } from "./api";
 import type { Api, Filters, Sort } from "./api";
-import { dateIn, resolvePeriod } from "./period";
+import { resolvePeriod } from "./period";
 import type { Preset } from "./period";
 import { usePolledQuery } from "./polling";
 import type { QueryState } from "./polling";
 import { errorText } from "./errorText";
 import { useTranslation } from "./i18n";
 import type { T } from "./i18n";
-import { LANGUAGES, formatBucketLabel, formatClock, formatDateTime } from "../../web-shared/i18n";
+import { LANGUAGES, formatBucketLabel, formatClock, formatDate, formatDateTime } from "../../web-shared/i18n";
 import type { Language } from "../../web-shared/i18n";
 
 // Project timezone (Q78, Q79). Compose passes SIGNALDOCK_TIME_ZONE as a build argument.
@@ -119,7 +119,7 @@ export function App({ api = realApi }: { api?: Api }) {
   const timeLabel = (iso: string, bucket: string) => formatBucketLabel(iso, bucket === "hour", tz, lang);
 
   const page = list.state.data;
-  const today = dateIn(now, tz);
+  const today = formatDate(now, tz, lang);
   return (
     <main>
       <header>
