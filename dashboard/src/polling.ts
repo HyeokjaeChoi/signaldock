@@ -10,6 +10,8 @@ export class QueryError extends Error {
     readonly status?: number,
     readonly code?: string,
     readonly retryAfterMs?: number,
+    /** Key of a UI message for errors the Dashboard itself makes. `errorText()` shows it in the selected language. */
+    readonly i18nKey?: "errors.network" | "errors.query" | "errors.request",
   ) {
     super(message);
   }
@@ -105,7 +107,7 @@ export class PollingQuery<T> {
       this.set({ data, lastSuccessAt: this.env.now(), error: undefined, nextEligibleAt: undefined, loading: false });
     } catch (e) {
       if (controller.signal.aborted) return;
-      const error = e instanceof QueryError ? e : new QueryError(e instanceof Error ? e.message : "Query failed");
+      const error = e instanceof QueryError ? e : e instanceof Error ? new QueryError(e.message) : new QueryError("Query failed", undefined, undefined, undefined, "errors.query");
       if (error.isContractError) {
         this.inflight = undefined;
         this.set({ error, stopped: true, loading: false, nextEligibleAt: undefined });

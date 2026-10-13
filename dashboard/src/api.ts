@@ -43,7 +43,7 @@ async function getJson(path: string, params: Record<string, string | undefined>,
     });
   } catch (e) {
     if (signal.aborted) throw e;
-    throw new QueryError("Network error: the server did not answer");
+    throw new QueryError("Network error: the server did not answer", undefined, undefined, undefined, "errors.network");
   }
   if (response.ok) return response.json();
   const body: unknown = await response.json().catch(() => undefined);

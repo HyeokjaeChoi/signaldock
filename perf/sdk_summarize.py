@@ -3,6 +3,8 @@
 
   python3 perf/sdk_summarize.py perf/sdk-results/api37-burst          writes run.json and summary.md there
   python3 perf/sdk_summarize.py --all perf/sdk-results                writes perf/sdk-results/summary.md from all run.json files
+  python3 perf/sdk_summarize.py --index perf/sdk-results perf/results/sdk-index.json
+                                                                      writes the JSON that perf/report/ shows (issue 27, ADR-0014)
 
 Inputs per run directory (written by scripts/device-measure.sh): meta.json, result-<phase>.json, calls-<phase>.csv,
 db-ids.txt (event IDs stored on the server for this run), proxy.jsonl (every batch the SDK sent).
@@ -194,8 +196,39 @@ def md_run(r):
     return L
 
 
+def index_entry(r):
+    """Committed values of one run for perf/report/. Nothing is computed here: every number comes from run.json."""
+    e = {"run_id": r["run_id"], "avd": r["avd"], "scenario": r["scenario"], "verdict": r["verdict"], "reasons": r["reasons"],
+         "git_revision": r["meta"]["git_revision"], "started_utc": r["meta"]["started_utc"],
+         "host": {"model": r["meta"]["host"]["model"], "cpus": r["meta"]["host"]["cpus"]}}
+    if "reconciliation" not in r:
+        return e  # an invalid run that stopped early has no numbers
+    i, c, mem = r["injection"], r["reconciliation"], r["memory_kb"]
+    store = "store_process" in mem
+    e.update(
+        device=r["device"], api=r["api"], release=r["release"], abi=r["abi"],
+        target_rate_per_s=i["target_rate_per_s"] if isinstance(i["target_rate_per_s"], (int, float)) else None,
+        actual_rate_per_s=i["actual_rate_per_s"], started=i["started"], planned=i["planned"], event_bytes=i["event_bytes"],
+        max_calls_in_flight=i["max_calls_in_flight"], track_ms=r["track_ms"],
+        track_not_ok=sum(r["errors"]["track_not_ok"].values()),
+        tracked_ok=c["tracked_ok"], server_rows=c["server_rows"], missing_on_server=c["missing_on_server"],
+        duplicate_server_rows=c["duplicate_server_rows"],
+        drain=r["drain"], files_bytes_after_drain=r["files_bytes"]["after_drain"],
+        # The offline run has two processes; the store process holds the events (same choice as summary.md).
+        memory_basis="store" if store else "drain",
+        pss_delta_kib=mem["store_process"]["pss_after_init_to_after_store"] if store else mem["pss_after_init_to_after_drain"],
+        heap_delta_kib=mem["store_process"]["heap_after_init_to_after_store"] if store else mem["heap_after_init_to_after_drain"],
+    )
+    return e
+
+
 def main():
     a = sys.argv[1:]
+    if a and a[0] == "--index":
+        runs = [json.loads(p.read_text()) for p in sorted(Path(a[1]).glob("*/run.json"))]
+        Path(a[2]).write_text(json.dumps({"runs": [index_entry(r) for r in runs]}, separators=(",", ":")) + "\n")
+        print(f"wrote {a[2]} ({len(runs)} runs)")
+        return
     if a and a[0] == "--all":
         root = Path(a[1])
         runs = [json.loads(p.read_text()) for p in sorted(root.glob("*/run.json"))]

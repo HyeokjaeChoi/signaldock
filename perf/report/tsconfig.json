@@ -5,10 +5,12 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "noEmit": true,
+    "paths": { "react": ["./node_modules/@types/react"] },
     "skipLibCheck": true,
     "strict": true,
     "target": "ES2022",
     "types": ["vite/client"]
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "../../web-shared/**/*.ts"],
+  "exclude": ["../../web-shared/**/*.test.ts"]
 }

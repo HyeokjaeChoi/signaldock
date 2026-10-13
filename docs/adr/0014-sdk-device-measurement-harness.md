@@ -25,7 +25,7 @@ Spec section 7 fixes the loads (synthetic events of about 1 KiB; normal 1 event/
 
 ## Not done
 
-- The `perf/report` page and `perf/summarize.py --index` do not show SDK runs. The page takes server runs with a fixed shape, and adding SDK runs means TypeScript, a build, and a second data shape for one table that Markdown already shows. Add it when the portfolio needs a chart.
+- ~~The `perf/report` page does not show SDK runs.~~ Done in issue 27 (ADR-0015 decision 7): `perf/sdk_summarize.py --index` writes `perf/results/sdk-index.json` from the committed `run.json` files, and the page shows a table and two charts. `perf/summarize.py --index` is unchanged, because the server run index and the SDK run index have different shapes and sources.
 - No release (R8) build run, no physical device, no repetitions, no thermal or battery control (emulators on a shared host).
 
 ## Limits
