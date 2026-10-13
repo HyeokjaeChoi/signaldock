@@ -339,7 +339,7 @@ function SdkResults({ data, error }: { data: SdkData | null; error: string }) {
               </BarChart>
             </Chart>
             <Chart title={t("sdk.rateChart")}>
-              <BarChart data={measured.filter((r) => r.target_rate_per_s && r.actual_rate_per_s != null).map((r) => ({ name: name(r), percent: Math.round((1000 * r.actual_rate_per_s!) / r.target_rate_per_s!) / 10 }))}>
+              <BarChart data={runs.filter((r) => r.target_rate_per_s && r.actual_rate_per_s != null).map((r) => ({ name: name(r), percent: Math.round((1000 * r.actual_rate_per_s!) / r.target_rate_per_s!) / 10 }))}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} />
                 <YAxis domain={[0, 110]} />
