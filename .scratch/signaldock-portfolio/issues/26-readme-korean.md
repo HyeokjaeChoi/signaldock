@@ -15,4 +15,4 @@ Done when both READMEs match in sections and links, every relative link resolves
 
 ## Comments
 
-2026-10-13: Created at the user's request after issue 25 merged.
+2026-10-13: Created at the user's request after issue 25 merged. GitHub mirror: #58.
