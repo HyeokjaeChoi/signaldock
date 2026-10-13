@@ -1,9 +1,9 @@
 # 30. Visual style follow-up for the Dashboard and the benchmark report
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: 29
-Execution: Implemented on branch impl/30-ui-visual-style, PR pending
+Execution: Done (merged in PR #74, 2026-10-13 UTC)
 
 ## Scope and completion criteria
 
