@@ -9,7 +9,7 @@ Execution: Implemented on branch impl/25-reproduction-readme-video, PR pending (
 
 A reproduction README that takes a new reader from a clean clone through toolchain setup, the Compose stack, the SDK Maven ZIP and consumer app, the demo app, the E2E and device scripts, and the measurements, with verified commands. A short verification video (for example `adb screenrecord` plus a Dashboard capture) showing demo `track()` to Dashboard receipt.
 
-The README also covers how an emulator (`10.0.2.2`) and a physical device (host LAN address or `adb reverse`) connect to the local server, shutdown, reset (including volume removal), and limitations, and shows a separate Gradle consumer installing the Maven ZIP by its coordinates (`local.signaldock:sdk-android:0.1.0`) with an R8 release build that runs and reaches the server (spec "Reproduction and deliverables").
+The README also covers how an emulator (`10.0.2.2`) and a physical device (`adb reverse` to `127.0.0.1`; a host LAN address over HTTP is not supported, Q134) connect to the local server, shutdown, reset (including volume removal), and limitations, and shows a separate Gradle consumer installing the Maven ZIP by its coordinates (`local.signaldock:sdk-android:0.1.0`) with an R8 release build that runs and reaches the server (spec "Reproduction and deliverables").
 
 Done when a clean-clone run of the README commands is recorded and the video file is in the evidence folder.
 
@@ -17,7 +17,7 @@ Done when a clean-clone run of the README commands is recorded and the video fil
 
 2026-10-12: Split from issue 08.
 
-2026-10-13: Implemented. `README.md` section "Reproduce from a clean clone" and `docs/reproduce.md` hold the steps. The commands were run in a fresh clone of `https://github.com/HyeokjaeChoi/signaldock.git` (origin/main `da51462`, a temporary folder under `/private/tmp`, removed afterwards). Host: macOS, Apple M2 Pro. Emulator `signaldock-api37`, port 5584. Compose project name `signaldock-readme` (set with `COMPOSE_PROJECT_NAME`, so the commands read as in the README; the default `signaldock` project and volume were not touched). No volume was deleted. The new volumes `signaldock-readme_signaldock-db` and `signaldock-readme-measure_signaldock-db` stay on this machine.
+2026-10-13: Implemented. `README.md` section "Reproduce from a clean clone" and `docs/reproduce.md` hold the steps. The commands were run in a fresh clone of `https://github.com/HyeokjaeChoi/signaldock.git` (origin/main `da51462`, a temporary folder under `/private/tmp`, removed afterwards). The commands came from this branch's `README.md` and `docs/reproduce.md`; at that point the branch differed from `da51462` only in those docs and the evidence files (no script or code change), so the clone ran the same scripts the guide names. The later Q134 config change was checked separately on the branch build (comment below). Host: macOS, Apple M2 Pro. Emulator `signaldock-api37`, port 5584. Compose project name `signaldock-readme` (set with `COMPOSE_PROJECT_NAME`, so the commands read as in the README; the default `signaldock` project and volume were not touched). No volume was deleted. The new volumes `signaldock-readme_signaldock-db` and `signaldock-readme-measure_signaldock-db` stay on this machine.
 
 Wall times are from a warm machine: the Docker layer cache and `~/.gradle` already held the dependencies, so a first run on a new machine takes longer (downloads).
 
