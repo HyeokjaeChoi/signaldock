@@ -132,7 +132,7 @@ adb -s emulator-5584 install -r compatibility/consumer-android/app/build/outputs
 adb -s emulator-5584 shell am start -n local.signaldock.consumer/.MainActivity
 ```
 
-Tap "Track consumer_ping", wait about 15 seconds, then tap "Show diagnostics": `lastAck` shows `accepted=1`, and the event is in the Dashboard. The default endpoint is `http://10.0.2.2:8080` (the emulator's name for the host). Override it with `-Psignaldock.endpoint=...`. The app allows cleartext for `10.0.2.2` only.
+Tap "Track consumer_ping", wait about 15 seconds, then tap "Show diagnostics": `lastAck` shows `accepted=1`, and the event is in the Dashboard. The default endpoint is `http://10.0.2.2:8080` (the emulator's name for the host). Override it with `-Psignaldock.endpoint=...`. The app allows cleartext for `10.0.2.2`, `127.0.0.1`, and `localhost` only. For a physical device over USB, run `adb reverse tcp:8080 tcp:8080` and build with `-Psignaldock.endpoint=http://127.0.0.1:8080` (see [docs/reproduce.md](docs/reproduce.md)).
 
 ### 4. Demo app, E2E, device checks, and measurements
 
@@ -153,7 +153,7 @@ Warning: `--volumes` deletes the PostgreSQL data. You cannot undo it. Use it onl
 - Local only. The stack binds to `127.0.0.1`, uses example-grade secrets, and has no TLS. It is not for the public internet.
 - Performance numbers are measurements of one Mac with Docker limits. They are not an SLA and not a pool-size choice ([ADR-0013](docs/adr/0013-server-load-measurement-harness.md)).
 - SDK device measurement uses a debug build of the SDK (no R8) on emulators ([ADR-0014](docs/adr/0014-sdk-device-measurement-harness.md)).
-- Both apps allow cleartext HTTP to `10.0.2.2` only. A physical device needs an HTTPS endpoint (see [docs/reproduce.md](docs/reproduce.md)). A physical device was never tested.
+- Cleartext HTTP works only for `10.0.2.2`, `127.0.0.1`, and `localhost` (physical device: `adb reverse`, see [docs/reproduce.md](docs/reproduce.md)). A LAN address over HTTP is not supported. The `adb reverse` route was tested on an emulator only; no physical device was used.
 - The scripts accept emulators only. `scripts/device-measure.sh` needs macOS.
 - Deduplication lasts while the server row exists. The design does not claim exactly-once delivery.
 

@@ -87,10 +87,10 @@ The harness needs `k6` and Python 3. A full pilot or overload run takes several 
 | Device | Address | Status |
 | --- | --- | --- |
 | Emulator | `http://10.0.2.2:8080` (host loopback, as the emulator sees it) | ran |
-| Physical device, same Wi-Fi | `http://<host LAN address>:8080`. Compose publishes the server on `127.0.0.1` only, so run the server from the host (`docker compose up -d db`, then Ktor from `server/`) with `SIGNALDOCK_BIND_HOST=0.0.0.0` ([ADR-0008](adr/0008-dashboard-and-compose-delivery.md)) | not verified here: no physical device |
-| Physical device, USB | `adb reverse tcp:8080 tcp:8080`, then the app reaches the server as `127.0.0.1:8080`. Remove it with `adb reverse --remove tcp:8080` | the `adb reverse` command ran against an emulator only; not verified on a device |
+| Physical device, USB (Q134) | `adb reverse tcp:8080 tcp:8080`, then build the app with `-Psignaldock.endpoint=http://127.0.0.1:8080`. Remove the tunnel with `adb reverse --remove tcp:8080`. Use the server port from `.env` (`SIGNALDOCK_SERVER_PORT`) on both sides | the same steps ran on an emulator (see issue 25); not verified on a physical device: none attached |
+| Physical device, LAN address | not supported over HTTP | Android cannot allow an address range for cleartext; see below |
 
-The apps allow cleartext HTTP to `10.0.2.2` only (network security config). For a physical device, both routes above give a network path, but the apps still refuse plain HTTP to a LAN address or `127.0.0.1`. Use an HTTPS endpoint (for example a TLS proxy in front of the server). Do not send the collection key over plain HTTP on a shared network. Opening the Dashboard from another machine is also not supported: it binds to `127.0.0.1`.
+Both apps allow cleartext HTTP to `10.0.2.2`, `127.0.0.1`, and `localhost` only (network security config; the demo release build allows none). A LAN address over HTTP is refused: use `adb reverse`. The server binds to `127.0.0.1` in Compose, so a LAN address would not reach it either. Opening the Dashboard from another machine is also not supported: it binds to `127.0.0.1`.
 
 ## Shutdown and reset
 

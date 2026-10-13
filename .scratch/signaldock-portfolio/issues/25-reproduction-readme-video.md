@@ -3,7 +3,7 @@
 Status: ready-for-agent
 Type: task
 Blocked by: 23, 24
-Execution: Done 2026-10-13 on branch impl/25-reproduction-readme-video (README, docs/reproduce.md, evidence video). Physical device and full measurement runs are not verified (see the comment).
+Execution: Implemented on branch impl/25-reproduction-readme-video, PR pending (README, docs/reproduce.md, evidence video, Q134 loopback cleartext). Physical device and full measurement runs are not verified (see the comments).
 
 ## Scope and completion criteria
 
@@ -56,3 +56,14 @@ Evidence (folder `.scratch/signaldock-portfolio/evidence/`):
 - `25-dashboard-received.png`: Dashboard with `product_viewed`, `add_to_cart`, and the earlier `consumer_ping`.
 
 Note: the side-by-side video is aligned by start time only, not frame-exact. "Saved on device" does not mean server receipt; the Dashboard frames show receipt.
+
+2026-10-13 (Q134): The earlier HTTPS advice for a physical device could not be followed (the local server has no TLS). User decision Q134 (option a, recorded in spec.md and ADR-0009): a physical device uses `adb reverse tcp:PORT tcp:PORT` and `http://127.0.0.1:PORT`. The cleartext `domain-config` of the demo debug build and of the consumer app now lists `10.0.2.2`, `127.0.0.1`, and `localhost` (`includeSubdomains="false"`). The demo release build stays HTTPS only. No SDK code or default changed. A LAN address over HTTP stays unsupported. README and `docs/reproduce.md` were updated; the "HTTPS required" advice is removed.
+
+Verification on an emulator (`signaldock-api37`, port 5584; physical device NOT used), separate Compose project `signaldock-q134` with fresh random keys, no volume deleted (the `signaldock-q134_signaldock-db` volume stays):
+- `scripts/verify-consumer.sh`: ok (R8 9.3.28), 149 s for the whole sequence below including the stack build and emulator boot.
+- Consumer release and demo debug built with `-Psignaldock.endpoint=http://127.0.0.1:8080` and the collection key; `adb reverse tcp:8080 tcp:8080`; both apps installed.
+- Events table before: empty. Consumer: tap Track, wait 18 s, Show diagnostics: `accepted=1`, `queuedEvents=0`. Demo: product, Add to cart, wait 22 s.
+- Events table after (DB count by name): `add_to_cart` 1, `consumer_ping` 1, `product_viewed` 1. So both apps reached the server over `127.0.0.1` through the reverse tunnel.
+- `adb reverse` removed, emulator killed, stack stopped with `down`.
+- `scripts/check-repo-rules.sh`: ok.
+Still not verified: a physical device (none attached) and USB behavior of a real phone.

@@ -3,8 +3,9 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <!-- Local verification app (ADR-0009): the release build must reach the Compose stack at the
-         emulator host 10.0.2.2 over HTTP. The network security config allows cleartext for that one
-         host only; every other host stays HTTPS only. -->
+         emulator host 10.0.2.2, or a device through `adb reverse` at 127.0.0.1, over HTTP. The network
+         security config allows cleartext for 10.0.2.2, 127.0.0.1, and localhost only (Q134); every
+         other host stays HTTPS only. -->
     <application
         android:name=".ConsumerApplication"
         android:allowBackup="false"
