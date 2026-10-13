@@ -32,3 +32,5 @@ Done when both pages follow the recorded design decisions, existing tests pass, 
 2026-10-13: Created at the user's request (GitHub mirror: #62). Ordered after issue 27 so that the redesign uses the message catalog from the start.
 
 2026-10-13: Q139 decides the scope: presentation layer only (tokens, light and dark theme, layout, chart style, status states, summary cards); views and behavior stay. Issue 27 is done (PR #64), so this issue is unblocked. Reference research (Lazyweb reports on the current Dashboard and benchmark report screenshots) started.
+
+2026-10-13: Reference research done: `issue-28-design-references.md` (Lazyweb reports on both pages, Mobbin captures of Sentry and Vercel kept outside the repo). Q140 fixes the pattern set. Ready for implementation.
