@@ -265,6 +265,17 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
       expect(d.contains(screen.getByRole("combobox", { name: new RegExp(t("controls.sort")) }))).toBe(false);
     });
 
+    it("closes on Clear also when the draft was never applied", async () => {
+      const { container } = render(fakeApi());
+      await flush();
+      disclosure(container).open = true;
+      fireEvent(disclosure(container), new Event("toggle"));
+      fireEvent.change(container.querySelector("input[name='eventName']")!, { target: { value: "draft" } });
+      fireEvent.click(screen.getByRole("button", { name: t("controls.clear") }));
+      await flush();
+      expect(disclosure(container).open).toBe(false);
+    });
+
     it("is open while a filter is in force and closes again after Clear", async () => {
       const { container } = render(fakeApi());
       await flush();

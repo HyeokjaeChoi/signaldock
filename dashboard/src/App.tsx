@@ -201,6 +201,8 @@ export function App({ api = realApi }: { api?: Api }) {
   const { health, nextEligibleAt } = queryHealth([list.state, byName.state, byTime.state], [cursors.length === 0, true, true]);
   const lastSuccess = Math.max(0, list.state.lastSuccessAt ?? 0, byName.state.lastSuccessAt ?? 0, byTime.state.lastSuccessAt ?? 0);
   const clock = (ms: number) => formatClock(ms, tz, lang);
+  // A card without another sub line still says what is known: the last success of any query, or that there is none yet (Q144).
+  const lastSuccessSub = lastSuccess ? t("kpi.liveSub", { time: clock(lastSuccess) }) : t("kpi.noSuccessSub");
 
   // At 720 px or less the three exact filters sit in a disclosure that is open while a filter is in force (Q147).
   const narrow = useNarrow();
@@ -254,9 +256,9 @@ export function App({ api = realApi }: { api?: Api }) {
           value={<span className={`badge ${HEALTH_BADGE[health]}`}>{t(`kpi.${health}`)}</span>}
           sub={
             health === "live" || health === "paused" ? t("kpi.liveSub", { time: clock(lastSuccess) })
-            : health === "retrying" ? (nextEligibleAt ? t("kpi.retrySub", { time: clock(nextEligibleAt) }) : t("kpi.noSuccessSub"))
+            : health === "retrying" ? (nextEligibleAt ? t("kpi.retrySub", { time: clock(nextEligibleAt) }) : lastSuccessSub)
             : health === "stopped" ? t("kpi.stoppedSub")
-            : t("kpi.noSuccessSub")
+            : lastSuccessSub
           }
         />
         <Kpi label={t("kpi.top")} value={top ? <code className="kpi-name">{top.name}</code> : <span className="kpi-none">{t("kpi.none")}</span>} sub={top ? t("kpi.topCount", { value: formatNumber(top.count, lang) }) : t("kpi.topNoneSub")} />
@@ -295,7 +297,7 @@ export function App({ api = realApi }: { api?: Api }) {
             ) : filterFields}
             <div className="toolbar-actions">
               <button type="submit" className="primary">{t("controls.apply")}</button>
-              <button type="button" onClick={() => { setDraft(EMPTY); setApplied(EMPTY); setFilterError(""); resetPaging(); }}>{t("controls.clear")}</button>
+              <button type="button" onClick={() => { setDraft(EMPTY); setApplied(EMPTY); setFilterError(""); setMoreOpen(false); resetPaging(); }}>{t("controls.clear")}</button>
               <button type="button" onClick={refreshAll}>{t("controls.refresh")}</button>
             </div>
           </form>
