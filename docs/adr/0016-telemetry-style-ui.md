@@ -45,9 +45,17 @@ Spec Q139 and Q140 (2026-10-13) fix the scope and the pattern set: presentation 
    - The `" | "` separators of the status line are `aria-hidden`.
    - `.pane-scroll` and the detail pane use `overscroll-behavior: contain` and `dvh` heights with a `vh` fallback. The sticky toolbar has an opaque `--surface` background and no `backdrop-filter`.
    - Report latency charts: the y-axis shows the run id; the tooltip title keeps the full "pool, repetition, pilot (run id)" text. The Runs table run id button has no min-height or block padding on a fine pointer, so its rows match the other tables.
-   - Decisions 5 changed (Copy and event-name link 44 px on touch). Not changed: the style choices that issue 30 holds.
+   - Decisions 5 changed (Copy and event-name link 44 px on touch). Not changed then: the style choices that issue 30 held (decided in decision 10).
 
-10. **Not changed.** The query API, polling, retry, and contract-error behavior (ADR-0007, Q107 to Q109), the views, the message catalog rules (ADR-0015), the dependencies and pins. No A/B run compare (Q139: a new view).
+10. **Visual style follow-up (issue 30, Q141 to Q147).** Presentation only (Q139). The user decided each point; this entry records how the code follows.
+   - Shape (Q141): `--radius-md` 12 px and `--radius-sm` 6 px stay. Color tokens (Q143) stay; only `--text-kpi` changes (1.625 rem to 1.5 rem).
+   - Structure (Q142): the Dashboard toolbar is a flat bar (`--bg` background, bottom border, no radius), still sticky and opaque (issue 29). A `.table-wrap` or `pre` inside a `.card` has no border (`.card .table-wrap, .card pre` in `base.css`); tables keep the sunken header and the sideways scroll shadows.
+   - KPI cards (Q144): value 1.5 rem, padding `--space-2` `--space-3`. Every card has a sub line from data the page already has. Dashboard: "Received today" shows `Shown period: N` (sum of all by-time buckets, `periodTotal` in `kpi.ts`; `, filtered` is added when a filter is in force; before the first result it shows the old filter hint); "Query state" without a success yet shows `No successful query yet`; "Top event" without a name shows `No event names in the shown period`. Report: cards without a run or an overload run show `No run data` or `No overload run`.
+   - Run id (Q145): the report Runs table run id is a `button.link` (the Dashboard event-name style); the selected run is bold through `aria-pressed`. The 44 px touch target stays.
+   - Timestamps (Q146): the event table shows `receivedAt` in a `<time class="stamp" datetime>` element, monospace, with the date part in `--fg-muted` (`formatDateTimeParts` in `web-shared/i18n`). The details view keeps plain text (it is a definition list, not a table).
+   - Mobile filters (Q147): at 720 px or less the three exact filters render inside `<details class="more-filters">` with the summary `More filters`; period, sort, and the buttons stay outside. It is open while a filter is applied and closes after Clear; the user can toggle it. This breakpoint is also read in JavaScript (`useNarrow` in `App.tsx`, `matchMedia`), because a wide screen must not render a disclosure at all (no reliable CSS way to force a `<details>` open). Both values are in decision 6's 720 px. The summary is 44 px on touch.
+
+11. **Not changed.** The query API, polling, retry, and contract-error behavior (ADR-0007, Q107 to Q109), the views, the message catalog rules (ADR-0015), the dependencies and pins. No A/B run compare (Q139: a new view).
 
 ## Verification
 

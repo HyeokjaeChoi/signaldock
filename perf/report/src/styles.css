@@ -40,9 +40,8 @@ td .note { min-width: 15rem; margin: var(--space-1) 0 0; }
 /* Runs table: no cell wraps (run id, combination, counts), so the wrapper scrolls sideways instead of crushing columns. */
 .runs-table th, .runs-table td { white-space: nowrap; }
 .runs-table td button { white-space: nowrap; }
-/* The run id control does not make its row taller than rows of other tables (issue 29). Touch keeps the 44px target. */
+/* The run id is a link (Q145, like the event name in the Dashboard): no box, so its row is as high as other tables' rows (issue 29). Touch keeps the 44px target. */
 @media (pointer: fine) {
-  .runs-table td button { min-height: 0; padding-block: 0; margin-block: -1px; }
   .runs-table td .badge { padding-block: 0; line-height: 1.25; margin-block: -1px; }
 }
 

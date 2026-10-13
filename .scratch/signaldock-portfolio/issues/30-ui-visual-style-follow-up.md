@@ -1,9 +1,9 @@
 # 30. Visual style follow-up for the Dashboard and the benchmark report
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: 29
-Execution: Not started
+Execution: Implemented on branch impl/30-ui-visual-style, PR pending
 
 ## Scope and completion criteria
 
@@ -26,3 +26,8 @@ Completion criteria:
 ## Comments
 
 - 2026-10-14: The user answered the seven open questions one at a time in the session (spec Q141 to Q147): 1 a (keep radius), 2 a (flat toolbar bar), 3 a (keep tokens), 4 a (smaller KPI cards with sub lines), 5 a (run id as link), 6 a (monospace timestamps, dimmed date), 7 a ("More filters" disclosure). Status moved from `needs-triage` to `ready-for-agent`.
+- 2026-10-14: CodeRabbit round 1 on branch impl/30-ui-visual-style (3 minor findings):
+  - Fixed: the 503 share card said "No overload run" when an overload run exists without a collection rate. It now says "No overload rate" (`kpi.noRateSub`).
+  - Rejected: dates in spec Q141 to Q147 and issue 29 read as future dates. The project records dates in Seoul time (spec Q78, Q79); they come from the base branch (PR #73) and are not part of this change.
+  - Rejected: PR #72 merge date "UTC" label in issue 29. Same source, base branch, outside the purpose of this PR (AGENTS.md review workflow 1).
+- 2026-10-14: CodeRabbit round 2 (2 minor findings), both fixed: the Query state card said "No successful query yet" while one query had already succeeded (it now shows the last success time of any query); Clear now also closes "More filters" when the draft was never applied. Round 3 (after the rebase onto main, 1 minor finding), fixed: Apply with an invalid UUID in the closed "More filters" now opens it and focuses the field.

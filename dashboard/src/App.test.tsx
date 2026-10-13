@@ -214,4 +214,98 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
     expect(screen.getByText(/boom/)).toBeTruthy();
     expect(screen.getByRole("button", { name: t("status.retry") })).toBeTruthy();
   });
+  it("shows the total of the shown period as the sub line of Received today (Q144)", async () => {
+    const day = 24 * 3600 * 1000;
+    const api = fakeApi({
+      countsByTime: vi.fn(async () => ({
+        timeZone: "Asia/Seoul", bucket: "day" as const,
+        items: [{ start: new Date(Date.now() - 3 * day).toISOString(), count: 7 }, { start: new Date().toISOString(), count: 5 }],
+      })) as never,
+    });
+    render(api);
+    await flush();
+    const card = screen.getByText(t("kpi.today")).parentElement!;
+    expect(card.textContent).toContain("5");
+    expect(within(card).getByText(t("kpi.todaySub", { value: "12" }))).toBeTruthy();
+  });
+
+  it("gives every KPI card a sub line, also without data (Q144)", async () => {
+    render(fakeApi());
+    await flush();
+    for (const label of ["kpi.today", "kpi.lastReceipt", "kpi.state", "kpi.top"] as const) {
+      const card = screen.getByText(t(label)).parentElement!;
+      expect(card.querySelector(".kpi-sub")?.textContent, label).toBeTruthy();
+    }
+  });
+
+  it("shows the table timestamp in a monospace element with a dimmed date part (Q146)", async () => {
+    const { container } = render(fakeApi());
+    await flush();
+    const stamp = container.querySelector("td time.stamp")!;
+    expect(stamp.getAttribute("datetime")).toBe("2026-10-12T01:00:01.000Z");
+    expect(stamp.querySelector(".stamp-date")?.textContent).toMatch(/2026/);
+  });
+
+  describe("at 720 px or less (Q147)", () => {
+    const original = window.matchMedia;
+    beforeEach(() => {
+      window.matchMedia = ((query: string) => ({ matches: true, media: query, addEventListener: () => {}, removeEventListener: () => {} })) as never;
+    });
+    afterEach(() => { window.matchMedia = original; });
+    const disclosure = (container: HTMLElement) => container.querySelector("details.more-filters") as HTMLDetailsElement;
+
+    it("puts the three exact filters in a closed More filters disclosure; period and sort stay outside", async () => {
+      const { container } = render(fakeApi());
+      await flush();
+      const d = disclosure(container);
+      expect(d.open).toBe(false);
+      expect(within(d).getByText(t("controls.moreFilters"))).toBeTruthy();
+      for (const name of ["eventName", "installationId", "eventId"]) expect(d.querySelector(`input[name='${name}']`), name).toBeTruthy();
+      expect(d.contains(screen.getByRole("combobox", { name: new RegExp(t("controls.period")) }))).toBe(false);
+      expect(d.contains(screen.getByRole("combobox", { name: new RegExp(t("controls.sort")) }))).toBe(false);
+    });
+
+    it("opens the disclosure and focuses the field when Apply finds an invalid installationId", async () => {
+      const { container } = render(fakeApi());
+      await flush();
+      const input = container.querySelector<HTMLInputElement>("input[name='installationId']")!;
+      fireEvent.change(input, { target: { value: "not-a-uuid" } });
+      disclosure(container).open = false;
+      fireEvent(disclosure(container), new Event("toggle"));
+      fireEvent.click(screen.getByRole("button", { name: t("controls.apply") }));
+      await flush();
+      expect(disclosure(container).open).toBe(true);
+      expect(document.activeElement).toBe(input);
+    });
+
+    it("closes on Clear also when the draft was never applied", async () => {
+      const { container } = render(fakeApi());
+      await flush();
+      disclosure(container).open = true;
+      fireEvent(disclosure(container), new Event("toggle"));
+      fireEvent.change(container.querySelector("input[name='eventName']")!, { target: { value: "draft" } });
+      fireEvent.click(screen.getByRole("button", { name: t("controls.clear") }));
+      await flush();
+      expect(disclosure(container).open).toBe(false);
+    });
+
+    it("is open while a filter is in force and closes again after Clear", async () => {
+      const { container } = render(fakeApi());
+      await flush();
+      fireEvent.change(container.querySelector("input[name='eventName']")!, { target: { value: "purchase" } });
+      fireEvent.click(screen.getByRole("button", { name: t("controls.apply") }));
+      await flush();
+      expect(disclosure(container).open).toBe(true);
+      fireEvent.click(screen.getByRole("button", { name: t("controls.clear") }));
+      await flush();
+      expect(disclosure(container).open).toBe(false);
+    });
+  });
+
+  it("has no disclosure on a wide screen: the filters are in the toolbar (Q147)", async () => {
+    const { container } = render(fakeApi());
+    await flush();
+    expect(container.querySelector("details.more-filters")).toBeNull();
+    expect(container.querySelector("input[name='eventName']")).toBeTruthy();
+  });
 });

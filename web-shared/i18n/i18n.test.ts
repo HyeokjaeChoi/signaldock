@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { dictionaries as dashboard } from "../../dashboard/src/i18n";
 import { dictionaries as report } from "../../perf/report/src/i18n";
-import { formatBucketLabel, formatClock, formatDateTime, formatNumber } from "./format";
+import { formatBucketLabel, formatClock, formatDateTime, formatDateTimeParts, formatNumber } from "./format";
 import { STORAGE_KEY, resolveFromBrowser, resolveLanguage, save } from "./language";
 import { LANGUAGES, PLURAL_CATEGORIES } from "./messages";
 import type { Messages } from "./messages";
@@ -82,6 +82,12 @@ describe("Intl formatters (Q135)", () => {
     expect(formatClock(instant, "Asia/Seoul", "en")).toBe("05:30:05");
     expect(formatBucketLabel(instant, true, "Asia/Seoul", "en")).toBe("05:30");
     expect(formatBucketLabel(instant, false, "Asia/Seoul", "en")).toBe("13/10");
+  });
+
+  it("split the date and the time of a timestamp (Q146)", () => {
+    expect(formatDateTimeParts(instant, "Asia/Seoul", "en")).toEqual({ date: "13/10/2026", time: "05:30:05.123" });
+    const ko = formatDateTimeParts(instant, "Asia/Seoul", "ko");
+    expect(`${ko.date} ${ko.time}`).toBe(formatDateTime(instant, "Asia/Seoul", "ko"));
   });
 
   it("follow the language", () => {
