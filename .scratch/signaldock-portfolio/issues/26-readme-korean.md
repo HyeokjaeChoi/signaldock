@@ -3,7 +3,7 @@
 Status: ready-for-agent
 Type: task
 Blocked by: None
-Execution: Not started
+Execution: Implemented on branch impl/26-readme-korean, PR pending
 
 ## Scope and completion criteria
 
@@ -16,3 +16,5 @@ Done when both READMEs match in sections and links, every relative link resolves
 ## Comments
 
 2026-10-13: Created at the user's request after issue 25 merged. GitHub mirror: #58.
+
+2026-10-13: Implemented on branch `impl/26-readme-korean`. `README.md` no longer says "Planned" or "not yet verified": the evidence table, headings, versions, and performance sections link the recorded results (issues 06, 20 to 24, `perf/results/`, `perf/sdk-results/summary.md`, ADR-0009, ADR-0013, ADR-0014) and keep the limits. `README.ko.md` follows it section by section (8 `##`, 6 `###`), with the same relative link targets. `scripts/check-repo-rules.sh` fails when the heading counts per level or the relative link targets differ, or a mutual link is missing (tested: a changed link, a changed heading level, and a missing back-link each fail with exit 1; restored files pass). All 45 relative link targets in each file exist.
