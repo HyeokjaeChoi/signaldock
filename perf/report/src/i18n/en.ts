@@ -6,6 +6,7 @@ import type { Messages } from "../../../../web-shared/i18n";
 export const en = {
   app: {
     title: "SignalDock benchmark report",
+    skip: "Skip to content",
     source:
       "Server load source: perf/results/index.json. Every value belongs to one run. There is no overall p95: percentiles of different runs are never averaged. Pilot runs are a local environment record, not an SLA and not a pool choice (Q133). The overload run shows 503 load shedding.",
     loading: "Loading...",

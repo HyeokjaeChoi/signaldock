@@ -26,6 +26,9 @@ const EMPTY: Draft = { name: "", installationId: "", eventId: "" };
 
 const HEALTH_BADGE: Record<Health, string> = { live: "ok", paused: "idle", loading: "idle", retrying: "warn", stopped: "bad", idle: "idle" };
 
+/** A separator is drawn for the eye only; a screen reader does not read it (issue 29). */
+const Sep = () => <span aria-hidden="true"> | </span>;
+
 function Status<D>({ label, state, tz, onRefresh, polled = true }: { label: string; state: QueryState<D>; tz: string; onRefresh: () => void; polled?: boolean }) {
   const { t, i18n } = useTranslation();
   const clock = (ms: number) => formatClock(ms, tz, i18n.language);
@@ -37,12 +40,12 @@ function Status<D>({ label, state, tz, onRefresh, polled = true }: { label: stri
       {state.lastSuccessAt ? t("status.lastSuccess", { time: clock(state.lastSuccessAt) }) : state.loading ? t("status.loading") : t("status.noData")}
       {state.error && (
         <span className="error" role="alert">
-          {" | "}
+          <Sep />
           {t("status.queryFailed", { message: errorText(t, state.error) })}
           {state.stopped
-            ? ` | ${t("status.stopped")} `
+            ? <><Sep />{t("status.stopped")} </>
             : state.nextEligibleAt
-              ? ` | ${t("status.nextAttempt", { time: clock(state.nextEligibleAt) })} `
+              ? <><Sep />{t("status.nextAttempt", { time: clock(state.nextEligibleAt) })} </>
               : " "}
           {state.stopped ? (
             <button type="button" onClick={() => window.location.reload()}>{t("status.reload")}</button>
@@ -116,6 +119,13 @@ export function App({ api = realApi }: { api?: Api }) {
   // Cursor stack: [] is the first page. Only the first page polls (Q77); a past page refreshes manually and never jumps to the latest page.
   const [cursors, setCursors] = useState<string[]>([]);
   const [selected, setSelected] = useState<string | undefined>();
+  // The event links by id: Close returns focus to the link that opened the details (issue 29).
+  const rowLinks = useRef(new Map<string, HTMLButtonElement>());
+  const closeDetails = () => {
+    const id = selected;
+    setSelected(undefined);
+    if (id) rowLinks.current.get(id)?.focus();
+  };
 
   const now = Date.now();
   const period = resolvePeriod(preset, customStart, customEnd, tz, now);
@@ -184,7 +194,9 @@ export function App({ api = realApi }: { api?: Api }) {
   }, []);
 
   return (
-    <main>
+    <>
+    <a className="skip-link" href="#main">{t("app.skip")}</a>
+    <main id="main" tabIndex={-1}>
       <header className="page-header">
         <h1>{t("app.title")}</h1>
         <div className="switches">
@@ -268,6 +280,7 @@ export function App({ api = realApi }: { api?: Api }) {
           {page && page.items.length > 0 && (
             <div className="table-wrap pane-scroll">
               <table>
+                <caption className="sr-only">{t("list.title", { page: formatNumber(cursors.length + 1, i18n.language) })}</caption>
                 <thead>
                   <tr><th scope="col">receivedAt</th><th scope="col">{t("list.name")}</th><th scope="col">{t("list.eventId")}</th><th scope="col">{t("list.installationId")}</th><th scope="col">{t("list.sdk")}</th></tr>
                 </thead>
@@ -275,7 +288,7 @@ export function App({ api = realApi }: { api?: Api }) {
                   {page.items.map((ev) => (
                     <tr key={ev.eventId} className={ev.eventId === selected ? "selected" : undefined}>
                       <td>{formatDateTime(ev.receivedAt, tz, lang)}</td>
-                      <td><button type="button" className="link" aria-current={ev.eventId === selected ? "true" : undefined} onClick={() => setSelected(ev.eventId)}>{ev.name}</button></td>
+                      <td><button type="button" className="link" ref={(el) => { if (el) rowLinks.current.set(ev.eventId, el); else rowLinks.current.delete(ev.eventId); }} aria-current={ev.eventId === selected ? "true" : undefined} onClick={() => setSelected(ev.eventId)}>{ev.name}</button></td>
                       <td><code>{ev.eventId.slice(0, 8)}</code> <CopyButton text={ev.eventId} label={t("copy.eventIdOf", { id: ev.eventId })} /></td>
                       <td><code>{ev.installationId.slice(0, 8)}</code> <CopyButton text={ev.installationId} label={t("copy.installationIdOf", { id: ev.installationId })} /></td>
                       <td>{ev.sdkVersion}</td>
@@ -294,7 +307,7 @@ export function App({ api = realApi }: { api?: Api }) {
 
         <aside className="detail-pane">
           {selected ? (
-            <Details api={api} eventId={selected} timeZone={tz} onClose={() => setSelected(undefined)} />
+            <Details api={api} eventId={selected} timeZone={tz} onClose={closeDetails} />
           ) : (
             <div className="card detail-empty"><p className="note">{t("details.select")}</p></div>
           )}
@@ -312,5 +325,6 @@ export function App({ api = realApi }: { api?: Api }) {
         </section>
       </div>
     </main>
+    </>
   );
 }

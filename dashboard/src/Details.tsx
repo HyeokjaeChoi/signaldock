@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EventReceiptDetailToJSON } from "../../generated/typescript/models";
 import type { EventReceiptDetail } from "../../generated/typescript/models";
 import type { Api } from "./api";
@@ -39,6 +39,9 @@ export function Details({ api, eventId, timeZone, onClose }: { api: Api; eventId
   const { t } = useTranslation();
   const [load, setLoad] = useState<Load>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
+  // Opening an event moves focus to the heading of the details, so a keyboard or screen reader user lands on them (issue 29).
+  const heading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => { heading.current?.focus(); }, [eventId]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -57,7 +60,7 @@ export function Details({ api, eventId, timeZone, onClose }: { api: Api; eventId
   return (
     <section className="card detail" aria-label={t("details.label")}>
       <div className="detail-head">
-        <h2>{t("details.title")}</h2>
+        <h2 ref={heading} tabIndex={-1}>{t("details.title")}</h2>
         <button type="button" onClick={onClose}>{t("details.close")}</button>
       </div>
       {load.status === "loading" && <p role="status">{t("details.loading")}</p>}
@@ -92,6 +95,7 @@ function DetailBody({ detail, timeZone }: { detail: EventReceiptDetail; timeZone
       ) : (
         <div className="table-wrap">
           <table>
+            <caption className="sr-only">{t("details.properties")}</caption>
             <tbody>
               {Object.entries(detail.properties).map(([k, v]) => (
                 <tr key={k}>

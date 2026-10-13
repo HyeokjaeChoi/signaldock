@@ -4,6 +4,7 @@ import type { en } from "./en";
 export const ko = {
   app: {
     title: "SignalDock 벤치마크 리포트",
+    skip: "본문으로 건너뛰기",
     source:
       "서버 부하 데이터 출처: perf/results/index.json. 모든 값은 하나의 실행에 속합니다. 전체 p95는 없습니다. 서로 다른 실행의 백분위수는 평균하지 않습니다. 파일럿 실행은 로컬 환경 기록이며 SLA도, 풀 크기 선택 근거도 아닙니다 (Q133). 과부하 실행은 503 부하 차단을 보여 줍니다.",
     loading: "불러오는 중...",

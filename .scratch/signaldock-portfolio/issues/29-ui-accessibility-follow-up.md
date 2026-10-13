@@ -1,9 +1,9 @@
 # 29. Accessibility and layout follow-up for the Dashboard and the benchmark report
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: 28
-Execution: Not started
+Execution: Implemented on branch impl/29-ui-accessibility-follow-up, PR pending
 
 ## Scope and completion criteria
 
