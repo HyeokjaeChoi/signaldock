@@ -25,9 +25,12 @@ export function CopyButton({ text, label }: { text: string; label: string }) {
     }
   };
   return (
-    <button type="button" className="copy" onClick={copy} aria-label={label}>
-      {result ? t(`copy.${result}`) : t("copy.copy")}
-    </button>
+    <>
+      <button type="button" className="copy" onClick={copy} aria-label={label}>
+        {result ? t(`copy.${result}`) : t("copy.copy")}
+      </button>
+      <span className="sr-only" role="status">{result ? t(`copy.${result}`) : ""}</span>
+    </>
   );
 }
 
@@ -52,12 +55,13 @@ export function Details({ api, eventId, timeZone, onClose }: { api: Api; eventId
   }, [api, eventId, attempt]);
 
   return (
-    <section className="panel" aria-label={t("details.label")}>
-      <h2>
-        {t("details.title")} <button type="button" onClick={onClose}>{t("details.close")}</button>
-      </h2>
-      {load.status === "loading" && <p>{t("details.loading")}</p>}
-      {load.status === "notFound" && <p>{t("details.notFound")}</p>}
+    <section className="card detail" aria-label={t("details.label")}>
+      <div className="detail-head">
+        <h2>{t("details.title")}</h2>
+        <button type="button" onClick={onClose}>{t("details.close")}</button>
+      </div>
+      {load.status === "loading" && <p role="status">{t("details.loading")}</p>}
+      {load.status === "notFound" && <p role="status">{t("details.notFound")}</p>}
       {load.status === "error" && (
         <p className="error" role="alert">
           {errorText(t, load.error)} <button type="button" onClick={() => setAttempt((n) => n + 1)}>{t("status.retry")}</button>
@@ -86,17 +90,19 @@ function DetailBody({ detail, timeZone }: { detail: EventReceiptDetail; timeZone
       {Object.keys(detail.properties).length === 0 ? (
         <p className="note">{t("details.noProperties")}</p>
       ) : (
-        <table>
-          <tbody>
-            {Object.entries(detail.properties).map(([k, v]) => (
-              <tr key={k}>
-                <th scope="row">{k}</th>
-                <td>{typeof v} </td>
-                <td>{String(v)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="table-wrap">
+          <table>
+            <tbody>
+              {Object.entries(detail.properties).map(([k, v]) => (
+                <tr key={k}>
+                  <th scope="row">{k}</th>
+                  <td>{typeof v === "string" ? t("details.typeString") : typeof v === "number" ? t("details.typeNumber") : t("details.typeBoolean")}</td>
+                  <td>{String(v)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
       <h3>
         {t("details.json")} <CopyButton text={json} label={t("copy.json")} />

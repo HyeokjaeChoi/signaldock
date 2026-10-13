@@ -163,6 +163,7 @@ def main():
     a = ap.parse_args()
     runs = [load(r) for r in a.runs]
     over = [r for r in runs if r[1].get("kind") == "overload"]
+    over.sort(key=lambda r: parse_ts(r[1]["times"]["test_start_wall"]))  # the report takes the last one as the latest
     runs = [r for r in runs if r[1].get("kind") != "overload"]
     out = Path(a.out)
     latency_csv(runs + over, out.parent)

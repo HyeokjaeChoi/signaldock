@@ -13,7 +13,8 @@ export default defineConfig({
     {
       name: "classic-script",
       enforce: "post",
-      transformIndexHtml: (html) => html.replace(/<script type="module" crossorigin/g, "<script defer"),
+      // `crossorigin` on the stylesheet link would fail from file:// as well (the page has its CSS in a file since issue 28).
+      transformIndexHtml: (html) => html.replace(/<script type="module" crossorigin/g, "<script defer").replace(/(<link rel="stylesheet") crossorigin/g, "$1"),
     },
   ],
   build: { rollupOptions: { output: { format: "iife" } }, modulePreload: false, chunkSizeWarningLimit: 800 },

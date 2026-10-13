@@ -1,0 +1,105 @@
+/* Design tokens shared by the Dashboard and the benchmark report (Q139, Q140, ADR-0016).
+   Dark is the default; `<html data-theme="light">` switches. Only tokens live here: components read them, never raw values.
+   Contrast (WCAG AA): --fg and --fg-muted on --bg, --surface and --surface-raised are at least 4.5:1 in both themes;
+   status colors (--ok, --warn, --bad) and --accent are at least 4.5:1 on --surface. */
+:root {
+  color-scheme: dark;
+  /* Select chevron: a data URI cannot read a variable, so each theme holds its own stroke (the --fg-muted value). */
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%239ba7b6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5'/%3E%3C/svg%3E");
+
+  /* Surfaces and lines */
+  --bg: #0d1117;
+  --surface: #151b23;
+  --surface-raised: #1b232d;
+  --surface-sunken: #10151c;
+  --input-bg: #10151c;
+  --line: #29323e;
+  --line-strong: #3b4657;
+
+  /* Text */
+  --fg: #e7ebf1;
+  --fg-muted: #9ba7b6;
+
+  /* Brand and status */
+  --accent: #6ea8fe;
+  --accent-fg: #0b1220;
+  --accent-soft: color-mix(in srgb, var(--accent) 16%, transparent);
+  --ok: #4ccf8f;
+  --warn: #f0a23c;
+  --bad: #ff7b72;
+  --ok-soft: color-mix(in srgb, var(--ok) 14%, transparent);
+  --warn-soft: color-mix(in srgb, var(--warn) 14%, transparent);
+  --bad-soft: color-mix(in srgb, var(--bad) 14%, transparent);
+
+  /* Charts */
+  --c1: #6ea8fe;
+  --c2: #f0a23c;
+  --c3: #b79cf6;
+  --chart-axis: #9ba7b6;
+  --chart-grid: #29323e;
+  --chart-cursor: rgba(255, 255, 255, 0.06);
+  --band-baseline: transparent;
+  --band-overload: color-mix(in srgb, var(--bad) 11%, transparent);
+  --band-recovery: transparent;
+
+  /* Spacing (4 px grid) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-pill: 999px;
+
+  /* Type */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-md: 0.875rem;
+  --text-lg: 1rem;
+  --text-xl: 1.25rem;
+  --text-kpi: 1.625rem;
+
+  /* Depth and motion */
+  --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --dur-fast: 140ms;
+  --focus-ring: 2px solid var(--accent);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%23566377' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5'/%3E%3C/svg%3E");
+
+  --bg: #f4f6f9;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #eef1f5;
+  --input-bg: #ffffff;
+  --line: #d8dee7;
+  --line-strong: #b9c3d1;
+
+  --fg: #18202c;
+  --fg-muted: #566377;
+
+  --accent: #1f5fd1;
+  --accent-fg: #ffffff;
+  --ok: #15703f;
+  --warn: #8f5200;
+  --bad: #b42318;
+
+  --c1: #1f5fd1;
+  --c2: #b45309;
+  --c3: #6f42c1;
+  --chart-axis: #566377;
+  --chart-grid: #d8dee7;
+  --chart-cursor: rgba(24, 32, 44, 0.06);
+
+  --shadow-pop: 0 8px 24px rgba(20, 30, 50, 0.16);
+}
