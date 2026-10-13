@@ -1,9 +1,9 @@
 # 28. Telemetry-style redesign of the Dashboard and the benchmark report
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: 27
-Execution: Implemented on branch impl/28-telemetry-style-ui, PR pending
+Execution: Done (merged in PR #67, 2026-10-14 UTC)
 
 ## Scope and completion criteria
 
