@@ -22,3 +22,7 @@ Completion criteria:
 - The decisions are recorded in ADR-0016.
 - The changes follow the answers, with screenshots before and after (en and ko, dark and light, 1440, 1024, and 390 with touch emulation).
 - The checks of issue 29 pass.
+
+## Comments
+
+- 2026-10-14: The user answered the seven open questions one at a time in the session (spec Q141 to Q147): 1 a (keep radius), 2 a (flat toolbar bar), 3 a (keep tokens), 4 a (smaller KPI cards with sub lines), 5 a (run id as link), 6 a (monospace timestamps, dimmed date), 7 a ("More filters" disclosure). Status moved from `needs-triage` to `ready-for-agent`.
