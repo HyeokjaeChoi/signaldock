@@ -1,9 +1,9 @@
 # 08. Performance measurement and delivery evidence
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 07
-Execution: In progress (23 and 24 done; 25 open)
+Execution: Done (children 23, 24, 25 merged in PR #53, #55, #57)
 
 ## Scope and completion criteria
 

@@ -1,9 +1,9 @@
 # 25. Reproduction README and verification video (part of issue 08)
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 23, 24
-Execution: Implemented on branch impl/25-reproduction-readme-video, PR pending (README, docs/reproduce.md, evidence video, Q134 loopback cleartext). Physical device and full measurement runs are not verified (see the comments).
+Execution: Done (merged in PR #57, 2026-10-13 UTC). Physical device and full measurement runs are not verified (see the comments).
 
 ## Scope and completion criteria
 
