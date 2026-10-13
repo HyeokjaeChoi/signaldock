@@ -32,9 +32,12 @@ describe.each([["dark", dark], ["light", light]] as const)("%s theme contrast (A
   it("status text on its soft badge background", () => {
     for (const k of ["ok", "warn", "bad"]) expect(contrast(t[k]!, over(t[k]!, t.surface!, 0.14)), k).toBeGreaterThanOrEqual(4.5);
   });
-  it("text on the selected row and the active switch button", () => {
+  it("text on the selected row", () => {
     const selected = over(t.accent!, t.surface!, 0.16);
     for (const fg of ["fg", "fg-muted", "accent"]) expect(contrast(t[fg]!, selected), fg).toBeGreaterThanOrEqual(4.5);
+  });
+  it("text on the active switch button (it sits on the page background)", () => {
+    expect(contrast(t.fg!, over(t.accent!, t.bg!, 0.16))).toBeGreaterThanOrEqual(4.5);
   });
   it("chart axis text and the three series on the chart surface (3:1 for graphics)", () => {
     expect(contrast(t["chart-axis"]!, t.surface!)).toBeGreaterThanOrEqual(4.5);
