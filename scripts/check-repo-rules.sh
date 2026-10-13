@@ -35,4 +35,54 @@ for f in $(git ls-files -- '.scratch/*/issues/*.md'); do
   fi
 done
 
+# README.md and README.ko.md must stay in step (issue 26): same heading count per
+# level, same set of relative link targets (in-page #anchors ignored; Korean
+# headings give other anchors), and each links to the other. Fenced code is skipped.
+if ! python3 - <<'PY'
+import re, subprocess, sys
+
+MUTUAL = {"README.md", "README.ko.md"}  # each file links to the other by design
+
+def read(path):
+    return subprocess.run(["git", "show", ":" + path], capture_output=True, text=True, check=True).stdout
+
+def scan(text):
+    levels, links, fenced = {}, set(), False
+    for line in text.splitlines():
+        if line.lstrip().startswith("```"):
+            fenced = not fenced
+            continue
+        if fenced:
+            continue
+        m = re.match(r"(#{1,6})\s", line)
+        if m:
+            levels[len(m.group(1))] = levels.get(len(m.group(1)), 0) + 1
+        for t in re.findall(r"\]\(([^)\s]+)\)", line):
+            if not t.startswith(("#", "http://", "https://", "mailto:")):
+                links.add(t)
+    return levels, links
+
+try:
+    en, ko = scan(read("README.md")), scan(read("README.ko.md"))
+except subprocess.CalledProcessError:
+    sys.exit("error: README.md or README.ko.md is not in the git index")
+bad = []
+if en[0] != ko[0]:
+    bad.append(f"heading counts per level differ: README.md {sorted(en[0].items())} vs README.ko.md {sorted(ko[0].items())}")
+for name, a, b in (("README.md", en[1], ko[1]), ("README.ko.md", ko[1], en[1])):
+    diff = (a - b) - MUTUAL
+    if diff:
+        bad.append(f"link targets only in {name}: {sorted(diff)}")
+if "README.ko.md" not in en[1]:
+    bad.append("README.md has no link to README.ko.md")
+if "README.md" not in ko[1]:
+    bad.append("README.ko.md has no link to README.md")
+for b in bad:
+    print("error: " + b, file=sys.stderr)
+sys.exit(1 if bad else 0)
+PY
+then
+  fail=1
+fi
+
 exit "$fail"

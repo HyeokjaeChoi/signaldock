@@ -1,12 +1,14 @@
 # SignalDock
 
+[한국어](README.ko.md)
+
 An Android event SDK designed to save events on the device and confirm server receipt through an ACK after commit.
 
-This monorepo contains the design for the SDK and a local data processing server.
+This monorepo contains the SDK, a local data processing server, and their design.
 Review the path from an app's `track()` call through a durable queue, retries, server deduplication, and independent artifact installation.
 
 > **Status: 2026-10-13**
-> The SDK, the server, the Android demo app, and the Dashboard are implemented. Delivery failure E2E, device durability, server load measurement, and SDK device measurement have scripts and recorded results (issues 20, 21, 23, 24). [Reproduce from a clean clone](#reproduce-from-a-clean-clone) lists the commands that were run in a fresh clone, and what was not verified (physical device, full measurement runs).
+> All planned issues (01 to 25) are done. The SDK, the server, the Android demo app, and the Dashboard are implemented. Delivery failure E2E, device durability, contract and DB change checks, server load measurement, and SDK device measurement have scripts and recorded results (issues 20 to 24). [Reproduce from a clean clone](#reproduce-from-a-clean-clone) lists the commands that were run in a fresh clone, and what was not verified: a physical device, the full server measurement matrix (not run, Q133), and a release-build SDK measurement.
 
 ## Start here
 
@@ -25,7 +27,7 @@ On macOS, run this from the repository root to preview the document:
 open docs/architecture/signaldock-onepager.html
 ```
 
-![Planned SignalDock structure: the demo app calls the SDK API, Room stores events, and a shared sender sends them to Ktor. The Dashboard queries server records.](docs/architecture/signaldock-architecture.svg)
+![SignalDock structure: the demo app calls the SDK API, Room stores events, and a shared sender sends them to Ktor. The Dashboard queries server records.](docs/architecture/signaldock-architecture.svg)
 
 ## What to review
 
@@ -33,14 +35,14 @@ An SDK's success response tells the host app what it can do next.
 SignalDock separates durable device storage from server receipt, with recovery rules for each stage.
 This portfolio for the Datarize Mobile SDK Engineer role covers public API design, lifecycle management, recovery, compatibility, and independent distribution.
 
-| Design concern | Decision | Planned evidence, not yet verified |
+| Design concern | Decision | Recorded evidence |
 | --- | --- | --- |
-| Offline collection within a storage limit | Collection succeeds at Room commit. At the queue limit, preserve existing events and return `QueueFull` for new calls | 1,000 offline events and process restart; concurrent inserts and capacity boundaries |
-| Lost ACKs without duplicate storage | Retry with the same `eventId`. Use a server unique constraint and content comparison; ACK after commit | Block the response after commit; test duplicate and conflict results; compare unique rows and counts |
-| Foreground response and background recovery | Share the sender and durable retry state with WorkManager. Keep collection writes separate from the send lock | Sender contention, cancellation, scheduling recovery, and retry waits across restart |
-| Shared contracts and independent releases | OpenAPI / JSON with generated source drift checks. Install the Maven ZIP in a separate R8 consumer app | Scalar round trips, earlier fixtures, migrations, artifact installation, and R8 release execution |
+| Offline collection within a storage limit | Collection succeeds at Room commit. At the queue limit, preserve existing events and return `QueueFull` for new calls | 1,000 offline events survived a process restart; concurrent inserts and capacity boundaries ran on two emulators ([issue 20](.scratch/signaldock-portfolio/issues/20-sdk-durability-device.md)) |
+| Lost ACKs without duplicate storage | Retry with the same `eventId`. Use a server unique constraint and content comparison; ACK after commit | A fault proxy dropped the response after commit; duplicate and conflict results; unique rows and counts compared ([issue 21](.scratch/signaldock-portfolio/issues/21-delivery-failure-e2e.md)) |
+| Foreground response and background recovery | Share the sender and durable retry state with WorkManager. Keep collection writes separate from the send lock | Sender contention, cancellation, Worker recovery, and retry waits across restart ran on two emulators ([issue 20](.scratch/signaldock-portfolio/issues/20-sdk-durability-device.md)) |
+| Shared contracts and independent releases | OpenAPI / JSON with generated source drift checks. Install the Maven ZIP in a separate R8 consumer app | Round trips, earlier-version fixtures, and DB migrations ([issue 22](.scratch/signaldock-portfolio/issues/22-contract-db-change-checks.md)); Maven ZIP installation and an R8 release consumer app ([issue 06](.scratch/signaldock-portfolio/issues/06-distribution.md), [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md)) |
 
-## Planned event flow
+## Event flow
 
 1. After initialization succeeds, the host app calls `track()`. Collection succeeds after input validation and Room storage.
 2. The shared sender checks the earliest retry time and sends a batch. It holds no Room transaction open during HTTP.
@@ -51,7 +53,7 @@ This portfolio for the Datarize Mobile SDK Engineer role covers public API desig
 A lost ACK does not change the event ID. The same ID and content produce duplicate success; different content produces a conflict rejection.
 Deduplication lasts while the server row exists. The design does not claim exactly-once delivery.
 
-## Planned stack
+## Stack
 
 | Area | Choice |
 | --- | --- |
@@ -61,7 +63,7 @@ Deduplication lasts while the server row exists. The design does not claim exact
 | Verification Dashboard | React · TypeScript · Vite · Recharts |
 | Contracts and distribution | OpenAPI / JSON · generated sources tracked in Git · Docker Compose entry point · local Maven repository ZIP |
 
-Exact dependency versions need build verification and pinning during implementation.
+Exact versions are pinned in `gradle/libs.versions.toml`. [TOOLCHAIN.md](TOOLCHAIN.md) gives the reason for each pin and the build that verified it.
 The first coordinate is `local.signaldock:sdk-android:0.1.0` (local only, not Maven Central). Build the ZIP as described below.
 
 ## Scope and verification
@@ -71,7 +73,12 @@ The demo follows product view, cart, and simulated purchase. The Dashboard helps
 iOS / Flutter, automatic events, `identify`, campaign / push, funnels, multiple accounts, public internet operation, and Maven Central are outside this release.
 
 The [completion criteria](.scratch/signaldock-portfolio/spec.md#7-completion-criteria-and-verification-plan) require environment records, source revision/hash, and event ID comparisons. Each implementation issue in `.scratch/signaldock-portfolio/issues/` records what ran and what did not.
-Load and latency values in the [performance plan](.scratch/signaldock-portfolio/performance-plan.md) are targets, not measured results or an SLA.
+Measured results are local environment records, not an SLA:
+
+- Server: two pilot runs and one overload run on one Mac with Docker limits, in [`perf/results/`](perf/results/). The overload run shows HTTP 503 with `Retry-After` and recovery without a restart. The 216-run pool-size matrix was not run (Q133, [ADR-0013](docs/adr/0013-server-load-measurement-harness.md), [issue 23](.scratch/signaldock-portfolio/issues/23-server-load-measurement.md)).
+- SDK: normal, offline, and burst runs on API 24 and API 37 emulators with a debug build, in [`perf/sdk-results/summary.md`](perf/sdk-results/summary.md) ([ADR-0014](docs/adr/0014-sdk-device-measurement-harness.md), [issue 24](.scratch/signaldock-portfolio/issues/24-sdk-device-measurement.md)).
+- The [performance plan](.scratch/signaldock-portfolio/performance-plan.md) holds the original targets and conditions.
+
 Steps to run, stop, and reset the stack, to build the Maven ZIP, and to run the consumer app are below.
 
 ## Reproduce from a clean clone
@@ -193,7 +200,7 @@ The spec, verification plans, and implementation issues in `.scratch/signaldock-
 | --- | --- |
 | [architecture.md](architecture.md) | SDK and server boundaries; ACK, retry, contract, and distribution design |
 | [docs/architecture/](docs/architecture/) | Diagrams, onepager HTML, and source text |
-| [docs/adr/](docs/adr/) | Installation identity and OpenAPI / JSON decisions |
+| [docs/adr/](docs/adr/) | Architecture decision records 0001 to 0014 |
 | [GLOSSARY.md](GLOSSARY.md) | Collection success, receipt success, installation ID, and event ID definitions |
 | [.scratch/signaldock-portfolio/spec.md](.scratch/signaldock-portfolio/spec.md) | Detailed design and completion criteria |
 | [.scratch/signaldock-portfolio/final-review.md](.scratch/signaldock-portfolio/final-review.md) | Final design review |
