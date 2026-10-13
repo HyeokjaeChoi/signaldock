@@ -188,7 +188,7 @@ Requirements of the 0.1.0 AAR:
 
 - `compileSdk` 36 or newer (`aarMetadata.minCompileSdk=36`, [ADR-0006](docs/adr/0006-sdk-delivery-decisions.md)), `minSdk` 24 or newer.
 - Kotlin 2.2 or newer and AGP 9.x. The SDK metadata is 2.2, so AGP 9's default built-in Kotlin works with no extra Kotlin plugin ([ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md), Q132).
-- The host app declares `INTERNET`. The SDK needs no R8 rules of its own. The SDK reaches the server over HTTPS unless the app allows cleartext for that host.
+- The host app declares `INTERNET`. The SDK needs no R8 rules of its own. Use an `https://` endpoint unless the app allows cleartext for that host; the SDK does not switch an `http://` endpoint to HTTPS (ADR-0009).
 - Call `SignalDock.initialize(context, SignalDockConfig(endpoint, collectionKey))` once (for example in `Application.onCreate`), then `track("name") { property("key", value) }` and `diagnostics()` on the returned instance.
 
 ## Repository guide

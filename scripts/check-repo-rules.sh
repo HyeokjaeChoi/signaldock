@@ -36,7 +36,7 @@ for f in $(git ls-files -- '.scratch/*/issues/*.md'); do
 done
 
 # README.md and README.ko.md must stay in step (issue 26): same heading count per
-# level, same set of relative link targets (in-page #anchors ignored; Korean
+# level, same set of relative link targets that exist in the index (in-page #anchors ignored; Korean
 # headings give other anchors), and each links to the other. Fenced code is skipped.
 if ! python3 - <<'PY'
 import re, subprocess, sys
@@ -73,6 +73,13 @@ for name, a, b in (("README.md", en[1], ko[1]), ("README.ko.md", ko[1], en[1])):
     diff = (a - b) - MUTUAL
     if diff:
         bad.append(f"link targets only in {name}: {sorted(diff)}")
+files = set(subprocess.run(["git", "ls-files"], capture_output=True, text=True, check=True).stdout.splitlines())
+dirs = {f.rsplit("/", i)[0] for f in files for i in range(1, f.count("/") + 1)}
+for name, (_, links) in (("README.md", en), ("README.ko.md", ko)):
+    for t in sorted(links):
+        path = t.split("#", 1)[0].rstrip("/")
+        if path and path not in files and path not in dirs:
+            bad.append(f"{name} links to {t}, which is not in the git index")
 if "README.ko.md" not in en[1]:
     bad.append("README.md has no link to README.ko.md")
 if "README.md" not in ko[1]:
