@@ -1,9 +1,9 @@
 # 29. Accessibility and layout follow-up for the Dashboard and the benchmark report
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: 28
-Execution: Implemented on branch impl/29-ui-accessibility-follow-up, PR pending
+Execution: Done (merged in PR #72, 2026-10-14 UTC)
 
 ## Scope and completion criteria
 
