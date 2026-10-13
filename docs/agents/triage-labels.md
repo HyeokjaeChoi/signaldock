@@ -10,7 +10,7 @@ Use these five canonical triage roles and their repository label strings.
 | `ready-for-human`          | `ready-for-human`    | Requires human implementation            |
 | `wontfix`                  | `wontfix`            | Will not be actioned                     |
 
-After the work merges, set `Status: resolved` (the completion state from `issue-tracker.md`; for implementation issues the `Execution:` line is the record, see there). An issue whose `Execution:` line starts with `Done` must be `resolved`, so no agent picks it up again. `scripts/check-repo-rules.sh` checks this.
+While the work is on a branch or in an open PR, set `Status: claimed` (from `issue-tracker.md`), so no other agent starts it. After the work merges, set `Status: resolved` (the completion state from `issue-tracker.md`; for implementation issues the `Execution:` line is the record, see there). An issue whose `Execution:` line starts with `Done` must be `resolved`, so no agent picks it up again. `scripts/check-repo-rules.sh` checks this.
 
 When a skill mentions a role (e.g. "apply the AFK-ready triage label"), use the corresponding label string from this table.
 

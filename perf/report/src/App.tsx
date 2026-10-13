@@ -320,7 +320,7 @@ function SdkResults({ data, error }: { data: SdkData | null; error: string }) {
                   <td>{r.drain?.seconds == null ? t("common.na") : wait != null ? t("sdk.drainOffline", { seconds: f1(r.drain.seconds), wait: f1(wait) }) : f1(r.drain.seconds)}</td>
                   <td>{fb ? t("sdk.filesValue", { db: n(fb["queue.db"] ?? 0), wal: n(fb["queue.db-wal"] ?? 0), shm: n(fb["queue.db-shm"] ?? 0) }) : t("common.na")}</td>
                   <td>{r.pss_delta_kib == null ? t("common.na") : t(r.memory_basis === "store" ? "sdk.memoryStore" : "sdk.memoryDrain", { pss: n(r.pss_delta_kib), heap: r.heap_delta_kib == null ? t("common.na") : n(r.heap_delta_kib) })}</td>
-                  <td>{r.missing_on_server == null ? t("common.na") : `${r.missing_on_server} / ${r.duplicate_server_rows}`}</td>
+                  <td>{r.missing_on_server == null ? t("common.na") : `${n(r.missing_on_server)} / ${r.duplicate_server_rows == null ? t("common.na") : n(r.duplicate_server_rows)}`}</td>
                 </tr>);
             })}</tbody>
           </table>

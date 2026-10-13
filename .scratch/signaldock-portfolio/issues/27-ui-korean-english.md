@@ -1,6 +1,6 @@
 # 27. Korean and English UI for the Dashboard and the benchmark report
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: None
 Execution: Implemented on branch impl/27-ui-korean-english, PR pending
