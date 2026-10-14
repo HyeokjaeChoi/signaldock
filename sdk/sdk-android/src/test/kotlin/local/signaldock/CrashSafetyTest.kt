@@ -83,7 +83,8 @@ class CrashSafetyTest {
 
     @Test
     fun `a closed database gives StorageError from track and an unavailable snapshot from diagnostics`() = runBlocking {
-        val sdk = newSdk()
+        val log = FakeLogger()
+        val sdk = newSdk(logger = log)
         assertTrue(sdk.track("before") is TrackResult.Success)
         roomOf(sdk.dao).close()
         val r = sdk.track("after")
@@ -93,7 +94,9 @@ class CrashSafetyTest {
         assertEquals(0, d.queuedEvents)
         // The delivery paths on the closed database end without an exception too.
         sdk.delivery.drainForeground()
+        assertEquals(1, log.warnings.count { it.startsWith("delivery run failed:") })
         sdk.delivery.runWorker()
+        assertEquals(2, log.warnings.count { it.startsWith("delivery run failed:") })
     }
 
     @Test

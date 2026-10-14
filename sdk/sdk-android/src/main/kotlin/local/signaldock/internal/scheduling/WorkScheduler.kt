@@ -95,7 +95,9 @@ internal class WorkManagerScheduler(
             // WorkManager is not initialized (IllegalStateException) or its own storage failed. A
             // scheduling failure never reaches the host's track(), initialize() or lifecycle callback
             // (ADR-0017). Foreground delivery still works.
-            logger.warn("WorkManager is not available; background delivery is off")
+            // A periodic Worker that was scheduled before may still run, so do not claim that
+            // background delivery is off.
+            logger.warn("WorkManager request failed: ${e.javaClass.simpleName}; foreground delivery still works")
         }
     }
 

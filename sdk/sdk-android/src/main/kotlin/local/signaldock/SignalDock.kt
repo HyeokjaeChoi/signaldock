@@ -3,6 +3,7 @@ package local.signaldock
 import android.content.Context
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import local.signaldock.internal.collection.EventCollector
 import local.signaldock.internal.init.InitCoordinator
@@ -38,6 +39,8 @@ public class SignalDock internal constructor(
             if (e is CancellationException && !currentCoroutineContext().isActive) throw e
             // Storage failure: report it as data, never as an exception (ADR-0017).
             logger.warn("diagnostics storage failed: ${e.javaClass.simpleName}")
+            // Narrows the race with a cancellation that arrives after the check above.
+            currentCoroutineContext().ensureActive()
             return Diagnostics(SDK_VERSION, 0, 0, null, emptyList(), null, null, 0, null, storageAvailable = false)
         }
         val retry = snap.retry

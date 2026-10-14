@@ -103,6 +103,7 @@ internal suspend fun newSdk(
     scheduler: WorkScheduler = NoopScheduler,
     scope: CoroutineScope = CoroutineScope(Job()),
     foregroundTriggers: Boolean = false,
+    logger: Logger = FakeLogger(),
 ): SignalDock = createSdk(
-    context, testConfig, clock, ids, limits, transport, jitter, scheduler, scope, foregroundTriggers,
+    context, testConfig, clock, ids, limits, transport, jitter, scheduler, scope, foregroundTriggers, logger,
 )
