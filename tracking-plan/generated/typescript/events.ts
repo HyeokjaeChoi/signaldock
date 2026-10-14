@@ -20,7 +20,7 @@ export interface ProductViewedProps {
   /** Catalog product ID. */
   productId: string;
   /** Price in the smallest currency unit, when the screen shows one. */
-  priceMinor?: number;
+  priceMinor?: number | null;
 }
 
 /** A user opened a product detail screen. Optional properties that are undefined or null are left out. */

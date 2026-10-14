@@ -29,9 +29,13 @@ export function validatePlan(plan) {
   const bad = (m) => errors.push(m);
   const isText = (s) => typeof s === "string" && s.trim() !== "" && !/[\r\n]|\*\//.test(s) && s === s.trim();
   if (plan?.version !== 1) bad("version must be 1");
-  if (!/^[a-z][a-z0-9]*(\.[a-z][a-z0-9_]*)*$/.test(plan?.kotlinPackage ?? "")) bad("kotlinPackage must be a lowercase dotted package name");
+  const pkg = plan?.kotlinPackage ?? "";
+  if (!/^[a-z][a-z0-9]*(\.[a-z][a-z0-9_]*)*$/.test(pkg) || pkg.split(".").some((w) => KOTLIN_KEYWORDS.has(w))) {
+    bad("kotlinPackage must be a lowercase dotted package name with no Kotlin keyword");
+  }
   if (!Array.isArray(plan?.events) || plan.events.length === 0) bad("events must be a non-empty array");
   const names = new Set();
+  const ids = new Set(); // generated identifiers: snake_case names that differ can give one camelCase name
   for (const e of Array.isArray(plan?.events) ? plan.events : []) {
     const at = `event "${e?.name}"`;
     if (typeof e?.name !== "string" || !SNAKE.test(e.name) || e.name.length > MAX_LEN || e.name.split("_").length < 2) {
@@ -39,15 +43,24 @@ export function validatePlan(plan) {
     }
     if (names.has(e?.name)) bad(`${at}: duplicate event name`);
     names.add(e?.name);
+    if (typeof e?.name === "string") {
+      if (ids.has(camel(e.name))) bad(`${at}: generated function name ${camel(e.name)} is also made by another event`);
+      ids.add(camel(e.name));
+    }
     if (!isText(e?.description)) bad(`${at}: description must be one trimmed line of text`);
     if (!Array.isArray(e?.properties)) { bad(`${at}: properties must be an array`); continue; }
     const keys = new Set();
+    const params = new Set();
     for (const p of e.properties) {
       const pat = `${at}, property "${p?.key}"`;
       if (typeof p?.key !== "string" || !SNAKE.test(p.key) || p.key.length > MAX_LEN) bad(`${pat}: key must be snake_case (${SNAKE}), at most ${MAX_LEN} characters`);
       else if (KOTLIN_KEYWORDS.has(p.key)) bad(`${pat}: key is a Kotlin keyword`);
       if (keys.has(p?.key)) bad(`${pat}: duplicate key`);
       keys.add(p?.key);
+      if (typeof p?.key === "string") {
+        if (params.has(camel(p.key))) bad(`${pat}: generated parameter name ${camel(p.key)} is also made by another key`);
+        params.add(camel(p.key));
+      }
       if (!Object.hasOwn(TYPES, p?.type)) bad(`${pat}: type must be one of ${Object.keys(TYPES).join(", ")}`);
       if (typeof p?.required !== "boolean") bad(`${pat}: required must be true or false`);
       if (!isText(p?.description)) bad(`${pat}: description must be one trimmed line of text`);
@@ -101,7 +114,7 @@ function typescript(plan) {
   ];
   for (const e of plan.events) {
     out.push("", `export interface ${pascal(e.name)}Props {`);
-    for (const p of ordered(e)) out.push(`  /** ${p.description} */`, `  ${camel(p.key)}${p.required ? "" : "?"}: ${TYPES[p.type].wire};`);
+    for (const p of ordered(e)) out.push(`  /** ${p.description} */`, `  ${camel(p.key)}${p.required ? "" : "?"}: ${TYPES[p.type].wire}${p.required ? "" : " | null"};`);
     out.push("}", "", `/** ${e.description} Optional properties that are undefined or null are left out. */`);
     out.push(`export function ${camel(e.name)}(props: ${pascal(e.name)}Props): EventInput {`, "  const properties: EventInput[\"properties\"] = {};");
     for (const p of ordered(e)) {
