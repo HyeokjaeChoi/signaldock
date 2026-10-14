@@ -1,9 +1,9 @@
 # 34. SDK integration guide and public API documentation
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Implemented on branch impl/34-sdk-integration-guide, PR pending
+Execution: Done (merged in PR #84, 2026-10-14 UTC)
 
 ## Scope and completion criteria
 
