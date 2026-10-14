@@ -200,6 +200,8 @@ dependencies { implementation("local.signaldock:sdk-android:0.1.0") }
 - 호스트 앱이 `INTERNET`을 선언해야 합니다. SDK 자체의 R8 규칙은 필요 없습니다. 앱이 해당 host에 cleartext를 허용하지 않으면 `https://` endpoint를 설정해야 합니다. SDK는 `http://` endpoint를 HTTPS로 바꾸지 않습니다(ADR-0009).
 - `SignalDock.initialize(context, SignalDockConfig(endpoint, collectionKey))`를 한 번 호출합니다(예: `Application.onCreate`). 이후 반환된 인스턴스에서 `track("name") { property("key", value) }`와 `diagnostics()`를 호출합니다.
 
+[SDK 통합 가이드](docs/integration-guide.ko.md)([English](docs/integration-guide.md))는 `track()` 결과, 취소, 오프라인과 재시도 동작, diagnostics, 개인정보, 버전, 문제 해결을 다룹니다.
+
 ## 저장소 안내
 
 저장소에는 설계 문서와, `sdk/`, `server/`, `dashboard/` 아래의 제품 코드가 있습니다.

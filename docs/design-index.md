@@ -26,6 +26,8 @@ ADRs:
 - ADR-0017 (`docs/adr/0017-sdk-crash-safety.md`), for the public API failure behavior
 - ADR-0018 (`docs/adr/0018-sdk-release-r8-measurement.md`), for `sdk/measure-app` and `sdk/sdk-android/src/measure` (issue 33)
 
+Integration guide: when you change the public API, its KDoc, or the behavior that it describes, update `docs/integration-guide.md` and `docs/integration-guide.ko.md` in the same PR. The guide samples are in `sdk/sdk-android/src/test/kotlin/local/signaldock/IntegrationGuideSamplesTest.kt` (issue 34).
+
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 1. Goal and scope
 - 3. SDK public behavior
