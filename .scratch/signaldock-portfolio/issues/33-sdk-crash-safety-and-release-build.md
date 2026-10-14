@@ -1,9 +1,9 @@
 # 33. SDK crash safety and release-build measurement
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Implemented on branch impl/33-sdk-crash-safety, PR pending
+Execution: Done (merged in PR #82, 2026-10-14 UTC)
 
 ## Scope and completion criteria
 

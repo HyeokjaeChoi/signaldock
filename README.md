@@ -8,7 +8,7 @@ This monorepo contains the SDK, a local data processing server, and their design
 Review the path from an app's `track()` call through a durable queue, retries, server deduplication, and independent artifact installation.
 
 > **Status: 2026-10-14**
-> The first release scope is done. The SDK, the server, the Android demo app, and the Dashboard are implemented. Delivery failure E2E, device durability, contract and DB change checks, server load measurement, and SDK device measurement have scripts and recorded results ([issues 20 to 24](.scratch/signaldock-portfolio/issues/)). [Reproduce from a clean clone](#reproduce-from-a-clean-clone) lists the commands that were run in a fresh clone, and what was not verified: a physical device, the full server measurement matrix (not run, Q133), and a release-build SDK measurement.
+> The first release scope is done. The SDK, the server, the Android demo app, and the Dashboard are implemented. Delivery failure E2E, device durability, contract and DB change checks, server load measurement, and SDK device measurement have scripts and recorded results ([issues 20 to 24](.scratch/signaldock-portfolio/issues/)). [Reproduce from a clean clone](#reproduce-from-a-clean-clone) lists the commands that were run in a fresh clone, and what was not verified: a physical device, and the full server measurement matrix (not run, Q133).
 
 ![The Dashboard with one stored event selected: the event list on the left, the event details and stored JSON on the right.](docs/images/dashboard.png)
 
