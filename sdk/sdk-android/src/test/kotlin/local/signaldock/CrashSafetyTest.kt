@@ -170,13 +170,15 @@ class CrashSafetyTest {
             { IOException("reset") }, { java.net.SocketTimeoutException("t") }, { java.net.UnknownHostException("h") },
             { IllegalStateException("closed") }, { RuntimeException("surprise") },
         )
-        for (f in failures) {
+        // One id source for all cases: every case opens the same queue, so each event needs a new id.
+        val ids = SequenceIds()
+        for ((i, f) in failures.withIndex()) {
             val transport = FakeTransport { throw f(it)!! }
-            val sdk = newSdk(transport = transport)
-            sdk.track("e")
+            val sdk = newSdk(transport = transport, ids = ids)
+            assertTrue(sdk.track("e") is TrackResult.Success)
             sdk.delivery.drainForeground()
             sdk.delivery.runWorker()
-            assertEquals(1, sdk.diagnostics().queuedEvents)
+            assertEquals(i + 1, sdk.diagnostics().queuedEvents)
         }
     }
 
