@@ -92,6 +92,8 @@ tasks.register<Zip>("signaldockMavenZip") {
     description = "Publishes local.signaldock:sdk-android:$sdkVersion to a clean folder repository and zips it."
     dependsOn("cleanMavenFolder", "publishReleasePublicationToFolderRepository")
     from(mavenFolder)
+    // Apache-2.0 Section 4(a): recipients of the ZIP get a copy of the license (issue 32).
+    from(rootProject.file("../LICENSE"))
     archiveBaseName.set("signaldock-sdk-android")
     archiveVersion.set(sdkVersion)
     archiveClassifier.set("maven")
