@@ -128,3 +128,27 @@ dependencies {
     androidTestImplementation(libs.kotlinx.coroutines.android)
     androidTestImplementation(libs.okhttp.mockwebserver)
 }
+
+// Public API check (issue 35, ADR-0019). The Kotlin Gradle plugin's abiValidation dumps nothing for
+// this module, and the binary-compatibility-validator plugin registers no tasks: both look for a
+// Kotlin plugin, and AGP built-in Kotlin applies none. The validator's task classes are wired by hand
+// to the release classes.
+//   sdk/gradlew -p sdk :sdk-android:apiCheck   fails when the public API differs from api/sdk-android.api
+//   sdk/gradlew -p sdk :sdk-android:apiDump    rewrites api/sdk-android.api (intentional API change)
+val apiDumpFile = layout.projectDirectory.file("api/sdk-android.api")
+val apiBuild = tasks.register<kotlinx.validation.KotlinApiBuildTask>("apiBuild") {
+    inputClassesDirs.from(tasks.named("compileReleaseKotlin").map { it.outputs.files })
+    outputApiFile.set(layout.buildDirectory.file("api/sdk-android.api"))
+}
+tasks.register<kotlinx.validation.KotlinApiCompareTask>("apiCheck") {
+    group = "verification"
+    description = "Fails when the public API of the release classes differs from api/sdk-android.api."
+    projectApiFile.set(apiDumpFile)
+    generatedApiFile.set(apiBuild.flatMap { it.outputApiFile })
+}
+tasks.register<Copy>("apiDump") {
+    group = "other"
+    description = "Rewrites api/sdk-android.api from the release classes."
+    from(apiBuild.flatMap { it.outputApiFile })
+    into(apiDumpFile.asFile.parentFile)
+}

@@ -1,0 +1,260 @@
+public final class local/signaldock/AckDiagnostic {
+	public fun <init> (JIII)V
+	public final fun component1 ()J
+	public final fun component2 ()I
+	public final fun component3 ()I
+	public final fun component4 ()I
+	public final fun copy (JIII)Llocal/signaldock/AckDiagnostic;
+	public static synthetic fun copy$default (Llocal/signaldock/AckDiagnostic;JIIIILjava/lang/Object;)Llocal/signaldock/AckDiagnostic;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAccepted ()I
+	public final fun getAtEpochMillis ()J
+	public final fun getDuplicate ()I
+	public final fun getRejected ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class local/signaldock/DeliveryErrorDiagnostic {
+	public fun <init> (Llocal/signaldock/DeliveryErrorKind;Ljava/lang/Integer;J)V
+	public final fun component1 ()Llocal/signaldock/DeliveryErrorKind;
+	public final fun component2 ()Ljava/lang/Integer;
+	public final fun component3 ()J
+	public final fun copy (Llocal/signaldock/DeliveryErrorKind;Ljava/lang/Integer;J)Llocal/signaldock/DeliveryErrorDiagnostic;
+	public static synthetic fun copy$default (Llocal/signaldock/DeliveryErrorDiagnostic;Llocal/signaldock/DeliveryErrorKind;Ljava/lang/Integer;JILjava/lang/Object;)Llocal/signaldock/DeliveryErrorDiagnostic;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAtEpochMillis ()J
+	public final fun getHttpStatus ()Ljava/lang/Integer;
+	public final fun getKind ()Llocal/signaldock/DeliveryErrorKind;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class local/signaldock/DeliveryErrorKind : java/lang/Enum {
+	public static final field AUTH_OR_CONFIGURATION Llocal/signaldock/DeliveryErrorKind;
+	public static final field CONTRACT Llocal/signaldock/DeliveryErrorKind;
+	public static final field INVALID_ACK Llocal/signaldock/DeliveryErrorKind;
+	public static final field NETWORK Llocal/signaldock/DeliveryErrorKind;
+	public static final field PAYLOAD_TOO_LARGE Llocal/signaldock/DeliveryErrorKind;
+	public static final field RATE_LIMITED Llocal/signaldock/DeliveryErrorKind;
+	public static final field SERVER_ERROR Llocal/signaldock/DeliveryErrorKind;
+	public static final field TIMEOUT Llocal/signaldock/DeliveryErrorKind;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Llocal/signaldock/DeliveryErrorKind;
+	public static fun values ()[Llocal/signaldock/DeliveryErrorKind;
+}
+
+public final class local/signaldock/Diagnostics {
+	public fun <init> (Ljava/lang/String;IJLjava/lang/Long;Ljava/util/List;Llocal/signaldock/AckDiagnostic;Llocal/signaldock/DeliveryErrorDiagnostic;ILjava/lang/Long;Z)V
+	public synthetic fun <init> (Ljava/lang/String;IJLjava/lang/Long;Ljava/util/List;Llocal/signaldock/AckDiagnostic;Llocal/signaldock/DeliveryErrorDiagnostic;ILjava/lang/Long;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component10 ()Z
+	public final fun component2 ()I
+	public final fun component3 ()J
+	public final fun component4 ()Ljava/lang/Long;
+	public final fun component5 ()Ljava/util/List;
+	public final fun component6 ()Llocal/signaldock/AckDiagnostic;
+	public final fun component7 ()Llocal/signaldock/DeliveryErrorDiagnostic;
+	public final fun component8 ()I
+	public final fun component9 ()Ljava/lang/Long;
+	public final fun copy (Ljava/lang/String;IJLjava/lang/Long;Ljava/util/List;Llocal/signaldock/AckDiagnostic;Llocal/signaldock/DeliveryErrorDiagnostic;ILjava/lang/Long;Z)Llocal/signaldock/Diagnostics;
+	public static synthetic fun copy$default (Llocal/signaldock/Diagnostics;Ljava/lang/String;IJLjava/lang/Long;Ljava/util/List;Llocal/signaldock/AckDiagnostic;Llocal/signaldock/DeliveryErrorDiagnostic;ILjava/lang/Long;ZILjava/lang/Object;)Llocal/signaldock/Diagnostics;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getLastAck ()Llocal/signaldock/AckDiagnostic;
+	public final fun getLastDeliveryError ()Llocal/signaldock/DeliveryErrorDiagnostic;
+	public final fun getNextAttemptEpochMillis ()Ljava/lang/Long;
+	public final fun getOldestPendingEpochMillis ()Ljava/lang/Long;
+	public final fun getQueuedBytes ()J
+	public final fun getQueuedEvents ()I
+	public final fun getRecentRejections ()Ljava/util/List;
+	public final fun getRetryFailureCount ()I
+	public final fun getSdkVersion ()Ljava/lang/String;
+	public final fun getStorageAvailable ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class local/signaldock/EventBuilder {
+	public final fun property (Ljava/lang/String;D)V
+	public final fun property (Ljava/lang/String;I)V
+	public final fun property (Ljava/lang/String;J)V
+	public final fun property (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun property (Ljava/lang/String;Z)V
+}
+
+public abstract interface class local/signaldock/InitError {
+}
+
+public final class local/signaldock/InitError$ConfigurationConflict : local/signaldock/InitError {
+	public static final field INSTANCE Llocal/signaldock/InitError$ConfigurationConflict;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class local/signaldock/InitError$InvalidConfiguration : local/signaldock/InitError {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Llocal/signaldock/InitError$InvalidConfiguration;
+	public static synthetic fun copy$default (Llocal/signaldock/InitError$InvalidConfiguration;Ljava/lang/String;ILjava/lang/Object;)Llocal/signaldock/InitError$InvalidConfiguration;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMessage ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class local/signaldock/InitError$StorageFailure : local/signaldock/InitError {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Llocal/signaldock/InitError$StorageFailure;
+	public static synthetic fun copy$default (Llocal/signaldock/InitError$StorageFailure;Ljava/lang/String;ILjava/lang/Object;)Llocal/signaldock/InitError$StorageFailure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMessage ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class local/signaldock/InitResult {
+}
+
+public final class local/signaldock/InitResult$Failure : local/signaldock/InitResult {
+	public fun <init> (Llocal/signaldock/InitError;)V
+	public final fun component1 ()Llocal/signaldock/InitError;
+	public final fun copy (Llocal/signaldock/InitError;)Llocal/signaldock/InitResult$Failure;
+	public static synthetic fun copy$default (Llocal/signaldock/InitResult$Failure;Llocal/signaldock/InitError;ILjava/lang/Object;)Llocal/signaldock/InitResult$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getError ()Llocal/signaldock/InitError;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class local/signaldock/InitResult$Success : local/signaldock/InitResult {
+	public fun <init> (Llocal/signaldock/SignalDock;)V
+	public final fun component1 ()Llocal/signaldock/SignalDock;
+	public final fun copy (Llocal/signaldock/SignalDock;)Llocal/signaldock/InitResult$Success;
+	public static synthetic fun copy$default (Llocal/signaldock/InitResult$Success;Llocal/signaldock/SignalDock;ILjava/lang/Object;)Llocal/signaldock/InitResult$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getSdk ()Llocal/signaldock/SignalDock;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class local/signaldock/InvalidReason : java/lang/Enum {
+	public static final field DUPLICATE_KEY Llocal/signaldock/InvalidReason;
+	public static final field EMPTY_NAME Llocal/signaldock/InvalidReason;
+	public static final field EVENT_TOO_LARGE Llocal/signaldock/InvalidReason;
+	public static final field FORBIDDEN_CHARACTER Llocal/signaldock/InvalidReason;
+	public static final field LEADING_OR_TRAILING_WHITESPACE Llocal/signaldock/InvalidReason;
+	public static final field NON_FINITE_NUMBER Llocal/signaldock/InvalidReason;
+	public static final field NUMBER_OUT_OF_RANGE Llocal/signaldock/InvalidReason;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Llocal/signaldock/InvalidReason;
+	public static fun values ()[Llocal/signaldock/InvalidReason;
+}
+
+public final class local/signaldock/LogLevel : java/lang/Enum {
+	public static final field DEBUG Llocal/signaldock/LogLevel;
+	public static final field ERROR Llocal/signaldock/LogLevel;
+	public static final field INFO Llocal/signaldock/LogLevel;
+	public static final field NONE Llocal/signaldock/LogLevel;
+	public static final field WARN Llocal/signaldock/LogLevel;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Llocal/signaldock/LogLevel;
+	public static fun values ()[Llocal/signaldock/LogLevel;
+}
+
+public final class local/signaldock/RejectionDiagnostic {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;J)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()J
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;J)Llocal/signaldock/RejectionDiagnostic;
+	public static synthetic fun copy$default (Llocal/signaldock/RejectionDiagnostic;Ljava/lang/String;Ljava/lang/String;JILjava/lang/Object;)Llocal/signaldock/RejectionDiagnostic;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCode ()Ljava/lang/String;
+	public final fun getEventId ()Ljava/lang/String;
+	public final fun getRejectedAtEpochMillis ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class local/signaldock/SignalDock {
+	public static final field Companion Llocal/signaldock/SignalDock$Companion;
+	public final fun diagnostics (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun track (Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun track$default (Llocal/signaldock/SignalDock;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class local/signaldock/SignalDock$Companion {
+	public final fun initialize (Landroid/content/Context;Llocal/signaldock/SignalDockConfig;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class local/signaldock/SignalDockConfig {
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Llocal/signaldock/LogLevel;JJJJILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Llocal/signaldock/LogLevel;JJJJLkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Llocal/signaldock/LogLevel;
+	public final fun component4-UwyO8pc ()J
+	public final fun component5-UwyO8pc ()J
+	public final fun component6-UwyO8pc ()J
+	public final fun component7-UwyO8pc ()J
+	public final fun copy-9GEBIxs (Ljava/lang/String;Ljava/lang/String;Llocal/signaldock/LogLevel;JJJJ)Llocal/signaldock/SignalDockConfig;
+	public static synthetic fun copy-9GEBIxs$default (Llocal/signaldock/SignalDockConfig;Ljava/lang/String;Ljava/lang/String;Llocal/signaldock/LogLevel;JJJJILjava/lang/Object;)Llocal/signaldock/SignalDockConfig;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCallTimeout-UwyO8pc ()J
+	public final fun getCollectionKey ()Ljava/lang/String;
+	public final fun getConnectTimeout-UwyO8pc ()J
+	public final fun getEndpoint ()Ljava/lang/String;
+	public final fun getLogLevel ()Llocal/signaldock/LogLevel;
+	public final fun getReadTimeout-UwyO8pc ()J
+	public final fun getWriteTimeout-UwyO8pc ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class local/signaldock/TrackResult {
+}
+
+public final class local/signaldock/TrackResult$Invalid : local/signaldock/TrackResult {
+	public fun <init> (Llocal/signaldock/InvalidReason;Ljava/lang/String;)V
+	public final fun component1 ()Llocal/signaldock/InvalidReason;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Llocal/signaldock/InvalidReason;Ljava/lang/String;)Llocal/signaldock/TrackResult$Invalid;
+	public static synthetic fun copy$default (Llocal/signaldock/TrackResult$Invalid;Llocal/signaldock/InvalidReason;Ljava/lang/String;ILjava/lang/Object;)Llocal/signaldock/TrackResult$Invalid;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getField ()Ljava/lang/String;
+	public final fun getReason ()Llocal/signaldock/InvalidReason;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class local/signaldock/TrackResult$QueueFull : local/signaldock/TrackResult {
+	public static final field INSTANCE Llocal/signaldock/TrackResult$QueueFull;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class local/signaldock/TrackResult$StorageError : local/signaldock/TrackResult {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Llocal/signaldock/TrackResult$StorageError;
+	public static synthetic fun copy$default (Llocal/signaldock/TrackResult$StorageError;Ljava/lang/String;ILjava/lang/Object;)Llocal/signaldock/TrackResult$StorageError;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMessage ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class local/signaldock/TrackResult$Success : local/signaldock/TrackResult {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Llocal/signaldock/TrackResult$Success;
+	public static synthetic fun copy$default (Llocal/signaldock/TrackResult$Success;Ljava/lang/String;ILjava/lang/Object;)Llocal/signaldock/TrackResult$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEventId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+

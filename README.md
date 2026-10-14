@@ -173,7 +173,7 @@ Warning: `--volumes` deletes the PostgreSQL data. You cannot undo it. Use it onl
 
 ## Add the SDK to an app
 
-The Maven repository ZIP and its `.sha256` file are release artifacts of the GitHub Release [`v0.1.0`](https://github.com/HyeokjaeChoi/signaldock/releases/tag/v0.1.0) ([release notes](docs/releases/v0.1.0.md)). `scripts/release.sh 0.1.0` builds both into `dist/`. Verify the ZIP, then unzip it into a folder:
+The Maven repository ZIP and its `.sha256` file are release artifacts of the GitHub Release [`v0.1.0`](https://github.com/HyeokjaeChoi/signaldock/releases/tag/v0.1.0) ([release notes](docs/releases/v0.1.0.md), [changelog](CHANGELOG.md)). `scripts/release.sh 0.1.0` builds both into `dist/`. Verify the ZIP, then unzip it into a folder:
 
 ```sh
 shasum -a 256 -c signaldock-sdk-android-0.1.0-maven.zip.sha256   # run in the folder with both files

@@ -49,7 +49,7 @@ Before exploring code or designing the domain, read `docs/agents/domain.md`.
 ## Setup
 
 Run once per clone: `git config core.hooksPath .githooks`.
-The pre-commit hook runs `scripts/check-repo-rules.sh`. The pre-push hook also runs `scripts/verify-contract.sh` when code changed.
+The pre-commit hook runs `scripts/check-repo-rules.sh`. The pre-push hook also runs `scripts/verify-contract.sh` when code changed; it needs `ANDROID_HOME` (or `sdk.dir` in `sdk/local.properties`) for the SDK API check (ADR-0019).
 
 ## Roles
 

@@ -56,4 +56,13 @@ echo "=== 5. independent sdk/ and server/ builds ==="
 (cd "$ROOT/sdk" && ./gradlew help --no-daemon -q)
 (cd "$ROOT/server" && ./gradlew help --no-daemon -q)
 
+echo "=== 6. SDK public API dump (ADR-0019) ==="
+# Fails when the public API of :sdk-android differs from sdk/sdk-android/api/sdk-android.api.
+# Needs the Android SDK (it compiles the release variant).
+if [ -z "${ANDROID_HOME:-}" ] && [ -z "${ANDROID_SDK_ROOT:-}" ] && ! grep -q '^sdk.dir=' "$ROOT/sdk/local.properties" 2>/dev/null; then
+  echo "error: step 6 needs the Android SDK; set ANDROID_HOME or sdk.dir in sdk/local.properties" >&2
+  exit 1
+fi
+(cd "$ROOT/sdk" && ./gradlew :sdk-android:apiCheck --no-daemon -q)
+
 echo "ALL CONTRACT CHECKS PASSED"

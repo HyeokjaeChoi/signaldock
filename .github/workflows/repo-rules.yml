@@ -29,7 +29,7 @@ jobs:
       - run: scripts/setup-toolchain.sh
       - run: scripts/verify-contract.sh
 
-  # verify-contract only evaluates the sdk and server builds (`gradlew help`).
+  # verify-contract evaluates the sdk and server builds (`gradlew help`) and the SDK API dump (ADR-0019).
   # These jobs run their tests, so CI checks what the PR descriptions report.
   sdk-test:
     runs-on: ubuntu-latest
