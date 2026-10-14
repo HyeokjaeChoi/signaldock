@@ -56,4 +56,9 @@ echo "=== 5. independent sdk/ and server/ builds ==="
 (cd "$ROOT/sdk" && ./gradlew help --no-daemon -q)
 (cd "$ROOT/server" && ./gradlew help --no-daemon -q)
 
+echo "=== 6. SDK public API dump (ADR-0019) ==="
+# Fails when the public API of :sdk-android differs from sdk/sdk-android/api/sdk-android.api.
+# Needs ANDROID_HOME (it compiles the release variant).
+(cd "$ROOT/sdk" && ./gradlew :sdk-android:apiCheck --no-daemon -q)
+
 echo "ALL CONTRACT CHECKS PASSED"

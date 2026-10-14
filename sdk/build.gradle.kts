@@ -7,4 +7,7 @@ plugins {
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.kotlin.compose) apply false
+    // Public API check (issue 35, ADR-0019). Only its task classes are used, by :sdk-android;
+    // the plugin finds no Kotlin plugin under AGP built-in Kotlin and registers no tasks itself.
+    alias(libs.plugins.binary.compatibility.validator)
 }
