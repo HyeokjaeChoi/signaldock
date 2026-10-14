@@ -12,7 +12,6 @@ import kotlinx.coroutines.test.setMain
 import local.signaldock.Diagnostics
 import local.signaldock.TrackResult
 import local.signaldock.demo.core.data.DemoEvent
-import local.signaldock.demo.core.data.PropertyValue
 import local.signaldock.demo.core.data.SignalDockClient
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -61,15 +60,7 @@ class ShopViewModelTest {
             listOf("product_viewed", "add_to_cart", "checkout_started", "purchase_completed"),
             client.tracked.map { it.name },
         )
-        assertEquals(
-            mapOf(
-                "order_id" to PropertyValue.Text("order-1"),
-                "item_count" to PropertyValue.Whole(1),
-                "total_minor" to PropertyValue.Whole(18_000),
-                "is_simulated" to PropertyValue.Flag(true),
-            ),
-            client.tracked.last().properties,
-        )
+        assertEquals(DemoEvent.PurchaseCompleted("order-1", 1, 18_000), client.tracked.last())
         assertEquals(ShopStep.DONE, vm.state.value.step)
         assertTrue(vm.state.value.cart.isEmpty())
     }

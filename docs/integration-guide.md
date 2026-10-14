@@ -164,6 +164,23 @@ More rules:
 - Text is compared exactly, without Unicode normalization. Two names that look the same can be different names (spec 8 Q84).
 - The SDK adds `eventId` (a UUIDv4), `installationId`, `occurredAt` (device time when `track()` handles the call), and `sdkVersion`. Your app cannot set `eventId` or `occurredAt` (spec 3 "Common information").
 
+### Optional: tracking plan and generated functions
+
+You can describe your events in a plan file and generate typed functions from it. This is optional. The SDK and its public API do not change, and plain `track("name") { property(...) }` keeps working (spec Q153).
+
+This repository shows the pattern in `tracking-plan/` ([ADR-0021](adr/0021-tracking-plan-codegen.md)). `tracking-plan/plan.json` lists each event with its properties, their types, and whether each is required. `node tracking-plan/generate.mjs` writes a Kotlin file and a TypeScript file. The generated Kotlin function only calls `track()`: a required property is a non-null parameter, and an optional property is a nullable parameter that is left out when it is `null`.
+
+```kotlin
+// Generated from tracking-plan/plan.json (demo app). Not part of the SDK.
+sdk.productViewed(productId = "P-001")                      // price_minor left out
+sdk.productViewed(productId = "P-001", priceMinor = 59_000)
+
+// The same event with plain track():
+sdk.track("product_viewed") { property("product_id", "P-001") }
+```
+
+The TypeScript output has types and builder functions that return `{ name, properties }`. The plan is not checked on the server (spec Q152).
+
 ## 4. Handle every TrackResult
 
 | Result | Meaning | What your app does | Source |

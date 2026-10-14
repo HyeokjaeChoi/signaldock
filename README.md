@@ -205,7 +205,7 @@ Requirements of the 0.1.0 AAR:
 - The host app declares `INTERNET`. The SDK needs no R8 rules of its own. Use an `https://` endpoint unless the app allows cleartext for that host; the SDK does not switch an `http://` endpoint to HTTPS (ADR-0009).
 - Call `SignalDock.initialize(context, SignalDockConfig(endpoint, collectionKey))` once (for example in `Application.onCreate`), then `track("name") { property("key", value) }` and `diagnostics()` on the returned instance.
 
-The [SDK integration guide](docs/integration-guide.md) ([한국어](docs/integration-guide.ko.md)) covers `track()` results, cancellation, offline and retry behavior, diagnostics, privacy, versions, and troubleshooting.
+The [SDK integration guide](docs/integration-guide.md) ([한국어](docs/integration-guide.ko.md)) covers `track()` results, cancellation, offline and retry behavior, diagnostics, privacy, versions, and troubleshooting. Optional typed event functions generated from a tracking plan: see [`tracking-plan/`](tracking-plan/) and [ADR-0021](docs/adr/0021-tracking-plan-codegen.md).
 
 ## Repository guide
 

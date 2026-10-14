@@ -4,6 +4,10 @@ import kotlinx.coroutines.Deferred
 import local.signaldock.Diagnostics
 import local.signaldock.InitResult
 import local.signaldock.TrackResult
+import local.signaldock.demo.core.data.tracking.addToCart
+import local.signaldock.demo.core.data.tracking.checkoutStarted
+import local.signaldock.demo.core.data.tracking.productViewed
+import local.signaldock.demo.core.data.tracking.purchaseCompleted
 
 /**
  * What the demo features need from the SDK. ViewModels depend on this interface, so tests use a fake.
@@ -19,14 +23,14 @@ interface SignalDockClient {
 /** Real facade. [init] is the Application's initialization attempt; calls wait for it. */
 class SdkSignalDockClient(private val init: Deferred<InitResult>) : SignalDockClient {
     override suspend fun track(event: DemoEvent): TrackResult = when (val r = init.await()) {
-        is InitResult.Success -> r.sdk.track(event.name) {
-            for ((key, value) in event.properties) {
-                when (value) {
-                    is PropertyValue.Text -> property(key, value.value)
-                    is PropertyValue.Whole -> property(key, value.value)
-                    is PropertyValue.Decimal -> property(key, value.value)
-                    is PropertyValue.Flag -> property(key, value.value)
-                }
+        is InitResult.Success -> with(r.sdk) {
+            when (event) {
+                is DemoEvent.ProductViewed -> productViewed(event.productId, event.priceMinor.toLong())
+                is DemoEvent.AddToCart -> addToCart(event.productId, event.quantity.toLong(), event.priceMinor.toLong())
+                is DemoEvent.CheckoutStarted -> checkoutStarted(event.itemCount.toLong(), event.totalMinor.toLong())
+                // Simulated purchase: no real payment (spec section 1).
+                is DemoEvent.PurchaseCompleted ->
+                    purchaseCompleted(event.orderId, event.itemCount.toLong(), event.totalMinor.toLong(), isSimulated = true)
             }
         }
         is InitResult.Failure -> TrackResult.StorageError("SDK not initialized: ${r.error}")

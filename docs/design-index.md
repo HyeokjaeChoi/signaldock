@@ -89,9 +89,24 @@ Architecture (`architecture.md`):
 
 ADRs:
 - ADR-0005, section "Demo app: feature modules and unidirectional data flow"
+- ADR-0021 (`docs/adr/0021-tracking-plan-codegen.md`), for how `sdk/demo/core/data` sends its events through the generated functions (issue 37)
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 6. User screens and distribution, Demo and diagnostics
+- Q152 to Q154 (tracking plan)
+
+## `tracking-plan/` (optional tracking plan and code generation, issue 37)
+
+`plan.json` is the source. `generate.mjs` validates it and writes `generated/kotlin/TrackingPlan.kt` (compiled by `sdk/demo/core/data`), `generated/typescript/events.ts`, and `generated/manifest.json`. `generate.test.mjs` checks plan validation and that the Kotlin and TypeScript outputs agree. Change a generated file only by changing `plan.json` or `generate.mjs`, then run `node tracking-plan/generate.mjs`. `scripts/verify-contract.sh` (step 7) checks the drift. The SDK (`sdk/sdk-android`) and its public API dump must not change for this area; the consumer app stays on plain `track()`.
+
+ADRs:
+- ADR-0002 and ADR-0012, for the generated-and-tracked output pattern
+- ADR-0021 (`docs/adr/0021-tracking-plan-codegen.md`)
+
+Spec (`.scratch/signaldock-portfolio/spec.md`):
+- 3. SDK public behavior, Collection
+- Q64 (name and key rules)
+- Q152 to Q154 (tracking plan)
 
 ## `compatibility/` (independent consumer app, issue 06)
 
@@ -178,6 +193,7 @@ Architecture (`architecture.md`):
 
 ADRs:
 - ADR-0002
+- ADR-0021 (`docs/adr/0021-tracking-plan-codegen.md`), for step 7 of `scripts/verify-contract.sh` (issue 37)
 - ADR-0009 (`docs/adr/0009-maven-zip-and-consumer-app.md`), for `scripts/verify-consumer.sh` and `scripts/release.sh` (issue 32; release notes in `docs/releases/`)
 - ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for `scripts/host-cost-measure.sh` (issue 36)
 
