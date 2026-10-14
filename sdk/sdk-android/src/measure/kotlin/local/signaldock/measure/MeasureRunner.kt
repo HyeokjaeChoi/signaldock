@@ -130,12 +130,14 @@ class MeasureRunner(
     }
 
     /** The SDK's own size of the oldest queued event as sent, read from the queue file (public API only; works under R8). */
-    private fun firstQueuedEventBytes(): Int? {
+    private fun firstQueuedEventBytes(): Int? = try {
         val f = File(sdkDir, "queue.db")
         val db = android.database.sqlite.SQLiteDatabase.openDatabase(f.absolutePath, null, android.database.sqlite.SQLiteDatabase.OPEN_READONLY)
         try {
-            db.rawQuery("SELECT sizeBytes FROM events ORDER BY seq LIMIT 1", null).use { c -> return if (c.moveToFirst()) c.getInt(0) else null }
+            db.rawQuery("SELECT sizeBytes FROM events ORDER BY seq LIMIT 1", null).use { c -> if (c.moveToFirst()) c.getInt(0) else null }
         } finally { db.close() }
+    } catch (e: android.database.SQLException) {
+        null // eventBytes stays unset; the summarizer marks the run invalid instead of failing the phase
     }
 
     private fun drainSeconds(sdk: SignalDock, timeoutMillis: Long, from: Long = System.nanoTime()): Double? {
