@@ -1,6 +1,6 @@
 # SDK device measurement summary (issue 24)
 
-Measured in this environment (emulators, Compose server on one Mac). Not an SLA. A run that missed the target injection rate is `invalid`, never `pass` (spec section 7). One run per AVD, build type and scenario. Method and criteria: ADR-0014 (debug) and ADR-0018 (release, R8).
+Measured in this environment (emulators, Compose server on one Mac). Not an SLA. A run that missed the target injection rate is `invalid`, never `pass` (spec section 7). One run per AVD, build type and scenario. Method and criteria: ADR-0014 (debug) and ADR-0018 (release, R8). Release rows: API 37 emulator, system image `google_apis_ps16k` (arm64-v8a, Google APIs without Google Play); each run section below names the device, Android release and API level.
 
 | AVD | Build | Scenario | Verdict | Target / actual events/s | Max in flight | track() p50 / p95 / max ms | Not ok | Missing / dup rows | Drain s | queue.db + wal + shm bytes (after drain) | PSS delta KiB |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -10,9 +10,9 @@ Measured in this environment (emulators, Compose server on one Mac). Not an SLA.
 | signaldock-api37 | debug | burst | pass | 100 / 99.99 | 4 | 0.85 / 2.29 / 52.14 | 0 | 0 / 0 | 0.06 | 36864 + wal 502672 + shm 32768 | 2702 |
 | signaldock-api37 | debug | normal | pass | 1 / 1.0 | 1 | 1.58 / 2.23 / 20.52 | 0 | 0 / 0 | 2.02 | 36864 + wal 424392 + shm 32768 | 2008 |
 | signaldock-api37 | debug | offline | pass | back to back / 888.31 | 1 | 0.85 / 2.7 / 24.42 | 0 | 0 / 0 | 16.57 | 479232 + wal 523272 + shm 32768 | 3498 |
-| signaldock-api37 | release | burst | pass | 100 / 99.98 | 1 | 0.48 / 1.07 / 5.37 | 0 | 0 / 0 | 0.06 | 36864 + wal 436752 + shm 32768 | 3436 |
-| signaldock-api37 | release | normal | pass | 1 / 1.0 | 1 | 0.77 / 1.23 / 3.51 | 0 | 0 / 0 | 1.49 | 36864 + wal 424392 + shm 32768 | 1389 |
-| signaldock-api37 | release | offline | pass | back to back / 2103.4 | 1 | 0.33 / 1.16 / 7.37 | 0 | 0 / 0 | 17.2 | 622592 + wal 444992 + shm 32768 | 2667 |
+| signaldock-api37 | release | burst | pass | 100 / 99.99 | 1 | 0.41 / 0.95 / 4.86 | 0 | 0 / 0 | 0.07 | 36864 + wal 440872 + shm 32768 | 3369 |
+| signaldock-api37 | release | normal | pass | 1 / 1.0 | 1 | 0.77 / 0.95 / 4.13 | 0 | 0 / 0 | 1.47 | 36864 + wal 424392 + shm 32768 | 1470 |
+| signaldock-api37 | release | offline | pass | back to back / 2082.08 | 1 | 0.32 / 1.21 / 5.78 | 0 | 0 / 0 | 17.92 | 622592 + wal 506792 + shm 32768 | 2879 |
 
 Offline row: track() numbers are the offline store phase (endpoint unreachable, calls back to back); drain seconds are the restarted process after the persisted retry wait (see the run details).
 
@@ -91,35 +91,35 @@ Offline row: track() numbers are the offline store phase (endpoint unreachable, 
 ### signaldock-api37 (API 37) - burst, release build: **pass**
 
 - Device: Google sdk_gphone16k_arm64, Android 17 (API 37), arm64-v8a. Build: release measure app (sdk/measure-app): SDK as dependency, R8 minify and shrinkResources on, debug-signed release variant, not debuggable (ADR-0018).
-- Injection: target 100 events/s, actual 99.98 events/s over 9.99 s (1000 of 1000 calls); max calls in flight 1; start lateness {'p95': 2.7, 'max': 3.8}; event size 1022 bytes.
-- track() completion (ms): p50 0.48, p95 1.07, max 5.37 (n=1000).
+- Injection: target 100 events/s, actual 99.99 events/s over 9.99 s (1000 of 1000 calls); max calls in flight 1; start lateness {'p95': 2.9, 'max': 4.3}; event size 1022 bytes.
+- track() completion (ms): p50 0.41, p95 0.95, max 4.86 (n=1000).
 - Errors: track() not ok 0; SDK WARN/ERROR lines 0; last delivery error None.
-- Reconciliation with server DB: tracked ok 1000, server rows 1000, missing 0, not tracked 0, duplicate rows 0; sent on the wire 1000 events in 237 batches, IDs sent more than once 0, batches not 200: 0, ACK statuses {'accepted': 1000}.
-- Queue drain: {'seconds': 0.06, 'queued_after': 0, 'queued_at_injection_end': 5}.
-- Files (bytes): {'at_injection_end': {'installation-id': 36, 'queue.db': 36864, 'queue.db-shm': 32768, 'queue.db-wal': 436752}, 'after_drain': {'installation-id': 36, 'queue.db': 36864, 'queue.db-shm': 32768, 'queue.db-wal': 436752}}.
-- Memory (KiB): {'pss_after_init_to_injection_end': 3996, 'pss_after_init_to_after_drain': 3436, 'heap_after_init_to_after_drain': -80, 'pss_absolute': {'before_init': 9877, 'after_init': 11380, 'injection_end': 15376, 'after_drain': 14816}}.
-- Host: Apple M2 Pro, 12 CPUs, load average before { 7.53 7.04 6.12 }, after { 6.76 6.89 6.08 }. Run 2026-10-14T00:36:02Z to 2026-10-14T00:36:13Z, git 79ee88f (dirty).
+- Reconciliation with server DB: tracked ok 1000, server rows 1000, missing 0, not tracked 0, duplicate rows 0; sent on the wire 1000 events in 154 batches, IDs sent more than once 0, batches not 200: 0, ACK statuses {'accepted': 1000}.
+- Queue drain: {'seconds': 0.07, 'queued_after': 0, 'queued_at_injection_end': 18}.
+- Files (bytes): {'at_injection_end': {'installation-id': 36, 'queue.db': 36864, 'queue.db-shm': 32768, 'queue.db-wal': 440872}, 'after_drain': {'installation-id': 36, 'queue.db': 36864, 'queue.db-shm': 32768, 'queue.db-wal': 440872}}.
+- Memory (KiB): {'pss_after_init_to_injection_end': 4185, 'pss_after_init_to_after_drain': 3369, 'heap_after_init_to_after_drain': -80, 'pss_absolute': {'before_init': 9745, 'after_init': 11456, 'injection_end': 15641, 'after_drain': 14825}}.
+- Host: Apple M2 Pro, 12 CPUs, load average before { 6.14 10.38 8.96 }, after { 5.82 10.17 8.90 }. Run 2026-10-14T00:47:25Z to 2026-10-14T00:47:37Z, git 1f80d7d (dirty).
 
 ### signaldock-api37 (API 37) - normal, release build: **pass**
 
 - Device: Google sdk_gphone16k_arm64, Android 17 (API 37), arm64-v8a. Build: release measure app (sdk/measure-app): SDK as dependency, R8 minify and shrinkResources on, debug-signed release variant, not debuggable (ADR-0018).
-- Injection: target 1 events/s, actual 1.0 events/s over 59.0 s (60 of 60 calls); max calls in flight 1; start lateness {'p95': 1.8, 'max': 4.6}; event size 1024 bytes.
-- track() completion (ms): p50 0.77, p95 1.23, max 3.51 (n=60).
+- Injection: target 1 events/s, actual 1.0 events/s over 59.0 s (60 of 60 calls); max calls in flight 1; start lateness {'p95': 8.4, 'max': 9.1}; event size 1024 bytes.
+- track() completion (ms): p50 0.77, p95 0.95, max 4.13 (n=60).
 - Errors: track() not ok 0; SDK WARN/ERROR lines 0; last delivery error None.
 - Reconciliation with server DB: tracked ok 60, server rows 60, missing 0, not tracked 0, duplicate rows 0; sent on the wire 60 events in 11 batches, IDs sent more than once 0, batches not 200: 0, ACK statuses {'accepted': 60}.
-- Queue drain: {'seconds': 1.49, 'queued_after': 0, 'queued_at_injection_end': 6}.
+- Queue drain: {'seconds': 1.47, 'queued_after': 0, 'queued_at_injection_end': 6}.
 - Files (bytes): {'at_injection_end': {'installation-id': 36, 'queue.db': 36864, 'queue.db-shm': 32768, 'queue.db-wal': 424392}, 'after_drain': {'installation-id': 36, 'queue.db': 36864, 'queue.db-shm': 32768, 'queue.db-wal': 424392}}.
-- Memory (KiB): {'pss_after_init_to_injection_end': 2285, 'pss_after_init_to_after_drain': 1389, 'heap_after_init_to_after_drain': -240, 'pss_absolute': {'before_init': 9809, 'after_init': 11424, 'injection_end': 13709, 'after_drain': 12813}}.
-- Host: Apple M2 Pro, 12 CPUs, load average before { 13.23 7.53 6.18 }, after { 8.05 7.07 6.10 }. Run 2026-10-14T00:34:37Z to 2026-10-14T00:35:38Z, git 79ee88f (dirty).
+- Memory (KiB): {'pss_after_init_to_injection_end': 1966, 'pss_after_init_to_after_drain': 1470, 'heap_after_init_to_after_drain': -304, 'pss_absolute': {'before_init': 9709, 'after_init': 11362, 'injection_end': 13328, 'after_drain': 12832}}.
+- Host: Apple M2 Pro, 12 CPUs, load average before { 13.34 12.56 9.50 }, after { 7.08 10.90 9.10 }. Run 2026-10-14T00:46:00Z to 2026-10-14T00:47:01Z, git 1f80d7d (dirty).
 
 ### signaldock-api37 (API 37) - offline, release build: **pass**
 
 - Device: Google sdk_gphone16k_arm64, Android 17 (API 37), arm64-v8a. Build: release measure app (sdk/measure-app): SDK as dependency, R8 minify and shrinkResources on, debug-signed release variant, not debuggable (ADR-0018).
-- Injection: target back to back events/s, actual 2103.4 events/s over 0.47 s (1000 of 1000 calls); max calls in flight 1; start lateness None; event size 1026 bytes.
-- track() completion (ms): p50 0.33, p95 1.16, max 7.37 (n=1000).
+- Injection: target back to back events/s, actual 2082.08 events/s over 0.48 s (1000 of 1000 calls); max calls in flight 1; start lateness None; event size 1026 bytes.
+- track() completion (ms): p50 0.32, p95 1.21, max 5.78 (n=1000).
 - Errors: track() not ok 0; SDK WARN/ERROR lines 0; last delivery error NETWORK.
 - Reconciliation with server DB: tracked ok 1000, server rows 1000, missing 0, not tracked 0, duplicate rows 0; sent on the wire 1000 events in 20 batches, IDs sent more than once 0, batches not 200: 0, ACK statuses {'accepted': 1000}.
-- Queue drain: {'seconds': 17.2, 'queued_after': 0, 'queued_at_injection_end': 1000, 'persisted_retry_wait_at_start_s': 0, 'seconds_after_retry_wait': 17.2}.
-- Files (bytes): {'after_store': {'installation-id': 36, 'queue.db': 1441792, 'queue.db-shm': 32768, 'queue.db-wal': 444992}, 'after_drain': {'installation-id': 36, 'queue.db': 622592, 'queue.db-shm': 32768, 'queue.db-wal': 444992}}.
-- Memory (KiB): {'store_process': {'pss_after_init_to_after_store': 2667, 'heap_after_init_to_after_store': -352}, 'drain_process': {'pss_before_init_to_after_drain': 3620, 'heap_before_init_to_after_drain': 96}, 'pss_absolute': {'store_after_store': 14181, 'drain_after_drain': 13513}}.
-- Host: Apple M2 Pro, 12 CPUs, load average before { 8.05 7.07 6.10 }, after { 7.53 7.04 6.12 }. Run 2026-10-14T00:35:39Z to 2026-10-14T00:36:01Z, git 79ee88f (dirty).
+- Queue drain: {'seconds': 17.92, 'queued_after': 0, 'queued_at_injection_end': 1000, 'persisted_retry_wait_at_start_s': 16.2, 'seconds_after_retry_wait': 1.74}.
+- Files (bytes): {'after_store': {'installation-id': 36, 'queue.db': 1433600, 'queue.db-shm': 32768, 'queue.db-wal': 444992}, 'after_drain': {'installation-id': 36, 'queue.db': 622592, 'queue.db-shm': 32768, 'queue.db-wal': 506792}}.
+- Memory (KiB): {'store_process': {'pss_after_init_to_after_store': 2879, 'heap_after_init_to_after_store': -256}, 'drain_process': {'pss_before_init_to_after_drain': 3191, 'heap_before_init_to_after_drain': 176}, 'pss_absolute': {'store_after_store': 14273, 'drain_after_drain': 13095}}.
+- Host: Apple M2 Pro, 12 CPUs, load average before { 7.08 10.90 9.10 }, after { 6.50 10.52 9.00 }. Run 2026-10-14T00:47:02Z to 2026-10-14T00:47:25Z, git 1f80d7d (dirty).

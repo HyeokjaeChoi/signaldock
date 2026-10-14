@@ -143,7 +143,8 @@ def sha(path): return hashlib.sha256(open(path, "rb").read()).hexdigest()
 def r8_evidence(mapping, apk):
     """The measured APK went through R8: its mapping file renames SDK classes (ADR-0018). The mapping itself is not committed."""
     lines = open(mapping).read().splitlines()
-    sdk = [l for l in lines if re.match(r"local\.signaldock\.[\w.$]+ -> ", l)]
+    # SDK classes only: the measure app and the shared runner are in local.signaldock.measureapp and local.signaldock.measure.
+    sdk = [l for l in lines if re.match(r"local\.signaldock\.[\w.$]+ -> ", l) and not re.match(r"local\.signaldock\.measure(app)?\.", l)]
     renamed = [l for l in sdk if l.split(" -> ")[1].rstrip(":") != l.split(" -> ")[0] and "R8$$REMOVED" not in l]
     return {"minifyEnabled": True, "shrinkResources": True, "apk_sha256": sha(apk), "mapping_sha256": sha(mapping), "mapping_lines": len(lines),
             "sdk_classes_in_mapping": len(sdk), "sdk_classes_renamed": len(renamed), "sdk_classes_removed": len(sdk) - len([l for l in sdk if "R8$$REMOVED" not in l]),

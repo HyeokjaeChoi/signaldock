@@ -140,7 +140,7 @@ class MeasureRunner(
 
     private fun drainSeconds(sdk: SignalDock, timeoutMillis: Long, from: Long = System.nanoTime()): Double? {
         val t = from
-        return if (awaitTrue(timeoutMillis) { runBlocking { sdk.diagnostics().queuedEvents } == 0 }) (System.nanoTime() - t) / 1e9 else null
+        return if (awaitTrue(timeoutMillis) { runBlocking { sdk.diagnostics() }.let { it.storageAvailable && it.queuedEvents == 0 } }) (System.nanoTime() - t) / 1e9 else null
     }
 
     private fun base(name: String): JSONObject = JSONObject()

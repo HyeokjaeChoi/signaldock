@@ -20,3 +20,8 @@ Verification:
 ## Comments
 
 - 2026-10-14 (PR #80 review): the no-throw tests cover recoverable failures only; `CancellationException` and `NoClassDefFoundError` keep propagating. `scripts/device-measure.sh` runs the debug `androidTest` APK only, so the R8 measurement needs a new release-capable path with evidence that R8 ran.
+
+CodeRabbit round 1 (`coderabbit review --base main --deep --agent --fresh`), five Minor findings. Fixed: unavailable diagnostics no longer count as a drained queue (`MeasureRunner` requires `storageAvailable`); the R8 class counts exclude `local.signaldock.measure` and `local.signaldock.measureapp` (release runs repeated after both fixes). Rejected:
+
+- `31-readme-first-screen.md` line 13 (README ranges 01 to 34 and ADR 0001 to 0018): that file belongs to the issue-files PR (#80) and is not changed here. AGENTS.md, Review workflow item 1: one purpose per PR.
+- `33-sdk-crash-safety-and-release-build.md` line 12 (no `track()` before `initialize()`): the issue text lists "calls before or after initialization" as a failure class. ADR-0017, section "Test limits", records that `track()` cannot be called before `initialize()` through the public types and names the supported cases that `CrashSafetyTest` and `SchedulingTest` cover. The issue file text is the coordinator's, so it stays.

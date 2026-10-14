@@ -1,9 +1,9 @@
 {
   "scenario": "burst",
-  "run_id": "r20261014003601burst",
+  "run_id": "r20261014004725burst",
   "completed_phases": true,
-  "started_utc": "2026-10-14T00:36:02Z",
-  "ended_utc": "2026-10-14T00:36:13Z",
+  "started_utc": "2026-10-14T00:47:25Z",
+  "ended_utc": "2026-10-14T00:47:37Z",
   "avd": "signaldock-api37",
   "serial": "emulator-5584",
   "build_type": "release",
@@ -11,11 +11,11 @@
   "r8": {
     "minifyEnabled": true,
     "shrinkResources": true,
-    "apk_sha256": "59be6680ef985cea8dff9f8cf4db78cbc2a22677b3415747a293d245fbbc59a6",
-    "mapping_sha256": "2ff164c5ceeb81c755239243d0abcb8ff12d3d788ed5518f78edadb374ad5204",
-    "mapping_lines": 77590,
-    "sdk_classes_in_mapping": 87,
-    "sdk_classes_renamed": 78,
+    "apk_sha256": "52ab7ba994cc649f43a2d2df89445fdf6feab05f083f96ae81d218ac48f75cd4",
+    "mapping_sha256": "4773f3f757052bc07f5839bdb4465fdc1475e696d70d46af23c7ed47f91ae6df",
+    "mapping_lines": 77609,
+    "sdk_classes_in_mapping": 78,
+    "sdk_classes_renamed": 70,
     "sdk_classes_removed": 5,
     "example": "local.signaldock.SignalDock -> r00:"
   },
@@ -27,8 +27,8 @@
     "model": "Apple M2 Pro",
     "cpus": "12",
     "os": "26.6.2",
-    "loadavg_before": "{ 7.53 7.04 6.12 }",
-    "loadavg_after": "{ 6.76 6.89 6.08 }"
+    "loadavg_before": "{ 6.14 10.38 8.96 }",
+    "loadavg_after": "{ 5.82 10.17 8.90 }"
   },
-  "git_revision": "79ee88f (dirty)"
+  "git_revision": "1f80d7d (dirty)"
 }

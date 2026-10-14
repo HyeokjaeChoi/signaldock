@@ -239,7 +239,8 @@ def main():
         runs = [json.loads(p.read_text()) for p in sorted(root.glob("*/run.json"))]
         L = ["# SDK device measurement summary (issue 24)", "",
              "Measured in this environment (emulators, Compose server on one Mac). Not an SLA. A run that missed the target injection rate is `invalid`, never `pass` (spec section 7). "
-             "One run per AVD, build type and scenario. Method and criteria: ADR-0014 (debug) and ADR-0018 (release, R8).", "",
+             "One run per AVD, build type and scenario. Method and criteria: ADR-0014 (debug) and ADR-0018 (release, R8). "
+             "Release rows: API 37 emulator, system image `google_apis_ps16k` (arm64-v8a, Google APIs without Google Play); each run section below names the device, Android release and API level.", "",
              "| AVD | Build | Scenario | Verdict | Target / actual events/s | Max in flight | track() p50 / p95 / max ms | Not ok | Missing / dup rows | Drain s | queue.db + wal + shm bytes (after drain) | PSS delta KiB |",
              "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
         for r in runs:
