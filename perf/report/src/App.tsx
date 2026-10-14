@@ -359,7 +359,7 @@ function SdkResults({ data, error }: { data: SdkData | null; error: string }) {
   const runs = data ? [...data.runs].sort((a, b) => a.avd.localeCompare(b.avd) || (a.build_type ?? "").localeCompare(b.build_type ?? "") || SDK_SCENARIOS.indexOf(a.scenario) - SDK_SCENARIOS.indexOf(b.scenario)) : [];
   const measured = runs.filter((r) => r.track_ms);
   const buildOf = (r: SdkRun) => r.build_type ?? "debug"; // a build type name, not UI text
-  const name = (r: SdkRun) => `${r.avd} · ${buildOf(r)} ·${t(`sdk.scenario.${r.scenario}`)}`;
+  const name = (r: SdkRun) => `${r.avd} · ${buildOf(r)} · ${t(`sdk.scenario.${r.scenario}`)}`;
   const rateRows = runs.filter((r) => r.target_rate_per_s && r.actual_rate_per_s != null).map((r) => ({ name: name(r), percent: Math.round((1000 * r.actual_rate_per_s!) / r.target_rate_per_s!) / 10 }));
   return (
     <section className="card section" id="sdk">
