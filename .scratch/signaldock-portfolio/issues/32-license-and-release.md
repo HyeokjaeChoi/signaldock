@@ -15,5 +15,5 @@ Open questions (need a user decision, spec Q entry):
 
 Completion criteria after the answers:
 - `LICENSE` at the root and the README license sentence match the decision.
-- If a release is made: the tag, the release notes (what is included, verified, and not verified, linked to the README), and the ZIP plus SHA-256 built by the existing distribution script; the consumer app (`compatibility/`) installs from the released ZIP.
+- If a release is made: the tag; the release notes (what is included, verified, and not verified, linked to the README); the Maven repository ZIP built by the existing distribution path (`scripts/verify-consumer.sh`, ADR-0009); and a SHA-256 checksum file made by a named release step (a script added in this ticket, since no current script makes a checksum). The consumer app (`compatibility/`) installs from the released ZIP.
 - `scripts/check-repo-rules.sh` and `scripts/verify-contract.sh` pass.
