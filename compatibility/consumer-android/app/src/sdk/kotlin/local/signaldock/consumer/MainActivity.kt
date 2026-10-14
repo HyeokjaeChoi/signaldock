@@ -2,6 +2,7 @@ package local.signaldock.consumer
 
 import android.app.Activity
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -43,6 +44,13 @@ class MainActivity : Activity() {
         }
         setContentView(root)
         diagnostics()
+        // Host-cost measurement (issue 36, ADR-0020): `am start --ei burst N` calls track() N times.
+        val burst = intent.getIntExtra("burst", 0)
+        if (burst > 0) scope.launch {
+            val sdk = sdk() ?: return@launch
+            for (i in 1..burst) sdk.track("consumer_burst") { property("i", i) }
+            Log.i("SignalDockHostCost", "burst_done n=$burst")
+        }
     }
 
     private suspend fun sdk(): SignalDock? = when (val r = (application as ConsumerApplication).init.await()) {
