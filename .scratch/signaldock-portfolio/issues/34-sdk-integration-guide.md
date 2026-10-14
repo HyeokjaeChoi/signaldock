@@ -1,9 +1,9 @@
 # 34. SDK integration guide and public API documentation
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: None
-Execution: Not started
+Execution: Implemented on branch impl/34-sdk-integration-guide, PR pending
 
 ## Scope and completion criteria
 

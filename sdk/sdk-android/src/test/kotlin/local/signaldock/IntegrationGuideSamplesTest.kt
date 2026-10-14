@@ -1,0 +1,116 @@
+package local.signaldock
+
+import android.app.Application
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+
+// The code samples of docs/integration-guide.md. The guide copies the text between the
+// `sample:` and `end sample` markers. Each sample compiles with the SDK; the tests below run
+// the track and diagnostics samples against a real Room database and a fake transport.
+
+// sample: initialize
+class ShopApplication : Application() {
+    /** The one initialization attempt. Activities await it before they call track(). */
+    lateinit var sdkInit: Deferred<InitResult>
+        private set
+
+    override fun onCreate() {
+        super.onCreate()
+        sdkInit = CoroutineScope(SupervisorJob() + Dispatchers.Default).async {
+            SignalDock.initialize(
+                this@ShopApplication,
+                SignalDockConfig(endpoint = "https://events.example.com", collectionKey = "your-collection-key"),
+            )
+        }
+    }
+}
+
+fun describe(result: InitResult): String = when (result) {
+    is InitResult.Success -> "ready"
+    is InitResult.Failure -> when (val e = result.error) {
+        is InitError.InvalidConfiguration -> "fix the configuration: ${e.message}"
+        InitError.ConfigurationConflict -> "another configuration is active"
+        is InitError.StorageFailure -> "storage failed (${e.message}); call initialize again later"
+    }
+}
+// end sample
+
+// sample: track
+suspend fun onProductViewed(sdk: SignalDock): String {
+    val result = sdk.track("product_viewed") {
+        property("product_id", "P-001")   // string
+        property("quantity", 2)           // number
+        property("price", 12.5)           // number
+        property("is_test", true)         // boolean
+    }
+    return when (result) {
+        is TrackResult.Success -> "stored on the device: ${result.eventId}" // not server receipt
+        is TrackResult.Invalid -> "fix the call: ${result.reason} (${result.field})" // nothing stored
+        TrackResult.QueueFull -> "queue is full; the event was dropped" // existing events are kept
+        is TrackResult.StorageError -> "storage failed: ${result.message}" // nothing stored
+    }
+}
+// end sample
+
+// sample: cancellation
+fun onAddToCart(scope: CoroutineScope, sdk: SignalDock) {
+    scope.launch {
+        // If this coroutine is cancelled, track() throws CancellationException. The event may
+        // already be stored. Do not catch it and do not call track() again for this action.
+        sdk.track("add_to_cart") { property("product_id", "P-001") }
+    }
+}
+// end sample
+
+// sample: diagnostics
+suspend fun queueSummary(sdk: SignalDock): String {
+    val d = sdk.diagnostics()
+    if (!d.storageAvailable) return "queue could not be read" // the other fields mean nothing
+    return "queued=${d.queuedEvents} bytes=${d.queuedBytes} " +
+        "lastAck=${d.lastAck?.accepted} lastError=${d.lastDeliveryError?.kind} " +
+        "failures=${d.retryFailureCount} nextAttempt=${d.nextAttemptEpochMillis}"
+}
+// end sample
+
+@RunWith(RobolectricTestRunner::class)
+class IntegrationGuideSamplesTest {
+    @Test
+    fun `track sample stores one event and queueSummary reports it`() = runBlocking {
+        val sdk = newSdk()
+        assertTrue(onProductViewed(sdk).startsWith("stored on the device: "))
+        assertEquals(1, sdk.diagnostics().queuedEvents)
+        assertTrue(queueSummary(sdk).startsWith("queued=1 "))
+    }
+
+    @Test
+    fun `cancellation sample stores the event when it is not cancelled`() = runBlocking {
+        val sdk = newSdk()
+        onAddToCart(CoroutineScope(Dispatchers.Default), sdk)
+        var queued = 0
+        for (i in 1..100) {
+            queued = sdk.diagnostics().queuedEvents
+            if (queued == 1) break
+            kotlinx.coroutines.delay(20)
+        }
+        assertEquals(1, queued)
+    }
+
+    @Test
+    fun `describe covers every InitResult case`() {
+        assertEquals("ready", describe(InitResult.Success(runBlocking { newSdk() })))
+        assertEquals(
+            "another configuration is active",
+            describe(InitResult.Failure(InitError.ConfigurationConflict)),
+        )
+    }
+}
