@@ -122,11 +122,12 @@ for i in $(seq "$BURST_RUNS"); do
     launch "$pkg" --ei burst "$BURST" >/dev/null
     done_line=""
     for _ in $(seq 60); do
-      done_line="$(adb logcat -d -s SignalDockHostCost:I | grep burst_done || true)"
+      done_line="$(adb logcat -d -s SignalDockHostCost:I | grep -E 'burst_(done|failed)' || true)"
       [ -n "$done_line" ] && break
       sleep 1
     done
     [ -n "$done_line" ] || { echo "error: burst did not finish for $v run $i" >&2; exit 1; }
+    case "$done_line" in *burst_failed*) echo "error: track() failed during the burst for $v run $i: $done_line" >&2; exit 1 ;; esac
     sleep "$IDLE"
     p="$(pss "$pkg")"
     [ -n "$p" ] || { echo "error: no PSS for $v burst run $i" >&2; exit 1; }

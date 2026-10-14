@@ -48,7 +48,11 @@ class MainActivity : Activity() {
         val burst = intent.getIntExtra("burst", 0)
         if (burst > 0) scope.launch {
             val sdk = sdk() ?: return@launch
-            for (i in 1..burst) sdk.track("consumer_burst") { property("i", i) }
+            for (i in 1..burst) {
+                val r = sdk.track("consumer_burst") { property("i", i) }
+                // The runner reads this line and stops: PSS is valid only when every event was queued.
+                if (r !is TrackResult.Success) { Log.i("SignalDockHostCost", "burst_failed i=$i result=$r"); return@launch }
+            }
             Log.i("SignalDockHostCost", "burst_done n=$burst")
         }
     }
