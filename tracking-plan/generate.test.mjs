@@ -34,6 +34,7 @@ const invalid = [
   ["required not boolean", withProp({ required: "yes" }), /required must be true or false/],
   ["missing description", withEvent({ description: "" }), /description/],
   ["comment end in description", withEvent({ description: "bad */ text" }), /description/],
+  ["reserved generated name", withEvent({ name: "event_names" }), /reserved/],
   ["comment start in description", withEvent({ description: "Path /* glob" }), /description/],
   ["event names with one camelCase name", { ...plan, events: [{ ...plan.events[0], name: "foo_1bar_baz" }, { ...plan.events[0], name: "foo1bar_baz" }] }, /also made by another event/],
   ["keys with one camelCase name", withEvent({ properties: ["item_1", "item1"].map((key) => ({ ...plan.events[0].properties[0], key })) }), /also made by another key/],

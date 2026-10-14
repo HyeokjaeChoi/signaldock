@@ -24,6 +24,9 @@ const KOTLIN_KEYWORDS = new Set(
   "as break class continue do else false for fun if in interface is null object package return super this throw true try typealias typeof val var when while".split(" "),
 );
 
+// Value names the generated TypeScript declares itself; an event function with the same name would clash.
+const RESERVED_IDS = new Set(["eventNames"]);
+
 export function validatePlan(plan) {
   const errors = [];
   const bad = (m) => errors.push(m);
@@ -44,7 +47,8 @@ export function validatePlan(plan) {
     if (names.has(e?.name)) bad(`${at}: duplicate event name`);
     names.add(e?.name);
     if (typeof e?.name === "string") {
-      if (ids.has(camel(e.name))) bad(`${at}: generated function name ${camel(e.name)} is also made by another event`);
+      if (RESERVED_IDS.has(camel(e.name))) bad(`${at}: generated function name ${camel(e.name)} is reserved by the generated code`);
+      else if (ids.has(camel(e.name))) bad(`${at}: generated function name ${camel(e.name)} is also made by another event`);
       ids.add(camel(e.name));
     }
     if (!isText(e?.description)) bad(`${at}: description must be one trimmed line of text without "/*" or "*/"`);
