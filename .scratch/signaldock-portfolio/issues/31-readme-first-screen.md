@@ -1,9 +1,9 @@
 # 31. README first screen and role-neutral wording
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Implemented on branch impl/31-readme-first-screen, PR pending
+Execution: Done (merged in PR #81, 2026-10-14 UTC)
 
 ## Scope and completion criteria
 
