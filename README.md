@@ -173,7 +173,13 @@ Warning: `--volumes` deletes the PostgreSQL data. You cannot undo it. Use it onl
 
 ## Add the SDK to an app
 
-Unzip the ZIP into a folder, then add it as a repository and depend on the coordinate:
+The Maven repository ZIP and its `.sha256` file are release artifacts of the GitHub Release [`v0.1.0`](https://github.com/HyeokjaeChoi/signaldock/releases/tag/v0.1.0) ([release notes](docs/releases/v0.1.0.md)). `scripts/release.sh 0.1.0` builds both into `dist/`. Verify the ZIP, then unzip it into a folder:
+
+```sh
+shasum -a 256 -c signaldock-sdk-android-0.1.0-maven.zip.sha256   # run in the folder with both files
+```
+
+Add the folder as a repository and depend on the coordinate:
 
 ```kotlin
 // settings.gradle.kts
@@ -217,4 +223,4 @@ The spec, verification plans, and implementation issues in `.scratch/signaldock-
 | [.scratch/signaldock-portfolio/performance-plan.md](.scratch/signaldock-portfolio/performance-plan.md) | Performance test conditions, criteria, and raw data plan |
 | [.scratch/signaldock-portfolio/issues/](.scratch/signaldock-portfolio/issues/) | Implementation tasks |
 
-These materials are for technical evaluation. A public distribution license has not been selected.
+This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE).
