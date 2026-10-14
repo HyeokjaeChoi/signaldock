@@ -153,7 +153,7 @@ class CrashSafetyTest {
     @Test
     fun `a failing WorkManager does not fail initialization or track`() = runBlocking {
         val log = FakeLogger()
-        val scheduler = WorkManagerScheduler(context, FakeClock(), log) { throw SQLiteException("work db broken") }
+        val scheduler = WorkManagerScheduler(context, FakeClock(), log, workManager = { throw SQLiteException("work db broken") })
         val sdk = newSdk(scheduler = scheduler) // initialization ensures the periodic Worker
         assertTrue(sdk.track("e") is TrackResult.Success)
         scheduler.requestAt(0)
