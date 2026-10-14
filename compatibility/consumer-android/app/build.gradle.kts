@@ -49,6 +49,7 @@ android {
 kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
 
 dependencies {
-    implementation("local.signaldock:sdk-android:0.1.0")
+    // scripts/verify-consumer.sh passes the SDK version; 0.1.0 is the default for a manual build.
+    implementation("local.signaldock:sdk-android:${providers.gradleProperty("signaldock.version").getOrElse("0.1.0")}")
     implementation(libs.kotlinx.coroutines.android)
 }

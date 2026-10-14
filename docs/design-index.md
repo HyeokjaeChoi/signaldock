@@ -170,6 +170,7 @@ Architecture (`architecture.md`):
 
 ADRs:
 - ADR-0002
+- ADR-0009 (`docs/adr/0009-maven-zip-and-consumer-app.md`), for `scripts/verify-consumer.sh` and `scripts/release.sh` (issue 32; release notes in `docs/releases/`)
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 7. Completion criteria and verification plan

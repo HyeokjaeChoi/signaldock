@@ -1,9 +1,9 @@
 # 32. License and first tagged release
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: None
-Execution: Not started
+Execution: Implemented on branch impl/32-license-and-release, PR pending
 
 ## Scope and completion criteria
 
