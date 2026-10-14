@@ -1,9 +1,9 @@
 # 37. Optional tracking plan and code generation
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Implemented on branch impl/tracking-plan, PR pending
+Execution: Done (merged in PR #95, 2026-10-14 UTC)
 
 ## Scope and completion criteria
 
