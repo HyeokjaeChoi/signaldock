@@ -1,9 +1,9 @@
 # 36. SDK host app cost (APK size, initialization time, PSS)
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Implemented on branch impl/sdk-host-cost, PR pending
+Execution: Done (merged in PR #92, 2026-10-14 UTC)
 
 ## Scope and completion criteria
 
