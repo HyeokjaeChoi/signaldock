@@ -14,7 +14,7 @@ This portfolio supports a Datarize Mobile SDK Engineer application. It adds evid
 - One local project, collection-key checks for ingestion and a separate query-key check for Dashboard reads, synthetic data, and a local Dashboard without login.
 - JSON for both SDK and server. Generate Kotlin and TypeScript models from the OpenAPI contract.
 - Deliver one entry point for server/DB/Dashboard startup, an SDK Maven folder-repository ZIP, an independent consumer app, reproduction instructions, and a short verification video.
-- The first scope excludes iOS/Flutter SDKs, React Native/Unity bridges, a native-web (WebView JavaScript) bridge (Q150), automatic events, user identify, campaign/push, funnel analysis, multiple projects/account management, public internet operation, and Maven Central publication.
+- The first scope excludes iOS/Flutter SDKs, React Native/Flutter/Unity bridges, a native-web (WebView JavaScript) bridge (Q150), automatic events, user identify, campaign/push, funnel analysis, multiple projects/account management, public internet operation, and Maven Central publication.
 
 Job reference: [Datarize Mobile SDK Engineer listing](https://groupby.kr/positions/12838). The personal résumé was reviewed locally only. Exclude its source and conversation records from repository uploads.
 

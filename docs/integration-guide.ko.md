@@ -374,7 +374,7 @@ tag는 `SignalDock`입니다. 기본 수준은 `WARN`이므로 기본값에서�
 다음은 첫 릴리스의 범위 밖입니다(spec 1 "Goal and scope").
 
 - iOS와 Flutter SDK 없음.
-- React Native, Unity bridge 없음. native와 web 이벤트를 잇는 WebView JavaScript bridge 없음(Q150).
+- React Native, Flutter, Unity bridge 없음. native와 web 이벤트를 잇는 WebView JavaScript bridge 없음(Q150).
 - 자동 이벤트 없음. 앱이 `track()`을 호출합니다.
 - `identify`와 사용자 식별 없음.
 - 캠페인과 push 없음, funnel 분석 없음.

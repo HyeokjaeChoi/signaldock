@@ -77,7 +77,7 @@ The first coordinate is `local.signaldock:sdk-android:0.1.0` (local only, not Ma
 
 The first release covers a native Android SDK and one local project.
 The demo follows product view, cart, and simulated purchase. The Dashboard helps verify SDK integration.
-iOS / Flutter, React Native / Unity or WebView (native-web) bridges (Q150), automatic events, `identify`, campaign / push, funnels, multiple accounts, public internet operation, and Maven Central are outside this release.
+iOS / Flutter, React Native / Flutter / Unity or WebView (native-web) bridges (Q150), automatic events, `identify`, campaign / push, funnels, multiple accounts, public internet operation, and Maven Central are outside this release.
 
 The [completion criteria](.scratch/signaldock-portfolio/spec.md#7-completion-criteria-and-verification-plan) require environment records, source revision/hash, and event ID comparisons. Each implementation issue in `.scratch/signaldock-portfolio/issues/` records what ran and what did not.
 Measured results are local environment records, not an SLA:

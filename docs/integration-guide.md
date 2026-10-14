@@ -374,7 +374,7 @@ Use `LogLevel.DEBUG` only while you debug. `LogLevel.NONE` writes nothing.
 These are outside the first release (spec 1 "Goal and scope"):
 
 - No iOS or Flutter SDK.
-- No React Native or Unity bridge, and no WebView JavaScript bridge between native and web events (Q150).
+- No React Native, Flutter, or Unity bridge, and no WebView JavaScript bridge between native and web events (Q150).
 - No automatic events. Your app calls `track()`.
 - No `identify` or user identity.
 - No campaign or push, no funnel analysis.
