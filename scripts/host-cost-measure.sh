@@ -36,6 +36,9 @@ RUNS="${HOSTCOST_RUNS:-20}"
 BURST_RUNS="${HOSTCOST_BURST_RUNS:-10}"
 BURST="${HOSTCOST_BURST:-500}"
 IDLE="${HOSTCOST_IDLE:-5}"
+for n in RUNS BURST_RUNS BURST IDLE; do
+  [[ "${!n}" =~ ^[1-9][0-9]*$ ]] || { echo "error: HOSTCOST_$n must be a positive integer, got '${!n}'" >&2; exit 1; }
+done
 WARMUP=2  # launches per variant that are not counted (first start after install: dex verification, empty database)
 
 "$ADB" -s "$serial" get-state >/dev/null 2>&1 || { echo "error: no emulator $serial" >&2; exit 1; }
