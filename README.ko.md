@@ -7,10 +7,17 @@
 이 모노레포에는 SDK, 로컬 데이터 처리 서버, 그리고 둘의 설계가 들어 있습니다.
 앱의 `track()` 호출에서 시작해 durable queue, 재시도, 서버 중복 제거, 독립 아티팩트 설치까지 이어지는 경로를 검토할 수 있습니다.
 
-> **상태: 2026-10-13**
-> 계획한 모든 이슈(01~25)가 완료되었습니다. SDK, 서버, Android 데모 앱, Dashboard가 구현되어 있습니다. 전송 실패 E2E, 기기 내구성, 계약·DB 변경 검사, 서버 부하 측정, SDK 기기 측정은 스크립트와 기록된 결과가 있습니다(이슈 20~24). [클린 클론에서 재현](#클린-클론에서-재현)에는 새 클론에서 실행한 명령과 검증하지 못한 항목이 정리되어 있습니다. 검증하지 못한 항목은 실기기, 서버 측정 matrix 전체(실행하지 않음, Q133), release 빌드 SDK 측정입니다.
+> **상태: 2026-10-14**
+> 첫 릴리스 범위가 완료되었습니다. SDK, 서버, Android 데모 앱, Dashboard가 구현되어 있습니다. 전송 실패 E2E, 기기 내구성, 계약·DB 변경 검사, 서버 부하 측정, SDK 기기 측정은 스크립트와 기록된 결과가 있습니다([이슈 20~24](.scratch/signaldock-portfolio/issues/)). [클린 클론에서 재현](#클린-클론에서-재현)에는 새 클론에서 실행한 명령과 검증하지 못한 항목이 정리되어 있습니다. 검증하지 못한 항목은 실기기, 서버 측정 matrix 전체(실행하지 않음, Q133), release 빌드 SDK 측정입니다.
 
 설계 문서, ADR, 이슈 파일, `docs/reproduce.md`는 영어로만 제공합니다. 이 README는 해당 문서로 연결합니다.
+
+![이벤트 하나를 선택한 Dashboard: 왼쪽에 이벤트 목록, 오른쪽에 이벤트 상세와 저장된 JSON.](docs/images/dashboard.png)
+
+![벤치마크 보고서: 판정, 수집 지연, 과부하 실행 하나의 503 비율.](docs/images/perf-report.png)
+
+스크린샷은 테스트 이벤트 120개를 넣은 Dashboard와, `perf/results/`에 기록된 실행을 보여 주는 벤치마크 보고서입니다.
+데모 `track()`부터 Dashboard 수신까지 보여 주는 짧은 영상: [25-demo-track-to-dashboard.mp4](.scratch/signaldock-portfolio/evidence/25-demo-track-to-dashboard.mp4).
 
 ## 여기서 시작
 
@@ -35,7 +42,7 @@ open docs/architecture/signaldock-onepager.html
 
 SDK의 성공 응답은 호스트 앱이 다음에 무엇을 할 수 있는지 알려 줍니다.
 SignalDock은 기기 내구 저장과 서버 수신을 분리하고, 각 단계마다 복구 규칙을 둡니다.
-Datarize Mobile SDK Engineer 직무를 위한 이 포트폴리오는 공개 API 설계, 수명 주기 관리, 복구, 호환성, 독립 배포를 다룹니다.
+모바일 SDK 엔지니어 직무를 위한 이 포트폴리오는 공개 API 설계, 수명 주기 관리, 복구, 호환성, 독립 배포를 다룹니다.
 
 | 설계 관심사 | 결정 | 기록된 근거 |
 | --- | --- | --- |
@@ -202,7 +209,7 @@ dependencies { implementation("local.signaldock:sdk-android:0.1.0") }
 | --- | --- |
 | [architecture.md](architecture.md) | SDK와 서버 경계. ACK, 재시도, 계약, 배포 설계 |
 | [docs/architecture/](docs/architecture/) | 다이어그램, onepager HTML, 원문 텍스트 |
-| [docs/adr/](docs/adr/) | Architecture decision record 0001~0014 |
+| [docs/adr/](docs/adr/) | Architecture decision record, 결정마다 파일 하나 |
 | [GLOSSARY.md](GLOSSARY.md) | 수집 성공, 수신 성공, installation ID, event ID 정의 |
 | [.scratch/signaldock-portfolio/spec.md](.scratch/signaldock-portfolio/spec.md) | 상세 설계와 완료 기준 |
 | [.scratch/signaldock-portfolio/final-review.md](.scratch/signaldock-portfolio/final-review.md) | 최종 설계 검토 |
@@ -210,4 +217,4 @@ dependencies { implementation("local.signaldock:sdk-android:0.1.0") }
 | [.scratch/signaldock-portfolio/performance-plan.md](.scratch/signaldock-portfolio/performance-plan.md) | 성능 테스트 조건, 기준, 원시 데이터 계획 |
 | [.scratch/signaldock-portfolio/issues/](.scratch/signaldock-portfolio/issues/) | 구현 작업 |
 
-이 자료는 비공개 기술 평가용입니다. 공개 배포 라이선스는 아직 정하지 않았습니다.
+이 자료는 기술 평가용입니다. 공개 배포 라이선스는 아직 정하지 않았습니다.

@@ -7,8 +7,15 @@ An Android event SDK designed to save events on the device and confirm server re
 This monorepo contains the SDK, a local data processing server, and their design.
 Review the path from an app's `track()` call through a durable queue, retries, server deduplication, and independent artifact installation.
 
-> **Status: 2026-10-13**
-> All planned issues (01 to 25) are done. The SDK, the server, the Android demo app, and the Dashboard are implemented. Delivery failure E2E, device durability, contract and DB change checks, server load measurement, and SDK device measurement have scripts and recorded results (issues 20 to 24). [Reproduce from a clean clone](#reproduce-from-a-clean-clone) lists the commands that were run in a fresh clone, and what was not verified: a physical device, the full server measurement matrix (not run, Q133), and a release-build SDK measurement.
+> **Status: 2026-10-14**
+> The first release scope is done. The SDK, the server, the Android demo app, and the Dashboard are implemented. Delivery failure E2E, device durability, contract and DB change checks, server load measurement, and SDK device measurement have scripts and recorded results ([issues 20 to 24](.scratch/signaldock-portfolio/issues/)). [Reproduce from a clean clone](#reproduce-from-a-clean-clone) lists the commands that were run in a fresh clone, and what was not verified: a physical device, the full server measurement matrix (not run, Q133), and a release-build SDK measurement.
+
+![The Dashboard with one stored event selected: the event list on the left, the event details and stored JSON on the right.](docs/images/dashboard.png)
+
+![The benchmark report: verdict, collection latency, and the 503 share of one overload run.](docs/images/perf-report.png)
+
+The screenshots show the Dashboard and the benchmark report with 120 seeded test events and the recorded runs in `perf/results/`.
+A short video of demo `track()` to Dashboard receipt: [25-demo-track-to-dashboard.mp4](.scratch/signaldock-portfolio/evidence/25-demo-track-to-dashboard.mp4).
 
 ## Start here
 
@@ -33,7 +40,7 @@ open docs/architecture/signaldock-onepager.html
 
 An SDK's success response tells the host app what it can do next.
 SignalDock separates durable device storage from server receipt, with recovery rules for each stage.
-This portfolio for the Datarize Mobile SDK Engineer role covers public API design, lifecycle management, recovery, compatibility, and independent distribution.
+This portfolio for mobile SDK engineer roles covers public API design, lifecycle management, recovery, compatibility, and independent distribution.
 
 | Design concern | Decision | Recorded evidence |
 | --- | --- | --- |
@@ -200,7 +207,7 @@ The spec, verification plans, and implementation issues in `.scratch/signaldock-
 | --- | --- |
 | [architecture.md](architecture.md) | SDK and server boundaries; ACK, retry, contract, and distribution design |
 | [docs/architecture/](docs/architecture/) | Diagrams, onepager HTML, and source text |
-| [docs/adr/](docs/adr/) | Architecture decision records 0001 to 0014 |
+| [docs/adr/](docs/adr/) | Architecture decision records, one file for each decision |
 | [GLOSSARY.md](GLOSSARY.md) | Collection success, receipt success, installation ID, and event ID definitions |
 | [.scratch/signaldock-portfolio/spec.md](.scratch/signaldock-portfolio/spec.md) | Detailed design and completion criteria |
 | [.scratch/signaldock-portfolio/final-review.md](.scratch/signaldock-portfolio/final-review.md) | Final design review |
@@ -208,4 +215,4 @@ The spec, verification plans, and implementation issues in `.scratch/signaldock-
 | [.scratch/signaldock-portfolio/performance-plan.md](.scratch/signaldock-portfolio/performance-plan.md) | Performance test conditions, criteria, and raw data plan |
 | [.scratch/signaldock-portfolio/issues/](.scratch/signaldock-portfolio/issues/) | Implementation tasks |
 
-These materials are for private technical evaluation. A public distribution license has not been selected.
+These materials are for technical evaluation. A public distribution license has not been selected.

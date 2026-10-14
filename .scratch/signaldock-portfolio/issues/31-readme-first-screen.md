@@ -1,9 +1,9 @@
 # 31. README first screen and role-neutral wording
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: None
-Execution: Not started
+Execution: Implemented on branch impl/31-readme-first-screen, PR pending
 
 ## Scope and completion criteria
 
