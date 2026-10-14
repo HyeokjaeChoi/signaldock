@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "kotlinPackage": "local.signaldock.demo.core.data.tracking",
+  "events": [
+    {
+      "name": "product_viewed",
+      "description": "A user opened a product detail screen.",
+      "properties": [
+        { "key": "product_id", "type": "string", "required": true, "description": "Catalog product ID." },
+        { "key": "price_minor", "type": "integer", "required": false, "description": "Price in the smallest currency unit, when the screen shows one." }
+      ]
+    },
+    {
+      "name": "add_to_cart",
+      "description": "A user added a product to the cart.",
+      "properties": [
+        { "key": "product_id", "type": "string", "required": true, "description": "Catalog product ID." },
+        { "key": "quantity", "type": "integer", "required": true, "description": "Number of units added." },
+        { "key": "price_minor", "type": "integer", "required": true, "description": "Unit price in the smallest currency unit." }
+      ]
+    },
+    {
+      "name": "checkout_started",
+      "description": "A user opened the checkout screen.",
+      "properties": [
+        { "key": "item_count", "type": "integer", "required": true, "description": "Number of units in the cart." },
+        { "key": "total_minor", "type": "integer", "required": true, "description": "Cart total in the smallest currency unit." }
+      ]
+    },
+    {
+      "name": "purchase_completed",
+      "description": "A user placed a simulated order. No real payment happens.",
+      "properties": [
+        { "key": "order_id", "type": "string", "required": true, "description": "Order ID made by the app." },
+        { "key": "item_count", "type": "integer", "required": true, "description": "Number of units in the order." },
+        { "key": "total_minor", "type": "integer", "required": true, "description": "Order total in the smallest currency unit." },
+        { "key": "is_simulated", "type": "boolean", "required": true, "description": "True when the purchase is simulated." }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,116 @@
+{
+  "events": [
+    {
+      "name": "product_viewed",
+      "function": "productViewed",
+      "properties": [
+        {
+          "key": "product_id",
+          "param": "productId",
+          "type": "string",
+          "wire": "string",
+          "kotlin": "String",
+          "required": true
+        },
+        {
+          "key": "price_minor",
+          "param": "priceMinor",
+          "type": "integer",
+          "wire": "number",
+          "kotlin": "Long",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "add_to_cart",
+      "function": "addToCart",
+      "properties": [
+        {
+          "key": "product_id",
+          "param": "productId",
+          "type": "string",
+          "wire": "string",
+          "kotlin": "String",
+          "required": true
+        },
+        {
+          "key": "quantity",
+          "param": "quantity",
+          "type": "integer",
+          "wire": "number",
+          "kotlin": "Long",
+          "required": true
+        },
+        {
+          "key": "price_minor",
+          "param": "priceMinor",
+          "type": "integer",
+          "wire": "number",
+          "kotlin": "Long",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "checkout_started",
+      "function": "checkoutStarted",
+      "properties": [
+        {
+          "key": "item_count",
+          "param": "itemCount",
+          "type": "integer",
+          "wire": "number",
+          "kotlin": "Long",
+          "required": true
+        },
+        {
+          "key": "total_minor",
+          "param": "totalMinor",
+          "type": "integer",
+          "wire": "number",
+          "kotlin": "Long",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "purchase_completed",
+      "function": "purchaseCompleted",
+      "properties": [
+        {
+          "key": "order_id",
+          "param": "orderId",
+          "type": "string",
+          "wire": "string",
+          "kotlin": "String",
+          "required": true
+        },
+        {
+          "key": "item_count",
+          "param": "itemCount",
+          "type": "integer",
+          "wire": "number",
+          "kotlin": "Long",
+          "required": true
+        },
+        {
+          "key": "total_minor",
+          "param": "totalMinor",
+          "type": "integer",
+          "wire": "number",
+          "kotlin": "Long",
+          "required": true
+        },
+        {
+          "key": "is_simulated",
+          "param": "isSimulated",
+          "type": "boolean",
+          "wire": "boolean",
+          "kotlin": "Boolean",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

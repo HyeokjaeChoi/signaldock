@@ -164,6 +164,23 @@ SDK는 입력을 trim, 정규화, 변환하지 않습니다. 대신 `TrackResult
 - 텍스트는 Unicode 정규화 없이 정확히 비교합니다. 모양이 같은 두 이름이 서로 다른 이름일 수 있습니다(spec 8 Q84).
 - SDK가 `eventId`(UUIDv4), `installationId`, `occurredAt`(`track()`이 호출을 처리한 기기 시각), `sdkVersion`을 추가합니다. 앱은 `eventId`와 `occurredAt`을 정할 수 없습니다(spec 3 "Common information").
 
+### 선택 사항: tracking plan과 생성된 함수
+
+이벤트를 plan 파일에 적고, 그 파일에서 타입이 있는 함수를 생성할 수 있습니다. 선택 사항입니다. SDK와 공개 API는 바뀌지 않으며, 기존 `track("name") { property(...) }`도 그대로 동작합니다(spec Q153).
+
+이 저장소는 `tracking-plan/`에서 이 방식을 보여 줍니다([ADR-0021](adr/0021-tracking-plan-codegen.md)). `tracking-plan/plan.json`에 이벤트마다 property, property 타입, 필수 여부를 적습니다. `node tracking-plan/generate.mjs`가 Kotlin 파일과 TypeScript 파일을 생성합니다. 생성된 Kotlin 함수는 `track()`만 호출합니다. 필수 property는 null이 아닌 파라미터이고, 선택 property는 `null`이면 빠지는 nullable 파라미터입니다.
+
+```kotlin
+// Generated from tracking-plan/plan.json (demo app). Not part of the SDK.
+sdk.productViewed(productId = "P-001")                      // price_minor left out
+sdk.productViewed(productId = "P-001", priceMinor = 59_000)
+
+// The same event with plain track():
+sdk.track("product_viewed") { property("product_id", "P-001") }
+```
+
+TypeScript 출력에는 타입과, `{ name, properties }`를 반환하는 builder 함수가 있습니다. 서버는 plan을 검사하지 않습니다(spec Q152).
+
 ## 4. TrackResult의 모든 경우 처리
 
 | 결과 | 의미 | 앱이 할 일 | 출처 |

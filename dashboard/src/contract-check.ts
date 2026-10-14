@@ -8,6 +8,7 @@ import {
   EventIngestToJSON,
   BatchAckResponseFromJSON,
 } from "../../generated/typescript/models";
+import { purchaseCompleted } from "../../tracking-plan/generated/typescript/events";
 
 function assertEq(actual: unknown, expected: unknown, label: string): void {
   const a = JSON.stringify(actual);
@@ -53,5 +54,19 @@ const ack = BatchAckResponseFromJSON({
 assertEq(ack.results[0]?.index, 0, "ack index");
 assertEq(ack.results[0]?.status, "accepted", "ack status");
 assertEq(ack.results[0]?.eventId, "evt-1", "ack eventId");
+
+// Tracking plan builder output (ADR-0021) is the name + properties part of EventIngest.
+const planned = EventIngestToJSON(
+  EventIngestFromJSON({
+    ...rawEvent,
+    ...purchaseCompleted({ orderId: "o-1", itemCount: 2, totalMinor: 9000, isSimulated: true }),
+  }),
+);
+assertEq(planned.name, "purchase_completed", "tracking plan builder name");
+assertEq(
+  planned.properties,
+  { order_id: "o-1", item_count: 2, total_minor: 9000, is_simulated: true },
+  "tracking plan builder properties",
+);
 
 console.log("ALL CONTRACT-CHECK ASSERTIONS PASSED");

@@ -11,5 +11,5 @@
     "target": "ES2022",
     "types": ["node", "vite/client"]
   },
-  "include": ["src/**/*", "vite.config.mts", "../generated/typescript/**/*", "../web-shared/**/*"]
+  "include": ["src/**/*", "vite.config.mts", "../generated/typescript/**/*", "../tracking-plan/generated/typescript/**/*", "../web-shared/**/*"]
 }
