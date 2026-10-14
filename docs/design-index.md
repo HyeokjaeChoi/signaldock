@@ -24,6 +24,7 @@ ADRs:
 - ADR-0011 (`docs/adr/0011-sdk-device-test-harness.md`), for `sdk/sdk-android/src/androidTest` and `scripts/device-durability.sh`
 - ADR-0014 (`docs/adr/0014-sdk-device-measurement-harness.md`), for `MeasurePhases.kt` and `scripts/device-measure.sh` (issue 24)
 - ADR-0017 (`docs/adr/0017-sdk-crash-safety.md`), for the public API failure behavior
+- ADR-0018 (`docs/adr/0018-sdk-release-r8-measurement.md`), for `sdk/measure-app` and `sdk/sdk-android/src/measure` (issue 33)
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 1. Goal and scope
@@ -147,6 +148,7 @@ ADRs:
 - ADR-0012
 - ADR-0013 (`docs/adr/0013-server-load-measurement-harness.md`)
 - ADR-0014 (`docs/adr/0014-sdk-device-measurement-harness.md`), for the SDK results that `perf/report/` shows
+- ADR-0018 (`docs/adr/0018-sdk-release-r8-measurement.md`), for the release-build SDK results (issue 33)
 - ADR-0015 (`docs/adr/0015-web-ui-languages.md`), for the report page languages and `web-shared/`
 - ADR-0016 (`docs/adr/0016-telemetry-style-ui.md`), for the KPI strip, the table of contents, the overload bands, and the shared tokens (issue 28)
 

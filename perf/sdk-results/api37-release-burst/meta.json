@@ -1,0 +1,34 @@
+{
+  "scenario": "burst",
+  "run_id": "r20261014003601burst",
+  "completed_phases": true,
+  "started_utc": "2026-10-14T00:36:02Z",
+  "ended_utc": "2026-10-14T00:36:13Z",
+  "avd": "signaldock-api37",
+  "serial": "emulator-5584",
+  "build_type": "release",
+  "build": "release measure app (sdk/measure-app): SDK as dependency, R8 minify and shrinkResources on, debug-signed release variant, not debuggable (ADR-0018)",
+  "r8": {
+    "minifyEnabled": true,
+    "shrinkResources": true,
+    "apk_sha256": "59be6680ef985cea8dff9f8cf4db78cbc2a22677b3415747a293d245fbbc59a6",
+    "mapping_sha256": "2ff164c5ceeb81c755239243d0abcb8ff12d3d788ed5518f78edadb374ad5204",
+    "mapping_lines": 77590,
+    "sdk_classes_in_mapping": 87,
+    "sdk_classes_renamed": 78,
+    "sdk_classes_removed": 5,
+    "example": "local.signaldock.SignalDock -> r00:"
+  },
+  "server": {
+    "stack": "Docker Compose, real Ktor server + PostgreSQL 17.6, default product settings, project separate from the default stack",
+    "path": "device -> 10.0.2.2 -> fault-proxy (pass mode) -> 127.0.0.1 -> server container"
+  },
+  "host": {
+    "model": "Apple M2 Pro",
+    "cpus": "12",
+    "os": "26.6.2",
+    "loadavg_before": "{ 7.53 7.04 6.12 }",
+    "loadavg_after": "{ 6.76 6.89 6.08 }"
+  },
+  "git_revision": "79ee88f (dirty)"
+}

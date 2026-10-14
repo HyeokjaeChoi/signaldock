@@ -76,7 +76,7 @@ The [completion criteria](.scratch/signaldock-portfolio/spec.md#7-completion-cri
 Measured results are local environment records, not an SLA:
 
 - Server: two pilot runs and one overload run on one Mac with Docker limits, in [`perf/results/`](perf/results/). The overload run shows HTTP 503 with `Retry-After` and recovery without a restart. The 216-run pool-size matrix was not run (Q133, [ADR-0013](docs/adr/0013-server-load-measurement-harness.md), [issue 23](.scratch/signaldock-portfolio/issues/23-server-load-measurement.md)).
-- SDK: normal, offline, and burst runs on API 24 and API 37 emulators with a debug build, in [`perf/sdk-results/summary.md`](perf/sdk-results/summary.md) ([ADR-0014](docs/adr/0014-sdk-device-measurement-harness.md), [issue 24](.scratch/signaldock-portfolio/issues/24-sdk-device-measurement.md)).
+- SDK: normal, offline, and burst runs on API 24 and API 37 emulators with a debug build, and once more on the API 37 emulator with an R8 release build (debug-signed), in [`perf/sdk-results/summary.md`](perf/sdk-results/summary.md) ([ADR-0014](docs/adr/0014-sdk-device-measurement-harness.md), [ADR-0018](docs/adr/0018-sdk-release-r8-measurement.md), [issue 24](.scratch/signaldock-portfolio/issues/24-sdk-device-measurement.md), [issue 33](.scratch/signaldock-portfolio/issues/33-sdk-crash-safety-and-release-build.md)).
 - The [performance plan](.scratch/signaldock-portfolio/performance-plan.md) holds the original targets and conditions.
 
 Steps to run, stop, and reset the stack, to build the Maven ZIP, and to run the consumer app are below.
@@ -159,7 +159,7 @@ Warning: `--volumes` deletes the PostgreSQL data. You cannot undo it. Use it onl
 
 - Local only. The stack binds to `127.0.0.1`, uses example-grade secrets, and has no TLS. It is not for the public internet.
 - Performance numbers are measurements of one Mac with Docker limits. They are not an SLA and not a pool-size choice ([ADR-0013](docs/adr/0013-server-load-measurement-harness.md)).
-- SDK device measurement uses a debug build of the SDK (no R8) on emulators ([ADR-0014](docs/adr/0014-sdk-device-measurement-harness.md)).
+- SDK device measurement ran on emulators only: a debug build on API 24 and API 37, and an R8 release build on API 37 ([ADR-0014](docs/adr/0014-sdk-device-measurement-harness.md), [ADR-0018](docs/adr/0018-sdk-release-r8-measurement.md)). No physical device was measured.
 - Cleartext HTTP works only for `10.0.2.2`, `127.0.0.1`, and `localhost` (physical device: `adb reverse`, see [docs/reproduce.md](docs/reproduce.md)). A LAN address over HTTP is not supported. The `adb reverse` route was tested on an emulator only; no physical device was used.
 - The scripts accept emulators only. `scripts/device-measure.sh` needs macOS.
 - Deduplication lasts while the server row exists. The design does not claim exactly-once delivery.

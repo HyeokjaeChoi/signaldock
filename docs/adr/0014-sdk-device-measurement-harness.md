@@ -26,7 +26,8 @@ Spec section 7 fixes the loads (synthetic events of about 1 KiB; normal 1 event/
 ## Not done
 
 - ~~The `perf/report` page does not show SDK runs.~~ Done in issue 27 (ADR-0015 decision 7): `perf/sdk_summarize.py --index` writes `perf/results/sdk-index.json` from the committed `run.json` files, and the page shows a table and two charts. `perf/summarize.py --index` is unchanged, because the server run index and the SDK run index have different shapes and sources.
-- No release (R8) build run, no physical device, no repetitions, no thermal or battery control (emulators on a shared host).
+- ~~No release (R8) build run.~~ Done in issue 33 (ADR-0018): `MEASURE_BUILD=release scripts/device-measure.sh` runs the same phases in an R8 release measure app on the API 37 emulator. Decision 3 above still describes the debug path, and the debug results are unchanged.
+- No physical device, no repetitions, no thermal or battery control (emulators on a shared host).
 
 ## Limits
 
