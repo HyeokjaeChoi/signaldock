@@ -1,0 +1,23 @@
+# 32. License and first tagged release
+
+Status: needs-triage
+Type: task
+Blocked by: 31
+Execution: Not started
+
+## Scope and completion criteria
+
+The repository is public but has no license and no release, so a reviewer cannot tell how the SDK is distributed or whether they may reuse it. Spec section 1 excludes Maven Central only; a GitHub Release with the existing Maven repository ZIP (issue 06, ADR-0009) is in scope.
+
+Open questions (need a user decision, spec Q entry):
+1. License: which license (for example Apache-2.0, MIT, or "all rights reserved, evaluation only")?
+2. Release: tag `v0.1.0` from main and attach the Maven repository ZIP and its checksum to a GitHub Release, or not yet?
+
+Completion criteria after the answers:
+- `LICENSE` at the root and the README license sentence match the decision.
+- If a release is made: the tag; the release notes (what is included, verified, and not verified, linked to the README); the Maven repository ZIP built by the existing distribution path (`scripts/verify-consumer.sh`, ADR-0009); and a SHA-256 checksum file made by a named release step (a script added in this ticket, since no current script makes a checksum). The consumer app (`compatibility/`) installs from the released ZIP.
+- `scripts/check-repo-rules.sh` and `scripts/verify-contract.sh` pass.
+
+## Comments
+
+- 2026-10-14 (PR #80 review): `scripts/verify-consumer.sh` builds the Maven repository ZIP; no current script makes a checksum, so a separate release step added in this ticket makes the SHA-256 file.
