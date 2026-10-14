@@ -3,7 +3,7 @@
 ## Project purpose
 
 Build a mobile event collection SDK and a data processing server in one monorepo.
-Use the project as a portfolio for the Datarize Mobile SDK Engineer role.
+Use the project as a portfolio for mobile SDK engineer roles.
 
 ## Communication
 

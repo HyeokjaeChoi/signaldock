@@ -1,9 +1,9 @@
 # 31. README first screen and role-neutral wording
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: None
-Execution: Not started
+Execution: Implemented on branch impl/31-readme-first-screen, PR pending
 
 ## Scope and completion criteria
 
@@ -23,3 +23,6 @@ Verification:
 ## Comments
 
 - 2026-10-14 (PR #80 review): the visual check covers both README variants, not one.
+- 2026-10-14, CodeRabbit round 1 (local `coderabbit review --base main --deep --agent --fresh`), 2 Minor findings, both rejected:
+  - Issue 31 `Status: claimed` should be a canonical status. Rejected: `docs/agents/triage-labels.md` says "While the work is on a branch or in an open PR, set `Status: claimed`", and `scripts/check-repo-rules.sh` checks it.
+  - Issue 33 completion criterion for the R8 measurement path. Rejected as out of scope here: that file belongs to issue 33 (PR #80 already clarified it). One purpose per PR (AGENTS.md, Review workflow 1).
