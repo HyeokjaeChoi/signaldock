@@ -10,6 +10,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import kotlin.coroutines.cancellation.CancellationException
 import local.signaldock.internal.init.Clock
 import local.signaldock.internal.init.InitCoordinator
 import local.signaldock.internal.init.Logger
@@ -88,8 +89,12 @@ internal class WorkManagerScheduler(
     private inline fun guarded(block: () -> Unit) {
         try {
             block()
-        } catch (e: IllegalStateException) {
-            // WorkManager is not initialized in the host app. Foreground delivery still works.
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // WorkManager is not initialized (IllegalStateException) or its own storage failed. A
+            // scheduling failure never reaches the host's track(), initialize() or lifecycle callback
+            // (ADR-0017). Foreground delivery still works.
             logger.warn("WorkManager is not available; background delivery is off")
         }
     }

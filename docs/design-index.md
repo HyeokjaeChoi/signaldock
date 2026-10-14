@@ -23,6 +23,7 @@ ADRs:
 - ADR-0006 (`docs/adr/0006-sdk-delivery-decisions.md`)
 - ADR-0011 (`docs/adr/0011-sdk-device-test-harness.md`), for `sdk/sdk-android/src/androidTest` and `scripts/device-durability.sh`
 - ADR-0014 (`docs/adr/0014-sdk-device-measurement-harness.md`), for `MeasurePhases.kt` and `scripts/device-measure.sh` (issue 24)
+- ADR-0017 (`docs/adr/0017-sdk-crash-safety.md`), for the public API failure behavior
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 1. Goal and scope

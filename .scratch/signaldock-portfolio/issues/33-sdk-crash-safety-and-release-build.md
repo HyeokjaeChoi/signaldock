@@ -1,9 +1,9 @@
 # 33. SDK crash safety and release-build measurement
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: None
-Execution: Not started
+Execution: Implemented on branch impl/33-sdk-crash-safety, PR pending
 
 ## Scope and completion criteria
 

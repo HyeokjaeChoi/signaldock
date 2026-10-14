@@ -6,7 +6,9 @@ import android.os.Bundle
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import local.signaldock.internal.delivery.RunBudget
 import local.signaldock.internal.delivery.RunEnd
@@ -58,9 +60,9 @@ internal class DeliveryCoordinator(
                 RunEnd.WAITING -> scheduler.requestAt(r.nextAttemptMillis ?: clock.nowMillis())
                 RunEnd.BUDGET_EXHAUSTED -> scheduler.requestAt(clock.nowMillis())
             }
-        } catch (e: CancellationException) {
-            throw e
         } catch (e: Exception) {
+            // A closed Room database cancels its own scope: that is a storage failure, not the caller's cancellation.
+            if (e is CancellationException && !currentCoroutineContext().isActive) throw e
             // Storage failure in the sender. The queue is untouched; the next trigger or Worker retries.
             logger.warn("delivery run failed: ${e.javaClass.simpleName}")
         }

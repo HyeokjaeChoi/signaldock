@@ -3,6 +3,7 @@ package local.signaldock.internal.collection
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.isActive
 import local.signaldock.EventBuilder
 import local.signaldock.InvalidReason
 import local.signaldock.TrackResult
@@ -19,12 +20,10 @@ import local.signaldock.internal.transport.singleEventRequestBytes
 import local.signaldock.internal.transport.transportJson
 import local.signaldock.internal.validation.checkText
 import org.openapitools.client.models.EventIngest
-import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
-import android.database.sqlite.SQLiteException
 
 internal class EventCollector(
     private val installationId: String,
@@ -65,14 +64,15 @@ internal class EventCollector(
                 AddOutcome.QUEUE_FULL -> TrackResult.QueueFull
             }
         } catch (e: CancellationException) {
+            // A closed Room database cancels its own scope: the caller is still active, so this is a
+            // storage failure and not caller cancellation (ADR-0017).
+            if (currentCoroutineContext().isActive) return storageError(e)
             // The commit may already have happened. Do not call track again for the same action.
             logger.warn("track cancelled during storage; the event may already be stored")
             throw e
-        } catch (e: IOException) {
-            storageError(e)
-        } catch (e: SQLiteException) {
-            storageError(e)
-        } catch (e: IllegalStateException) {
+        } catch (e: Exception) {
+            // IOException, SQLiteException, a closed Room database (IllegalStateException) and anything
+            // else the storage layer throws: the host never sees an exception (ADR-0017).
             storageError(e)
         }
     }
