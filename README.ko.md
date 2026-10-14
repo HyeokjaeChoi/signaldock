@@ -79,7 +79,7 @@ ACK가 유실되어도 이벤트 ID는 바뀌지 않습니다. 같은 ID와 같�
 
 첫 릴리스는 네이티브 Android SDK 하나와 로컬 프로젝트 하나를 다룹니다.
 데모는 상품 조회, 장바구니, 모의 구매 흐름을 따릅니다. Dashboard는 SDK 연동을 검증하는 데 도움을 줍니다.
-iOS / Flutter, 자동 이벤트, `identify`, 캠페인 / push, 퍼널, 다중 계정, 공개 인터넷 운영, Maven Central은 이번 릴리스에 포함하지 않습니다.
+iOS / Flutter, React Native / Unity 또는 WebView(native-web) bridge(Q150), 자동 이벤트, `identify`, 캠페인 / push, 퍼널, 다중 계정, 공개 인터넷 운영, Maven Central은 이번 릴리스에 포함하지 않습니다.
 
 [완료 기준](.scratch/signaldock-portfolio/spec.md#7-completion-criteria-and-verification-plan)은 환경 기록, 소스 revision / hash, 이벤트 ID 비교를 요구합니다. `.scratch/signaldock-portfolio/issues/`의 각 구현 이슈는 무엇을 실행했고 무엇을 실행하지 않았는지 기록합니다.
 측정 결과는 로컬 환경 기록이며 SLA가 아닙니다.
