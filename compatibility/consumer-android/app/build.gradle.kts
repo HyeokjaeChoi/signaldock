@@ -11,6 +11,9 @@ val local = Properties().apply {
     rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
 }
 fun setting(name: String): String? = providers.gradleProperty(name).orNull ?: local.getProperty(name)
+// -Psignaldock.sdk=false builds the baseline of the host-cost measurement (issue 36, ADR-0020): the same
+// app with no SDK dependency and no SDK call (src/nosdk instead of src/sdk). Default: with the SDK.
+val withSdk = providers.gradleProperty("signaldock.sdk").orNull != "false"
 fun quoted(v: String) = "\"" + v.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 
 android {
@@ -26,6 +29,11 @@ android {
         buildConfigField("String", "SIGNALDOCK_ENDPOINT", quoted(setting("signaldock.endpoint") ?: "http://10.0.2.2:8080"))
         buildConfigField("String", "SIGNALDOCK_COLLECTION_KEY", quoted(setting("signaldock.collectionKey") ?: ""))
     }
+
+    // The baseline gets its own application ID, so that both variants can be installed side by side.
+    if (!withSdk) defaultConfig.applicationIdSuffix = ".nosdk"
+
+    sourceSets.getByName("main").kotlin.directories.add(if (withSdk) "src/sdk/kotlin" else "src/nosdk/kotlin")
 
     buildFeatures { buildConfig = true }
 
@@ -50,6 +58,8 @@ kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarg
 
 dependencies {
     // scripts/verify-consumer.sh passes the SDK version; 0.1.0 is the default for a manual build.
-    implementation("local.signaldock:sdk-android:${providers.gradleProperty("signaldock.version").getOrElse("0.1.0")}")
-    implementation(libs.kotlinx.coroutines.android)
+    if (withSdk) {
+        implementation("local.signaldock:sdk-android:${providers.gradleProperty("signaldock.version").getOrElse("0.1.0")}")
+        implementation(libs.kotlinx.coroutines.android)
+    }
 }

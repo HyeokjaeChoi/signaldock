@@ -1,7 +1,10 @@
 package local.signaldock.consumer
 
 import android.app.Application
+import android.os.SystemClock
+import android.util.Log
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -18,7 +21,12 @@ class ConsumerApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        init = CoroutineScope(SupervisorJob() + Dispatchers.Default).async {
+        // Host-cost measurement (issue 36, ADR-0020): initialize() is called on the main thread. The
+        // coroutine starts undispatched, so main_ns is the main-thread time until initialize() first
+        // suspends (it includes the coroutine setup). total_ns runs until the result is ready.
+        val t0 = SystemClock.elapsedRealtimeNanos()
+        var outcome = "pending"
+        init = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate).async(start = CoroutineStart.UNDISPATCHED) {
             SignalDock.initialize(
                 this@ConsumerApplication,
                 SignalDockConfig(
@@ -26,7 +34,12 @@ class ConsumerApplication : Application() {
                     collectionKey = BuildConfig.SIGNALDOCK_COLLECTION_KEY,
                     logLevel = LogLevel.INFO,
                 ),
-            )
+            ).also { outcome = if (it is InitResult.Success) "success" else "failure" }
+        }
+        val mainNs = SystemClock.elapsedRealtimeNanos() - t0
+        init.invokeOnCompletion {
+            val totalNs = SystemClock.elapsedRealtimeNanos() - t0
+            Log.i("SignalDockHostCost", "init main_ns=$mainNs total_ns=$totalNs result=$outcome")
         }
     }
 }
