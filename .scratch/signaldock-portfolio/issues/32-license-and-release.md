@@ -1,9 +1,9 @@
 # 32. License and first tagged release
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Implemented on branch impl/32-license-and-release, PR pending
+Execution: Done (merged in PR #86, 2026-10-14 UTC)
 
 ## Scope and completion criteria
 
@@ -25,3 +25,4 @@ Completion criteria after the answers:
 
 - 2026-10-14 (PR #80 review): `scripts/verify-consumer.sh` builds the Maven repository ZIP; no current script makes a checksum, so a separate release step added in this ticket makes the SHA-256 file.
 - 2026-10-14 (PR #85): the user chose Apache-2.0 (Q148) and a `v0.1.0` tag with a GitHub Release now (Q149). Status set to `ready-for-agent`; issue 31 is resolved, so nothing blocks this issue.
+- 2026-10-14: tag `v0.1.0` on fb06396 and GitHub Release https://github.com/HyeokjaeChoi/signaldock/releases/tag/v0.1.0 with the ZIP and `.sha256` from `scripts/release.sh 0.1.0`. The downloaded ZIP passed `shasum -a 256 -c`, and the consumer app built `:app:assembleRelease` from the unzipped release folder (exit 0).
