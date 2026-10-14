@@ -16,3 +16,7 @@ The SDK evidence today comes from a debug build on emulators (ADR-0014). Two gap
 Verification:
 - `cd sdk && ./gradlew test` (and the device test task if new device tests are added), `scripts/verify-contract.sh`, `scripts/check-repo-rules.sh`.
 - The measurement summary states build type, emulator image, and API level.
+
+## Comments
+
+- 2026-10-14 (PR #80 review): the no-throw tests cover recoverable failures only; `CancellationException` and `NoClassDefFoundError` keep propagating. `scripts/device-measure.sh` runs the debug `androidTest` APK only, so the R8 measurement needs a new release-capable path with evidence that R8 ran.

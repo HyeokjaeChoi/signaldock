@@ -16,3 +16,7 @@ An SDK user (an app developer) needs one document to integrate SignalDock, and t
 Verification:
 - `cd sdk && ./gradlew test` and the build of the publication module; `scripts/verify-contract.sh`; `scripts/check-repo-rules.sh`.
 - The code samples in the guide compile: either in a small test source set or by copying them from the demo or consumer app with a path reference.
+
+## Comments
+
+- 2026-10-14 (PR #80 review): `track()` propagates `CancellationException` even when the event may already be stored, so the guide must tell apps not to collect the same action again after a cancellation.

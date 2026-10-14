@@ -18,4 +18,8 @@ A reviewer who opens the repository cold should see what SignalDock is, what it 
 Verification:
 - `scripts/check-repo-rules.sh` passes.
 - Every relative link and image in both READMEs resolves to a tracked file.
-- A screenshot of the rendered README first screen (GitHub-like Markdown preview) is checked by eye.
+- Screenshots of the rendered first screens of both `README.md` and `README.ko.md` (GitHub-like Markdown preview) are checked by eye.
+
+## Comments
+
+- 2026-10-14 (PR #80 review): the visual check covers both README variants, not one.
