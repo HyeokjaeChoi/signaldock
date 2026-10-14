@@ -1,9 +1,9 @@
 # 35. Public API check and CHANGELOG
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Implemented on branch impl/api-check-changelog, PR pending
+Execution: Done (merged in PR #89, 2026-10-14 UTC)
 
 ## Scope and completion criteria
 
