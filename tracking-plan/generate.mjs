@@ -27,7 +27,7 @@ const KOTLIN_KEYWORDS = new Set(
 export function validatePlan(plan) {
   const errors = [];
   const bad = (m) => errors.push(m);
-  const isText = (s) => typeof s === "string" && s.trim() !== "" && !/[\r\n]|\*\//.test(s) && s === s.trim();
+  const isText = (s) => typeof s === "string" && s.trim() !== "" && !/[\r\n]|\*\/|\/\*/.test(s) && s === s.trim();
   if (plan?.version !== 1) bad("version must be 1");
   const pkg = plan?.kotlinPackage ?? "";
   if (!/^[a-z][a-z0-9]*(\.[a-z][a-z0-9_]*)*$/.test(pkg) || pkg.split(".").some((w) => KOTLIN_KEYWORDS.has(w))) {
@@ -47,7 +47,7 @@ export function validatePlan(plan) {
       if (ids.has(camel(e.name))) bad(`${at}: generated function name ${camel(e.name)} is also made by another event`);
       ids.add(camel(e.name));
     }
-    if (!isText(e?.description)) bad(`${at}: description must be one trimmed line of text`);
+    if (!isText(e?.description)) bad(`${at}: description must be one trimmed line of text without "/*" or "*/"`);
     if (!Array.isArray(e?.properties)) { bad(`${at}: properties must be an array`); continue; }
     const keys = new Set();
     const params = new Set();
@@ -63,7 +63,7 @@ export function validatePlan(plan) {
       }
       if (!Object.hasOwn(TYPES, p?.type)) bad(`${pat}: type must be one of ${Object.keys(TYPES).join(", ")}`);
       if (typeof p?.required !== "boolean") bad(`${pat}: required must be true or false`);
-      if (!isText(p?.description)) bad(`${pat}: description must be one trimmed line of text`);
+      if (!isText(p?.description)) bad(`${pat}: description must be one trimmed line of text without "/*" or "*/"`);
     }
   }
   if (errors.length) throw new Error("invalid tracking plan:\n- " + errors.join("\n- "));
