@@ -1,0 +1,115 @@
+{
+  "scenario": "normal",
+  "run_id": "r20261014004600normal",
+  "avd": "signaldock-api37",
+  "build_type": "release",
+  "meta": {
+    "scenario": "normal",
+    "run_id": "r20261014004600normal",
+    "completed_phases": true,
+    "started_utc": "2026-10-14T00:46:00Z",
+    "ended_utc": "2026-10-14T00:47:01Z",
+    "avd": "signaldock-api37",
+    "serial": "emulator-5584",
+    "build_type": "release",
+    "build": "release measure app (sdk/measure-app): SDK as dependency, R8 minify and shrinkResources on, debug-signed release variant, not debuggable (ADR-0018)",
+    "r8": {
+      "minifyEnabled": true,
+      "shrinkResources": true,
+      "apk_sha256": "52ab7ba994cc649f43a2d2df89445fdf6feab05f083f96ae81d218ac48f75cd4",
+      "mapping_sha256": "4773f3f757052bc07f5839bdb4465fdc1475e696d70d46af23c7ed47f91ae6df",
+      "mapping_lines": 77609,
+      "sdk_classes_in_mapping": 78,
+      "sdk_classes_renamed": 70,
+      "sdk_classes_removed": 5,
+      "example": "local.signaldock.SignalDock -> r00:"
+    },
+    "server": {
+      "stack": "Docker Compose, real Ktor server + PostgreSQL 17.6, default product settings, project separate from the default stack",
+      "path": "device -> 10.0.2.2 -> fault-proxy (pass mode) -> 127.0.0.1 -> server container"
+    },
+    "host": {
+      "model": "Apple M2 Pro",
+      "cpus": "12",
+      "os": "26.6.2",
+      "loadavg_before": "{ 13.34 12.56 9.50 }",
+      "loadavg_after": "{ 7.08 10.90 9.10 }"
+    },
+    "git_revision": "1f80d7d (dirty)"
+  },
+  "device": "Google sdk_gphone16k_arm64",
+  "api": 37,
+  "release": "17",
+  "abi": "arm64-v8a",
+  "debuggable": false,
+  "injection": {
+    "target_rate_per_s": 1,
+    "planned": 60,
+    "started": 60,
+    "actual_rate_per_s": 1.0,
+    "span_s": 59.0,
+    "max_calls_in_flight": 1,
+    "start_lateness_ms": {
+      "p95": 8.4,
+      "max": 9.1
+    },
+    "event_bytes": 1024
+  },
+  "track_ms": {
+    "p50": 0.77,
+    "p95": 0.95,
+    "max": 4.13,
+    "count": 60
+  },
+  "errors": {
+    "track_not_ok": {},
+    "sdk_warnings": 0,
+    "last_delivery_error": null
+  },
+  "reconciliation": {
+    "tracked_ok": 60,
+    "server_rows": 60,
+    "missing_on_server": 0,
+    "not_tracked_on_server": 0,
+    "duplicate_server_rows": 0,
+    "batches_sent": 11,
+    "events_sent": 60,
+    "event_ids_sent_more_than_once": 0,
+    "batches_not_200": 0,
+    "ack_status_counts": {
+      "accepted": 60
+    }
+  },
+  "drain": {
+    "seconds": 1.47,
+    "queued_after": 0,
+    "queued_at_injection_end": 6
+  },
+  "files_bytes": {
+    "at_injection_end": {
+      "installation-id": 36,
+      "queue.db": 36864,
+      "queue.db-shm": 32768,
+      "queue.db-wal": 424392
+    },
+    "after_drain": {
+      "installation-id": 36,
+      "queue.db": 36864,
+      "queue.db-shm": 32768,
+      "queue.db-wal": 424392
+    }
+  },
+  "memory_kb": {
+    "pss_after_init_to_injection_end": 1966,
+    "pss_after_init_to_after_drain": 1470,
+    "heap_after_init_to_after_drain": -304,
+    "pss_absolute": {
+      "before_init": 9709,
+      "after_init": 11362,
+      "injection_end": 13328,
+      "after_drain": 12832
+    }
+  },
+  "verdict": "pass",
+  "reasons": []
+}

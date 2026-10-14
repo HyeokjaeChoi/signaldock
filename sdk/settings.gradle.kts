@@ -23,6 +23,8 @@ dependencyResolutionManagement {
 }
 rootProject.name = "signaldock-sdk"
 include(":sdk-android")
+// R8 release measurement app (issue 33, ADR-0018).
+include(":measure-app")
 // Demo app (ADR-0005 "Demo app: feature modules and unidirectional data flow").
 // Intermediate projects :demo, :demo:feature and :demo:core have no build file.
 include(":demo:app", ":demo:feature:shop", ":demo:feature:diagnostics", ":demo:core:ui", ":demo:core:data")

@@ -33,7 +33,7 @@ type Overload = {
 type Data = { targets_p95_ms: Record<string, number>; runs: Run[]; overload?: Overload[] };
 // perf/results/sdk-index.json, written by `perf/sdk_summarize.py --index` (issue 27): committed values of perf/sdk-results/*/run.json.
 type SdkRun = {
-  run_id: string; avd: string; scenario: "normal" | "burst" | "offline"; verdict: string; reasons: string[]; git_revision: string; started_utc: string;
+  run_id: string; avd: string; build_type?: string; scenario: "normal" | "burst" | "offline"; verdict: string; reasons: string[]; git_revision: string; started_utc: string;
   device?: string; api?: number; release?: string; abi?: string;
   target_rate_per_s?: number | null; actual_rate_per_s?: number | null; started?: number; planned?: number; event_bytes?: number | null;
   max_calls_in_flight?: number; track_ms?: { p50: number; p95: number; max: number; count: number } | null; track_not_ok?: number;
@@ -356,9 +356,10 @@ const SDK_SCENARIOS = ["normal", "burst", "offline"] as const;
 
 function SdkResults({ data, error }: { data: SdkData | null; error: string }) {
   const { t, f1, n } = useFmt();
-  const runs = data ? [...data.runs].sort((a, b) => a.avd.localeCompare(b.avd) || SDK_SCENARIOS.indexOf(a.scenario) - SDK_SCENARIOS.indexOf(b.scenario)) : [];
+  const runs = data ? [...data.runs].sort((a, b) => a.avd.localeCompare(b.avd) || (a.build_type ?? "").localeCompare(b.build_type ?? "") || SDK_SCENARIOS.indexOf(a.scenario) - SDK_SCENARIOS.indexOf(b.scenario)) : [];
   const measured = runs.filter((r) => r.track_ms);
-  const name = (r: SdkRun) => `${r.avd} · ${t(`sdk.scenario.${r.scenario}`)}`;
+  const buildOf = (r: SdkRun) => r.build_type ?? "debug"; // a build type name, not UI text
+  const name = (r: SdkRun) => `${r.avd} · ${buildOf(r)} · ${t(`sdk.scenario.${r.scenario}`)}`;
   const rateRows = runs.filter((r) => r.target_rate_per_s && r.actual_rate_per_s != null).map((r) => ({ name: name(r), percent: Math.round((1000 * r.actual_rate_per_s!) / r.target_rate_per_s!) / 10 }));
   return (
     <section className="card section" id="sdk">
@@ -381,7 +382,7 @@ function SdkResults({ data, error }: { data: SdkData | null; error: string }) {
               const fb = r.files_bytes_after_drain;
               return (
                 <tr key={r.run_id}>
-                  <td>{r.avd}{r.api != null && <div className="note">{t("sdk.device", { device: r.device ?? "", release: r.release ?? "", api: String(r.api), abi: r.abi ?? "" })}</div>}</td>
+                  <td>{r.avd} ({buildOf(r)}){r.api != null && <div className="note">{t("sdk.device", { device: r.device ?? "", release: r.release ?? "", api: String(r.api), abi: r.abi ?? "" })}</div>}</td>
                   <td>{t(`sdk.scenario.${r.scenario}`)}{r.started != null && r.planned != null && <div className="note">{t("sdk.events", { started: n(r.started), planned: n(r.planned), bytes: r.event_bytes == null ? t("common.na") : n(r.event_bytes), inflight: r.max_calls_in_flight == null ? t("common.na") : n(r.max_calls_in_flight), notOk: n(r.track_not_ok ?? 0) })}</div>}</td>
                   <td><span className={`badge ${r.verdict}`}>{verdictText(t, r.verdict)}</span>{r.reasons.map((x) => <div key={x} className="reason">{x}</div>)}</td>
                   <td className="nowrap">{r.actual_rate_per_s == null ? t("common.na") : `${r.target_rate_per_s == null ? t("sdk.backToBack") : n(r.target_rate_per_s)} / ${n(r.actual_rate_per_s)}`}</td>

@@ -36,7 +36,8 @@ def analyze(d):
     first = {"normal": "normal", "burst": "burst", "offline": "offline_store"}[sc]
     res = jload(d / f"result-{first}.json")
     drain_res = jload(d / "result-offline_drain.json") if sc == "offline" else None
-    run = {"scenario": sc, "run_id": meta["run_id"], "avd": meta["avd"], "meta": meta}
+    # Runs before issue 33 have no build_type: they are debug runs (ADR-0014). Release runs: ADR-0018.
+    run = {"scenario": sc, "run_id": meta["run_id"], "avd": meta["avd"], "build_type": meta.get("build_type", "debug"), "meta": meta}
     reasons_invalid, reasons_fail = [], []
     if not meta["completed_phases"] or res is None or (sc == "offline" and drain_res is None) or not (d / f"calls-{first}.csv").exists():
         run.update(verdict="invalid", reasons=["an instrumentation phase did not finish (see the script output)"])
@@ -171,8 +172,12 @@ def analyze(d):
     return run
 
 
+def build_of(r):
+    return r.get("build_type") or r["meta"].get("build_type", "debug")
+
+
 def md_run(r):
-    L = [f"### {r['avd']} (API {r.get('api', '?')}) - {r['scenario']}: **{r['verdict']}**", ""]
+    L = [f"### {r['avd']} (API {r.get('api', '?')}) - {r['scenario']}, {build_of(r)} build: **{r['verdict']}**", ""]
     if r["reasons"]:
         L += [f"- Reasons: {'; '.join(r['reasons'])}"]
     if "reconciliation" not in r:
@@ -198,7 +203,7 @@ def md_run(r):
 
 def index_entry(r):
     """Committed values of one run for perf/report/. Nothing is computed here: every number comes from run.json."""
-    e = {"run_id": r["run_id"], "avd": r["avd"], "scenario": r["scenario"], "verdict": r["verdict"], "reasons": r["reasons"],
+    e = {"run_id": r["run_id"], "avd": r["avd"], "build_type": build_of(r), "scenario": r["scenario"], "verdict": r["verdict"], "reasons": r["reasons"],
          "git_revision": r["meta"]["git_revision"], "started_utc": r["meta"]["started_utc"],
          "host": {"model": r["meta"]["host"]["model"], "cpus": r["meta"]["host"]["cpus"]}}
     if "reconciliation" not in r:
@@ -234,19 +239,20 @@ def main():
         runs = [json.loads(p.read_text()) for p in sorted(root.glob("*/run.json"))]
         L = ["# SDK device measurement summary (issue 24)", "",
              "Measured in this environment (emulators, Compose server on one Mac). Not an SLA. A run that missed the target injection rate is `invalid`, never `pass` (spec section 7). "
-             "One run per AVD and scenario. Method and criteria: ADR-0014.", "",
-             "| AVD | Scenario | Verdict | Target / actual events/s | Max in flight | track() p50 / p95 / max ms | Not ok | Missing / dup rows | Drain s | queue.db + wal + shm bytes (after drain) | PSS delta KiB |",
-             "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
+             "One run per AVD, build type and scenario. Method and criteria: ADR-0014 (debug) and ADR-0018 (release, R8). "
+             "Release rows: API 37 emulator, system image `google_apis_ps16k` (arm64-v8a, Google APIs without Google Play); each run section below names the device, Android release and API level.", "",
+             "| AVD | Build | Scenario | Verdict | Target / actual events/s | Max in flight | track() p50 / p95 / max ms | Not ok | Missing / dup rows | Drain s | queue.db + wal + shm bytes (after drain) | PSS delta KiB |",
+             "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
         for r in runs:
             if "reconciliation" not in r:
-                L.append(f"| {r['avd']} | {r['scenario']} | {r['verdict']} | - | - | - | - | - | - | - | - |")
+                L.append(f"| {r['avd']} | {build_of(r)} | {r['scenario']} | {r['verdict']} | - | - | - | - | - | - | - | - |")
                 continue
             i, t, c = r["injection"], r["track_ms"] or {"p50": "-", "p95": "-", "max": "-"}, r["reconciliation"]
             fb = r["files_bytes"]["after_drain"]
             fb = f"{fb.get('queue.db', 0)} + wal {fb.get('queue.db-wal', 0)} + shm {fb.get('queue.db-shm', 0)}"
             mem = r["memory_kb"]
             pss = mem.get("pss_after_init_to_after_drain", mem.get("store_process", {}).get("pss_after_init_to_after_store"))
-            L.append(f"| {r['avd']} | {r['scenario']} | {r['verdict']} | {i['target_rate_per_s']} / {i['actual_rate_per_s']} | {i['max_calls_in_flight']} | "
+            L.append(f"| {r['avd']} | {build_of(r)} | {r['scenario']} | {r['verdict']} | {i['target_rate_per_s']} / {i['actual_rate_per_s']} | {i['max_calls_in_flight']} | "
                      f"{t['p50']} / {t['p95']} / {t['max']} | {sum(r['errors']['track_not_ok'].values())} | {c['missing_on_server']} / {c['duplicate_server_rows']} | "
                      f"{r['drain']['seconds']} | {fb} | {pss} |")
         L += ["", "Offline row: track() numbers are the offline store phase (endpoint unreachable, calls back to back); drain seconds are the restarted process after the persisted retry wait (see the run details).", ""]

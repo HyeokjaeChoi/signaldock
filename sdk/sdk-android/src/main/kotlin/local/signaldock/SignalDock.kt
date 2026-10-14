@@ -1,8 +1,13 @@
 package local.signaldock
 
 import android.content.Context
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.isActive
 import local.signaldock.internal.collection.EventCollector
 import local.signaldock.internal.init.InitCoordinator
+import local.signaldock.internal.init.Logger
 import local.signaldock.internal.scheduling.DeliveryCoordinator
 import local.signaldock.internal.storage.QueueDao
 import local.signaldock.internal.transport.SDK_VERSION
@@ -15,6 +20,7 @@ public class SignalDock internal constructor(
     private val collector: EventCollector,
     internal val dao: QueueDao,
     internal val delivery: DeliveryCoordinator,
+    private val logger: Logger,
 ) {
     /**
      * Returns [TrackResult.Success] after the event is committed to Room. This is not server
@@ -26,7 +32,17 @@ public class SignalDock internal constructor(
 
     /** Read-only snapshot of the device queue, recent permanent rejections, ACK and retry state. */
     public suspend fun diagnostics(): Diagnostics {
-        val snap = dao.diagnosticsSnapshot()
+        val snap = try {
+            dao.diagnosticsSnapshot()
+        } catch (e: Exception) {
+            // Caller cancellation propagates; a closed Room database cancels its own scope instead.
+            if (e is CancellationException && !currentCoroutineContext().isActive) throw e
+            // Storage failure: report it as data, never as an exception (ADR-0017).
+            logger.warn("diagnostics storage failed: ${e.javaClass.simpleName}")
+            // Narrows the race with a cancellation that arrives after the check above.
+            currentCoroutineContext().ensureActive()
+            return Diagnostics(SDK_VERSION, 0, 0, null, emptyList(), null, null, 0, null, storageAvailable = false)
+        }
         val retry = snap.retry
         return Diagnostics(
             sdkVersion = SDK_VERSION,

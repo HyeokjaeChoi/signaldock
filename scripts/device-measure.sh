@@ -18,7 +18,11 @@
 #   - one booted emulator (emulators only), for example:
 #       $ANDROID_HOME/emulator/emulator -avd signaldock-api37 -no-window -no-audio -no-snapshot-save -port 5584 &
 #   - macOS host (it records sysctl and sw_vers facts), JDK 21 (scripts/setup-toolchain.sh), ANDROID_HOME, python3.
-# Environment: SIGNALDOCK_ENV_FILE, MEASURE_PROJECT (Compose project, default signaldock-sdkmeasure), MEASURE_PROXY_PORT (default 18091).
+# Release (R8) build, issue 33, ADR-0018: set MEASURE_BUILD=release. It runs the same phases (MeasureRunner) in the
+# sdk/measure-app release variant (R8 minify on, debug-signed, not debuggable) and writes
+# perf/sdk-results/api<api>-release-<scenario>/. It needs an emulator image where `adb root` works (google_apis, not
+# Google Play), because a non-debuggable app has no `run-as`. Default (unset or `debug`) is the debug androidTest APK.
+# Environment: MEASURE_BUILD, SIGNALDOCK_ENV_FILE, MEASURE_PROJECT (Compose project, default signaldock-sdkmeasure), MEASURE_PROXY_PORT (default 18091).
 set -euo pipefail
 
 [ "$(uname)" = Darwin ] || { echo "error: this script reads macOS host facts (sysctl, sw_vers); run it on macOS" >&2; exit 1; }
@@ -40,9 +44,21 @@ adb() { "$ADB" -s "$serial" "$@"; }
 ENV_FILE="${SIGNALDOCK_ENV_FILE:-.env}"
 PROJECT="${MEASURE_PROJECT:-signaldock-sdkmeasure}"
 PROXY_PORT="${MEASURE_PROXY_PORT:-18091}"
-PKG=local.signaldock.test
-RUNNER="$PKG/androidx.test.runner.AndroidJUnitRunner"
-APK=sdk/sdk-android/build/outputs/apk/androidTest/debug/sdk-android-debug-androidTest.apk
+BUILD="${MEASURE_BUILD:-debug}"
+case "$BUILD" in
+  debug)
+    PKG=local.signaldock.test
+    RUNNER="$PKG/androidx.test.runner.AndroidJUnitRunner"
+    APK=sdk/sdk-android/build/outputs/apk/androidTest/debug/sdk-android-debug-androidTest.apk
+    PREFIX="" ;;
+  release)
+    PKG=local.signaldock.measureapp
+    RUNNER="$PKG/.MeasureInstrumentation"
+    APK=sdk/measure-app/build/outputs/apk/release/measure-app-release.apk
+    MAPPING=sdk/measure-app/build/outputs/mapping/release/mapping.txt
+    PREFIX="release-" ;;
+  *) echo "error: MEASURE_BUILD must be debug or release" >&2; exit 2 ;;
+esac
 
 [ -f "$ENV_FILE" ] || { echo "error: env file $ENV_FILE not found; see the header of this script" >&2; exit 1; }
 set -a; . "$ENV_FILE"; set +a
@@ -53,23 +69,38 @@ compose ps --status running --services | grep -qx server || { echo "error: serve
 "$ADB" -s "$serial" get-state >/dev/null 2>&1 || { echo "error: no emulator $serial" >&2; exit 1; }
 until [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ]; do sleep 2; done
 
-sdk/gradlew -p sdk :sdk-android:assembleDebugAndroidTest --no-daemon -q
+if [ "$BUILD" = release ]; then
+  sdk/gradlew -p sdk :measure-app:assembleRelease --no-daemon -q
+  # A non-debuggable app has no run-as: read its data directory as root (emulator images with `adb root` only).
+  "$ADB" -s "$serial" root >/dev/null 2>&1 || true
+  "$ADB" -s "$serial" wait-for-device
+  [ "$(adb shell id -u | tr -d '\r')" = 0 ] || { echo "error: adb root is not available on $serial; use a google_apis image, not Google Play" >&2; exit 1; }
+  until [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ]; do sleep 2; done
+else
+  sdk/gradlew -p sdk :sdk-android:assembleDebugAndroidTest --no-daemon -q
+fi
 adb install -r -t "$APK" >/dev/null
 
 api="$(adb shell getprop ro.build.version.sdk | tr -d '\r')"
 avd="$(adb emu avd name 2>/dev/null | head -1 | tr -d '\r')"
-echo "device: $serial  AVD $avd  $(adb shell getprop ro.product.model | tr -d '\r')  API $api  (test APK: debug build)"
+echo "device: $serial  AVD $avd  $(adb shell getprop ro.product.model | tr -d '\r')  API $api  ($BUILD build)"
 
 # phase <name> <endpoint> <runId>: one instrumentation run in a fresh process.
 phase() {
   local out
-  out="$(adb shell am instrument -w -e class local.signaldock.device.MeasurePhases -e phase "$1" -e endpoint "$2" -e key "$SIGNALDOCK_COLLECTION_KEY" -e runId "$3" "$RUNNER" | tr -d '\r')"
-  if ! grep -q '^OK (' <<<"$out"; then echo "FAILED phase $1:" >&2; echo "$out" >&2; return 1; fi
+  if [ "$BUILD" = release ]; then
+    out="$(adb shell am instrument -w -e phase "$1" -e endpoint "$2" -e key "$SIGNALDOCK_COLLECTION_KEY" -e runId "$3" "$RUNNER" | tr -d '\r')"
+    ok='^INSTRUMENTATION_CODE: -1$'
+  else
+    out="$(adb shell am instrument -w -e class local.signaldock.device.MeasurePhases -e phase "$1" -e endpoint "$2" -e key "$SIGNALDOCK_COLLECTION_KEY" -e runId "$3" "$RUNNER" | tr -d '\r')"
+    ok='^OK ('
+  fi
+  if ! grep -q "$ok" <<<"$out"; then echo "FAILED phase $1:" >&2; echo "$out" >&2; return 1; fi
   echo "  phase $1 done"
 }
 
 run_scenario() {
-  local sc="$1" final="perf/sdk-results/api$api-$1" dir runId="r$(date -u +%Y%m%d%H%M%S)$1" ok=0
+  local sc="$1" final="perf/sdk-results/api$api-$PREFIX$1" dir runId="r$(date -u +%Y%m%d%H%M%S)$1" ok=0
   dir="$(mktemp -d)"  # published to $final only after collection, so a failed setup keeps the previous run
   echo "== $sc (run $runId)"
   adb shell pm clear "$PKG" >/dev/null
@@ -94,18 +125,37 @@ run_scenario() {
   wait "$PROXY_PID" 2>/dev/null || true
   trap - EXIT
   # Pull what exists even when a phase failed, so that the evidence survives the next `pm clear`.
-  for f in $(adb shell run-as "$PKG" ls "files/measure/$runId" 2>/dev/null | tr -d '\r'); do
-    adb exec-out run-as "$PKG" cat "files/measure/$runId/$f" > "$dir/$f" || rm -f "$dir/$f"
-  done
+  if [ "$BUILD" = release ]; then
+    for f in $(adb shell ls "/data/data/$PKG/files/measure/$runId" 2>/dev/null | tr -d '\r'); do
+      adb exec-out cat "/data/data/$PKG/files/measure/$runId/$f" > "$dir/$f" || rm -f "$dir/$f"
+    done
+  else
+    for f in $(adb shell run-as "$PKG" ls "files/measure/$runId" 2>/dev/null | tr -d '\r'); do
+      adb exec-out run-as "$PKG" cat "files/measure/$runId/$f" > "$dir/$f" || rm -f "$dir/$f"
+    done
+  fi
   psql_ids "$runId" > "$dir/db-ids.txt" || { echo "warning: could not read event IDs from the database; the run is invalid" >&2; rm -f "$dir/db-ids.txt"; }
-  python3 - "$dir" "$sc" "$runId" "$ok" "$started" "$ended" "$load_before" "$load_after" "$avd" "$serial" <<'EOF'
-import json, subprocess, sys
-d, sc, run_id, ok, t0, t1, l0, l1, avd, serial = sys.argv[1:]
+  python3 - "$dir" "$sc" "$runId" "$ok" "$started" "$ended" "$load_before" "$load_after" "$avd" "$serial" "$BUILD" "${MAPPING:-}" "$APK" <<'EOF'
+import hashlib, json, re, subprocess, sys
+d, sc, run_id, ok, t0, t1, l0, l1, avd, serial, build, mapping, apk = sys.argv[1:]
 def sh(*a): return subprocess.run(a, capture_output=True, text=True).stdout.strip()
+def sha(path): return hashlib.sha256(open(path, "rb").read()).hexdigest()
+def r8_evidence(mapping, apk):
+    """The measured APK went through R8: its mapping file renames SDK classes (ADR-0018). The mapping itself is not committed."""
+    lines = open(mapping).read().splitlines()
+    # SDK classes only: the measure app and the shared runner are in local.signaldock.measureapp and local.signaldock.measure.
+    sdk = [l for l in lines if re.match(r"local\.signaldock\.[\w.$]+ -> ", l) and not re.match(r"local\.signaldock\.measure(app)?\.", l)]
+    renamed = [l for l in sdk if l.split(" -> ")[1].rstrip(":") != l.split(" -> ")[0] and "R8$$REMOVED" not in l]
+    return {"minifyEnabled": True, "shrinkResources": True, "apk_sha256": sha(apk), "mapping_sha256": sha(mapping), "mapping_lines": len(lines),
+            "sdk_classes_in_mapping": len(sdk), "sdk_classes_renamed": len(renamed), "sdk_classes_removed": len(sdk) - len([l for l in sdk if "R8$$REMOVED" not in l]),
+            "example": next((l for l in renamed if l.startswith("local.signaldock.SignalDock ")), None)}
 json.dump({
     "scenario": sc, "run_id": run_id, "completed_phases": ok == "1", "started_utc": t0, "ended_utc": t1,
     "avd": avd, "serial": serial,
-    "build": "debug androidTest APK: SDK library debug variant, debuggable, no R8/minify (ADR-0014)",
+    "build_type": build,
+    "build": "debug androidTest APK: SDK library debug variant, debuggable, no R8/minify (ADR-0014)" if build == "debug" else
+             "release measure app (sdk/measure-app): SDK as dependency, R8 minify and shrinkResources on, debug-signed release variant, not debuggable (ADR-0018)",
+    **({"r8": r8_evidence(mapping, apk)} if build == "release" else {}),
     "server": {"stack": "Docker Compose, real Ktor server + PostgreSQL 17.6, default product settings, project separate from the default stack",
                "path": "device -> 10.0.2.2 -> fault-proxy (pass mode) -> 127.0.0.1 -> server container"},
     "host": {"model": sh("sysctl", "-n", "machdep.cpu.brand_string"), "cpus": sh("sysctl", "-n", "hw.ncpu"), "os": sh("sw_vers", "-productVersion"),

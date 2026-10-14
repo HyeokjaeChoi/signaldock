@@ -85,7 +85,10 @@ public data class DeliveryErrorDiagnostic(
     val atEpochMillis: Long,
 )
 
-/** Read-only snapshot of the device queue. It says nothing about server state. */
+/**
+ * Read-only snapshot of the device queue. It says nothing about server state. [storageAvailable] is
+ * false when the queue could not be read; the other fields are then empty and mean nothing.
+ */
 public data class Diagnostics(
     val sdkVersion: String,
     val queuedEvents: Int,
@@ -96,4 +99,5 @@ public data class Diagnostics(
     val lastDeliveryError: DeliveryErrorDiagnostic?,
     val retryFailureCount: Int,
     val nextAttemptEpochMillis: Long?,
+    val storageAvailable: Boolean = true,
 )

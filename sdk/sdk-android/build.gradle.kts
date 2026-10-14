@@ -30,6 +30,9 @@ android {
         singleVariant("release") { withSourcesJar() }
     }
 
+    // The measurement phases are shared with the R8 release measure app (issue 33, ADR-0018).
+    // (added to the androidTest variant sources in `androidComponents` below)
+
     testOptions {
         unitTests.isIncludeAndroidResources = true
         // Robolectric SDK 36 runs on JDK 21 and reads FileDescriptor internals.
@@ -55,6 +58,7 @@ kotlin {
 androidComponents {
     onVariants { variant ->
         variant.sources.kotlin?.addStaticSourceDirectory("../../generated/kotlin/src/main/kotlin")
+        variant.androidTest?.sources?.kotlin?.addStaticSourceDirectory("src/measure/kotlin")
     }
 }
 

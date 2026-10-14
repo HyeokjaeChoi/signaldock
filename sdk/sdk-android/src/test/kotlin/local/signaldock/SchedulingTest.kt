@@ -1,8 +1,12 @@
 package local.signaldock
 
 import android.app.Activity
+import android.database.sqlite.SQLiteException
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.work.ListenableWorker
 import androidx.work.NetworkType
+import androidx.work.Operation
 import androidx.work.WorkManager
 import androidx.work.testing.TestListenableWorkerBuilder
 import androidx.work.testing.WorkManagerTestInitHelper
@@ -34,6 +38,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import com.google.common.util.concurrent.ListenableFuture
+import com.google.common.util.concurrent.SettableFuture
 import java.util.concurrent.atomic.AtomicInteger
 
 private const val T0 = 1_760_000_000_123L
@@ -170,10 +176,10 @@ class SchedulingTest {
         WorkManagerTestInitHelper.initializeTestWorkManager(context)
         val wm = WorkManager.getInstance(context)
         var ready = false
-        val s = WorkManagerScheduler(context, clock, FakeLogger()) {
+        val s = WorkManagerScheduler(context, clock, FakeLogger(), workManager = {
             if (!ready) throw IllegalStateException("WorkManager is not initialized")
             wm
-        }
+        })
         s.requestAt(T0 + 10_000) // WorkManager not initialized: swallowed
         assertEquals(0, wm.getWorkInfosForUniqueWork(ONE_TIME_WORK_NAME).get().size)
         ready = true
@@ -181,6 +187,26 @@ class SchedulingTest {
         assertEquals(1, wm.getWorkInfosForUniqueWork(ONE_TIME_WORK_NAME).get().size)
         s.requestAt(T0 + 20_000) // now covered by the pending request
         assertEquals(1, wm.getWorkInfosForUniqueWork(ONE_TIME_WORK_NAME).get().size)
+    }
+
+    @Test
+    fun `an enqueue that fails later clears the pending marker and logs a warning`() {
+        val log = FakeLogger()
+        val results = mutableListOf<SettableFuture<Operation.State.SUCCESS>>()
+        val s = WorkManagerScheduler(context, clock, log, workManager = { error("not used") }) {
+            val result = SettableFuture.create<Operation.State.SUCCESS>().also { results += it }
+            object : Operation {
+                override fun getState(): LiveData<Operation.State> = MutableLiveData()
+                override fun getResult(): ListenableFuture<Operation.State.SUCCESS> = result
+            }
+        }
+        s.requestAt(T0 + 10_000)
+        s.requestAt(T0 + 20_000) // covered by the pending request
+        assertEquals(1, results.size)
+        results[0].setException(SQLiteException("work db broken")) // WorkManager fails after enqueue returned
+        assertTrue(log.warnings.any { it.startsWith("WorkManager request failed: SQLiteException") })
+        s.requestAt(T0 + 20_000) // the marker is cleared, so this enqueues again
+        assertEquals(2, results.size)
     }
 
     @Test

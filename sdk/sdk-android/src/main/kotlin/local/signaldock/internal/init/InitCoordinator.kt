@@ -122,8 +122,8 @@ internal suspend fun createSdk(
     scheduler: WorkScheduler? = null,
     scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
     foregroundTriggers: Boolean = true,
+    logger: Logger = AndroidLogger(config.logLevel),
 ): SignalDock {
-    val logger = AndroidLogger(config.logLevel)
     // Everything the SDK persists lives here: excluded from Auto Backup (ADR-0001).
     val dir = File(context.noBackupFilesDir, "signaldock")
     if (!dir.isDirectory && !dir.mkdirs() && !dir.isDirectory) throw IOException("cannot create SDK directory")
@@ -148,5 +148,5 @@ internal suspend fun createSdk(
     coordinator.ensureScheduled(if (queued > 0) clock.nowMillis() else clock.nowMillis() + FOREGROUND_TRIGGER_DELAY_MILLIS)
     (context.applicationContext as? Application)?.registerActivityLifecycleCallbacks(ForegroundExitObserver(clock, coordinator))
     logger.debug("initialized")
-    return SignalDock(EventCollector(installationId, sink, clock, ids, limits, logger), dao, coordinator)
+    return SignalDock(EventCollector(installationId, sink, clock, ids, limits, logger), dao, coordinator, logger)
 }

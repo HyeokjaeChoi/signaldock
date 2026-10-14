@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Emulator only: the measurement server is reached over HTTP through the local proxy (ADR-0014). -->
+    <application
+        android:allowBackup="false"
+        android:label="SignalDock Measure"
+        android:usesCleartextTraffic="true" />
+    <instrumentation
+        android:name=".MeasureInstrumentation"
+        android:targetPackage="local.signaldock.measureapp" />
+</manifest>

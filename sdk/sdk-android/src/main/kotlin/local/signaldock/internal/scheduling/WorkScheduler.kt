@@ -6,13 +6,17 @@ import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.Operation
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import kotlin.coroutines.cancellation.CancellationException
 import local.signaldock.internal.init.Clock
 import local.signaldock.internal.init.InitCoordinator
 import local.signaldock.internal.init.Logger
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 
@@ -49,6 +53,10 @@ internal class WorkManagerScheduler(
     private val logger: Logger,
     /** Seam for tests; throws IllegalStateException while WorkManager is not initialized. */
     private val workManager: () -> WorkManager = { WorkManager.getInstance(context.applicationContext) },
+    /** Seam for tests: enqueues the unique one-time request and returns WorkManager's operation. */
+    private val enqueueOneTime: (OneTimeWorkRequest) -> Operation = {
+        workManager().enqueueUniqueWork(ONE_TIME_WORK_NAME, ExistingWorkPolicy.APPEND_OR_REPLACE, it)
+    },
 ) : WorkScheduler {
     private val appContext = context.applicationContext
     private val constraints = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
@@ -60,6 +68,7 @@ internal class WorkManagerScheduler(
         val request = PeriodicWorkRequestBuilder<DeliveryWorker>(PERIODIC_INTERVAL_MINUTES, TimeUnit.MINUTES)
             .setConstraints(constraints).build()
         workManager().enqueueUniquePeriodicWork(PERIODIC_WORK_NAME, ExistingPeriodicWorkPolicy.KEEP, request)
+            .onFailure(::warnFailed) // the next ensurePeriodic() call tries again (KEEP)
     }
 
     override fun requestAt(atMillis: Long) = guarded {
@@ -74,12 +83,17 @@ internal class WorkManagerScheduler(
             .setConstraints(constraints)
             .setInitialDelay((atMillis - clock.nowMillis()).coerceAtLeast(0), TimeUnit.MILLISECONDS)
             .build()
-        try {
-            workManager().enqueueUniqueWork(ONE_TIME_WORK_NAME, ExistingWorkPolicy.APPEND_OR_REPLACE, request)
+        val operation = try {
+            enqueueOneTime(request)
         } catch (e: Exception) {
             // Nothing was enqueued: the marker must not suppress later requests.
             pendingAt.compareAndSet(atMillis, previous)
             throw e
+        }
+        // WorkManager can also fail later, in its own database. Then nothing was enqueued either.
+        operation.onFailure { e ->
+            pendingAt.compareAndSet(atMillis, previous)
+            warnFailed(e)
         }
     }
 
@@ -88,10 +102,33 @@ internal class WorkManagerScheduler(
     private inline fun guarded(block: () -> Unit) {
         try {
             block()
-        } catch (e: IllegalStateException) {
-            // WorkManager is not initialized in the host app. Foreground delivery still works.
-            logger.warn("WorkManager is not available; background delivery is off")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // WorkManager is not initialized (IllegalStateException) or its own storage failed. A
+            // scheduling failure never reaches the host's track(), initialize() or lifecycle callback
+            // (ADR-0017). Foreground delivery still works.
+            // A periodic Worker that was scheduled before may still run, so do not claim that
+            // background delivery is off.
+            warnFailed(e)
         }
+    }
+
+    private fun warnFailed(e: Throwable) =
+        logger.warn("WorkManager request failed: ${e.javaClass.simpleName}; foreground delivery still works")
+
+    /** Runs [action] if the operation fails. It never throws: a scheduling failure stays in the SDK (ADR-0017). */
+    private fun Operation.onFailure(action: (Throwable) -> Unit) {
+        val future = result
+        future.addListener({
+            try {
+                future.get()
+            } catch (e: ExecutionException) {
+                action(e.cause ?: e)
+            } catch (e: Exception) {
+                action(e)
+            }
+        }, Runnable::run)
     }
 
     private companion object {
