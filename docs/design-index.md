@@ -26,6 +26,7 @@ ADRs:
 - ADR-0017 (`docs/adr/0017-sdk-crash-safety.md`), for the public API failure behavior
 - ADR-0018 (`docs/adr/0018-sdk-release-r8-measurement.md`), for `sdk/measure-app` and `sdk/sdk-android/src/measure` (issue 33)
 - ADR-0019 (`docs/adr/0019-sdk-public-api-check.md`), for `sdk/sdk-android/api/sdk-android.api` and the `apiCheck` and `apiDump` tasks (issue 35)
+- ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for the cost of the SDK in a host app (issue 36)
 
 Public API change: update the dump (`sdk/gradlew -p sdk :sdk-android:apiDump`), the integration guide, and `CHANGELOG.md` in the same PR.
 
@@ -99,9 +100,11 @@ Architecture (`architecture.md`):
 
 ADRs:
 - ADR-0009 (`docs/adr/0009-maven-zip-and-consumer-app.md`)
+- ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for `src/sdk`, `src/nosdk`, and `-Psignaldock.sdk=false` (issue 36)
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 6. User screens and distribution, Reproduction and deliverables
+- Q151 (host cost)
 
 ## `dashboard/`
 
@@ -154,6 +157,7 @@ ADRs:
 - ADR-0013 (`docs/adr/0013-server-load-measurement-harness.md`)
 - ADR-0014 (`docs/adr/0014-sdk-device-measurement-harness.md`), for the SDK results that `perf/report/` shows
 - ADR-0018 (`docs/adr/0018-sdk-release-r8-measurement.md`), for the release-build SDK results (issue 33)
+- ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for `scripts/host-cost-measure.sh` and `perf/sdk-results/host-cost-api37/` (issue 36)
 - ADR-0015 (`docs/adr/0015-web-ui-languages.md`), for the report page languages and `web-shared/`
 - ADR-0016 (`docs/adr/0016-telemetry-style-ui.md`), for the KPI strip, the table of contents, the overload bands, and the shared tokens (issue 28)
 
@@ -161,6 +165,7 @@ Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 7. Completion criteria and verification plan
 - 11. Delegated performance measurement decisions
 - Q124 and Q125 (normal-operation waits stay separate from benchmark values)
+- Q151 (SDK host cost: APK size, initialization time, PSS)
 - Q135 to Q137 (UI languages)
 - Q139 and Q140 (presentation redesign, issue 28)
 
@@ -174,6 +179,7 @@ Architecture (`architecture.md`):
 ADRs:
 - ADR-0002
 - ADR-0009 (`docs/adr/0009-maven-zip-and-consumer-app.md`), for `scripts/verify-consumer.sh` and `scripts/release.sh` (issue 32; release notes in `docs/releases/`)
+- ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for `scripts/host-cost-measure.sh` (issue 36)
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 7. Completion criteria and verification plan

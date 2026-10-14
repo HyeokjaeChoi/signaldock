@@ -255,7 +255,7 @@ Main-thread time in `SignalDock.initialize()` (consumer app, `SystemClock.elapse
 | {idle} s after start (n={pi['sdk']['n']}) | {f(pi['nosdk']['p50'])} ({pi['nosdk']['min']} - {pi['nosdk']['max']}) | {f(pi['sdk']['p50'])} ({pi['sdk']['min']} - {pi['sdk']['max']}) | {f(statistics.median(d_pi))} ({min(d_pi)} to {max(d_pi)}) |
 | {idle} s after {burst} track() calls (n={pb['sdk']['n']}) | {f(pb['nosdk']['p50'])} ({pb['nosdk']['min']} - {pb['nosdk']['max']}) | {f(pb['sdk']['p50'])} ({pb['sdk']['min']} - {pb['sdk']['max']}) | {f(statistics.median(d_pb))} ({min(d_pb)} to {max(d_pb)}) |
 
-The endpoint was `http://127.0.0.1:9` (nothing answers), so the SDK queued events and its delivery attempts failed, as in an app that is offline. The baseline burst run logs and does nothing else. PSS differs between runs by some MiB (ADR-0014 decision 9); read the spread, not one value.
+The endpoint was `http://127.0.0.1:9` (nothing answers), so the SDK queued events and its delivery attempts failed, as in an app that is offline. The baseline burst run logs and does nothing else. The min and max columns show the spread between runs.
 
 Raw data: `apk-size.csv`, `startup.csv`, `init.csv`, `pss-burst.csv`, `dependencies.txt`, `meta.json`.
 """

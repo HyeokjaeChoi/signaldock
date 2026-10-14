@@ -1,0 +1,51 @@
+{
+  "issue": 36,
+  "adr": "ADR-0020",
+  "run_utc": "2026-10-14T10:58:09Z",
+  "avd": "signaldock-api37",
+  "serial": "emulator-5554",
+  "api": 37,
+  "android_release": "17",
+  "model": "sdk_gphone16k_arm64",
+  "abi": "arm64-v8a",
+  "build_fingerprint": "google/sdk_gphone16k_arm64/emu64a16k:17/CP41.260831.007/16416850:userdebug/dev-keys",
+  "host": {
+    "model": "Apple M2 Pro",
+    "cpus": "12",
+    "os": "26.6.2",
+    "loadavg_at_summary": "{ 6.47 5.73 4.83 }"
+  },
+  "sdk_version": "0.1.0",
+  "git_revision": "01bd686",
+  "parameters": {
+    "startup_runs_per_variant": 20,
+    "burst_runs_per_variant": 10,
+    "burst_track_calls": 500,
+    "idle_seconds_before_pss": 5,
+    "warmup_launches_per_variant_not_counted": 2
+  },
+  "variants": {
+    "sdk": {
+      "application_id": "local.signaldock.consumer",
+      "apk_bytes": 638435,
+      "apk_download_bytes": 565335,
+      "dex_files": 1,
+      "dex_bytes": 969120,
+      "dex_compressed_bytes": 465122,
+      "apk_sha256": "857c56904de2cad9771d77b3f100f4b522ba9d2f13e97f57f1a4020c13ad816a",
+      "mapping_sha256": "cd810089a541eaea21efe5de8db56168dc79f2544a29f276f44d87803d8910f7",
+      "r8": "9.3.28"
+    },
+    "nosdk": {
+      "application_id": "local.signaldock.consumer.nosdk",
+      "apk_bytes": 21606,
+      "apk_download_bytes": 17264,
+      "dex_files": 1,
+      "dex_bytes": 3012,
+      "dex_compressed_bytes": 1591,
+      "apk_sha256": "0a5065e89200b38abc0cb382c68e5db783e5ffbacafebba0c4a81660675fa090",
+      "mapping_sha256": "54b54c4e68ef7e3d399860409121d047e9a3ac23caa8f3d8a8e94f2954f870b1",
+      "r8": "9.3.28"
+    }
+  }
+}
