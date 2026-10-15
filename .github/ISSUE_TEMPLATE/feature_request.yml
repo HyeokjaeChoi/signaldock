@@ -1,0 +1,25 @@
+name: Feature request
+description: Suggest a change to the SDK, server, or Dashboard.
+labels: ["needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: Check the scope in the [README](https://github.com/HyeokjaeChoi/signaldock#scope-and-verification) first. Some items are out of scope, for example iOS, bridges, and Maven Central.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What can you not do today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should change? Say if it changes the public API or the contract.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered

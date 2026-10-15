@@ -27,7 +27,12 @@ import local.signaldock.ingestion.resolveEventIdConflicts
 import local.signaldock.ingestion.validateEvent
 import org.openapitools.client.models.EventIngest
 
-private const val MAX_JSON_NESTING_DEPTH = 8
+/**
+ * Containers at this depth or deeper (root 0, events 1, event 2, properties 3, so property values
+ * and anything inside an event field) are checked without recursion. The scanner stack stays
+ * bounded for any input, and a nested property value is a per-item rejection (ADR-0027).
+ */
+private const val MAX_SCANNED_DEPTH = 4
 
 private val json = Json {
     ignoreUnknownKeys = false
@@ -50,8 +55,9 @@ internal fun httpStatusOf(code: String): Int = when (code) {
 internal fun parseBatch(body: ByteArray, requestContractVersion: String): ValidatedBatch {
     checkBatchBytes(body.size)
     val source = decodeUtf8(body)
+    val scanner = StrictJsonScanner(source)
     val root = try {
-        StrictJsonScanner(source).parseDocument()
+        scanner.parseDocument()
     } catch (_: JsonSyntaxFailure) {
         throw RequestFailure("MALFORMED_REQUEST")
     }
@@ -82,7 +88,9 @@ internal fun parseBatch(body: ByteArray, requestContractVersion: String): Valida
     }
 
     val document = try {
-        json.parseToJsonElement(source)
+        // kotlinx parses nested containers with recursion. Pass it the source with each skipped
+        // container replaced by null, so a nested property value becomes a per-item rejection.
+        json.parseToJsonElement(scanner.withoutNestedContainers())
     } catch (_: SerializationException) {
         throw RequestFailure("MALFORMED_REQUEST")
     }
@@ -114,12 +122,14 @@ private fun candidateOf(node: JsonNode, element: JsonElement): EventCandidate? {
 }
 
 private fun fieldsOf(element: JsonElement): EventFields? {
+    val properties = (element as JsonObject)["properties"] as? JsonObject
+    // The DTO cannot hold a nested or null property value. Decode it without the property values
+    // and judge them in `propertyValuesOf`, so such a value is INVALID_PROPERTIES, not INVALID_EVENT.
     val dto = try {
-        json.decodeFromJsonElement<EventIngest>(element)
+        json.decodeFromJsonElement<EventIngest>(if (properties == null) element else JsonObject(element + ("properties" to JsonObject(emptyMap()))))
     } catch (_: SerializationException) {
         return null
     }
-    val properties = (element as JsonObject)["properties"] as? JsonObject
     return EventFields(dto.name, dto.occurredAt, dto.sdkVersion, properties?.let(::propertyValuesOf))
 }
 
@@ -173,6 +183,19 @@ private fun JsonNode.asObjectOrNull(): JsonObjectNode? = this as? JsonObjectNode
 /** Strict JSON scanner that keeps source spans and decoded object keys before Json parses values. */
 private class StrictJsonScanner(private val input: String) {
     private var position = 0
+    private val nestedSpans = mutableListOf<Pair<Int, Int>>()
+
+    /** The input with every container that [skipContainer] checked replaced by `null`. */
+    fun withoutNestedContainers(): String {
+        if (nestedSpans.isEmpty()) return input
+        val out = StringBuilder()
+        var from = 0
+        for ((start, end) in nestedSpans) {
+            out.append(input, from, start).append("null")
+            from = end
+        }
+        return out.append(input, from, input.length).toString()
+    }
 
     fun parseDocument(): JsonNode {
         skipWhitespace()
@@ -186,8 +209,8 @@ private class StrictJsonScanner(private val input: String) {
         skipWhitespace()
         val start = position
         return when (peek()) {
-            '{' -> if (depth > MAX_JSON_NESTING_DEPTH) fail() else objectNode(start, depth)
-            '[' -> if (depth > MAX_JSON_NESTING_DEPTH) fail() else arrayNode(start, depth)
+            '{' -> if (depth >= MAX_SCANNED_DEPTH) skipContainer(start) else objectNode(start, depth)
+            '[' -> if (depth >= MAX_SCANNED_DEPTH) skipContainer(start) else arrayNode(start, depth)
             '"' -> stringNode(start)
             't' -> literal("true", start)
             'f' -> literal("false", start)
@@ -195,6 +218,46 @@ private class StrictJsonScanner(private val input: String) {
             '-', in '0'..'9' -> number(start)
             else -> fail()
         }
+    }
+
+    /** Checks the syntax of a nested container with an explicit stack, not recursion. Keeps no tree. */
+    private fun skipContainer(start: Int): JsonNode {
+        val open = StringBuilder()
+        do {
+            skipWhitespace()
+            when (peek()) {
+                '{' -> {
+                    position++; open.append('{'); skipWhitespace()
+                    if (peek() == '}') {
+                        position++; open.setLength(open.length - 1)
+                    } else {
+                        stringNode(position); skipWhitespace(); take(':'); continue
+                    }
+                }
+                '[' -> {
+                    position++; open.append('['); skipWhitespace()
+                    if (peek() == ']') { position++; open.setLength(open.length - 1) } else continue
+                }
+                '"' -> stringNode(position)
+                't' -> literal("true", position)
+                'f' -> literal("false", position)
+                'n' -> literal("null", position)
+                '-', in '0'..'9' -> number(position)
+                else -> fail()
+            }
+            // A value ended: close containers, or move to the next member.
+            while (open.isNotEmpty()) {
+                skipWhitespace()
+                val inObject = open.last() == '{'
+                val c = next()
+                if (c == (if (inObject) '}' else ']')) { open.setLength(open.length - 1); continue }
+                if (c != ',') fail()
+                if (inObject) { skipWhitespace(); stringNode(position); skipWhitespace(); take(':') }
+                break
+            }
+        } while (open.isNotEmpty())
+        nestedSpans += start to position
+        return JsonAtomNode(start, position)
     }
 
     private fun objectNode(start: Int, depth: Int): JsonNode {
@@ -255,18 +318,8 @@ private class StrictJsonScanner(private val input: String) {
         if (position + 4 > input.length) fail()
         val code = input.substring(position, position + 4).toIntOrNull(16) ?: fail()
         position += 4
-        val unit = code.toChar()
-        if (!unit.isHighSurrogate()) {
-            if (unit.isLowSurrogate()) fail()
-            return unit.toString()
-        }
-        if (position + 6 > input.length || input[position] != '\\' || input[position + 1] != 'u') fail()
-        position += 2
-        val lowCode = input.substring(position, position + 4).toIntOrNull(16) ?: fail()
-        position += 4
-        val low = lowCode.toChar()
-        if (!low.isLowSurrogate()) fail()
-        return charArrayOf(unit, low).concatToString()
+        // A lone surrogate escape is valid JSON syntax. Keep it: the per-item text rule rejects it (ADR-0027).
+        return code.toChar().toString()
     }
 
     private fun literal(expected: String, start: Int): JsonNode {

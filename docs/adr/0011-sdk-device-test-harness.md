@@ -17,7 +17,7 @@ The design sources leave the test harness open (spec section 7 "Offline recovery
 7. **Logcat checks.** Tests read the SDK's own lines with `logcat -d -s SignalDock:V` and compare with a snapshot taken before the action, because the buffer keeps earlier tests' lines. logd merges identical consecutive lines, so counts of repeated WARNs use a recording `Logger` next to the real `AndroidLogger`.
 8. **Instrumentation output.** Phases print status with `Instrumentation.sendStatus` (`INSTRUMENTATION_STATUS: key=value`); `addResults` needs API 26.
 9. **Pins.** `androidx.test:runner` 1.7.0 and `androidx.test.ext:junit` 1.3.0 (latest stable on Google Maven, 2026-10-12), next to `androidx.test:core` 1.7.0. Test method names use underscores, because backtick names are not valid in DEX before API 30.
-10. **CI compiles the instrumented tests but does not run them.** The `sdk-test` job adds `:sdk-android:assembleDebugAndroidTest`. Emulator runs stay local (README "Run the consumer app" follows the same rule).
+10. **CI compiles the instrumented tests.** The `sdk-test` job adds `:sdk-android:assembleDebugAndroidTest`. Since issue 40 the `device-test` job also runs them on an emulator (ADR-0023); the process-boundary script `scripts/device-durability.sh` stays local.
 
 ## Limits
 
