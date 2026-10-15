@@ -39,8 +39,10 @@ It needs `.env`, the running stack, and a booted emulator. It builds and install
 
 ```sh
 scripts/device-durability.sh emulator-5584 offline     # 1,000 events offline, process kill, restart, delivery
-scripts/device-durability.sh emulator-5584             # all cases (offline kill restart update clear reinstall restore)
+scripts/device-durability.sh emulator-5584             # all cases (offline kill restart update clear reinstall restore airplane fulldisk workmanager)
 ```
+
+The cases `airplane`, `fulldisk` and `workmanager` switch airplane mode, fill the data partition and lock the WorkManager database ([ADR-0029](adr/0029-device-fault-tests-and-power-loss.md)). `airplane` needs `python3` for the host ACK server. Use an emulator that you can wipe.
 
 It runs the SDK `androidTest` debug build. It needs no server. See [ADR-0011](adr/0011-sdk-device-test-harness.md). Only `offline` ran for this guide; the other cases have results in issue 20.
 

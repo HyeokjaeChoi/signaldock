@@ -17,6 +17,6 @@ Spec section 3 says to report invalid input and expected storage failures throug
 
 ## Test limits
 
-- A full disk cannot be produced under Robolectric (Room uses WAL, and `PRAGMA max_page_count` does not stop WAL growth). The test injects `SQLiteFullException`, `SQLiteDiskIOException` and `SQLiteCantOpenDatabaseException` at the storage boundary (`EventSink`). The closed database is real: the test closes the Room instance.
+- A full disk cannot be produced under Robolectric (Room uses WAL, and `PRAGMA max_page_count` does not stop WAL growth). ADR-0029 produces a real full disk and a real WorkManager failure on an emulator. The JVM test injects `SQLiteFullException`, `SQLiteDiskIOException` and `SQLiteCantOpenDatabaseException` at the storage boundary (`EventSink`). The closed database is real: the test closes the Room instance.
 - Queue limits use `QueueFull` (spec section 4), which has its own test.
 - Calls before initialization cannot happen through the public types: `track()` needs the instance from a successful `initialize()`. The tests cover `initialize()` failures (invalid configuration, conflict, storage failure), the Worker without an instance (`SchedulingTest`), and calls on an instance whose database was closed.
