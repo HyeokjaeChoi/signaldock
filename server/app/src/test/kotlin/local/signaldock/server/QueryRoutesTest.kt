@@ -332,7 +332,9 @@ class QueryRoutesTest {
                 assertEquals(HttpStatusCode.BadRequest, client.query(path, october12 + (param to payload)).status, "$path $param $payload")
             }
             // The path id of a detail request.
-            assertTrue(client.query("/v1/events/" + java.net.URLEncoder.encode(payload, "UTF-8"), emptyMap()).status.value in setOf(400, 404), payload)
+            val detailResponse = client.query("/v1/events/" + java.net.URLEncoder.encode(payload, "UTF-8"), emptyMap())
+            assertEquals(HttpStatusCode.BadRequest, detailResponse.status, payload)
+            assertEquals("INVALID_PARAMETER", detailResponse.errorCode(), payload)
         }
 
         // The stored hostile name and property key come back unchanged in a detail, and nothing was dropped or added.
