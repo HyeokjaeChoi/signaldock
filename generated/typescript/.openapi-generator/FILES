@@ -6,12 +6,14 @@ models/EventIngest.ts
 models/EventIngestPropertiesValue.ts
 models/EventNameCount.ts
 models/EventNameCounts.ts
+models/EventPlanStatusCounts.ts
 models/EventReceiptDetail.ts
 models/EventReceiptPage.ts
 models/EventReceiptSummary.ts
 models/EventTimeBucket.ts
 models/EventTimeCounts.ts
 models/ItemAck.ts
+models/PlanStatus.ts
 models/PropertyValue.ts
 models/index.ts
 runtime.ts

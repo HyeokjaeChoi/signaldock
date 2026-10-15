@@ -6,10 +6,12 @@ import org.openapitools.client.models.BatchIngestRequest
 import org.openapitools.client.models.ErrorResponse
 import org.openapitools.client.models.EventIngestPropertiesValue
 import org.openapitools.client.models.EventNameCounts
+import org.openapitools.client.models.EventPlanStatusCounts
 import org.openapitools.client.models.EventReceiptDetail
 import org.openapitools.client.models.EventReceiptPage
 import org.openapitools.client.models.EventTimeCounts
 import org.openapitools.client.models.ItemAck
+import org.openapitools.client.models.PlanStatus
 import org.openapitools.client.models.PropertyValue
 import java.io.File
 import kotlin.test.Test
@@ -126,6 +128,31 @@ class RoundTripTest {
         val times = roundTrip("event-time-counts.json", EventTimeCounts.serializer())
         assertEquals(EventTimeCounts.Bucket.DAY, times.bucket)
         assertEquals(listOf(0L, 3L, 1L), times.items.map { it.count })
+    }
+
+    // ADR-0022: planStatus is an optional addition. The older fixtures above have no planStatus and still
+    // decode (absent means "not checked", null in the model); these fixtures carry every status.
+    @Test
+    fun `plan status is optional on events and counted by status`() {
+        fun <T> roundTrip(name: String, serializer: kotlinx.serialization.KSerializer<T>): T {
+            val raw = fixture(name)
+            val value = json.decodeFromString(serializer, raw)
+            assertEquals(json.parseToJsonElement(raw), json.parseToJsonElement(json.encodeToString(serializer, value)), name)
+            return value
+        }
+        assertEquals(listOf(null, null), roundTrip("event-receipt-page.json", EventReceiptPage.serializer()).items.map { it.planStatus })
+        assertEquals(null, roundTrip("event-receipt-detail.json", EventReceiptDetail.serializer()).planStatus)
+
+        val page = roundTrip("event-receipt-page-plan-status.json", EventReceiptPage.serializer())
+        assertEquals(listOf(PlanStatus.UNPLANNED_EVENT, PlanStatus.INVALID_PROPERTIES, PlanStatus.PLANNED), page.items.map { it.planStatus })
+        assertEquals(PlanStatus.INVALID_PROPERTIES, roundTrip("event-receipt-detail-plan-status.json", EventReceiptDetail.serializer()).planStatus)
+        val counts = roundTrip("event-plan-status-counts.json", EventPlanStatusCounts.serializer())
+        assertEquals(listOf(70L, 20L, 10L, 5L), listOf(counts.planned, counts.unplannedEvent, counts.invalidProperties, counts.notChecked))
+        assertEquals(listOf("planned", "unplanned_event", "invalid_properties"), PlanStatus.entries.map { it.value })
+        // An unknown status is an error, like an unknown ACK status (Q68): a new value is a contract change.
+        assertFailsWith<kotlinx.serialization.SerializationException> {
+            json.decodeFromString(EventReceiptPage.serializer(), fixture("event-receipt-page-plan-status.json").replace("unplanned_event", "blocked"))
+        }
     }
 
     @Test

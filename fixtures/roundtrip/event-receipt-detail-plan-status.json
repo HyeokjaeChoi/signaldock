@@ -1,0 +1,1 @@
+{"eventId":"00000000-0000-4000-8000-000000000003","installationId":"47c4d89f-352a-41da-9b31-529ea756515a","name":"cart_add","occurredAt":"2026-10-12T00:00:00.250Z","receivedAt":"2026-10-12T01:00:00.500Z","sdkVersion":"0.1.0","properties":{"product_id":"sku-42","price":12.5,"quantity":3,"in_stock":true,"note":"가나다 🎉"},"planStatus":"invalid_properties"}

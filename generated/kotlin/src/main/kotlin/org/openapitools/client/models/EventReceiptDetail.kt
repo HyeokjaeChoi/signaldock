@@ -23,6 +23,7 @@
 
 package org.openapitools.client.models
 
+import org.openapitools.client.models.PlanStatus
 import org.openapitools.client.models.PropertyValue
 
 import kotlinx.serialization.Serializable
@@ -39,6 +40,7 @@ import kotlinx.serialization.Contextual
  * @param receivedAt Server receipt time. UTC RFC 3339 with milliseconds.
  * @param sdkVersion 
  * @param properties Stored properties. Values passed through JSONB, so this is not the original HTTP payload and key order is not preserved. 
+ * @param planStatus 
  */
 @Serializable
 
@@ -66,7 +68,10 @@ internal data class EventReceiptDetail (
 
     /* Stored properties. Values passed through JSONB, so this is not the original HTTP payload and key order is not preserved.  */
     @Contextual @SerialName(value = "properties")
-    val properties: kotlin.collections.Map<kotlin.String, PropertyValue>
+    val properties: kotlin.collections.Map<kotlin.String, PropertyValue>,
+
+    @Contextual @SerialName(value = "planStatus")
+    val planStatus: PlanStatus? = null
 
 ) {
 
