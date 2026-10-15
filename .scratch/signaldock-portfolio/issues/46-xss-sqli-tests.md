@@ -16,3 +16,9 @@ Gap: `perf/report` has no test runner, so only the static check covers it (its d
 
 Verification:
 - `cd dashboard && npm test && npm run typecheck`; `cd server && ./gradlew test verifyJooq --no-daemon`; `scripts/check-repo-rules.sh`.
+
+## Comments
+
+- 2026-10-15: local `coderabbit review` found that the detail-path assertion accepted a 404; fixed to require 400 `INVALID_PARAMETER`.
+- 2026-10-15: PR #111 review had one Trivial nitpick: the ingest test used the same payload as event name and property key. Fixed with a distinct hostile key and value and an exact key-set assertion. The re-review had no actionable comments.
+- Gaps kept: `perf/report` has no test runner (static check only); recharts axis labels are mocked in Dashboard tests.

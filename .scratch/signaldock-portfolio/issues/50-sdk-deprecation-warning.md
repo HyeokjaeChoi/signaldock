@@ -18,3 +18,8 @@ Spec Q159. The decision is in ADR-0030.
 Verification:
 - `sdk/gradlew -p sdk :sdk-android:testDebugUnitTest :sdk-android:apiCheck --no-daemon`
 - `scripts/verify-contract.sh`
+
+## Comments
+
+- 2026-10-15: PR #123 review findings fixed: keep each valid header value independently; strict IMF-fixdate parser for `Sunset` (exact shape check before a non-lenient parse); `Retry-After` keeps its parser. Behavior change recorded in ADR-0030 and CHANGELOG: a `Retry-After` HTTP-date with trailing text is now ignored.
+- The server part (sending the headers, traffic counts per contract version and collection key) is deferred to contract 2 by Q159.
