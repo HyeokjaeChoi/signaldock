@@ -32,6 +32,7 @@ internal class Sender(
     private val clock: Clock,
     private val jitter: Jitter,
     private val logger: Logger,
+    private val notice: DeprecationNotice = DeprecationNotice(logger),
 ) {
     private val mutex = Mutex()
 
@@ -83,6 +84,7 @@ internal class Sender(
     }
 
     private suspend fun onHttp(state: RetryStateEntity, batch: Batch, r: TransportResult.Http, now: Long): Step {
+        notice.observe(r.deprecation, r.sunset) // reads headers only; never changes the result below
         val retryAfter = parseRetryAfterMillis(r.retryAfter, now)
         val s = r.status
         return when {

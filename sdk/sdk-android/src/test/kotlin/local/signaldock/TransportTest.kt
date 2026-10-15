@@ -94,6 +94,23 @@ class TransportTest {
     }
 
     @Test
+    fun `Deprecation and Sunset headers are passed through on any status`() = runBlocking {
+        for (code in listOf(200, 400)) {
+            server.enqueue(
+                MockResponse.Builder().code(code).addHeader("Deprecation", "@1767225600")
+                    .addHeader("Sunset", "Thu, 31 Dec 2026 23:59:59 GMT").body("{}").build(),
+            )
+            val r = RetrofitBatchTransport(config()).send(BatchHttpRequest("1", body)) as TransportResult.Http
+            assertEquals("@1767225600", r.deprecation)
+            assertEquals("Thu, 31 Dec 2026 23:59:59 GMT", r.sunset)
+        }
+        server.enqueue(MockResponse.Builder().code(200).body("{}").build())
+        val none = RetrofitBatchTransport(config()).send(BatchHttpRequest("1", body)) as TransportResult.Http
+        assertNull(none.deprecation)
+        assertNull(none.sunset)
+    }
+
+    @Test
     fun `a response that does not arrive in time is a TIMEOUT`() = runBlocking {
         server.enqueue(MockResponse.Builder().code(200).body("{}").headersDelay(3, TimeUnit.SECONDS).build())
         val cfg = config(callTimeout = 1.seconds, readTimeout = 300.milliseconds)

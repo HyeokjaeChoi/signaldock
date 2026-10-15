@@ -27,6 +27,7 @@ ADRs:
 - ADR-0018 (`docs/adr/0018-sdk-release-r8-measurement.md`), for `sdk/measure-app` and `sdk/sdk-android/src/measure` (issue 33)
 - ADR-0019 (`docs/adr/0019-sdk-public-api-check.md`), for `sdk/sdk-android/api/sdk-android.api` and the `apiCheck` and `apiDump` tasks (issue 35)
 - ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for the cost of the SDK in a host app (issue 36)
+- ADR-0030 (`docs/adr/0030-sdk-contract-deprecation-warning.md`), for `DeprecationNotice.kt` and `Diagnostics.contractDeprecation` (issue 50)
 
 Public API change: update the dump (`sdk/gradlew -p sdk :sdk-android:apiDump`), the integration guide, and `CHANGELOG.md` in the same PR.
 
@@ -41,6 +42,7 @@ Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 8, B. Errors, ACKs, and data representation
 - 8, C. Small modules and local execution
 - 12. Dashboard role confirmation and default delegation
+- Q159 (contract support policy, deprecation warning)
 
 ## `server/`
 
@@ -69,6 +71,7 @@ Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 12. Dashboard role confirmation and default delegation
 - Q153 and Q155 (optional tracking plan, server marks plan status)
 - Q157 (server production features left out for local-only operation)
+- Q159 (contract support policy; the server `Deprecation` and `Sunset` headers are deferred to contract 2, ADR-0030)
 
 Also read `.scratch/signaldock-portfolio/dashboard-verification-defaults.md` before you edit `server/query` or the query routes.
 

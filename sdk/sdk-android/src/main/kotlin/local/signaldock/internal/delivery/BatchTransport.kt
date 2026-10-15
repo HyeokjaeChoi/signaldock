@@ -24,9 +24,15 @@ internal class BatchHttpRequest(val contractVersion: String, val body: ByteArray
 internal sealed interface TransportResult {
     /**
      * An HTTP response. [body] is read only for status 200 (null if it is too large or unreadable);
-     * [retryAfter] is the raw Retry-After header value.
+     * [retryAfter], [deprecation] and [sunset] are the raw header values (any status).
      */
-    class Http(val status: Int, val body: String?, val retryAfter: String?) : TransportResult
+    class Http(
+        val status: Int,
+        val body: String?,
+        val retryAfter: String?,
+        val deprecation: String? = null,
+        val sunset: String? = null,
+    ) : TransportResult
 
     /** No response: [kind] is [DeliveryErrorKind.NETWORK] or [DeliveryErrorKind.TIMEOUT]. */
     class Failed(val kind: DeliveryErrorKind) : TransportResult
@@ -85,7 +91,9 @@ internal class RetrofitBatchTransport(
             val responseBody = response.body() ?: response.errorBody()
             responseBody.use { rb ->
                 val text = if (response.code() == 200 && rb != null) readCapped(rb) else null
-                return TransportResult.Http(response.code(), text, retryAfter)
+                return TransportResult.Http(
+                    response.code(), text, retryAfter, response.headers()["Deprecation"], response.headers()["Sunset"],
+                )
             }
         } catch (e: InterruptedIOException) {
             // SocketTimeoutException and the Call timeout.

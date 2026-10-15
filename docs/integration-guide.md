@@ -299,6 +299,7 @@ suspend fun queueSummary(sdk: SignalDock): String {
 | `lastAck` | Time and counts (`accepted`, `duplicate`, `rejected`) of the last valid ACK. A recent ACK does not mean that the whole queue was sent | spec 6 |
 | `lastDeliveryError` | The last final delivery error: a kind, an optional HTTP status, and a time. It stays as history after recovery | spec 6; ADR-0006 decision 4 |
 | `retryFailureCount`, `nextAttemptEpochMillis` | Temporary failures since the last valid ACK, and the earliest next send time | spec 6; spec 8.A Q75 |
+| `contractDeprecation` | `null`, or the server's deprecation warning for this process: `deprecatedAtEpochMillis` and `sunsetAtEpochMillis` (each can be `null`). The SDK reads the `Deprecation` and `Sunset` response headers and writes one WARN per process. Delivery does not change. It is in memory only. It is not in `copy()`, `equals()`, or `componentN()` | spec 8 Q159; ADR-0030 |
 | `storageAvailable` | `false` when the queue could not be read. The other fields are then empty and mean nothing. The SDK also writes a WARN | ADR-0017 decision 4 |
 
 Notes:
@@ -322,7 +323,7 @@ Notes:
 
 - **SDK release version:** `0.1.0`. `Diagnostics.sdkVersion` returns it. Each event stores the version from the time of collection (spec 3 "Common information").
 - **Contract version:** `1`. The SDK sends it in the header `SignalDock-Contract-Version`. The contract version and the SDK release version are separate. An incompatible change raises the contract version. The first release implements only contract 1 (spec 8.B Q65, Q106; architecture "Contracts, generated sources, and JSON").
-- An event keeps the contract version from its collection. After an SDK update, the SDK sends old queued events under their original contract, in batches grouped by contract. Old contracts are not supported without end (spec 8.B Q66).
+- An event keeps the contract version from its collection. After an SDK update, the SDK sends old queued events under their original contract, in batches grouped by contract. Old contracts are not supported without end (spec 8.B Q66). After a new contract ships, the server plans to keep the previous one for at least 12 months and until its traffic is low, and to warn with `Deprecation` and `Sunset` headers. The server part is not built yet. The SDK already reads these headers (spec 8 Q159; [ADR-0030](adr/0030-sdk-contract-deprecation-warning.md)).
 - A server that does not support the contract version rejects the whole request. The SDK keeps the queue and checks again every 30 minutes. It does not downgrade by itself (spec 8.B Q67).
 - The SDK ignores new compatible fields in a response. An unknown status or a missing field makes the whole ACK invalid (spec 8.B Q68).
 - Consumer requirements (`compileSdk`, Kotlin, AGP) are in [section 1](#1-install).
