@@ -19,4 +19,5 @@ ADR-0006 items 8 and 9 store the next send time as a wall-clock value (`now + wa
 - Gap: a clock moved forward cannot be told from a long wait. The next attempt then comes early. The cost is one batch: a failure stores a new wait, so there is no burst. This is tested.
 - Gap: the clamp runs when the sender runs. A WorkManager request made before the jump may fire late (WorkManager uses the wall clock too). The periodic work and the foreground triggers run the sender again, so the delay is bounded by their intervals. Not tested on a device.
 - Gap: `Diagnostics.nextAttemptEpochMillis` shows the stored time until the sender clamps it.
+- Gap: the schema freeze check needs `origin/main` in the checkout. It is skipped when `origin/main` is missing (a shallow CI checkout). It runs in the pre-commit hook. Changing the CI checkout is a separate PR.
 - Out of scope: a monotonic clock (`elapsedRealtime`) with a boot id. It would detect forward jumps too, but needs reboot handling. Revisit if forward jumps matter.
