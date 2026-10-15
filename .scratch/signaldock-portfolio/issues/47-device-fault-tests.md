@@ -1,9 +1,9 @@
 # 47. Device fault tests: airplane mode, full disk, WorkManager failure, power-loss semantics
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Implemented on branch `test/device-faults`; the decisions are in ADR-0029.
+Execution: Done (merged in PR #112, 2026-10-15 UTC)
 
 ## Scope and completion criteria
 

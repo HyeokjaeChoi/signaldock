@@ -1,9 +1,9 @@
 # 49. A request-level 400 means a contract bug only
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Branch `impl/request-400-contract-only` (PR open). ADR-0027, spec Q158.
+Execution: Done (merged in PR #113, 2026-10-15 UTC)
 
 ## Scope and completion criteria
 

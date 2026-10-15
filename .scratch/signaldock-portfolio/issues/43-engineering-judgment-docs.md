@@ -1,9 +1,9 @@
 # 43. Engineering judgment documents
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Implemented on branch docs/engineering-judgment, PR pending
+Execution: Done (merged in PR #107, 2026-10-15 UTC)
 
 ## Scope and completion criteria
 
