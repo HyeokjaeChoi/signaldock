@@ -79,8 +79,8 @@ Privacy:
 Observability:
 - Device: `diagnostics()` shows queue size, last ACK, next retry, last error, and 100 rejections (spec 6; ADR-0003 item 7).
 - Server: stage timings (admission, connection, commit, lock and statement timeouts) go to logs (`Database.kt`, `Application.kt`). Optional pool stats (`SIGNALDOCK_POOL_STATS_MS`).
-- `/health` is liveness. `GET /ready` checks the database with `SELECT 1` and returns 503 when it fails (`Application.kt`, ADR-0026). Compose shows the server as `unhealthy` (`docker compose ps` only). A live Compose run with a stopped `db` went `unhealthy` then `healthy` with RestartCount 0 (comment on PR #110); `DatabaseOutageTest` covers the same on a real PostgreSQL stop and start.
-- Gap: no metrics endpoint and no alerting (ADR-0026 item 4). The Compose restart policy was never triggered by a run.
+- `/health` is liveness. `GET /ready` checks the database with `SELECT 1` and returns 503 when it fails (`Application.kt`, ADR-0026). Compose shows the server as `unhealthy` (`docker compose ps` only). `DatabaseOutageTest` covers a real PostgreSQL stop and start. Gap: the live Compose check is recorded in a PR #110 comment only; no committed result file.
+- Gap: no metrics endpoint and no alerting (ADR-0026 item 4). The Compose restart policy was not shown to trigger.
 
 ## Scale: what breaks first at 10x and 100x
 
