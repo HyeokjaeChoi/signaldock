@@ -1,9 +1,9 @@
 # 50. SDK reads Deprecation and Sunset headers (contract deprecation warning)
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Branch `impl/sdk-deprecation-warning`. SDK part only. The server part is deferred to contract 2.
+Execution: Done (merged in PR #123, 2026-10-15 UTC) SDK part only; the server part is deferred to contract 2 (ADR-0030).
 
 ## Scope and completion criteria
 

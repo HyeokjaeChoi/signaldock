@@ -1,9 +1,9 @@
 # 45. Server survives a database outage (failure mode 11)
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Branch `impl/server-db-down`
+Execution: Done (merged in PR #110, 2026-10-15 UTC)
 
 ## Scope and completion criteria
 

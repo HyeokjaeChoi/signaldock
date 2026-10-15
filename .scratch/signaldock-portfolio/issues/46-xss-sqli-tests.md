@@ -1,9 +1,9 @@
 # 46. XSS and SQL injection tests
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Branch test/xss-sqli, PR pending
+Execution: Done (merged in PR #111, 2026-10-15 UTC)
 
 ## Scope and completion criteria
 
