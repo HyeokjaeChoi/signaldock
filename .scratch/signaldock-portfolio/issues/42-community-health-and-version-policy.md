@@ -1,9 +1,9 @@
 # 42. Community health files and version policy
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Implemented on branch impl/community-health, PR pending
+Execution: Done (merged in PR #104, 2026-10-15 UTC)
 
 ## Scope and completion criteria
 

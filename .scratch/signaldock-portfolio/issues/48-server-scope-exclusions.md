@@ -1,9 +1,9 @@
 # 48. Record server production features excluded for local-only operation
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Docs only. Branch `docs/server-scope-exclusions`.
+Execution: Done (merged in PR #108, 2026-10-15 UTC)
 
 ## Scope and completion criteria
 

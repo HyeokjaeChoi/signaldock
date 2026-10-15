@@ -1,9 +1,9 @@
 # 41. Release workflow and dependency updates
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Implemented on branch impl/release-workflow, PR pending
+Execution: Done (merged in PR #105, 2026-10-15 UTC)
 
 ## Scope and completion criteria
 

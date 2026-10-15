@@ -1,9 +1,9 @@
 # 40. CI device tests and APK size budget
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Implemented on branch impl/ci-device-tests, PR pending
+Execution: Done (merged in PR #106, 2026-10-15 UTC)
 
 ## Scope and completion criteria
 

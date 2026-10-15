@@ -1,9 +1,9 @@
 # 44. SDK retry wait survives a wall-clock jump
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Branch `impl/sdk-clock-jump`, ADR-0025.
+Execution: Done (merged in PR #109, 2026-10-15 UTC)
 
 ## Scope and completion criteria
 
