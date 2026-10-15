@@ -41,6 +41,17 @@ internal fun Application.ingestionModule(
     val ingestion = Ingestion(database, trackingPlan)
     routing {
         get("/health") { call.respondText("ok") }
+        // Readiness (ADR-0026): one cheap query. /health stays liveness, so a database outage never restarts the server.
+        get("/ready") {
+            try {
+                withTimeout(2_000) { database.ping() }
+                call.respondText("ready")
+            } catch (_: DatabaseUnavailable) {
+                call.notReady()
+            } catch (_: TimeoutCancellationException) {
+                call.notReady()
+            }
+        }
         post("/v1/events:batch") {
             val budget = database.budget()
             try {
@@ -80,6 +91,11 @@ internal fun Application.ingestionModule(
             }
         }
     }
+}
+
+private suspend fun io.ktor.server.application.ApplicationCall.notReady() {
+    response.headers.append(HttpHeaders.RetryAfter, "1")
+    respondText("database unavailable", status = HttpStatusCode.ServiceUnavailable)
 }
 
 /**

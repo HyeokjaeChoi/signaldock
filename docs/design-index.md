@@ -64,6 +64,7 @@ ADRs:
 - ADR-0005, section "Server: layered Gradle modules"
 - ADR-0007 (`docs/adr/0007-dashboard-query-api.md`), for `server/query` and the query routes
 - ADR-0022 (`docs/adr/0022-server-tracking-plan-status.md`), for the plan status (`TrackingPlan.kt`, `TrackingPlanFile.kt`, `V2__add_plan_status.sql`, and the `planStatus` filter and counts) (issue 39)
+- ADR-0026 (`docs/adr/0026-server-readiness-and-restart.md`), for `/health`, `/ready`, and the Compose `server` health check and restart policy (issue 45)
 - ADR-0027 (`docs/adr/0027-request-400-contract-only.md`), for `RequestParsing.kt`, `SdkWireCorpusTest`, and what is a request-level 400 (issue 49)
 - ADR-0028 (`docs/adr/0028-server-production-features-excluded.md`), for the server features left out on purpose (rate limit, audit log, key policy, retention, Dashboard login) (issue 48)
 

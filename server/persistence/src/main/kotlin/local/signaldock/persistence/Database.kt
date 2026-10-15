@@ -99,6 +99,9 @@ class Database(
 
     fun budget() = RequestBudget(limits)
 
+    /** Readiness probe (ADR-0026): one `SELECT 1` through the normal path. Throws [DatabaseUnavailable]. */
+    suspend fun ping() { transaction { query { fetchValue("SELECT 1") } } }
+
     suspend fun <T> transaction(budget: RequestBudget = budget(), work: Transaction.() -> T): T {
         val started = System.nanoTime()
         val ownsPermit = AtomicBoolean(false)
