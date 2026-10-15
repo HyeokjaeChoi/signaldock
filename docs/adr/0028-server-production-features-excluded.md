@@ -29,9 +29,9 @@ The server does not have these features. Each one has an existing source.
   - Anyone who can reach the port can send unlimited requests. One caller can use all capacity.
   - A weak key can be guessed with no limit and no lockout.
   - The Dashboard shows all events to anyone who can open it.
-  - Events stay forever. The database grows with no limit and has no delete path.
+  - There is no automatic TTL and no application delete function. Events stay until an explicit deletion or a database reset (spec section 5). The database grows with no limit until then.
   - There is no record of who called the server.
-- Before any non-local deployment, build these first: rate limits per key and per IP, Dashboard authentication, a key policy (length, rotation, lockout), a retention job and a delete function, and an access log with an audit trail.
+- Before any non-local deployment, build these first: rate limits per key and per IP with `429` responses, connection limits, Dashboard authentication, a key policy (length, rotation, lockout), a retention job and a delete function, and an access log with an audit trail.
 - Gap: none of these features is tested, because none exists.
 
 ## Revisit when
