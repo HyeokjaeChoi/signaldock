@@ -31,7 +31,7 @@ Modeled on the Sentry SDK rule for [deprecating an API](https://develop.sentry.d
 
 - Mark the API `@Deprecated` with a message and a replacement. List it in the changelog under "Deprecated".
 - A deprecated API stays functional for at least one full minor release.
-- A deprecated API is removed only in the next major release. In `0.x`, "major" means the next MINOR release that lists the removal under "Removed".
+- A deprecated API is removed only in the next major release. In `0.x`, removal can happen only after one full MINOR release has passed with the API deprecated and working: an API deprecated in 0.2 can be removed in 0.4 at the earliest, listed under "Removed".
 
 This section is a policy, not a record. No API is deprecated today.
 

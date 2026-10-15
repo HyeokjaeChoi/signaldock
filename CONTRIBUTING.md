@@ -18,7 +18,7 @@ You also need Docker with Compose, Python 3, Node (see [TOOLCHAIN.md](TOOLCHAIN.
 ## What the hooks run
 
 - `pre-commit` runs `scripts/check-repo-rules.sh` (static checks: file modes, issue status lines, README sync, design index).
-- `pre-push` runs `scripts/verify-contract.sh` as well when code changed.
+- `pre-push` always runs `scripts/check-repo-rules.sh`, so it can reject a docs-only push too. When code changed, it also runs `scripts/verify-contract.sh`.
 
 ## Design first
 
@@ -30,8 +30,8 @@ A change of the SDK public API also updates the API dump, the integration guide 
 
 - One purpose for each pull request.
 - Fill in the pull request template: what changed, which design sections it follows, and the exact verification commands and results. Do not mark a step verified without a run. Keep the description under 3,500 characters.
-- Before you open a pull request, run `coderabbit review --base main --deep --agent` if you have it, and fix the findings. The pull request review then confirms the work.
-- A pull request is ready to merge when no Critical or Major finding is open and all checks pass.
+- Before you open a pull request, run `coderabbit review --base main --deep --agent` and fix the findings (required, AGENTS.md review workflow item 2). The pull request review then confirms the work.
+- A pull request is ready to merge when no Critical or Major finding is open and all checks pass. Record each open Minor or lower finding as a local issue (see [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md)), link it in the pull request, and do not hold the merge for it.
 - The `Co-Authored-By` commit trailer that maintainer agents use is not required for outside contributors.
 
 Write English in short, clear sentences. The repository follows the ASD-STE100 principle of simple, clear language.
