@@ -49,6 +49,8 @@ This portfolio for mobile SDK engineer roles covers public API design, lifecycle
 | Foreground response and background recovery | Share the sender and durable retry state with WorkManager. Keep collection writes separate from the send lock | Sender contention, cancellation, Worker recovery, and retry waits across restart ran on two emulators ([issue 20](.scratch/signaldock-portfolio/issues/20-sdk-durability-device.md)) |
 | Shared contracts and independent releases | OpenAPI / JSON with generated source drift checks. Install the Maven ZIP in a separate R8 consumer app | Round trips, earlier-version fixtures, and DB migrations ([issue 22](.scratch/signaldock-portfolio/issues/22-contract-db-change-checks.md)); Maven ZIP installation and an R8 release consumer app ([issue 06](.scratch/signaldock-portfolio/issues/06-distribution.md), [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md)) |
 
+Engineering judgment: [design review, failure modes, postmortems, and threat model](docs/engineering/README.md).
+
 ## Event flow
 
 1. After initialization succeeds, the host app calls `track()`. Collection succeeds after input validation and Room storage.
@@ -85,6 +87,7 @@ Measured results are local environment records, not an SLA:
 - Server: two pilot runs and one overload run on one Mac with Docker limits, in [`perf/results/`](perf/results/). The overload run shows HTTP 503 with `Retry-After` and recovery without a restart. The 216-run pool-size matrix was not run (Q133, [ADR-0013](docs/adr/0013-server-load-measurement-harness.md), [issue 23](.scratch/signaldock-portfolio/issues/23-server-load-measurement.md)).
 - SDK: normal, offline, and burst runs on API 24 and API 37 emulators with a debug build, and once more on the API 37 emulator with an R8 release build (debug-signed), in [`perf/sdk-results/summary.md`](perf/sdk-results/summary.md) ([ADR-0014](docs/adr/0014-sdk-device-measurement-harness.md), [ADR-0018](docs/adr/0018-sdk-release-r8-measurement.md), [issue 24](.scratch/signaldock-portfolio/issues/24-sdk-device-measurement.md), [issue 33](.scratch/signaldock-portfolio/issues/33-sdk-crash-safety-and-release-build.md)).
 - SDK cost for a host app, on the API 37 emulator with the R8 consumer app with and without the SDK: the APK grows by 616,829 bytes (dex by 966,108 bytes), cold start `TotalTime` p50 is 235 ms without and 238 ms with the SDK, `initialize()` takes 0.26 ms (p50) and 3.0 ms (p95) of the main thread, and PSS is 4.0 MiB higher after 5 s idle ([`perf/sdk-results/host-cost-api37/summary.md`](perf/sdk-results/host-cost-api37/summary.md), [ADR-0020](docs/adr/0020-sdk-host-app-cost.md), [issue 36](.scratch/signaldock-portfolio/issues/36-sdk-host-app-cost.md)).
+- CI: the 26 instrumented SDK tests run on an API 34 `google_apis` x86_64 emulator in GitHub Actions (`device-test` job), and a size gate fails the build when the SDK adds more than 700,000 bytes to the R8 consumer APK (`size-budget` job). The process-boundary cases of `scripts/device-durability.sh` and the measurements stay local ([ADR-0023](docs/adr/0023-ci-device-tests-and-size-budget.md), [issue 40](.scratch/signaldock-portfolio/issues/40-ci-device-tests-and-size-budget.md)).
 - The [performance plan](.scratch/signaldock-portfolio/performance-plan.md) holds the original targets and conditions.
 
 Steps to run, stop, and reset the stack, to build the Maven ZIP, and to run the consumer app are below.
@@ -204,6 +207,17 @@ Requirements of the 0.1.0 AAR:
 - Kotlin 2.2 or newer and AGP 9.x. The SDK metadata is 2.2, so AGP 9's default built-in Kotlin works with no extra Kotlin plugin ([ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md), Q132).
 - The host app declares `INTERNET`. The SDK needs no R8 rules of its own. Use an `https://` endpoint unless the app allows cleartext for that host; the SDK does not switch an `http://` endpoint to HTTPS (ADR-0009).
 - Call `SignalDock.initialize(context, SignalDockConfig(endpoint, collectionKey))` once (for example in `Application.onCreate`), then `track("name") { property("key", value) }` and `diagnostics()` on the returned instance.
+
+### Supported versions
+
+| Item | 0.1.x |
+| --- | --- |
+| Minimum Android API (`minSdk`) | 24 |
+| `compileSdk` of the host app | 36 or newer |
+| Kotlin | 2.2 or newer |
+| Android Gradle Plugin | 9.x |
+
+The SDK is before 1.0. Fixes are best effort. See [docs/versioning.md](docs/versioning.md) for breaking changes and deprecation, [SECURITY.md](SECURITY.md) to report a vulnerability, and [CONTRIBUTING.md](CONTRIBUTING.md) to contribute.
 
 The [SDK integration guide](docs/integration-guide.md) ([한국어](docs/integration-guide.ko.md)) covers `track()` results, cancellation, offline and retry behavior, diagnostics, privacy, versions, and troubleshooting. Optional typed event functions generated from a tracking plan: see [`tracking-plan/`](tracking-plan/) and [ADR-0021](docs/adr/0021-tracking-plan-codegen.md). The server marks each stored event `planned`, `unplanned_event`, or `invalid_properties` against that plan and never rejects one ([ADR-0022](docs/adr/0022-server-tracking-plan-status.md)).
 

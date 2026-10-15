@@ -51,6 +51,8 @@ SignalDock은 기기 내구 저장과 서버 수신을 분리하고, 각 단계�
 | 포그라운드 응답과 백그라운드 복구 | sender와 durable 재시도 상태를 WorkManager와 공유. 수집 쓰기는 전송 lock과 분리 | sender 경합, 취소, Worker 복구, 재시작 후 재시도 대기를 에뮬레이터 2대에서 실행([issue 20](.scratch/signaldock-portfolio/issues/20-sdk-durability-device.md)) |
 | 공유 계약과 독립 릴리스 | OpenAPI / JSON과 생성 소스 drift 검사. 별도 R8 consumer 앱에 Maven ZIP 설치 | round trip, 이전 버전 fixture, DB migration([issue 22](.scratch/signaldock-portfolio/issues/22-contract-db-change-checks.md)). Maven ZIP 설치와 R8 release consumer 앱([issue 06](.scratch/signaldock-portfolio/issues/06-distribution.md), [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md)) |
 
+엔지니어링 판단: [설계 리뷰, 장애 모드, 포스트모템, 위협 모델](docs/engineering/README.md) (영어 문서).
+
 ## 이벤트 흐름
 
 1. 초기화에 성공하면 호스트 앱이 `track()`을 호출합니다. 입력 검증과 Room 저장이 끝나면 수집 성공입니다.
@@ -87,6 +89,7 @@ iOS / Flutter, React Native / Flutter / Unity 또는 WebView(native-web) bridge(
 - 서버: Docker 제한이 있는 Mac 한 대에서 pilot 2회와 overload 1회를 실행했습니다. 결과는 [`perf/results/`](perf/results/)에 있습니다. overload 실행은 `Retry-After`가 붙은 HTTP 503과, 재시작 없는 복구를 보여 줍니다. 216회 pool 크기 matrix는 실행하지 않았습니다(Q133, [ADR-0013](docs/adr/0013-server-load-measurement-harness.md), [issue 23](.scratch/signaldock-portfolio/issues/23-server-load-measurement.md)).
 - SDK: debug 빌드로 API 24와 API 37 에뮬레이터에서 normal, offline, burst를 실행했고, API 37 에뮬레이터에서 R8 release 빌드(debug 서명)로 한 번 더 실행했습니다. 결과는 [`perf/sdk-results/summary.md`](perf/sdk-results/summary.md)에 있습니다([ADR-0014](docs/adr/0014-sdk-device-measurement-harness.md), [ADR-0018](docs/adr/0018-sdk-release-r8-measurement.md), [issue 24](.scratch/signaldock-portfolio/issues/24-sdk-device-measurement.md), [issue 33](.scratch/signaldock-portfolio/issues/33-sdk-crash-safety-and-release-build.md)).
 - 호스트 앱이 치르는 SDK 비용: API 37 에뮬레이터에서 SDK가 있는 R8 consumer 앱과 없는 앱을 비교했습니다. APK는 616,829 bytes(dex는 966,108 bytes) 커지고, 콜드 스타트 `TotalTime` p50은 SDK 없음 235 ms, 있음 238 ms이며, `initialize()`는 메인 스레드를 p50 0.26 ms, p95 3.0 ms 사용하고, 5초 유휴 후 PSS는 4.0 MiB 더 큽니다([`perf/sdk-results/host-cost-api37/summary.md`](perf/sdk-results/host-cost-api37/summary.md), [ADR-0020](docs/adr/0020-sdk-host-app-cost.md), [issue 36](.scratch/signaldock-portfolio/issues/36-sdk-host-app-cost.md)).
+- CI: GitHub Actions에서 API 34 `google_apis` x86_64 에뮬레이터로 계측 SDK 테스트 26개를 실행하고(`device-test` job), SDK가 R8 consumer APK를 700,000 bytes보다 더 키우면 빌드를 실패시키는 크기 게이트가 있습니다(`size-budget` job). `scripts/device-durability.sh`의 프로세스 경계 케이스와 측정은 로컬에서만 실행합니다([ADR-0023](docs/adr/0023-ci-device-tests-and-size-budget.md), [issue 40](.scratch/signaldock-portfolio/issues/40-ci-device-tests-and-size-budget.md)).
 - [성능 계획](.scratch/signaldock-portfolio/performance-plan.md)에는 처음의 목표와 조건이 있습니다.
 
 스택 실행, 중지, 초기화 방법과 Maven ZIP 빌드, consumer 앱 실행 방법은 아래에 있습니다.
@@ -206,6 +209,17 @@ dependencies { implementation("local.signaldock:sdk-android:0.1.0") }
 - Kotlin 2.2 이상과 AGP 9.x. SDK metadata가 2.2이므로, AGP 9의 기본 built-in Kotlin으로 추가 Kotlin 플러그인 없이 동작합니다([ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md), Q132).
 - 호스트 앱이 `INTERNET`을 선언해야 합니다. SDK 자체의 R8 규칙은 필요 없습니다. 앱이 해당 host에 cleartext를 허용하지 않으면 `https://` endpoint를 설정해야 합니다. SDK는 `http://` endpoint를 HTTPS로 바꾸지 않습니다(ADR-0009).
 - `SignalDock.initialize(context, SignalDockConfig(endpoint, collectionKey))`를 한 번 호출합니다(예: `Application.onCreate`). 이후 반환된 인스턴스에서 `track("name") { property("key", value) }`와 `diagnostics()`를 호출합니다.
+
+### 지원 버전
+
+| 항목 | 0.1.x |
+| --- | --- |
+| 최소 Android API (`minSdk`) | 24 |
+| 호스트 앱의 `compileSdk` | 36 이상 |
+| Kotlin | 2.2 이상 |
+| Android Gradle Plugin | 9.x |
+
+SDK는 1.0 이전입니다. 수정은 가능한 범위에서 제공합니다(best effort). 호환성을 깨는 변경과 deprecation은 [docs/versioning.md](docs/versioning.md), 취약점 신고는 [SECURITY.md](SECURITY.md), 기여는 [CONTRIBUTING.md](CONTRIBUTING.md)를 참고하세요.
 
 [SDK 통합 가이드](docs/integration-guide.ko.md)([English](docs/integration-guide.md))는 `track()` 결과, 취소, 오프라인과 재시도 동작, diagnostics, 개인정보, 버전, 문제 해결을 다룹니다. 선택 사항으로, tracking plan에서 생성한 타입 있는 이벤트 함수는 [`tracking-plan/`](tracking-plan/)과 [ADR-0021](docs/adr/0021-tracking-plan-codegen.md)을 참고하세요. 서버는 저장한 이벤트마다 그 plan과 비교해 `planned`, `unplanned_event`, `invalid_properties` 중 하나로 표시하며, 이벤트를 거부하지 않습니다([ADR-0022](docs/adr/0022-server-tracking-plan-status.md)).
 

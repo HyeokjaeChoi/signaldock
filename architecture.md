@@ -176,6 +176,7 @@ List and aggregate responses can reflect different times. Stored event JSON is n
 Exclude the queue, diagnostics, retry state, and DB sidecars from backup too. Preserve the host app's other backup settings.
 Keep SDK data across normal restarts and updates of the same installation. Do not carry it across data clearing, reinstallation, or supported device restores.
 These transitions can lose unsent events. The design does not cover every manufacturer's transfer tool or arbitrary host restore.
+A committed event survives process death, not power loss: the queue uses WAL with `synchronous=NORMAL` ([ADR-0029](docs/adr/0029-device-fault-tests-and-power-loss.md)).
 Configure the server to preserve its DB volume across normal shutdown and restart. Treat DB reset as a separate operation.
 
 ## Independent distribution and verification

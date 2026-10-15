@@ -30,6 +30,7 @@ import local.signaldock.internal.scheduling.ForegroundTrigger
 import local.signaldock.internal.scheduling.NotifyingEventSink
 import local.signaldock.internal.scheduling.WorkManagerScheduler
 import local.signaldock.internal.scheduling.WorkScheduler
+import local.signaldock.internal.MIGRATION_1_2
 import local.signaldock.internal.SignalDockDatabase
 import local.signaldock.internal.storage.InstallationIdStore
 import local.signaldock.internal.storage.QueueLimits
@@ -129,7 +130,8 @@ internal suspend fun createSdk(
     val dir = File(context.noBackupFilesDir, "signaldock")
     if (!dir.isDirectory && !dir.mkdirs() && !dir.isDirectory) throw IOException("cannot create SDK directory")
     val installationId = InstallationIdStore(dir).getOrCreate(logger)
-    val db = Room.databaseBuilder(context, SignalDockDatabase::class.java, File(dir, "queue.db").absolutePath).build()
+    val db = Room.databaseBuilder(context, SignalDockDatabase::class.java, File(dir, "queue.db").absolutePath)
+        .addMigrations(MIGRATION_1_2).build()
     val queued = try {
         db.queueDao().usage().count // open now so storage failures surface during initialization
     } catch (t: Throwable) {

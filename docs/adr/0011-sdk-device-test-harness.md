@@ -17,12 +17,12 @@ The design sources leave the test harness open (spec section 7 "Offline recovery
 7. **Logcat checks.** Tests read the SDK's own lines with `logcat -d -s SignalDock:V` and compare with a snapshot taken before the action, because the buffer keeps earlier tests' lines. logd merges identical consecutive lines, so counts of repeated WARNs use a recording `Logger` next to the real `AndroidLogger`.
 8. **Instrumentation output.** Phases print status with `Instrumentation.sendStatus` (`INSTRUMENTATION_STATUS: key=value`); `addResults` needs API 26.
 9. **Pins.** `androidx.test:runner` 1.7.0 and `androidx.test.ext:junit` 1.3.0 (latest stable on Google Maven, 2026-10-12), next to `androidx.test:core` 1.7.0. Test method names use underscores, because backtick names are not valid in DEX before API 30.
-10. **CI compiles the instrumented tests but does not run them.** The `sdk-test` job adds `:sdk-android:assembleDebugAndroidTest`. Emulator runs stay local (README "Run the consumer app" follows the same rule).
+10. **CI compiles the instrumented tests.** The `sdk-test` job adds `:sdk-android:assembleDebugAndroidTest`. Since issue 40 the `device-test` job also runs them on an emulator (ADR-0023); the process-boundary script `scripts/device-durability.sh` stays local.
 
 ## Limits
 
 - The update case installs the same build over itself. It shows that data survives a package replace, but not an update that changes the SDK version or the Room schema (no schema migration exists yet, ADR-0003 decision 7).
-- Offline is a refused connection to `127.0.0.1:9`, not an airplane-mode switch. The SDK sees `NETWORK` failures either way (ADR-0006 decision 5).
+- The `offline` case uses a refused connection to `127.0.0.1:9`, not an airplane-mode switch. The SDK sees `NETWORK` failures either way (ADR-0006 decision 5). ADR-0029 adds a real airplane-mode case.
 - Auto Backup was exercised through the local transport, not the Google transport, device-to-device transfer or manufacturer tools (ADR-0001: not guaranteed).
-- `SIGKILL` through `am force-stop` does not test power loss. SQLite in WAL mode with the default `synchronous=NORMAL` is durable against process death but not against power loss.
+- `SIGKILL` through `am force-stop` does not test power loss. SQLite in WAL mode with the default `synchronous=NORMAL` is durable against process death but not against power loss. ADR-0029 documents this and pins the setting with a test.
 - The suites ran on two emulator images (API 24 `google_apis` arm64 and API 37.2), not on a physical device.
