@@ -7,6 +7,7 @@ import android.os.ParcelFileDescriptor
 import android.os.StatFs
 import android.system.Os
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import kotlinx.coroutines.runBlocking
 import local.signaldock.DeliveryErrorKind
@@ -106,11 +107,11 @@ class FaultPhases {
                 val seeded = (0 until 50).map { (sdk.track("seed_$it") as TrackResult.Success).eventId }
 
                 fillDisk(leave = 256 * 1024)
-                var stored = seeded.size
+                val successIds = seeded.toMutableList()
                 var failure: TrackResult.StorageError? = null
                 for (i in 0 until 20_000) {
                     when (val r = sdk.track("fill_$i") { property("pad", "x".repeat(512)) }) {
-                        is TrackResult.Success -> stored++
+                        is TrackResult.Success -> successIds += r.eventId
                         is TrackResult.StorageError -> { failure = r; break }
                         else -> throw AssertionError("unexpected $r")
                     }
@@ -119,7 +120,9 @@ class FaultPhases {
                 sdk.diagnostics() // must not throw
 
                 // Existing queue intact. A failed commit can still have kept the one event: allow one more row.
+                val stored = successIds.size
                 val rows = readQueueFile(rig.context.noBackupFilesDir).map { it.first }
+                assertTrue("every reported success is stored", rows.containsAll(successIds))
                 assertTrue("rows ${rows.size}, reported successes $stored", rows.size in stored..stored + 1)
                 assertEquals("the seeded events are still first, in order", seeded, rows.take(seeded.size))
                 val db = SQLiteDatabase.openDatabase(File(rig.context.noBackupFilesDir, "signaldock/queue.db").absolutePath, null, SQLiteDatabase.OPEN_READWRITE)
@@ -131,6 +134,7 @@ class FaultPhases {
                 sdk.delivery.drainForeground()
                 assertEquals(0, sdk.diagnostics().queuedEvents)
                 assertTrue("every stored event reached the server", server.committed.containsAll(rows))
+                assertTrue("every reported success reached the server", server.committed.containsAll(successIds))
                 report("phase", "full_disk", "status", "pass", "storedBeforeFull", "$stored", "integrity", integrity, "error", failure!!.message.take(60))
             }
         } finally {
@@ -168,10 +172,11 @@ class FaultPhases {
             val warn = Logcat.since(before).first { it.contains("WorkManager request failed") }
             lock.endTransaction()
 
-            // The failed request left no marker behind: the next request enqueues the Worker.
+            // No stale marker blocks scheduling: after the lock is gone, a delivery Worker is waiting. (WorkManagerScheduler
+            // does not enqueue a second one while one is pending, so the test cannot demand a new work ID.)
             assertTrue(runBlocking { sdk.track("after_unlock") } is TrackResult.Success)
-            awaitTrue(30_000, "delivery Worker enqueued after the lock is gone") {
-                workManager.getWorkInfosForUniqueWork(ONE_TIME_WORK_NAME).get().isNotEmpty()
+            awaitTrue(30_000, "a delivery Worker is ENQUEUED after the lock is gone") {
+                workManager.getWorkInfosForUniqueWork(ONE_TIME_WORK_NAME).get().any { it.state == WorkInfo.State.ENQUEUED }
             }
             report("phase", "workmanager_fault", "status", "pass", "warn", warn.substringAfter("WorkManager request failed: ").take(60))
         } finally {
