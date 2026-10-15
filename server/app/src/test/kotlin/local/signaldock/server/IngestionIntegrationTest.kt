@@ -277,14 +277,16 @@ class IngestionIntegrationTest {
         val payloads = listOf("' OR 1=1--", "'; DROP TABLE events;--", "x' UNION SELECT NULL--", "1; DELETE FROM events")
         payloads.forEachIndexed { i, payload ->
             val id = "30d66f95-2435-4e56-b52a-70b1c8bba5%02d".format(i)
-            val response = ingestion.ingest(parse(batch(event(id, name = payload, properties = """{"$payload":"$payload"}"""))))
+            val response = ingestion.ingest(parse(batch(event(id, name = payload, properties = """{"property-$payload":"value-$payload"}"""))))
             assertEquals(ItemAck.Status.ACCEPTED, response.results.single().status, payload)
         }
         assertEquals(payloads.size, countRows()) // no DROP or DELETE ran, no extra row
         val stored = database.transaction { query { select(EVENTS.NAME, EVENTS.PROPERTIES).from(EVENTS).fetch().map { it.value1() to it.value2().data() } } }
         assertEquals(payloads.toSet(), stored.map { it.first }.toSet())
         for ((name, properties) in stored) {
-            assertEquals(name, Json.parseToJsonElement(properties).jsonObject[name]?.jsonPrimitive?.content)
+            val obj = Json.parseToJsonElement(properties).jsonObject
+            assertEquals(setOf("property-$name"), obj.keys)
+            assertEquals("value-$name", obj["property-$name"]?.jsonPrimitive?.content)
         }
     }
 
