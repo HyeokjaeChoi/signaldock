@@ -79,7 +79,8 @@ internal class AckServer(private val delayMillis: Long = 0) {
 
     val url: String get() = server.url("/").toString().trimEnd('/')
 
-    fun start(): AckServer {
+    /** [bindTo] null: loopback. A device address makes the server unreachable when the device has no network. */
+    fun start(bindTo: java.net.InetAddress? = null): AckServer {
         server.dispatcher = object : Dispatcher() {
             override fun dispatch(request: RecordedRequest): MockResponse {
                 requestCount.incrementAndGet()
@@ -105,7 +106,7 @@ internal class AckServer(private val delayMillis: Long = 0) {
                 }
             }
         }
-        server.start()
+        if (bindTo == null) server.start() else server.start(bindTo, 0)
         return this
     }
 
@@ -139,7 +140,8 @@ internal class Rig(
                 scope = scope, foregroundTriggers = foregroundTriggers,
             )
         }
-        return (InitCoordinator.default.initialize(context, config) as InitResult.Success).sdk
+        val result = InitCoordinator.default.initialize(context, config)
+        return (result as? InitResult.Success ?: throw AssertionError("initialize failed: $result")).sdk
     }
 
     fun close() {

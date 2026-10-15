@@ -30,6 +30,7 @@ ADRs:
 - ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for the cost of the SDK in a host app (issue 36)
 - ADR-0025 (`docs/adr/0025-sdk-clock-jump.md`), for the clamp of the stored retry wait when the clock moves (issue 44)
 - ADR-0027 (`docs/adr/0027-request-400-contract-only.md`), for `WireCorpusTest` and `fixtures/sdk-wire/` (issue 49)
+- ADR-0029 (`docs/adr/0029-device-fault-tests-and-power-loss.md`), for the fault phases (`FaultPhases.kt`, `PowerLossSemanticsDeviceTest.kt`, `scripts/ack-server.py`) and the power-loss semantics (issue 47)
 
 Public API change: update the dump (`sdk/gradlew -p sdk :sdk-android:apiDump`), the integration guide, and `CHANGELOG.md` in the same PR.
 
