@@ -1,9 +1,9 @@
 # 38. Tracking plan review follow-ups
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Implemented on branch impl/tracking-plan-followups, PR pending
+Execution: Done (merged in PR #99, 2026-10-15 UTC)
 
 ## Scope and completion criteria
 
@@ -16,3 +16,5 @@ Verification:
 - `node --test tracking-plan/generate.test.mjs`; `sdk/gradlew -p sdk test :demo:app:assembleDebug --no-daemon`; `scripts/verify-contract.sh`; `scripts/check-repo-rules.sh`.
 
 ## Comments
+
+- 2026-10-15 (PR #99 review): ADR-0021 first said the adapter test uses only the public SDK API; it also reads the internal queue database. Fixed before merge.
