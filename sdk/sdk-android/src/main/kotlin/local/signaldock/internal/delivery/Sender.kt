@@ -63,7 +63,8 @@ internal class Sender(
     private suspend fun sendOne(): Step {
         val head = dao.oldest(1).firstOrNull() ?: return Step.Empty // empty queue: no HTTP
         val now = clock.nowMillis()
-        val state = dao.retryState() ?: RetryStateEntity()
+        val stored = dao.retryState() ?: RetryStateEntity()
+        val state = clampToWait(stored, now)
         state.nextAttemptAtMillis?.let { if (now < it) return Step.Wait(it) }
 
         // Batches are grouped by stored contract version (Q66); the request also carries one installationId.
@@ -80,6 +81,17 @@ internal class Sender(
             is TransportResult.Failed -> fail(state, after, result.kind, null, null)
             is TransportResult.Http -> onHttp(state, batch, result, after)
         }
+    }
+
+    /**
+     * A wall clock moved back would delay sending by the size of the jump. The stored time is cut to
+     * now + the stored wait and saved, so the next read does not slide it forward again (ADR-0025).
+     */
+    private suspend fun clampToWait(state: RetryStateEntity, now: Long): RetryStateEntity {
+        val at = state.nextAttemptAtMillis ?: return state
+        val limit = satAdd(now, state.waitMillis ?: return state)
+        if (at <= limit) return state
+        return state.copy(nextAttemptAtMillis = limit).also { dao.saveRetryState(it) }
     }
 
     private suspend fun onHttp(state: RetryStateEntity, batch: Batch, r: TransportResult.Http, now: Long): Step {
@@ -108,7 +120,7 @@ internal class Sender(
         val rejections = rejected.map { RejectionEntity(eventId = batch.events[it.index].eventId, code = codeOf(it), rejectedAtMillis = now) }
         val grown = state.maxBatchEvents?.let { (it * 2).takeIf { v -> v < MAX_BATCH_EVENTS } }
         val next = state.copy(
-            failureCount = 0, nextAttemptAtMillis = null, hold = false, maxBatchEvents = grown,
+            failureCount = 0, nextAttemptAtMillis = null, waitMillis = null, hold = false, maxBatchEvents = grown,
             lastAckAtMillis = now,
             lastAckAccepted = items.count { it.status == ItemAck.Status.ACCEPTED },
             lastAckDuplicate = items.count { it.status == ItemAck.Status.DUPLICATE },
@@ -126,7 +138,7 @@ internal class Sender(
         val bound = backoffBaseMillis(count)
         val wait = maxOf(jitter.nextMillis(bound).coerceIn(0, bound), retryAfter ?: 0L, if (state.hold) HOLD_RECHECK_MILLIS else 0L)
         val at = satAdd(now, wait)
-        dao.saveRetryState(state.withError(kind, status, now).copy(failureCount = count, nextAttemptAtMillis = at))
+        dao.saveRetryState(state.withError(kind, status, now).copy(failureCount = count, nextAttemptAtMillis = at, waitMillis = wait))
         logger.debug("delivery failed: $kind")
         return Step.Wait(at)
     }
@@ -135,10 +147,11 @@ internal class Sender(
     private suspend fun hold(
         state: RetryStateEntity, now: Long, kind: DeliveryErrorKind, status: Int, retryAfter: Long?, singleEvent: Boolean = false,
     ): Step {
-        val at = satAdd(now, maxOf(HOLD_RECHECK_MILLIS, retryAfter ?: 0L))
+        val wait = maxOf(HOLD_RECHECK_MILLIS, retryAfter ?: 0L)
+        val at = satAdd(now, wait)
         dao.saveRetryState(
             state.withError(kind, status, now).copy(
-                hold = true, nextAttemptAtMillis = at, maxBatchEvents = if (singleEvent) 1 else state.maxBatchEvents,
+                hold = true, nextAttemptAtMillis = at, waitMillis = wait, maxBatchEvents = if (singleEvent) 1 else state.maxBatchEvents,
             ),
         )
         if (!state.hold) logger.warn("delivery paused by a configuration, authentication or contract error; rechecking every 30 minutes")
@@ -150,7 +163,7 @@ internal class Sender(
         val at = retryAfter?.let { satAdd(now, it) }
         dao.saveRetryState(
             state.withError(DeliveryErrorKind.PAYLOAD_TOO_LARGE, 413, now)
-                .copy(maxBatchEvents = maxOf(1, size / 2), nextAttemptAtMillis = at),
+                .copy(maxBatchEvents = maxOf(1, size / 2), nextAttemptAtMillis = at, waitMillis = retryAfter),
         )
         return if (at != null) Step.Wait(at) else Step.Continue
     }
