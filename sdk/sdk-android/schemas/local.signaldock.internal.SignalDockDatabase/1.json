@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "9b9bfc6323ffecebc2ab72bb7796dc1f",
+    "identityHash": "3b16e1ffaca47bf53a3cff43d8313977",
     "entities": [
       {
         "tableName": "events",
@@ -107,7 +107,7 @@
       },
       {
         "tableName": "retry_state",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `failureCount` INTEGER NOT NULL, `nextAttemptAtMillis` INTEGER, `waitMillis` INTEGER, `lastAckAtMillis` INTEGER, `lastAckAccepted` INTEGER NOT NULL, `lastAckDuplicate` INTEGER NOT NULL, `lastAckRejected` INTEGER NOT NULL, `lastErrorKind` TEXT, `lastErrorHttpStatus` INTEGER, `lastErrorAtMillis` INTEGER, `hold` INTEGER NOT NULL, `maxBatchEvents` INTEGER, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `failureCount` INTEGER NOT NULL, `nextAttemptAtMillis` INTEGER, `lastAckAtMillis` INTEGER, `lastAckAccepted` INTEGER NOT NULL, `lastAckDuplicate` INTEGER NOT NULL, `lastAckRejected` INTEGER NOT NULL, `lastErrorKind` TEXT, `lastErrorHttpStatus` INTEGER, `lastErrorAtMillis` INTEGER, `hold` INTEGER NOT NULL, `maxBatchEvents` INTEGER, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -124,11 +124,6 @@
           {
             "fieldPath": "nextAttemptAtMillis",
             "columnName": "nextAttemptAtMillis",
-            "affinity": "INTEGER"
-          },
-          {
-            "fieldPath": "waitMillis",
-            "columnName": "waitMillis",
             "affinity": "INTEGER"
           },
           {
@@ -191,7 +186,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '9b9bfc6323ffecebc2ab72bb7796dc1f')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3b16e1ffaca47bf53a3cff43d8313977')"
     ]
   }
 }
