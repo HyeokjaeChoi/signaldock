@@ -18,12 +18,12 @@ Deleting the remote head branch closed PR #95 without a merge. We restored the b
 | Time | Event | Source |
 | --- | --- | --- |
 | 14:50:40 | PR #95 opened | `gh pr view 95` |
-| 23:25:28 | `gh pr merge 95 --squash` returned "Something went wrong while executing your query" (GraphQL) | session record |
-| before 23:25:36 | Same command line deleted the worktree, the local branch, and the remote branch `impl/tracking-plan` | session record |
+| 23:25:28 | `gh pr merge 95 --squash` returned "Something went wrong while executing your query" (GraphQL) | session record (evidence gap: local agent transcript, not in the repo) |
+| before 23:25:36 | Same command line deleted the worktree, the local branch, and the remote branch `impl/tracking-plan` | session record (evidence gap: local agent transcript, not in the repo) |
 | 23:25:36 | PR #95 closed; `head_ref_deleted` | PR timeline |
 | 23:32:29 | Head branch restored by a push of commit `0829679` from a new worktree | PR timeline |
 | 23:32:30 | PR #95 reopened (`gh pr reopen 95`) | PR timeline |
-| 23:32 to 23:36 | Waited for CI | session record |
+| 23:32 to 23:36 | Waited for CI | session record (evidence gap: local agent transcript, not in the repo) |
 | 23:36:15 | PR #95 merged; merge commit `ad19739` | `gh pr view 95` |
 | 23:36:32 | Head branch deleted after the merge | PR timeline |
 
