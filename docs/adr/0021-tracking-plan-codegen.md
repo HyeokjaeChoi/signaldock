@@ -34,3 +34,7 @@ The Kotlin is executed in `sdk/demo/core/data` (`SdkSignalDockClientTest`, Robol
 - No server-side check of events against the plan (Q152). It is possible later as a separate decision.
 - No `number` or `integer` range check in the builders (the SDK checks ranges and reports `TrackResult.Invalid`).
 - No web SDK, no WebView bridge (Q150), and no plan use in the consumer app.
+
+## Amendment (2026-10-15)
+
+Spec Q155 adds a server-side check after all: the server marks stored events with a plan status and never rejects one. The first "Not done" item above is now done in [ADR-0022](0022-server-tracking-plan-status.md). Everything else in this ADR stands; the SDK and the generated code are unchanged.

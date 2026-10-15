@@ -57,6 +57,7 @@ ADRs:
 - ADR-0004 (`docs/adr/0004-server-runtime-and-receipt-boundaries.md`)
 - ADR-0005, section "Server: layered Gradle modules"
 - ADR-0007 (`docs/adr/0007-dashboard-query-api.md`), for `server/query` and the query routes
+- ADR-0022 (`docs/adr/0022-server-tracking-plan-status.md`), for the plan status (`TrackingPlan.kt`, `TrackingPlanFile.kt`, `V2__add_plan_status.sql`, and the `planStatus` filter and counts) (issue 39)
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 2. Agreed stack and boundaries
@@ -65,6 +66,7 @@ Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 8, B. Errors, ACKs, and data representation
 - 11. Delegated performance measurement decisions
 - 12. Dashboard role confirmation and default delegation
+- Q153 and Q155 (optional tracking plan, server marks plan status)
 
 Also read `.scratch/signaldock-portfolio/dashboard-verification-defaults.md` before you edit `server/query` or the query routes.
 
@@ -75,12 +77,14 @@ Architecture (`architecture.md`):
 
 ADRs:
 - ADR-0002
+- ADR-0022 (`docs/adr/0022-server-tracking-plan-status.md`), for the additive `planStatus` change and the baseline update (issue 39)
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 7. Completion criteria and verification plan (contract rows)
 - 8, B. Errors, ACKs, and data representation
 - 8, C. Small modules and local execution
 - 9. Technical conditions to check on entry into implementation
+- Q155 (plan status)
 
 ## `sdk/demo/` (Android demo app, issue 05)
 
@@ -97,16 +101,17 @@ Spec (`.scratch/signaldock-portfolio/spec.md`):
 
 ## `tracking-plan/` (optional tracking plan and code generation, issue 37)
 
-`plan.json` is the source. `generate.mjs` validates it and writes `generated/kotlin/TrackingPlan.kt` (compiled by `sdk/demo/core/data`), `generated/typescript/events.ts`, and `generated/manifest.json`. `generate.test.mjs` checks plan validation and that the Kotlin and TypeScript outputs agree. Change a generated file only by changing `plan.json` or `generate.mjs`, then run `node tracking-plan/generate.mjs`. `scripts/verify-contract.sh` (step 7) checks the drift. The SDK (`sdk/sdk-android`) and its public API dump must not change for this area; the consumer app stays on plain `track()`.
+`plan.json` is the source. `generate.mjs` validates it and writes `generated/kotlin/TrackingPlan.kt` (compiled by `sdk/demo/core/data`), `generated/typescript/events.ts`, and `generated/manifest.json`. `generate.test.mjs` checks plan validation and that the Kotlin and TypeScript outputs agree. Change a generated file only by changing `plan.json` or `generate.mjs`, then run `node tracking-plan/generate.mjs`. `scripts/verify-contract.sh` (step 7) checks the drift. The SDK (`sdk/sdk-android`) and its public API dump must not change for this area; the consumer app stays on plain `track()`. The server reads the same `plan.json` (path in `SIGNALDOCK_TRACKING_PLAN`, mounted by Compose) and marks stored events (ADR-0022); a change of the plan format needs a change of `server/app/.../TrackingPlanFile.kt` in the same PR.
 
 ADRs:
 - ADR-0002 and ADR-0012, for the generated-and-tracked output pattern
 - ADR-0021 (`docs/adr/0021-tracking-plan-codegen.md`)
+- ADR-0022 (`docs/adr/0022-server-tracking-plan-status.md`)
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 3. SDK public behavior, Collection
 - Q64 (name and key rules)
-- Q152 to Q154 (tracking plan)
+- Q152 to Q155 (tracking plan, server plan status)
 
 ## `compatibility/` (independent consumer app, issue 06)
 
@@ -133,13 +138,14 @@ ADRs:
 - ADR-0008 (`docs/adr/0008-dashboard-and-compose-delivery.md`)
 - ADR-0015 (`docs/adr/0015-web-ui-languages.md`), for the UI texts, the language switch, and `web-shared/`
 - ADR-0016 (`docs/adr/0016-telemetry-style-ui.md`), for the layout, the KPI cards, the theme, and the shared tokens (issue 28)
+- ADR-0022 (`docs/adr/0022-server-tracking-plan-status.md`), for the plan status badge, filter, and violations card (issue 39)
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 6. User screens and distribution, Dashboard
 - 8, B. Errors, ACKs, and data representation
 - 11. Delegated performance measurement decisions
 - 12. Dashboard role confirmation and default delegation
-- Q78 and Q79 (project timezone), Q107 to Q109 (contract errors and retry), Q135 to Q137 (UI languages), Q139 and Q140 (presentation redesign, issue 28)
+- Q78 and Q79 (project timezone), Q107 to Q109 (contract errors and retry), Q135 to Q137 (UI languages), Q139 and Q140 (presentation redesign, issue 28), Q155 (plan status)
 
 Also read `.scratch/signaldock-portfolio/dashboard-verification-defaults.md`.
 
