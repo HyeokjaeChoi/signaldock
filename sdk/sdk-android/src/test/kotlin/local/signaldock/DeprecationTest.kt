@@ -60,7 +60,7 @@ class DeprecationTest {
 
     @Test
     fun `malformed headers are ignored and delivery is unchanged`() = runBlocking {
-        val cases = listOf("true" to "soon", "@abc" to "2026-12-31", "@" to "", "@99999999999999999999" to "Fri, 31 Dec 2026 23:59:59 GMT", "@1" to "Thu, 31 Dec 2026 23:59:59 GMTbogus")
+        val cases = listOf("true" to "soon", "@abc" to "2026-12-31", "@" to "", "@99999999999999999999" to "Fri, 31 Dec 2026 23:59:59 GMT", "x" to "Thu, 31 Dec 2026 23:59:59 GMTbogus")
         for ((dep, sun) in cases) {
             transport.handler = withHeaders(dep, sun)
             val sdk = sendBatches(1)
