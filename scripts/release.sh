@@ -7,7 +7,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 VERSION="${1:-}"
 if [ -z "$VERSION" ]; then
-  echo "usage: scripts/release.sh <version>   (for example 0.1.0)" >&2
+  echo "usage: scripts/release.sh <version> [--check]   (for example 0.1.0; --check only compares it with sdkVersion)" >&2
   exit 1
 fi
 
@@ -15,6 +15,12 @@ SDK_VERSION="$(sed -n 's/^val sdkVersion = "\(.*\)"$/\1/p' "$ROOT/sdk/sdk-androi
 if [ "$VERSION" != "$SDK_VERSION" ]; then
   echo "error: version '$VERSION' does not match sdkVersion '$SDK_VERSION' in sdk/sdk-android/build.gradle.kts" >&2
   exit 1
+fi
+
+# The release workflow (ADR-0024) runs --check first, so a wrong tag fails before the build.
+if [ "${2:-}" = "--check" ]; then
+  echo "ok: version '$VERSION' matches sdkVersion"
+  exit 0
 fi
 
 "$ROOT/scripts/verify-consumer.sh"

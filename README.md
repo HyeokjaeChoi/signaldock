@@ -206,6 +206,17 @@ Requirements of the 0.1.0 AAR:
 - The host app declares `INTERNET`. The SDK needs no R8 rules of its own. Use an `https://` endpoint unless the app allows cleartext for that host; the SDK does not switch an `http://` endpoint to HTTPS (ADR-0009).
 - Call `SignalDock.initialize(context, SignalDockConfig(endpoint, collectionKey))` once (for example in `Application.onCreate`), then `track("name") { property("key", value) }` and `diagnostics()` on the returned instance.
 
+### Supported versions
+
+| Item | 0.1.x |
+| --- | --- |
+| Minimum Android API (`minSdk`) | 24 |
+| `compileSdk` of the host app | 36 or newer |
+| Kotlin | 2.2 or newer |
+| Android Gradle Plugin | 9.x |
+
+The SDK is before 1.0. Fixes are best effort. See [docs/versioning.md](docs/versioning.md) for breaking changes and deprecation, [SECURITY.md](SECURITY.md) to report a vulnerability, and [CONTRIBUTING.md](CONTRIBUTING.md) to contribute.
+
 The [SDK integration guide](docs/integration-guide.md) ([한국어](docs/integration-guide.ko.md)) covers `track()` results, cancellation, offline and retry behavior, diagnostics, privacy, versions, and troubleshooting. Optional typed event functions generated from a tracking plan: see [`tracking-plan/`](tracking-plan/) and [ADR-0021](docs/adr/0021-tracking-plan-codegen.md). The server marks each stored event `planned`, `unplanned_event`, or `invalid_properties` against that plan and never rejects one ([ADR-0022](docs/adr/0022-server-tracking-plan-status.md)).
 
 ## Repository guide

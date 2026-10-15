@@ -28,6 +28,7 @@ ADRs:
 - ADR-0018 (`docs/adr/0018-sdk-release-r8-measurement.md`), for `sdk/measure-app` and `sdk/sdk-android/src/measure` (issue 33)
 - ADR-0019 (`docs/adr/0019-sdk-public-api-check.md`), for `sdk/sdk-android/api/sdk-android.api` and the `apiCheck` and `apiDump` tasks (issue 35)
 - ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for the cost of the SDK in a host app (issue 36)
+- ADR-0025 (`docs/adr/0025-sdk-clock-jump.md`), for the clamp of the stored retry wait when the clock moves (issue 44)
 
 Public API change: update the dump (`sdk/gradlew -p sdk :sdk-android:apiDump`), the integration guide, and `CHANGELOG.md` in the same PR.
 
@@ -59,6 +60,7 @@ ADRs:
 - ADR-0005, section "Server: layered Gradle modules"
 - ADR-0007 (`docs/adr/0007-dashboard-query-api.md`), for `server/query` and the query routes
 - ADR-0022 (`docs/adr/0022-server-tracking-plan-status.md`), for the plan status (`TrackingPlan.kt`, `TrackingPlanFile.kt`, `V2__add_plan_status.sql`, and the `planStatus` filter and counts) (issue 39)
+- ADR-0028 (`docs/adr/0028-server-production-features-excluded.md`), for the server features left out on purpose (rate limit, audit log, key policy, retention, Dashboard login) (issue 48)
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 2. Agreed stack and boundaries
@@ -68,6 +70,7 @@ Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 11. Delegated performance measurement decisions
 - 12. Dashboard role confirmation and default delegation
 - Q153 and Q155 (optional tracking plan, server marks plan status)
+- Q157 (server production features left out for local-only operation)
 
 Also read `.scratch/signaldock-portfolio/dashboard-verification-defaults.md` before you edit `server/query` or the query routes.
 
@@ -205,14 +208,31 @@ ADRs:
 - ADR-0009 (`docs/adr/0009-maven-zip-and-consumer-app.md`), for `scripts/verify-consumer.sh` and `scripts/release.sh` (issue 32; release notes in `docs/releases/`)
 - ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for `scripts/host-cost-measure.sh` (issue 36)
 - ADR-0023 (`docs/adr/0023-ci-device-tests-and-size-budget.md`), for the `device-test` and `size-budget` jobs in `.github/workflows/repo-rules.yml` and `scripts/check-size-budget.sh` (issue 40)
+- ADR-0024 (`docs/adr/0024-release-workflow-and-dependency-updates.md`), for `.github/workflows/release.yml`, `.github/dependabot.yml`, the `--check` flag of `scripts/release.sh`, and `docs/releases/README.md` (issue 41)
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
+- Q149 (first release)
 - 7. Completion criteria and verification plan
 - 8, C. Small modules and local execution
 - 9. Technical conditions to check on entry into implementation
 - 10. Proposed implementation order
 
 Also read `TOOLCHAIN.md`.
+
+## Community health files (`.github/ISSUE_TEMPLATE/`; also `SECURITY.md`, `CONTRIBUTING.md`, `.github/PULL_REQUEST_TEMPLATE.md`, `docs/versioning.md`, issue 42)
+
+Keep these files in step with `AGENTS.md` (PR and review rules), `README.md` (limitations, supported versions), and the spec. `docs/versioning.md` is the one source of what counts as a breaking change and of the deprecation rule. Change the supported-version table in both READMEs when the AAR requirements change. Do not add a support promise or a contact address that the repository does not already state.
+
+ADRs:
+- ADR-0012 (`docs/adr/0012-contract-and-db-change-checks.md`), for the contract version
+- ADR-0019 (`docs/adr/0019-sdk-public-api-check.md`), for the public API dump
+- ADR-0009 (`docs/adr/0009-maven-zip-and-consumer-app.md`), for the AAR requirements
+
+Spec (`.scratch/signaldock-portfolio/spec.md`):
+- 1. Goal and scope
+- 3. SDK public behavior
+- 5. Server receipt and duplicate handling (the collection key is not a secret)
+- Q148 to Q150 (license, release, bridges out of scope)
 
 ## Rejected alternatives
 
