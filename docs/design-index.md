@@ -27,6 +27,7 @@ ADRs:
 - ADR-0018 (`docs/adr/0018-sdk-release-r8-measurement.md`), for `sdk/measure-app` and `sdk/sdk-android/src/measure` (issue 33)
 - ADR-0019 (`docs/adr/0019-sdk-public-api-check.md`), for `sdk/sdk-android/api/sdk-android.api` and the `apiCheck` and `apiDump` tasks (issue 35)
 - ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for the cost of the SDK in a host app (issue 36)
+- ADR-0027 (`docs/adr/0027-request-400-contract-only.md`), for `WireCorpusTest` and `fixtures/sdk-wire/` (issue 49)
 
 Public API change: update the dump (`sdk/gradlew -p sdk :sdk-android:apiDump`), the integration guide, and `CHANGELOG.md` in the same PR.
 
@@ -58,6 +59,7 @@ ADRs:
 - ADR-0005, section "Server: layered Gradle modules"
 - ADR-0007 (`docs/adr/0007-dashboard-query-api.md`), for `server/query` and the query routes
 - ADR-0022 (`docs/adr/0022-server-tracking-plan-status.md`), for the plan status (`TrackingPlan.kt`, `TrackingPlanFile.kt`, `V2__add_plan_status.sql`, and the `planStatus` filter and counts) (issue 39)
+- ADR-0027 (`docs/adr/0027-request-400-contract-only.md`), for `RequestParsing.kt`, `SdkWireCorpusTest`, and what is a request-level 400 (issue 49)
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 2. Agreed stack and boundaries
@@ -67,6 +69,7 @@ Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 11. Delegated performance measurement decisions
 - 12. Dashboard role confirmation and default delegation
 - Q153 and Q155 (optional tracking plan, server marks plan status)
+- Q158 (a request-level 400 is a contract bug only)
 
 Also read `.scratch/signaldock-portfolio/dashboard-verification-defaults.md` before you edit `server/query` or the query routes.
 
@@ -78,6 +81,7 @@ Architecture (`architecture.md`):
 ADRs:
 - ADR-0002
 - ADR-0022 (`docs/adr/0022-server-tracking-plan-status.md`), for the additive `planStatus` change and the baseline update (issue 39)
+- ADR-0027 (`docs/adr/0027-request-400-contract-only.md`), for `fixtures/sdk-wire/`, the SDK output corpus (issue 49)
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 7. Completion criteria and verification plan (contract rows)
@@ -85,6 +89,7 @@ Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 8, C. Small modules and local execution
 - 9. Technical conditions to check on entry into implementation
 - Q155 (plan status)
+- Q158 (a request-level 400 is a contract bug only)
 
 ## `sdk/demo/` (Android demo app, issue 05)
 
