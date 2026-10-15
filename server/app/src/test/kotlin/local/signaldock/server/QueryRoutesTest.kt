@@ -298,6 +298,54 @@ class QueryRoutesTest {
         assertEquals(0, obj["items"]!!.jsonArray[0].jsonObject["count"]!!.jsonPrimitive.int)
     }
 
+    // Issue 46: every filter value is a bound parameter. Hostile text matches only as an exact value, and never changes the SQL.
+    @Test
+    fun `sql injection text in every query parameter matches exactly or is rejected, and tables stay intact`() = testApplication {
+        useQueryModule()
+        val payloads = listOf("' OR 1=1--", "'; DROP TABLE events;--", "x' UNION SELECT NULL--", "%' OR name LIKE '%", "\\' OR 1=1--")
+        insert(1, "2026-10-12T01:00:00Z", name = "product_viewed", properties = """{"sku":"a"}""")
+        payloads.forEachIndexed { i, payload ->
+            val props = json.encodeToString(JsonObject.serializer(), JsonObject(mapOf(payload to JsonPrimitive(payload))))
+            insert(10 + i, "2026-10-12T02:00:00Z", name = payload, properties = props)
+        }
+        val total = payloads.size + 1L
+
+        for (payload in payloads) {
+            // name is a free text filter: exact match only, one row, for the list and all three counts.
+            val list = json.decodeFromString<EventReceiptPage>(client.query("/v1/events", october12 + ("name" to payload)).bodyAsText())
+            assertEquals(listOf(payload), list.items.map { it.name }, payload)
+            val names = json.decodeFromString<EventNameCounts>(client.query("/v1/event-counts/by-name", october12 + ("name" to payload)).bodyAsText())
+            assertEquals(listOf(payload to 1L), names.items.map { it.name to it.count }, payload)
+            val times = json.decodeFromString<EventTimeCounts>(client.query("/v1/event-counts/by-time", october12 + ("name" to payload)).bodyAsText())
+            assertEquals(1L, times.items.sumOf { it.count }, payload)
+            val plan = client.query("/v1/event-counts/by-plan-status", october12 + ("name" to payload))
+            assertEquals(HttpStatusCode.OK, plan.status, payload)
+            assertEquals(1L, json.parseToJsonElement(plan.bodyAsText()).jsonObject.values.sumOf { it.jsonPrimitive.content.toLong() }, payload)
+
+            // Typed and enumerated parameters reject the text before any query runs.
+            for (param in listOf("installationId", "eventId", "planStatus", "sort", "limit", "cursor", "from", "to")) {
+                val response = client.query("/v1/events", october12 + (param to payload))
+                assertEquals(HttpStatusCode.BadRequest, response.status, "$param $payload")
+                assertTrue(response.errorCode() in setOf("INVALID_PARAMETER", "INVALID_CURSOR"), "$param $payload")
+            }
+            for ((path, param) in listOf("/v1/event-counts/by-name" to "installationId", "/v1/event-counts/by-time" to "bucket", "/v1/event-counts/by-plan-status" to "eventId")) {
+                assertEquals(HttpStatusCode.BadRequest, client.query(path, october12 + (param to payload)).status, "$path $param $payload")
+            }
+            // The path id of a detail request.
+            val detailResponse = client.query("/v1/events/" + java.net.URLEncoder.encode(payload, "UTF-8"), emptyMap())
+            assertEquals(HttpStatusCode.BadRequest, detailResponse.status, payload)
+            assertEquals("INVALID_PARAMETER", detailResponse.errorCode(), payload)
+        }
+
+        // The stored hostile name and property key come back unchanged in a detail, and nothing was dropped or added.
+        val detail = json.decodeFromString<EventReceiptDetail>(client.query("/v1/events/${id(11)}").bodyAsText())
+        assertEquals(payloads[1], detail.name)
+        assertEquals(PropertyValue.StringValue(payloads[1]), detail.properties[payloads[1]])
+        val all = json.decodeFromString<EventNameCounts>(client.query("/v1/event-counts/by-name", october12).bodyAsText())
+        assertEquals(total, all.items.sumOf { it.count })
+        assertEquals(total.toInt(), runBlocking { database.transaction { query { fetchCount(EVENTS) } } })
+    }
+
     @Test
     fun `route returns retryable 503 with Retry-After when the database is saturated`() = testApplication {
         database.close()

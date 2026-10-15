@@ -38,6 +38,13 @@ for f in $(git ls-files -- '.scratch/*/issues/*.md'); do
   fi
 done
 
+# Dashboard, perf report, and web-shared render free text from key holders. React escaping is the only
+# protection, so raw HTML sinks are not allowed there (issue 46, threat model). Tests are exempt.
+if git grep --cached -nE 'dangerouslySetInnerHTML|innerHTML|outerHTML|insertAdjacentHTML' -- 'dashboard/src' 'perf/report/src' 'web-shared' ':!*.test.*' >&2; then
+  echo "error: raw HTML sink above; render text through React instead (issue 46)" >&2
+  fail=1
+fi
+
 # README.md and README.ko.md must stay in step (issue 26): same heading count per
 # level, same set of relative link targets that exist in the index (in-page #anchors ignored; Korean
 # headings give other anchors), and each links to the other. Fenced code is skipped.
