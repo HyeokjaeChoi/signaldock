@@ -1,9 +1,9 @@
 # 50. SDK reads Deprecation and Sunset headers (contract deprecation warning)
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Branch `impl/sdk-deprecation-warning`. SDK part only. The server part is deferred to contract 2.
+Execution: Done (merged in PR #123, 2026-10-15 UTC) SDK part only. The server part is deferred to contract 2 by the same Q159 decision (ADR-0030). The Q159 date 2026-10-16 is local time (KST, UTC+9); it is 2026-10-15 UTC, before the merge.
 
 ## Scope and completion criteria
 
@@ -18,3 +18,8 @@ Spec Q159. The decision is in ADR-0030.
 Verification:
 - `sdk/gradlew -p sdk :sdk-android:testDebugUnitTest :sdk-android:apiCheck --no-daemon`
 - `scripts/verify-contract.sh`
+
+## Comments
+
+- 2026-10-15: PR #123 review findings fixed: keep each valid header value independently; strict IMF-fixdate parser for `Sunset` (exact shape check before a non-lenient parse); `Retry-After` keeps its parser. Behavior change recorded in ADR-0030 and CHANGELOG: a `Retry-After` HTTP-date with trailing text is now ignored.
+- The server part (sending the headers, traffic counts per contract version and collection key) is deferred to contract 2 by Q159.
