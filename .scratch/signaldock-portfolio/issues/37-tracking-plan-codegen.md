@@ -19,3 +19,6 @@ Verification:
 - `scripts/check-repo-rules.sh`; `scripts/verify-contract.sh`; `sdk/gradlew -p sdk test :sdk-android:assembleRelease :sdk-android:apiCheck :demo:app:assembleDebug --no-daemon`; `node --test tracking-plan/generate.test.mjs`.
 
 ## Comments
+
+- 2026-10-14 (PR #95 review): fixed `/*` in descriptions (Kotlin block comments nest), reserved the generated `eventNames` name, and stated why names need two words and at most 64 characters (ADR-0021). Rejected with a kotlinc 2.4.21 check: `import`, `catch`, `finally` are soft keywords and valid parameter names. The PR closed once by mistake (branch deleted after a failed merge call), was reopened, and merged.
+- 2026-10-14: two open review findings from PR #95 are issue 38 (field types in plan validation, Minor; adapter-boundary test for the demo app, Trivial).
