@@ -285,6 +285,68 @@ class DeliveryTest {
         assertTrue(next in (T0 + 44 * SECOND)..(T0 + 46 * SECOND))
     }
 
+    // ---------- clock jumps (ADR-0025) ----------
+
+    private val day = 24 * 60 * MINUTE
+
+    @Test
+    fun `clock moved back by a day after a failure - sending resumes within the backoff, not after a day`() = runBlocking {
+        val sdk = sdkWith(jitter = Jitter { b -> b }, events = 1)
+        transport.handler = { http(503) }
+        assertEquals(T0 + 10 * SECOND, sdk.delivery.sender.run().nextAttemptMillis)
+        clock.now = T0 - day
+        val r = sdk.delivery.sender.run()
+        assertEquals(RunEnd.WAITING, r.end)
+        assertEquals(clock.now + 10 * SECOND, r.nextAttemptMillis)
+        assertEquals(1, transport.requests.size)
+        assertEquals(clock.now + 10 * SECOND, sdk.diagnostics().nextAttemptEpochMillis) // saved
+        clock.now += 9 * SECOND // the clamp is saved, so the wait does not slide forward
+        sdk.delivery.sender.run()
+        assertEquals(1, transport.requests.size)
+        clock.now += SECOND
+        transport.handler = { ackAll(it) }
+        assertEquals(RunEnd.QUEUE_EMPTY, sdk.delivery.sender.run().end)
+        assertEquals(2, transport.requests.size)
+    }
+
+    @Test
+    fun `clock moved back keeps the hold recheck at 30 minutes and a longer Retry-After in full`() = runBlocking {
+        val sdk = sdkWith(events = 1)
+        transport.handler = { http(401) }
+        sdk.delivery.sender.run()
+        clock.now = T0 - day
+        assertEquals(clock.now + 30 * MINUTE, sdk.delivery.sender.run().nextAttemptMillis)
+
+        transport.handler = { http(403, retryAfter = "7200") }
+        clock.now += 30 * MINUTE
+        assertEquals(clock.now + 120 * MINUTE, sdk.delivery.sender.run().nextAttemptMillis)
+        clock.now -= day // Retry-After is never capped, but a jump cannot extend it either
+        assertEquals(clock.now + 120 * MINUTE, sdk.delivery.sender.run().nextAttemptMillis)
+        assertEquals(2, transport.requests.size)
+    }
+
+    @Test
+    fun `clock moved forward by a day sends once and then waits again - no burst`() = runBlocking {
+        val sdk = sdkWith(jitter = Jitter { b -> b }, events = 120)
+        transport.handler = { http(503) }
+        sdk.delivery.sender.run()
+        clock.now = T0 + day
+        val r = sdk.delivery.sender.run() // the failed batch is sent once more and fails again
+        assertEquals(2, transport.requests.size)
+        assertEquals(RunEnd.WAITING, r.end)
+        assertEquals(clock.now + 20 * SECOND, r.nextAttemptMillis)
+        sdk.delivery.sender.run()
+        assertEquals(2, transport.requests.size)
+    }
+
+    @Test
+    fun `a wait with no stored length is not clamped and normal waits are unchanged`() = runBlocking {
+        val sdk = sdkWith(events = 1)
+        sdk.dao.saveRetryState(local.signaldock.internal.storage.RetryStateEntity(failureCount = 1, nextAttemptAtMillis = T0 + day))
+        assertEquals(T0 + day, sdk.delivery.sender.run().nextAttemptMillis)
+        assertEquals(0, transport.requests.size)
+    }
+
     // ---------- holds ----------
 
     @Test

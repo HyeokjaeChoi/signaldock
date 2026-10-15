@@ -40,6 +40,8 @@ internal data class RetryStateEntity(
     @PrimaryKey val id: Int = 1,
     val failureCount: Int = 0,
     val nextAttemptAtMillis: Long? = null,
+    /** The wait that was meant when [nextAttemptAtMillis] was stored. A clock moved back cannot extend it (ADR-0025). */
+    val waitMillis: Long? = null,
     val lastAckAtMillis: Long? = null,
     val lastAckAccepted: Int = 0,
     val lastAckDuplicate: Int = 0,
