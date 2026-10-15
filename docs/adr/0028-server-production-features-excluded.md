@@ -17,7 +17,7 @@ The server does not have these features. Each one has an existing source.
 
 | Feature left out | Source |
 |---|---|
-| Per-key or per-IP rate limit, `429` responses, connection limits. The `503` load shedding stays global. | Q157; ADR-0004 for the global `503` |
+| Per-key or per-IP rate limit, `429` responses, connection limits. The `503` load shedding stays global. | Q157; Q124 (the `503` load shedding is global) |
 | Access log with caller identity, audit trail | Q157 |
 | Minimum key length, lockout, rate limit on failed key attempts | Q131 (keys are non-blank, no length rule); Q128 (no key table, no rotation) |
 | Event TTL, retention job, delete function | Spec section 5 (keep events until explicit deletion or DB reset); spec queue TTL: "None in the first release" |
