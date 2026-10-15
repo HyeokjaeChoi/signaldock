@@ -1,9 +1,9 @@
 # 38. Tracking plan review follow-ups
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: None
-Execution: Not started
+Execution: Implemented on branch impl/tracking-plan-followups, PR pending
 
 ## Scope and completion criteria
 
