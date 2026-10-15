@@ -1,6 +1,6 @@
 # Build context is the repository root (docker-compose.yml sets it).
 # The server build reads ../gradle/libs.versions.toml and ../../generated/kotlin.
-FROM eclipse-temurin:21.0.12.1_1-jdk-noble@sha256:b468c3fc688b14450571494f588bd939378e7fd542ed5a73f8efc13f17872a87 AS build
+FROM eclipse-temurin:24.0.2_12-jdk-noble@sha256:dacac8e9a0df0d2bd24e702b4431132875c249930b70555ebd7ca285b5bee684 AS build
 WORKDIR /src
 COPY gradle/libs.versions.toml gradle/libs.versions.toml
 COPY generated/kotlin generated/kotlin
@@ -8,7 +8,7 @@ COPY server server
 WORKDIR /src/server
 RUN ./gradlew :app:installDist --no-daemon
 
-FROM eclipse-temurin:21.0.12.1_1-jre-noble@sha256:000fd431958bc81a24abe1e8e5f0f0fd3ae365a594bd50aadb20696805f9408c
+FROM eclipse-temurin:24.0.2_12-jre-noble@sha256:b416d02335e702b0403ff280de9475a3348e29382285969c9d4e17862ce632e7
 COPY --from=build /src/server/app/build/install/app /opt/signaldock
 RUN useradd --system --no-create-home signaldock
 USER signaldock
