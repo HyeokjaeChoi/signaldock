@@ -51,6 +51,8 @@ SignalDock은 기기 내구 저장과 서버 수신을 분리하고, 각 단계�
 | 포그라운드 응답과 백그라운드 복구 | sender와 durable 재시도 상태를 WorkManager와 공유. 수집 쓰기는 전송 lock과 분리 | sender 경합, 취소, Worker 복구, 재시작 후 재시도 대기를 에뮬레이터 2대에서 실행([issue 20](.scratch/signaldock-portfolio/issues/20-sdk-durability-device.md)) |
 | 공유 계약과 독립 릴리스 | OpenAPI / JSON과 생성 소스 drift 검사. 별도 R8 consumer 앱에 Maven ZIP 설치 | round trip, 이전 버전 fixture, DB migration([issue 22](.scratch/signaldock-portfolio/issues/22-contract-db-change-checks.md)). Maven ZIP 설치와 R8 release consumer 앱([issue 06](.scratch/signaldock-portfolio/issues/06-distribution.md), [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md)) |
 
+엔지니어링 판단: [설계 리뷰, 장애 모드, 포스트모템, 위협 모델](docs/engineering/README.md) (영어 문서).
+
 ## 이벤트 흐름
 
 1. 초기화에 성공하면 호스트 앱이 `track()`을 호출합니다. 입력 검증과 Room 저장이 끝나면 수집 성공입니다.
