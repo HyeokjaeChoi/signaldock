@@ -58,6 +58,7 @@ ADRs:
 - ADR-0005, section "Server: layered Gradle modules"
 - ADR-0007 (`docs/adr/0007-dashboard-query-api.md`), for `server/query` and the query routes
 - ADR-0022 (`docs/adr/0022-server-tracking-plan-status.md`), for the plan status (`TrackingPlan.kt`, `TrackingPlanFile.kt`, `V2__add_plan_status.sql`, and the `planStatus` filter and counts) (issue 39)
+- ADR-0026 (`docs/adr/0026-server-readiness-and-restart.md`), for `/health`, `/ready`, and the Compose `server` health check and restart policy (issue 45)
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 2. Agreed stack and boundaries
