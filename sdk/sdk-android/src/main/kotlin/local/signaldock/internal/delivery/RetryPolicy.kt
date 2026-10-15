@@ -1,6 +1,6 @@
 package local.signaldock.internal.delivery
 
-import java.text.ParseException
+import java.text.ParsePosition
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
@@ -44,10 +44,10 @@ internal fun parseRetryAfterMillis(value: String?, nowMillis: Long): Long? {
 }
 
 /** Parses an HTTP-date (RFC 9110 IMF-fixdate) to epoch milliseconds, or null if it is malformed. */
-internal fun parseHttpDateMillis(value: String): Long? = try {
-    SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US)
+internal fun parseHttpDateMillis(value: String): Long? {
+    val pos = ParsePosition(0)
+    val date = SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US)
         .apply { timeZone = TimeZone.getTimeZone("GMT"); isLenient = false }
-        .parse(value)?.time
-} catch (e: ParseException) {
-    null
+        .parse(value, pos)
+    return if (date != null && pos.index == value.length) date.time else null // trailing text is invalid
 }

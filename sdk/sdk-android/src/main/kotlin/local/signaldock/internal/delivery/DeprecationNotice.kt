@@ -2,7 +2,10 @@ package local.signaldock.internal.delivery
 
 import local.signaldock.ContractDeprecation
 import local.signaldock.internal.init.Logger
-import java.time.Instant
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -23,7 +26,7 @@ internal class DeprecationNotice(private val logger: Logger) {
         if (deprecatedAt == null && sunsetAt == null) return
         current = ContractDeprecation(deprecatedAt, sunsetAt)
         if (warned.compareAndSet(false, true)) {
-            val date = sunsetAt?.let { runCatching { Instant.ofEpochMilli(it).toString() }.getOrNull() } ?: "unknown"
+            val date = sunsetAt?.let { isoDate(it) } ?: "unknown"
             logger.warn("server contract version is deprecated; sunset date: $date")
         }
     }
@@ -37,3 +40,7 @@ internal fun parseDeprecationMillis(value: String?): Long? {
 }
 
 private const val MAX_SECONDS = 253_402_300_799L // year 9999
+
+/** ISO-8601 UTC date-time. `java.time` is not used: it needs API 26 and `minSdk` is 24 (ADR-0003 decision 5). */
+private fun isoDate(millis: Long): String =
+    SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }.format(Date(millis))

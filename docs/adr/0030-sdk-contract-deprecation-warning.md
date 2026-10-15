@@ -22,10 +22,10 @@ The user decided (Q159, 2026-10-16) how long the server supports an old contract
 
 - `RetrofitBatchTransport` reads `Deprecation` and `Sunset` from every HTTP response, whatever the status. Reason: the headers cost nothing to read, and a rejected `400 CONTRACT_VERSION_UNSUPPORTED` or a `5xx` can carry them. `Sender.onHttp` passes them to `DeprecationNotice` before the status is handled. The status handling is not changed.
 - `DeprecationNotice` parses them:
-  - `Sunset`: HTTP-date (RFC 9110 IMF-fixdate). The parser is the one that `Retry-After` uses (`parseHttpDateMillis` in `RetryPolicy.kt`). A date in the past is still valid information.
+  - `Sunset`: HTTP-date (RFC 9110 IMF-fixdate). The parser is the one that `Retry-After` uses (`parseHttpDateMillis` in `RetryPolicy.kt`). A date in the past is still valid information. Text after the date makes the value invalid (this also applies to `Retry-After` now).
   - `Deprecation`: a structured field date `@<epoch-seconds>` (RFC 9745). Other values (for example the old `true`) are ignored.
   - One valid header is enough. The other field is `null`. Garbage in either header is ignored. Nothing throws.
-- The latest valid values are kept in memory. The first valid notice in a process writes one WARN (`server contract version is deprecated; sunset date: <ISO-8601 or unknown>`). The WARN has no event content, key, or body (Q115). The state is not stored in Room: after a process restart, the next response sets it again and the SDK writes one WARN again. This is "one WARN per process".
+- The latest valid values are kept in memory. The first valid notice in a process writes one WARN (`server contract version is deprecated; sunset date: <ISO-8601 or unknown>`; formatted with `SimpleDateFormat`, because `java.time` needs API 26). The WARN has no event content, key, or body (Q115). The state is not stored in Room: after a process restart, the next response sets it again and the SDK writes one WARN again. This is "one WARN per process".
 - `Diagnostics.contractDeprecation: ContractDeprecation?` with `deprecatedAtEpochMillis` and `sunsetAtEpochMillis`.
 
 ### Why a body property on `Diagnostics`
