@@ -12,12 +12,17 @@ import local.signaldock.ingestion.IngestPlan
 import local.signaldock.ingestion.ItemReceipt
 import local.signaldock.ingestion.PropertyValue
 import local.signaldock.ingestion.StoredEvent
+import local.signaldock.ingestion.TrackingPlan
 import local.signaldock.ingestion.sameContent
 import local.signaldock.server.jooq.tables.Events.EVENTS
 import org.jooq.JSONB
 import java.time.ZoneOffset
 
-public class EventStore(private val database: Database) {
+/**
+ * With a `trackingPlan`, every new row gets a plan status. The status only labels the row: it never
+ * changes what is stored or what the ACK says. A duplicate keeps the status of the first insert.
+ */
+public class EventStore(private val database: Database, private val trackingPlan: TrackingPlan? = null) {
     /** Stores each group of the plan in one transaction and returns receipts in request order. */
     public suspend fun store(plan: IngestPlan, budget: RequestBudget = database.budget()): List<ItemReceipt> =
         database.transaction(budget) {
@@ -32,6 +37,7 @@ public class EventStore(private val database: Database) {
                         .set(EVENTS.OCCURRED_AT, event.occurredAt.atOffset(ZoneOffset.UTC))
                         .set(EVENTS.SDK_VERSION, event.sdkVersion)
                         .set(EVENTS.PROPERTIES, JSONB.valueOf(propertiesJson(event.properties)))
+                        .set(EVENTS.PLAN_STATUS, trackingPlan?.check(event.name, event.properties)?.wire)
                         .onConflict(EVENTS.EVENT_ID).doNothing().execute() == 1
                 }
                 // READ COMMITTED gives this statement a new snapshot after a competing insert commits.

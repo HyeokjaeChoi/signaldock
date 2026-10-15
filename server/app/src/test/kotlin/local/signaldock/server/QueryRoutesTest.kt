@@ -105,7 +105,7 @@ class QueryRoutesTest {
 
     private suspend fun HttpResponse.errorCode(): String = json.decodeFromString<ErrorResponse>(bodyAsText()).code
 
-    private val endpoints = listOf("/v1/events", "/v1/events/${id(1)}", "/v1/event-counts/by-name", "/v1/event-counts/by-time")
+    private val endpoints = listOf("/v1/events", "/v1/events/${id(1)}", "/v1/event-counts/by-name", "/v1/event-counts/by-time", "/v1/event-counts/by-plan-status")
 
     @Test
     fun `every endpoint requires the contract version header`() = testApplication {
@@ -185,7 +185,7 @@ class QueryRoutesTest {
     fun `a period over 30 calendar dates is rejected, not truncated`() = testApplication {
         useQueryModule()
         val period = mapOf("from" to "2026-09-12T00:00:00+09:00", "to" to "2026-10-13T00:00:00+09:00")
-        for (path in listOf("/v1/events", "/v1/event-counts/by-name", "/v1/event-counts/by-time")) {
+        for (path in listOf("/v1/events", "/v1/event-counts/by-name", "/v1/event-counts/by-time", "/v1/event-counts/by-plan-status")) {
             val response = client.query(path, period)
             assertEquals(HttpStatusCode.BadRequest, response.status, path)
             assertEquals("PERIOD_TOO_LONG", response.errorCode(), path)

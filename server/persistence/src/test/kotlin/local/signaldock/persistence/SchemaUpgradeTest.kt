@@ -1,6 +1,7 @@
 package local.signaldock.persistence
 
 import kotlinx.coroutines.runBlocking
+import local.signaldock.ingestion.PlanStatus
 import local.signaldock.ingestion.PropertyValue
 import local.signaldock.ingestion.ReceiptStatus
 import local.signaldock.ingestion.StoredEvent
@@ -11,6 +12,7 @@ import local.signaldock.query.CountQuery
 import local.signaldock.query.EventFilter
 import local.signaldock.query.ListQuery
 import local.signaldock.query.Period
+import local.signaldock.query.PlanStatusCounts
 import local.signaldock.query.SortOrder
 import local.signaldock.server.jooq.tables.Events.EVENTS
 import org.flywaydb.core.Flyway
@@ -23,6 +25,7 @@ import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
@@ -36,6 +39,7 @@ class SchemaUpgradeTest {
     private val opened = mutableListOf<Database>()
     private val a = UUID.fromString("11111111-1111-4111-8111-111111111111")
     private val b = UUID.fromString("22222222-2222-4222-8222-222222222222")
+    private val c = UUID.fromString("33333333-3333-4333-8333-333333333333")
     private val installation = UUID.fromString("47c4d89f-352a-41da-9b31-529ea756515a")
     private val october = Period(Instant.parse("2026-10-01T00:00:00Z"), Instant.parse("2026-10-31T00:00:00Z"))
     private val noFilter = EventFilter(null, null, null)
@@ -71,17 +75,23 @@ class SchemaUpgradeTest {
         assertEquals(0, flyway().info().pending().size)
 
         val query = QueryStore(database)
-        assertEquals(listOf(b, a), query.list(listQuery()).items.map { it.eventId })
-        assertEquals(listOf(a, b), query.list(listQuery(SortOrder.OLDEST_FIRST)).items.map { it.eventId })
+        assertEquals(listOf(c, b, a), query.list(listQuery()).items.map { it.eventId })
+        assertEquals(listOf(a, b, c), query.list(listQuery(SortOrder.OLDEST_FIRST)).items.map { it.eventId })
         val detail = assertNotNull(query.find(a))
         assertEquals(Instant.parse("2026-10-01T00:00:00.500Z"), detail.summary.receivedAt)
         assertEquals(PropertyValue.Number("19.50"), detail.properties["price"])
         assertEquals(PropertyValue.Text("가나다"), detail.properties["note"])
         assertEquals(PropertyValue.Flag(true), detail.properties["in_stock"])
         assertEquals(
-            setOf("product_viewed" to 1L, "purchase_completed" to 1L),
+            setOf("product_viewed" to 2L, "purchase_completed" to 1L),
             query.countByName(CountQuery(october, noFilter)).items.map { it.name to it.count }.toSet(),
         )
+
+        // Plan status (V2): rows written at V1 are "not checked" (null); the row written at V2 keeps its status.
+        assertNull(detail.summary.planStatus)
+        assertEquals(PlanStatus.PLANNED, assertNotNull(query.find(c)).summary.planStatus)
+        assertEquals(PlanStatusCounts(planned = 1, unplannedEvent = 0, invalidProperties = 0, notChecked = 2), query.countByPlanStatus(CountQuery(october, noFilter)))
+        assertEquals(listOf(c), query.list(ListQuery(october, EventFilter(null, null, null, PlanStatus.PLANNED), SortOrder.NEWEST_FIRST, 50, null)).items.map { it.eventId })
 
         // Ingestion against old rows: same content is a duplicate, other content conflicts, a new ID is stored.
         val original = StoredEvent(a, installation, "product_viewed", Instant.parse("2026-10-01T00:00:00.123Z"), "0.1.0",
@@ -89,7 +99,7 @@ class SchemaUpgradeTest {
         assertEquals(ReceiptStatus.DUPLICATE, store(database, original).status)
         assertEquals("CONFLICT", store(database, original.copy(name = "other")).code)
         assertEquals(ReceiptStatus.ACCEPTED, store(database, original.copy(eventId = UUID.randomUUID())).status)
-        assertEquals(3, database.transaction { query { fetchCount(EVENTS) } })
+        assertEquals(4, database.transaction { query { fetchCount(EVENTS) } })
     }
 
     private fun listQuery(order: SortOrder = SortOrder.NEWEST_FIRST) = ListQuery(october, noFilter, order, 50, null)

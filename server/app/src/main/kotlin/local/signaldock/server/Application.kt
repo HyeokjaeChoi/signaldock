@@ -23,6 +23,7 @@ import org.openapitools.client.models.BatchAckResponse
 import org.openapitools.client.models.ErrorResponse
 import java.io.ByteArrayOutputStream
 import local.signaldock.ingestion.RequestFailure
+import local.signaldock.ingestion.TrackingPlan
 import local.signaldock.persistence.Database
 import local.signaldock.persistence.DatabaseLimits
 import local.signaldock.persistence.DatabaseObserver
@@ -34,9 +35,10 @@ internal fun Application.ingestionModule(
     database: Database,
     collectionKey: String,
     afterCommit: suspend (BatchAckResponse) -> Unit = {},
+    trackingPlan: TrackingPlan? = null,
 ) {
     require(collectionKey.isNotBlank())
-    val ingestion = Ingestion(database)
+    val ingestion = Ingestion(database, trackingPlan)
     routing {
         get("/health") { call.respondText("ok") }
         post("/v1/events:batch") {
@@ -112,9 +114,17 @@ internal fun resolveKeys(collectionKey: String?, queryKey: String?): Pair<String
     return collectionKey to queryKey
 }
 
+/** The plan is optional (ADR-0022): unset or blank means events are not checked. An unusable plan fails startup. */
+internal fun trackingPlanFromEnv(env: (String) -> String?): TrackingPlan? =
+    env("SIGNALDOCK_TRACKING_PLAN")?.takeIf { it.isNotBlank() }?.let(::loadTrackingPlan)
+
 fun main() {
     fun required(name: String) = requireNotNull(System.getenv(name)) { "Missing $name" }
     val (collectionKey, queryKey) = resolveKeys(System.getenv("SIGNALDOCK_COLLECTION_KEY"), System.getenv("SIGNALDOCK_QUERY_KEY"))
+    // Before the database: a bad plan file stops the start with its own error.
+    val trackingPlan = trackingPlanFromEnv(System::getenv)
+    org.slf4j.LoggerFactory.getLogger("ingestion.plan").info(
+        if (trackingPlan == null) "no tracking plan configured; events are not checked" else "tracking plan loaded; events are marked, never rejected")
     val database = Database(required("SIGNALDOCK_JDBC_URL"), required("SIGNALDOCK_DB_USER"), required("SIGNALDOCK_DB_PASSWORD"),
         limits = databaseLimitsFromEnv(System::getenv),
         observer = DatabaseObserver { stage, millis ->
@@ -129,7 +139,7 @@ fun main() {
     try {
         database.migrate()
         embeddedServer(Netty, host = System.getenv("SIGNALDOCK_BIND_HOST") ?: "127.0.0.1", port = System.getenv("PORT")?.toInt() ?: 8080) {
-            ingestionModule(database, collectionKey)
+            ingestionModule(database, collectionKey, trackingPlan = trackingPlan)
             queryModule(database, queryKey, parseProjectZone(System.getenv("SIGNALDOCK_TIME_ZONE") ?: "Asia/Seoul"))
             monitor.subscribe(ApplicationStopped) { database.close() }
         }.start(wait = true)

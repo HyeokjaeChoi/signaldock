@@ -63,6 +63,8 @@ public class Events extends TableImpl<EventsRecord> {
 
     public final TableField<EventsRecord, OffsetDateTime> RECEIVED_AT = createField(DSL.name("received_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(3).nullable(false).defaultValue(DSL.field(DSL.raw("date_trunc('milliseconds'::text, clock_timestamp())"), SQLDataType.TIMESTAMPWITHTIMEZONE)), this, "");
 
+    public final TableField<EventsRecord, String> PLAN_STATUS = createField(DSL.name("plan_status"), SQLDataType.CLOB, this, "");
+
     private Events(Name alias, Table<EventsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -102,6 +104,7 @@ public class Events extends TableImpl<EventsRecord> {
     public List<Check<EventsRecord>> getChecks() {
         return Arrays.asList(
             Internal.createCheck(this, DSL.name("events_name_not_empty"), "((name <> ''::text))", true),
+            Internal.createCheck(this, DSL.name("events_plan_status_known"), "((plan_status = ANY (ARRAY['planned'::text, 'unplanned_event'::text, 'invalid_properties'::text])))", true),
             Internal.createCheck(this, DSL.name("events_properties_object"), "((jsonb_typeof(properties) = 'object'::text))", true)
         );
     }

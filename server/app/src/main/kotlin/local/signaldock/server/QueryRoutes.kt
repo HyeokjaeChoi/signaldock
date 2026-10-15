@@ -12,6 +12,7 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import local.signaldock.ingestion.PlanStatus
 import local.signaldock.ingestion.PropertyValue
 import local.signaldock.ingestion.RequestFailure
 import local.signaldock.persistence.Database
@@ -26,11 +27,13 @@ import local.signaldock.query.encodeCursor
 import local.signaldock.query.fillBuckets
 import local.signaldock.query.parseCountQuery
 import local.signaldock.query.parseDetailRequest
+import local.signaldock.query.parsePlanStatusCountQuery
 import local.signaldock.query.parseListQuery
 import local.signaldock.query.parseTimeCountQuery
 import org.openapitools.client.models.ErrorResponse
 import org.openapitools.client.models.EventNameCount
 import org.openapitools.client.models.EventNameCounts
+import org.openapitools.client.models.EventPlanStatusCounts
 import org.openapitools.client.models.EventReceiptDetail
 import org.openapitools.client.models.EventReceiptPage
 import org.openapitools.client.models.EventReceiptSummary
@@ -41,6 +44,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import org.openapitools.client.models.PlanStatus as ApiPlanStatus
 import org.openapitools.client.models.PropertyValue as ApiPropertyValue
 
 private val json = Json
@@ -71,6 +75,7 @@ internal fun Application.queryModule(database: Database, queryKey: String, zone:
                     summary.eventId.toString(), summary.installationId.toString(), summary.name,
                     summary.occurredAt.text(), summary.receivedAt.text(), summary.sdkVersion,
                     event.properties.mapValues { (_, value) -> value.toDto() },
+                    summary.planStatus?.toDto(),
                 ))
             }
         }
@@ -78,6 +83,12 @@ internal fun Application.queryModule(database: Database, queryKey: String, zone:
             call.answer(database, queryKey) { budget ->
                 val counts = store.countByName(parseCountQuery(call.queryParameterMap(), zone), budget)
                 json.encodeToString(EventNameCounts(counts.items.map { EventNameCount(it.name, it.count) }, counts.truncated))
+            }
+        }
+        get("/v1/event-counts/by-plan-status") {
+            call.answer(database, queryKey) { budget ->
+                val counts = store.countByPlanStatus(parsePlanStatusCountQuery(call.queryParameterMap(), zone), budget)
+                json.encodeToString(EventPlanStatusCounts(counts.planned, counts.unplannedEvent, counts.invalidProperties, counts.notChecked))
             }
         }
         get("/v1/event-counts/by-time") {
@@ -141,7 +152,14 @@ private fun Instant.text(): String = TIMESTAMP.format(this)
 
 private fun ReceiptSummary.toDto() = EventReceiptSummary(
     eventId.toString(), installationId.toString(), name, occurredAt.text(), receivedAt.text(), sdkVersion,
+    planStatus?.toDto(),
 )
+
+private fun PlanStatus.toDto() = when (this) {
+    PlanStatus.PLANNED -> ApiPlanStatus.PLANNED
+    PlanStatus.UNPLANNED_EVENT -> ApiPlanStatus.UNPLANNED_EVENT
+    PlanStatus.INVALID_PROPERTIES -> ApiPlanStatus.INVALID_PROPERTIES
+}
 
 private fun PropertyValue.toDto(): ApiPropertyValue = when (this) {
     is PropertyValue.Text -> ApiPropertyValue.StringValue(value)
