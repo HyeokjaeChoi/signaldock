@@ -161,6 +161,7 @@ case_airplane() {
   python3 scripts/ack-server.py "$port" "$log" &
   host_server_pid=$! # the trap kills it if a phase fails
   sleep 1
+  kill -0 "$host_server_pid" 2>/dev/null || { echo "host ACK server did not start (port $port in use?)" >&2; host_server_pid=""; exit 1; }
   fault airplane_mode -e endpoint "http://10.0.2.2:$port"
   kill "$host_server_pid" 2>/dev/null || true
   wait "$host_server_pid" 2>/dev/null || true

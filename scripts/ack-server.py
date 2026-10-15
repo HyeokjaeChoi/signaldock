@@ -35,4 +35,4 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
 
-HTTPServer(("0.0.0.0", port), Handler).serve_forever()
+HTTPServer(("127.0.0.1", port), Handler).serve_forever()
