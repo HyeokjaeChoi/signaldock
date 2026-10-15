@@ -22,6 +22,7 @@ ADRs:
 - ADR-0005 (`docs/adr/0005-module-structure.md`), section "SDK: one publication module, feature packages"
 - ADR-0006 (`docs/adr/0006-sdk-delivery-decisions.md`)
 - ADR-0011 (`docs/adr/0011-sdk-device-test-harness.md`), for `sdk/sdk-android/src/androidTest` and `scripts/device-durability.sh`
+- ADR-0023 (`docs/adr/0023-ci-device-tests-and-size-budget.md`), for how CI runs the `androidTest` classes on an emulator (issue 40)
 - ADR-0014 (`docs/adr/0014-sdk-device-measurement-harness.md`), for `MeasurePhases.kt` and `scripts/device-measure.sh` (issue 24)
 - ADR-0017 (`docs/adr/0017-sdk-crash-safety.md`), for the public API failure behavior
 - ADR-0018 (`docs/adr/0018-sdk-release-r8-measurement.md`), for `sdk/measure-app` and `sdk/sdk-android/src/measure` (issue 33)
@@ -124,6 +125,7 @@ Architecture (`architecture.md`):
 ADRs:
 - ADR-0009 (`docs/adr/0009-maven-zip-and-consumer-app.md`)
 - ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for `src/sdk`, `src/nosdk`, and `-Psignaldock.sdk=false` (issue 36)
+- ADR-0023 (`docs/adr/0023-ci-device-tests-and-size-budget.md`), for the APK size budget that builds the consumer app with and without the SDK (issue 40)
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 6. User screens and distribution, Reproduction and deliverables
@@ -205,6 +207,7 @@ ADRs:
 - ADR-0021 (`docs/adr/0021-tracking-plan-codegen.md`), for step 7 of `scripts/verify-contract.sh` (issue 37)
 - ADR-0009 (`docs/adr/0009-maven-zip-and-consumer-app.md`), for `scripts/verify-consumer.sh` and `scripts/release.sh` (issue 32; release notes in `docs/releases/`)
 - ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for `scripts/host-cost-measure.sh` (issue 36)
+- ADR-0023 (`docs/adr/0023-ci-device-tests-and-size-budget.md`), for the `device-test` and `size-budget` jobs in `.github/workflows/repo-rules.yml` and `scripts/check-size-budget.sh` (issue 40)
 - ADR-0024 (`docs/adr/0024-release-workflow-and-dependency-updates.md`), for `.github/workflows/release.yml`, `.github/dependabot.yml`, the `--check` flag of `scripts/release.sh`, and `docs/releases/README.md` (issue 41)
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
