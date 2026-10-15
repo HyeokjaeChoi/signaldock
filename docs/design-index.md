@@ -27,6 +27,7 @@ ADRs:
 - ADR-0018 (`docs/adr/0018-sdk-release-r8-measurement.md`), for `sdk/measure-app` and `sdk/sdk-android/src/measure` (issue 33)
 - ADR-0019 (`docs/adr/0019-sdk-public-api-check.md`), for `sdk/sdk-android/api/sdk-android.api` and the `apiCheck` and `apiDump` tasks (issue 35)
 - ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for the cost of the SDK in a host app (issue 36)
+- ADR-0025 (`docs/adr/0025-sdk-clock-jump.md`), for the clamp of the stored retry wait when the clock moves (issue 44)
 - ADR-0027 (`docs/adr/0027-request-400-contract-only.md`), for `WireCorpusTest` and `fixtures/sdk-wire/` (issue 49)
 
 Public API change: update the dump (`sdk/gradlew -p sdk :sdk-android:apiDump`), the integration guide, and `CHANGELOG.md` in the same PR.
@@ -209,14 +210,31 @@ ADRs:
 - ADR-0021 (`docs/adr/0021-tracking-plan-codegen.md`), for step 7 of `scripts/verify-contract.sh` (issue 37)
 - ADR-0009 (`docs/adr/0009-maven-zip-and-consumer-app.md`), for `scripts/verify-consumer.sh` and `scripts/release.sh` (issue 32; release notes in `docs/releases/`)
 - ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for `scripts/host-cost-measure.sh` (issue 36)
+- ADR-0024 (`docs/adr/0024-release-workflow-and-dependency-updates.md`), for `.github/workflows/release.yml`, `.github/dependabot.yml`, the `--check` flag of `scripts/release.sh`, and `docs/releases/README.md` (issue 41)
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
+- Q149 (first release)
 - 7. Completion criteria and verification plan
 - 8, C. Small modules and local execution
 - 9. Technical conditions to check on entry into implementation
 - 10. Proposed implementation order
 
 Also read `TOOLCHAIN.md`.
+
+## Community health files (`.github/ISSUE_TEMPLATE/`; also `SECURITY.md`, `CONTRIBUTING.md`, `.github/PULL_REQUEST_TEMPLATE.md`, `docs/versioning.md`, issue 42)
+
+Keep these files in step with `AGENTS.md` (PR and review rules), `README.md` (limitations, supported versions), and the spec. `docs/versioning.md` is the one source of what counts as a breaking change and of the deprecation rule. Change the supported-version table in both READMEs when the AAR requirements change. Do not add a support promise or a contact address that the repository does not already state.
+
+ADRs:
+- ADR-0012 (`docs/adr/0012-contract-and-db-change-checks.md`), for the contract version
+- ADR-0019 (`docs/adr/0019-sdk-public-api-check.md`), for the public API dump
+- ADR-0009 (`docs/adr/0009-maven-zip-and-consumer-app.md`), for the AAR requirements
+
+Spec (`.scratch/signaldock-portfolio/spec.md`):
+- 1. Goal and scope
+- 3. SDK public behavior
+- 5. Server receipt and duplicate handling (the collection key is not a secret)
+- Q148 to Q150 (license, release, bridges out of scope)
 
 ## Rejected alternatives
 
