@@ -1,9 +1,9 @@
 # 39. Server marks events with a tracking plan status
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Implemented on branch impl/server-plan-status, PR pending
+Execution: Done (merged in PR #101, 2026-10-15 UTC)
 
 ## Scope and completion criteria
 
@@ -29,3 +29,5 @@ Verification:
   - End-to-end with Compose project `sdplan` (scratch env file, ports 25432, 28080, 25173): the server logged "tracking plan loaded" and migrated to version 2. One batch of three events (a valid `add_to_cart`, an unplanned `screen_opened`, an `add_to_cart` without the required `quantity`) returned `accepted` for all three, and the resend returned `duplicate` for all three. The list showed `planned`, `unplanned_event`, and `invalid_properties`; the details of the third event had `"planStatus":"invalid_properties"`; `planStatus=invalid_properties` returned only that event; `by-plan-status` returned `{"planned":1,"unplannedEvent":1,"invalidProperties":1,"notChecked":0}`, also through the Dashboard proxy. The server image with a plan file that has a bad type and a bad `required` exited with code 1 and listed both problems. `docker compose -p sdplan down --volumes --rmi local` removed only that project's container, network, volume, and images; `signaldock_signaldock-db` was not touched.
   - `coderabbit review --base main --deep --agent`: 0 findings.
 - Not measured: the cost of the check on the ingest path (the perf profile turns it off); a physical device; the Dashboard in a browser other than the Browser pane.
+
+- 2026-10-15 (PR #101 review): Compose kept a blank `SIGNALDOCK_TRACKING_PLAN` from reaching the server and created a directory for a missing plan file; fixed with `${VAR-default}` and `create_host_path: false` (ADR-0022 item 2).
