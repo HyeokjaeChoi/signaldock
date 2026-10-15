@@ -47,7 +47,13 @@ internal fun parseRetryAfterMillis(value: String?, nowMillis: Long): Long? {
 internal fun parseHttpDateMillis(value: String): Long? = parseDateMillis(value, "EEE, dd MMM yyyy HH:mm:ss zzz")
 
 /** Strict RFC 9110 IMF-fixdate with the literal `GMT` suffix, for Sunset (ADR-0030). */
-internal fun parseImfFixdateMillis(value: String): Long? = parseDateMillis(value, "EEE, dd MMM yyyy HH:mm:ss 'GMT'")
+internal fun parseImfFixdateMillis(value: String): Long? =
+    // SimpleDateFormat ignores field widths and case, so the shape is checked first.
+    if (IMF_FIXDATE.matches(value)) parseDateMillis(value, "EEE, dd MMM yyyy HH:mm:ss 'GMT'") else null
+
+private val IMF_FIXDATE = Regex(
+    "(Mon|Tue|Wed|Thu|Fri|Sat|Sun), \\d{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4} \\d{2}:\\d{2}:\\d{2} GMT",
+)
 
 private fun parseDateMillis(value: String, pattern: String): Long? {
     val pos = ParsePosition(0)
