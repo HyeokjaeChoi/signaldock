@@ -38,6 +38,13 @@ for f in $(git ls-files -- '.scratch/*/issues/*.md'); do
   fi
 done
 
+# Dashboard, perf report, and web-shared render free text from key holders. React escaping is the only
+# protection, so raw HTML sinks are not allowed there (issue 46, threat model). Tests are exempt.
+if git grep --cached -nE 'dangerouslySetInnerHTML|innerHTML|outerHTML|insertAdjacentHTML' -- 'dashboard/src' 'perf/report/src' 'web-shared' ':!*.test.*' >&2; then
+  echo "error: raw HTML sink above; render text through React instead (issue 46)" >&2
+  fail=1
+fi
+
 # README.md and README.ko.md must stay in step (issue 26): same heading count per
 # level, same set of relative link targets that exist in the index (in-page #anchors ignored; Korean
 # headings give other anchors), and each links to the other. Fenced code is skipped.
@@ -115,6 +122,16 @@ sys.exit(1 if bad else 0)
 PY
 then
   fail=1
+fi
+
+# A released Room schema file is frozen (ADR-0025). A schema change needs a new version, a migration, and a new N.json.
+if git rev-parse --verify -q origin/main >/dev/null; then
+  for f in $(git ls-tree -r --name-only origin/main -- sdk/sdk-android/schemas); do
+    if ! git diff --quiet origin/main -- "$f"; then # a deleted file differs too
+      echo "error: $f exists on main and changed or was deleted; bump the database version and add a migration (ADR-0025)" >&2
+      fail=1
+    fi
+  done
 fi
 
 exit "$fail"

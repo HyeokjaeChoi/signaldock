@@ -43,7 +43,7 @@ jobs:
       - run: |
           export JAVA_HOME="$PWD/.tools/$(ls .tools | grep '^jdk-')"
           sdk/gradlew -p sdk :sdk-android:testDebugUnitTest :demo:feature:shop:testDebugUnitTest :demo:feature:diagnostics:testDebugUnitTest --no-daemon
-          # Compile only: the instrumented tests need an emulator (ADR-0011, scripts/device-durability.sh).
+          # Compile only: the `device-test` job runs the instrumented tests on an emulator (ADR-0023).
           sdk/gradlew -p sdk :sdk-android:assembleDebugAndroidTest --no-daemon
 
   # Maven ZIP, then the independent consumer app (R8 release) from the unzipped folder.
@@ -70,3 +70,69 @@ jobs:
       - run: |
           export JAVA_HOME="$PWD/.tools/$(ls .tools | grep '^jdk-')"
           cd server && ./gradlew test verifyJooq --no-daemon
+
+  # The 26 instrumented tests of sdk-android on an emulator (ADR-0023, ADR-0011). The phase classes
+  # (DurabilityPhases, MeasurePhases) skip themselves without `-e phase`; their process-boundary runs stay local.
+  device-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - run: scripts/setup-toolchain.sh
+      - run: echo "JAVA_HOME=$PWD/.tools/$(ls .tools | grep '^jdk-')" >> "$GITHUB_ENV"
+      # The emulator needs /dev/kvm to be usable by the runner user.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      # Change the key when api-level, target, or arch change.
+      - name: AVD cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-34-google_apis-x86_64-v1
+      - name: Create AVD and snapshot (cache miss)
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          disable-animations: false
+          script: echo "Generated AVD snapshot for caching."
+      - name: connectedDebugAndroidTest
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          disable-animations: true
+          script: sdk/gradlew -p sdk :sdk-android:connectedDebugAndroidTest --no-daemon
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: device-test-reports
+          path: sdk/sdk-android/build/reports/androidTests
+          if-no-files-found: ignore
+
+  # The SDK may add at most the budget to the consumer APK (ADR-0023). No emulator.
+  size-budget:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - run: scripts/setup-toolchain.sh
+      - run: scripts/check-size-budget.sh

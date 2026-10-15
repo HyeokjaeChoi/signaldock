@@ -224,6 +224,10 @@ public data class DeliveryErrorDiagnostic(
  * @property retryFailureCount the count of temporary failures since the last valid ACK.
  * @property nextAttemptEpochMillis the earliest time of the next send, or `null` if none is waiting.
  * @property storageAvailable `false` when the queue could not be read.
+ *
+ * [contractDeprecation] is not a constructor property: a new constructor property would break
+ * binary compatibility (ADR-0030). It is not part of [equals], [hashCode], [toString], `componentN`
+ * or [copy]; a copy made with [copy] has `null` there.
  */
 public data class Diagnostics(
     val sdkVersion: String,
@@ -236,4 +240,32 @@ public data class Diagnostics(
     val retryFailureCount: Int,
     val nextAttemptEpochMillis: Long?,
     val storageAvailable: Boolean = true,
-)
+) {
+    /**
+     * The server told this process that the contract version in use is deprecated, or `null` if it
+     * did not (ADR-0030). It lives in memory for the process; it is not stored. Informational only:
+     * delivery does not change.
+     */
+    public var contractDeprecation: ContractDeprecation? = null
+        internal set
+}
+
+/**
+ * A server warning that the contract version in use will be retired (RFC 9745 `Deprecation`,
+ * RFC 8594 `Sunset`). Delivery does not change because of it. Valid headers only; a field is `null`
+ * when its header was absent or invalid.
+ *
+ * @property deprecatedAtEpochMillis the `Deprecation` date in epoch milliseconds.
+ * @property sunsetAtEpochMillis the `Sunset` date in epoch milliseconds.
+ */
+public class ContractDeprecation internal constructor(
+    public val deprecatedAtEpochMillis: Long?,
+    public val sunsetAtEpochMillis: Long?,
+) {
+    override fun equals(other: Any?): Boolean = other is ContractDeprecation &&
+        deprecatedAtEpochMillis == other.deprecatedAtEpochMillis && sunsetAtEpochMillis == other.sunsetAtEpochMillis
+
+    override fun hashCode(): Int = 31 * (deprecatedAtEpochMillis?.hashCode() ?: 0) + (sunsetAtEpochMillis?.hashCode() ?: 0)
+
+    override fun toString(): String = "ContractDeprecation(deprecatedAt=$deprecatedAtEpochMillis, sunsetAt=$sunsetAtEpochMillis)"
+}

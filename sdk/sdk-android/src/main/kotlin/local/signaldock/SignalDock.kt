@@ -6,6 +6,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import local.signaldock.internal.collection.EventCollector
+import local.signaldock.internal.delivery.DeprecationNotice
 import local.signaldock.internal.init.InitCoordinator
 import local.signaldock.internal.init.Logger
 import local.signaldock.internal.scheduling.DeliveryCoordinator
@@ -25,6 +26,7 @@ public class SignalDock internal constructor(
     internal val dao: QueueDao,
     internal val delivery: DeliveryCoordinator,
     private val logger: Logger,
+    private val notice: DeprecationNotice,
 ) {
     /**
      * Collects one event named [name]. Returns [TrackResult.Success] after the event is committed
@@ -61,6 +63,7 @@ public class SignalDock internal constructor(
             // Narrows the race with a cancellation that arrives after the check above.
             currentCoroutineContext().ensureActive()
             return Diagnostics(SDK_VERSION, 0, 0, null, emptyList(), null, null, 0, null, storageAvailable = false)
+                .also { it.contractDeprecation = notice.current }
         }
         val retry = snap.retry
         return Diagnostics(
@@ -78,7 +81,7 @@ public class SignalDock internal constructor(
             },
             retryFailureCount = retry?.failureCount ?: 0,
             nextAttemptEpochMillis = retry?.nextAttemptAtMillis,
-        )
+        ).also { it.contractDeprecation = notice.current }
     }
 
     /** Entry point of the SDK. It holds [initialize], the only way to get a [SignalDock] instance. */

@@ -299,6 +299,7 @@ suspend fun queueSummary(sdk: SignalDock): String {
 | `lastAck` | 마지막 유효 ACK의 시각과 개수(`accepted`, `duplicate`, `rejected`). 최근 ACK가 큐 전체를 보냈다는 뜻은 아님 | spec 6 |
 | `lastDeliveryError` | 마지막 최종 전송 오류: 종류, 선택적 HTTP status, 시각. 복구 뒤에도 기록으로 남음 | spec 6, ADR-0006 결정 4 |
 | `retryFailureCount`, `nextAttemptEpochMillis` | 마지막 유효 ACK 이후의 일시적 실패 횟수와 가장 이른 다음 전송 시각 | spec 6, spec 8.A Q75 |
+| `contractDeprecation` | `null`, 또는 이 process에 대한 서버의 폐기 예고: `deprecatedAtEpochMillis`, `sunsetAtEpochMillis`(각각 `null` 가능). SDK는 `Deprecation`, `Sunset` 응답 헤더를 읽고 process당 WARN을 한 번 남김. 전송 동작은 바뀌지 않음. 메모리에만 있고 `copy()`, `equals()`, `componentN()`에는 없음 | spec 8 Q159, ADR-0030 |
 | `storageAvailable` | 큐를 읽지 못하면 `false`. 이때 다른 필드는 비어 있고 의미가 없음. SDK가 WARN도 남김 | ADR-0017 결정 4 |
 
 참고:
@@ -322,7 +323,7 @@ suspend fun queueSummary(sdk: SignalDock): String {
 
 - **SDK 릴리스 버전:** `0.1.0`. `Diagnostics.sdkVersion`이 반환합니다. 각 이벤트는 수집 시점의 버전을 저장합니다(spec 3 "Common information").
 - **계약 버전:** `1`. SDK는 `SignalDock-Contract-Version` header로 보냅니다. 계약 버전과 SDK 릴리스 버전은 별개입니다. 호환되지 않는 변경은 계약 버전을 올립니다. 첫 릴리스는 계약 1만 구현합니다(spec 8.B Q65, Q106, architecture "Contracts, generated sources, and JSON").
-- 이벤트는 수집 당시의 계약 버전을 유지합니다. SDK 업데이트 뒤에도 SDK는 큐에 남은 오래된 이벤트를 원래 계약으로, 계약별로 묶은 batch에 담아 보냅니다. 오래된 계약을 끝없이 지원하지는 않습니다(spec 8.B Q66).
+- 이벤트는 수집 당시의 계약 버전을 유지합니다. SDK 업데이트 뒤에도 SDK는 큐에 남은 오래된 이벤트를 원래 계약으로, 계약별로 묶은 batch에 담아 보냅니다. 오래된 계약을 끝없이 지원하지는 않습니다(spec 8.B Q66). 새 계약이 나온 뒤 서버는 이전 계약을 최소 12개월, 그리고 트래픽이 낮아질 때까지 유지하고 `Deprecation`, `Sunset` 헤더로 알릴 계획입니다. 서버 쪽은 아직 만들지 않았습니다. SDK는 이 헤더를 이미 읽습니다(spec 8 Q159, [ADR-0030](adr/0030-sdk-contract-deprecation-warning.md)).
 - 서버가 그 계약 버전을 지원하지 않으면 요청 전체를 거부합니다. SDK는 큐를 유지하고 30분마다 다시 확인합니다. 스스로 낮추지 않습니다(spec 8.B Q67).
 - SDK는 응답의 새 호환 필드를 무시합니다. 알 수 없는 status나 누락된 필드는 ACK 전체를 무효로 만듭니다(spec 8.B Q68).
 - consumer 요구 사항(`compileSdk`, Kotlin, AGP)은 [1절](#1-설치)에 있습니다.
