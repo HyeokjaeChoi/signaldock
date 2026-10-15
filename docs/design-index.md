@@ -31,6 +31,7 @@ ADRs:
 - ADR-0025 (`docs/adr/0025-sdk-clock-jump.md`), for the clamp of the stored retry wait when the clock moves (issue 44)
 - ADR-0027 (`docs/adr/0027-request-400-contract-only.md`), for `WireCorpusTest` and `fixtures/sdk-wire/` (issue 49)
 - ADR-0029 (`docs/adr/0029-device-fault-tests-and-power-loss.md`), for the fault phases (`FaultPhases.kt`, `PowerLossSemanticsDeviceTest.kt`, `scripts/ack-server.py`) and the power-loss semantics (issue 47)
+- ADR-0030 (`docs/adr/0030-sdk-contract-deprecation-warning.md`), for `DeprecationNotice.kt` and `Diagnostics.contractDeprecation` (issue 50)
 
 Public API change: update the dump (`sdk/gradlew -p sdk :sdk-android:apiDump`), the integration guide, and `CHANGELOG.md` in the same PR.
 
@@ -45,6 +46,7 @@ Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 8, B. Errors, ACKs, and data representation
 - 8, C. Small modules and local execution
 - 12. Dashboard role confirmation and default delegation
+- Q159 (contract support policy, deprecation warning)
 
 ## `server/`
 
@@ -75,6 +77,7 @@ Spec (`.scratch/signaldock-portfolio/spec.md`):
 - Q153 and Q155 (optional tracking plan, server marks plan status)
 - Q157 (server production features left out for local-only operation)
 - Q158 (a request-level 400 is a contract bug only)
+- Q159 (contract support policy; the server `Deprecation` and `Sunset` headers are deferred to contract 2, ADR-0030)
 
 Also read `.scratch/signaldock-portfolio/dashboard-verification-defaults.md` before you edit `server/query` or the query routes.
 

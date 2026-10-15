@@ -1,6 +1,6 @@
 package local.signaldock.internal.delivery
 
-import java.text.ParseException
+import java.text.ParsePosition
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
@@ -39,12 +39,26 @@ internal fun parseRetryAfterMillis(value: String?, nowMillis: Long): Long? {
         if (seconds == 0L) return null
         return if (seconds > Long.MAX_VALUE / 1000) Long.MAX_VALUE / 2 else seconds * 1000
     }
-    val date = try {
-        SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US)
-            .apply { timeZone = TimeZone.getTimeZone("GMT"); isLenient = false }
-            .parse(v)
-    } catch (e: ParseException) {
-        null
-    } ?: return null
-    return (date.time - nowMillis).takeIf { it > 0 }
+    val date = parseHttpDateMillis(v) ?: return null
+    return (date - nowMillis).takeIf { it > 0 }
+}
+
+/** Parses an HTTP-date for Retry-After (any zone name `zzz`) to epoch milliseconds, or null if it is malformed. */
+internal fun parseHttpDateMillis(value: String): Long? = parseDateMillis(value, "EEE, dd MMM yyyy HH:mm:ss zzz")
+
+/** Strict RFC 9110 IMF-fixdate with the literal `GMT` suffix, for Sunset (ADR-0030). */
+internal fun parseImfFixdateMillis(value: String): Long? =
+    // SimpleDateFormat ignores field widths and case, so the shape is checked first.
+    if (IMF_FIXDATE.matches(value)) parseDateMillis(value, "EEE, dd MMM yyyy HH:mm:ss 'GMT'") else null
+
+private val IMF_FIXDATE = Regex(
+    "(Mon|Tue|Wed|Thu|Fri|Sat|Sun), \\d{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4} \\d{2}:\\d{2}:\\d{2} GMT",
+)
+
+private fun parseDateMillis(value: String, pattern: String): Long? {
+    val pos = ParsePosition(0)
+    val date = SimpleDateFormat(pattern, Locale.US)
+        .apply { timeZone = TimeZone.getTimeZone("GMT"); isLenient = false }
+        .parse(value, pos)
+    return if (date != null && pos.index == value.length) date.time else null // trailing text is invalid
 }

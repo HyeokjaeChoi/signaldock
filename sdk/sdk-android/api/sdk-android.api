@@ -15,6 +15,14 @@ public final class local/signaldock/AckDiagnostic {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class local/signaldock/ContractDeprecation {
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDeprecatedAtEpochMillis ()Ljava/lang/Long;
+	public final fun getSunsetAtEpochMillis ()Ljava/lang/Long;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class local/signaldock/DeliveryErrorDiagnostic {
 	public fun <init> (Llocal/signaldock/DeliveryErrorKind;Ljava/lang/Integer;J)V
 	public final fun component1 ()Llocal/signaldock/DeliveryErrorKind;
@@ -60,6 +68,7 @@ public final class local/signaldock/Diagnostics {
 	public final fun copy (Ljava/lang/String;IJLjava/lang/Long;Ljava/util/List;Llocal/signaldock/AckDiagnostic;Llocal/signaldock/DeliveryErrorDiagnostic;ILjava/lang/Long;Z)Llocal/signaldock/Diagnostics;
 	public static synthetic fun copy$default (Llocal/signaldock/Diagnostics;Ljava/lang/String;IJLjava/lang/Long;Ljava/util/List;Llocal/signaldock/AckDiagnostic;Llocal/signaldock/DeliveryErrorDiagnostic;ILjava/lang/Long;ZILjava/lang/Object;)Llocal/signaldock/Diagnostics;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getContractDeprecation ()Llocal/signaldock/ContractDeprecation;
 	public final fun getLastAck ()Llocal/signaldock/AckDiagnostic;
 	public final fun getLastDeliveryError ()Llocal/signaldock/DeliveryErrorDiagnostic;
 	public final fun getNextAttemptEpochMillis ()Ljava/lang/Long;

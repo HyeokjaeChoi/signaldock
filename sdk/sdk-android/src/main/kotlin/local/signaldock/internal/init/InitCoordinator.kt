@@ -21,6 +21,7 @@ import local.signaldock.internal.delivery.BatchTransport
 import local.signaldock.internal.delivery.Jitter
 import local.signaldock.internal.delivery.RandomJitter
 import local.signaldock.internal.delivery.RetrofitBatchTransport
+import local.signaldock.internal.delivery.DeprecationNotice
 import local.signaldock.internal.delivery.Sender
 import local.signaldock.internal.scheduling.DeliveryCoordinator
 import local.signaldock.internal.scheduling.FOREGROUND_TRIGGER_DELAY_MILLIS
@@ -139,7 +140,8 @@ internal suspend fun createSdk(
     }
     val dao = db.queueDao()
     val workScheduler = scheduler ?: WorkManagerScheduler(context, clock, logger)
-    val coordinator = DeliveryCoordinator(Sender(dao, transport, clock, jitter, logger), workScheduler, clock, logger)
+    val notice = DeprecationNotice(logger)
+    val coordinator = DeliveryCoordinator(Sender(dao, transport, clock, jitter, logger, notice), workScheduler, clock, logger)
     val trigger = if (foregroundTriggers) ForegroundTrigger(scope) { coordinator.drainForeground() } else null
     val sink = NotifyingEventSink(RoomEventSink(dao)) {
         trigger?.onEventStored()
@@ -150,5 +152,5 @@ internal suspend fun createSdk(
     coordinator.ensureScheduled(if (queued > 0) clock.nowMillis() else clock.nowMillis() + FOREGROUND_TRIGGER_DELAY_MILLIS)
     (context.applicationContext as? Application)?.registerActivityLifecycleCallbacks(ForegroundExitObserver(clock, coordinator))
     logger.debug("initialized")
-    return SignalDock(EventCollector(installationId, sink, clock, ids, limits, logger), dao, coordinator, logger)
+    return SignalDock(EventCollector(installationId, sink, clock, ids, limits, logger), dao, coordinator, logger, notice)
 }
