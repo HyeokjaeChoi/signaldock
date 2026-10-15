@@ -31,7 +31,12 @@ The server does not have these features. Each one has an existing source.
   - The Dashboard shows all events to anyone who can open it.
   - There is no automatic TTL and no application delete function. Events stay until an explicit deletion or a database reset (spec section 5). The database grows with no limit until then.
   - There is no record of who called the server.
-- Before any non-local deployment, build these first: rate limits per key and per IP with `429` responses, connection limits, Dashboard authentication, a key policy (length, rotation, lockout), a retention job and a delete function, and an access log with an audit trail.
+- Before any non-local deployment, build every row of the Decision table first:
+  - rate limits per key and per IP with `429` responses, and connection limits;
+  - an access log with caller identity and an audit trail;
+  - a key policy: minimum length, rotation, lockout, and a rate limit on failed key attempts;
+  - event TTL, a retention job, and a delete function;
+  - Dashboard login.
 - Gap: none of these features is tested, because none exists.
 
 ## Revisit when
