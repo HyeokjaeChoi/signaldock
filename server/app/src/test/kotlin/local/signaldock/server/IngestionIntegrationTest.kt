@@ -87,6 +87,23 @@ class IngestionIntegrationTest {
     }
 
     @Test
+    fun `stores a valid sibling next to a lone surrogate escape and a nested property value (ADR-0027)`() = runBlocking {
+        val valid = event("30d66f95-2435-4e56-b52a-70b1c8bba4e1")
+        val surrogate = event("30d66f95-2435-4e56-b52a-70b1c8bba4e2", properties = """{"k":"a\ud800b"}""")
+        val nested = event("30d66f95-2435-4e56-b52a-70b1c8bba4e3", properties = """{"k":{"a":[1]}}""")
+        val deep = event("30d66f95-2435-4e56-b52a-70b1c8bba4e4", properties = """{"k":${"[".repeat(3000)}${"]".repeat(3000)}}""")
+
+        val response = Ingestion(database).ingest(parse(batch("$valid,$surrogate,$nested,$deep")))
+
+        assertEquals(
+            listOf(ItemAck.Status.ACCEPTED, ItemAck.Status.REJECTED, ItemAck.Status.REJECTED, ItemAck.Status.REJECTED),
+            response.results.map { it.status },
+        )
+        assertEquals(listOf(null, "INVALID_PROPERTIES", "INVALID_PROPERTIES", "INVALID_PROPERTIES"), response.results.map { it.code })
+        assertEquals(1, countRows())
+    }
+
+    @Test
     fun `same content repeats once while different content group stores nothing`() = runBlocking {
         val ingestion = Ingestion(database)
         val sameId = "50cc1adb-d543-4121-b0e1-ee505e41dd4b"

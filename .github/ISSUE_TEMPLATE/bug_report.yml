@@ -1,0 +1,39 @@
+name: Bug report
+description: Something does not work as the docs or spec say.
+labels: ["needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: Do not report security problems here. Use [SECURITY.md](https://github.com/HyeokjaeChoi/signaldock/blob/main/SECURITY.md).
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options: [SDK (sdk-android), Server, Dashboard, Demo or consumer app, Scripts or build, Docs]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: SDK version (for example 0.1.0) or a commit hash.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual result
+      description: Name the doc or spec section that sets the expected result, if you know it.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Android API level or emulator, JDK, Kotlin, AGP, Docker version. Remove keys and secrets from logs.
