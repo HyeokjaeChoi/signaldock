@@ -179,7 +179,7 @@ sdk.productViewed(productId = "P-001", priceMinor = 59_000)
 sdk.track("product_viewed") { property("product_id", "P-001") }
 ```
 
-The TypeScript output has types and builder functions that return `{ name, properties }`. The plan is not checked on the server (spec Q152).
+The TypeScript output has types and builder functions that return `{ name, properties }`. The SDK does not check the plan. The server can: when it has a plan (`SIGNALDOCK_TRACKING_PLAN`, set by Compose), it marks each stored event `planned`, `unplanned_event`, or `invalid_properties`. It never rejects or drops an event for plan reasons, and the ACK does not change (spec Q155, [ADR-0022](adr/0022-server-tracking-plan-status.md)). The Dashboard shows the status and the violation counts.
 
 ## 4. Handle every TrackResult
 

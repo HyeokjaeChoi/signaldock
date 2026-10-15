@@ -2,6 +2,7 @@ package local.signaldock.persistence
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
+import local.signaldock.ingestion.PlanStatus
 import local.signaldock.query.Bucket
 import local.signaldock.query.CountQuery
 import local.signaldock.query.EventFilter
@@ -9,6 +10,7 @@ import local.signaldock.query.ListQuery
 import local.signaldock.query.MAX_NAME_COUNTS
 import local.signaldock.query.NameCount
 import local.signaldock.query.NameCounts
+import local.signaldock.query.PlanStatusCounts
 import local.signaldock.query.Period
 import local.signaldock.query.ReceiptPage
 import local.signaldock.query.ReceiptSummary
@@ -42,7 +44,7 @@ public class QueryStore(private val database: Database) {
                 where = where.and(if (ascending) position.gt(last) else position.lt(last))
             }
             val rows = query {
-                select(EVENTS.EVENT_ID, EVENTS.INSTALLATION_ID, EVENTS.NAME, EVENTS.OCCURRED_AT, EVENTS.RECEIVED_AT, EVENTS.SDK_VERSION)
+                select(EVENTS.EVENT_ID, EVENTS.INSTALLATION_ID, EVENTS.NAME, EVENTS.OCCURRED_AT, EVENTS.RECEIVED_AT, EVENTS.SDK_VERSION, EVENTS.PLAN_STATUS)
                     .from(EVENTS)
                     .where(where)
                     .orderBy(
@@ -80,6 +82,24 @@ public class QueryStore(private val database: Database) {
                     .fetch { NameCount(it.value1()!!, it.value2().toLong()) }
             }
             NameCounts(rows.take(MAX_NAME_COUNTS), rows.size > MAX_NAME_COUNTS)
+        }
+
+    /** One COUNT with FILTER per status, so the Dashboard reads all violation counts in one statement. */
+    public suspend fun countByPlanStatus(q: CountQuery, budget: RequestBudget = database.budget()): PlanStatusCounts =
+        database.transaction(budget) {
+            readOnly()
+            fun count(status: PlanStatus?) =
+                DSL.count().filterWhere(if (status == null) EVENTS.PLAN_STATUS.isNull else EVENTS.PLAN_STATUS.eq(status.wire))
+            val row = query {
+                select(
+                    count(PlanStatus.PLANNED), count(PlanStatus.UNPLANNED_EVENT),
+                    count(PlanStatus.INVALID_PROPERTIES), count(null),
+                )
+                    .from(EVENTS)
+                    .where(condition(q.period, q.filter))
+                    .fetchSingle()
+            }
+            PlanStatusCounts(row.value1().toLong(), row.value2().toLong(), row.value3().toLong(), row.value4().toLong())
         }
 
     /** Counts per bucket start. Empty buckets are absent; the domain fills them. */
@@ -121,10 +141,12 @@ private fun condition(period: Period, filter: EventFilter): Condition {
     filter.name?.let { where = where.and(EVENTS.NAME.eq(it)) }
     filter.installationId?.let { where = where.and(EVENTS.INSTALLATION_ID.eq(it)) }
     filter.eventId?.let { where = where.and(EVENTS.EVENT_ID.eq(it)) }
+    filter.planStatus?.let { where = where.and(EVENTS.PLAN_STATUS.eq(it.wire)) }
     return where
 }
 
 private fun Record.toSummary() = ReceiptSummary(
     get(EVENTS.EVENT_ID)!!, get(EVENTS.INSTALLATION_ID)!!, get(EVENTS.NAME)!!,
     get(EVENTS.OCCURRED_AT)!!.toInstant(), get(EVENTS.RECEIVED_AT)!!.toInstant(), get(EVENTS.SDK_VERSION)!!,
+    get(EVENTS.PLAN_STATUS)?.let(PlanStatus::fromWire), // the CHECK constraint allows only known values
 )

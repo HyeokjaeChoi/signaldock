@@ -120,6 +120,7 @@ paths:
         - $ref: '#/components/parameters/NameFilter'
         - $ref: '#/components/parameters/InstallationIdFilter'
         - $ref: '#/components/parameters/EventIdFilter'
+        - $ref: '#/components/parameters/PlanStatusFilter'
         - name: sort
           in: query
           required: false
@@ -208,6 +209,7 @@ paths:
         - $ref: '#/components/parameters/NameFilter'
         - $ref: '#/components/parameters/InstallationIdFilter'
         - $ref: '#/components/parameters/EventIdFilter'
+        - $ref: '#/components/parameters/PlanStatusFilter'
       responses:
         '200':
           description: Counts by event name.
@@ -240,6 +242,7 @@ paths:
         - $ref: '#/components/parameters/NameFilter'
         - $ref: '#/components/parameters/InstallationIdFilter'
         - $ref: '#/components/parameters/EventIdFilter'
+        - $ref: '#/components/parameters/PlanStatusFilter'
         - name: bucket
           in: query
           required: false
@@ -256,6 +259,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EventTimeCounts'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /v1/event-counts/by-plan-status:
+    get:
+      operationId: countReceivedEventsByPlanStatus
+      summary: Count received events by tracking plan status
+      description: >
+        One COUNT over stored rows with receivedAt in [from, to) and the same
+        exact filters as the list, except `planStatus`, which this route splits
+        by and rejects as a parameter. `notChecked` counts rows without a plan
+        status (no plan was configured at ingest, or the row is older than the
+        plan check).
+      security:
+        - queryKey: []
+      parameters:
+        - $ref: '#/components/parameters/ContractVersion'
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+        - $ref: '#/components/parameters/NameFilter'
+        - $ref: '#/components/parameters/InstallationIdFilter'
+        - $ref: '#/components/parameters/EventIdFilter'
+      responses:
+        '200':
+          description: Counts by plan status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventPlanStatusCounts'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -319,6 +354,15 @@ components:
         type: string
         format: uuid
       description: Exact event ID.
+    PlanStatusFilter:
+      name: planStatus
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/PlanStatus'
+      description: >
+        Exact tracking plan status. Rows without a status (not checked) never
+        match.
   responses:
     BadRequest:
       description: >
@@ -466,10 +510,25 @@ components:
         - type: string
         - type: number
         - type: boolean
+    PlanStatus:
+      type: string
+      enum: [planned, unplanned_event, invalid_properties]
+      description: >
+        How the server marked a stored event against its tracking plan.
+        `planned`: the name is in the plan and the properties match (all
+        required keys present, no unknown key, value types match).
+        `unplanned_event`: the name is not in the plan.
+        `invalid_properties`: the name is in the plan but the properties do not
+        match. The server marks events and never rejects or drops one for plan
+        reasons. The plan is optional: when the server has no plan, or the event
+        was stored before the plan check existed, the field is absent ("not
+        checked").
     EventReceiptSummary:
       type: object
       required: [eventId, installationId, name, occurredAt, receivedAt, sdkVersion]
       properties:
+        planStatus:
+          $ref: '#/components/schemas/PlanStatus'
         eventId:
           type: string
         installationId:
@@ -500,6 +559,8 @@ components:
       type: object
       required: [eventId, installationId, name, occurredAt, receivedAt, sdkVersion, properties]
       properties:
+        planStatus:
+          $ref: '#/components/schemas/PlanStatus'
         eventId:
           type: string
         installationId:
@@ -541,6 +602,23 @@ components:
         truncated:
           type: boolean
           description: True when more than 100 names matched.
+    EventPlanStatusCounts:
+      type: object
+      required: [planned, unplannedEvent, invalidProperties, notChecked]
+      properties:
+        planned:
+          type: integer
+          format: int64
+        unplannedEvent:
+          type: integer
+          format: int64
+        invalidProperties:
+          type: integer
+          format: int64
+        notChecked:
+          type: integer
+          format: int64
+          description: Rows without a plan status.
     EventTimeBucket:
       type: object
       required: [start, count]

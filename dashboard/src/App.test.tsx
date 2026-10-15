@@ -24,7 +24,7 @@ const detail: EventReceiptDetail = {
   properties: { price: 19900, in_stock: true, note: "hello" },
 };
 
-function fakeApi(overrides: Partial<Api> = {}): Api & { listEvents: ReturnType<typeof vi.fn> } {
+function fakeApi(overrides: Partial<Api> = {}): Api & Record<"listEvents" | "countsByName" | "countsByPlanStatus", ReturnType<typeof vi.fn>> {
   return {
     listEvents: vi.fn(async (_f, _s, cursor?: string) =>
       cursor === "c2"
@@ -34,6 +34,7 @@ function fakeApi(overrides: Partial<Api> = {}): Api & { listEvents: ReturnType<t
     getEvent: vi.fn(async () => detail),
     countsByName: vi.fn(async () => ({ items: [], truncated: false })),
     countsByTime: vi.fn(async () => ({ timeZone: "Asia/Seoul", bucket: "hour" as const, items: [] })),
+    countsByPlanStatus: vi.fn(async () => ({ planned: 0, unplannedEvent: 0, invalidProperties: 0, notChecked: 0 })),
     ...overrides,
   } as never;
 }
@@ -246,6 +247,90 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
     expect(stamp.querySelector(".stamp-date")?.textContent).toMatch(/2026/);
   });
 
+  describe("plan status (ADR-0022)", () => {
+    const withStatus = (n: number, planStatus?: EventReceiptSummary["planStatus"]) => ({ ...summary(n), planStatus });
+    const counts = (c: Partial<Record<"planned" | "unplannedEvent" | "invalidProperties" | "notChecked", number>>) =>
+      vi.fn(async () => ({ planned: 0, unplannedEvent: 0, invalidProperties: 0, notChecked: 0, ...c })) as never;
+
+    it("shows a badge with a word for each status, and Not checked when the event has none", async () => {
+      const { container } = render(fakeApi({
+        listEvents: vi.fn(async () => ({
+          items: [withStatus(1, "planned"), withStatus(2, "unplanned_event"), withStatus(3, "invalid_properties"), withStatus(4)],
+        })) as never,
+      }));
+      await flush();
+      expect(Array.from(container.querySelectorAll("td .badge")).map((b) => [b.textContent, b.className])).toEqual([
+        [t("plan.planned"), "badge ok"],
+        [t("plan.unplanned_event"), "badge warn"],
+        [t("plan.invalid_properties"), "badge bad"],
+        [t("plan.notChecked"), "badge idle"],
+      ]);
+      expect(screen.getByRole("columnheader", { name: t("list.plan") })).toBeTruthy();
+    });
+
+    it("shows the status in the details", async () => {
+      render(fakeApi({ getEvent: vi.fn(async () => ({ ...detail, planStatus: "invalid_properties" })) as never }));
+      await flush();
+      fireEvent.click(screen.getByRole("button", { name: "event_1" }));
+      await flush();
+      const panel = screen.getByRole("region", { name: t("details.label") });
+      expect(within(panel).getByText(t("details.planStatus")).nextElementSibling!.textContent).toBe(t("plan.invalid_properties"));
+    });
+
+    it("filters by status: the select offers All and the three statuses, and Apply and Clear change the queries", async () => {
+      const api = fakeApi();
+      render(api);
+      await flush();
+      const select = screen.getByRole("combobox", { name: new RegExp(t("controls.planStatus")) }) as HTMLSelectElement;
+      expect(Array.from(select.options).map((o) => [o.value, o.textContent])).toEqual([
+        ["", t("plan.all")],
+        ["planned", t("plan.planned")],
+        ["unplanned_event", t("plan.unplanned_event")],
+        ["invalid_properties", t("plan.invalid_properties")],
+      ]);
+      expect(api.listEvents.mock.calls.at(-1)?.[0].planStatus).toBeUndefined();
+
+      fireEvent.change(select, { target: { value: "invalid_properties" } });
+      expect(api.listEvents.mock.calls.at(-1)?.[0].planStatus).toBeUndefined(); // a draft only, like the other filters
+      fireEvent.click(screen.getByRole("button", { name: t("controls.apply") }));
+      await flush();
+      expect(api.listEvents.mock.calls.at(-1)?.[0].planStatus).toBe("invalid_properties");
+      expect(api.countsByName.mock.calls.at(-1)?.[0].planStatus).toBe("invalid_properties");
+
+      fireEvent.click(screen.getByRole("button", { name: t("controls.clear") }));
+      await flush();
+      expect(api.listEvents.mock.calls.at(-1)?.[0].planStatus).toBeUndefined();
+      expect(select.value).toBe("");
+    });
+
+    it("shows the violations of the shown period as a KPI card with a sub line", async () => {
+      render(fakeApi({ countsByPlanStatus: counts({ planned: 5, unplannedEvent: 2, invalidProperties: 1000 }) }));
+      await flush();
+      const card = screen.getByText(t("kpi.violations")).parentElement!;
+      expect(card.querySelector(".kpi-value")!.textContent).toBe(new Intl.NumberFormat(lang).format(1002));
+      expect(card.querySelector(".kpi-sub")!.textContent).toBe(t("kpi.violationsSub", { unplanned: "2", invalid: new Intl.NumberFormat(lang).format(1000) }));
+    });
+
+    it("shows Not checked instead of a count when no event of the period has a status", async () => {
+      render(fakeApi({ countsByPlanStatus: counts({ notChecked: 4 }) }));
+      await flush();
+      const card = screen.getByText(t("kpi.violations")).parentElement!;
+      expect(card.querySelector(".kpi-value")!.textContent).toBe(t("plan.notChecked"));
+      expect(card.querySelector(".kpi-sub")!.textContent).toBe(t("kpi.violationsNotChecked", { value: "4" }));
+    });
+
+    it("refreshes the plan counts with the other queries and reports its own status", async () => {
+      const api = fakeApi();
+      render(api);
+      await flush();
+      expect(screen.getByText(t("status.byPlan"))).toBeTruthy();
+      const calls = api.countsByPlanStatus.mock.calls.length;
+      fireEvent.click(screen.getAllByRole("button", { name: t("controls.refresh") })[0]!);
+      await flush();
+      expect(api.countsByPlanStatus.mock.calls.length).toBe(calls + 1);
+    });
+  });
+
   describe("at 720 px or less (Q147)", () => {
     const original = window.matchMedia;
     beforeEach(() => {
@@ -261,6 +346,7 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
       expect(d.open).toBe(false);
       expect(within(d).getByText(t("controls.moreFilters"))).toBeTruthy();
       for (const name of ["eventName", "installationId", "eventId"]) expect(d.querySelector(`input[name='${name}']`), name).toBeTruthy();
+      expect(d.querySelector("select[name='planStatus']")).toBeTruthy();
       expect(d.contains(screen.getByRole("combobox", { name: new RegExp(t("controls.period")) }))).toBe(false);
       expect(d.contains(screen.getByRole("combobox", { name: new RegExp(t("controls.sort")) }))).toBe(false);
     });

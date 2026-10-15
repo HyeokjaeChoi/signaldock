@@ -4,6 +4,7 @@ import type { EventReceiptDetail } from "../../generated/typescript/models";
 import type { Api } from "./api";
 import { errorText } from "./errorText";
 import { useTranslation } from "./i18n";
+import { PlanBadge } from "./PlanBadge";
 import { QueryError } from "./polling";
 import { formatDateTime } from "../../web-shared/i18n";
 
@@ -88,6 +89,7 @@ function DetailBody({ detail, timeZone }: { detail: EventReceiptDetail; timeZone
         <dt>{t("details.occurredAt")}</dt><dd>{formatDateTime(detail.occurredAt, timeZone, i18n.language)}</dd>
         <dt>{t("details.receivedAt")}</dt><dd>{formatDateTime(detail.receivedAt, timeZone, i18n.language)}</dd>
         <dt>{t("details.sdkVersion")}</dt><dd>{detail.sdkVersion}</dd>
+        <dt>{t("details.planStatus")}</dt><dd><PlanBadge status={detail.planStatus} /></dd>
       </dl>
       <h3>{t("details.properties")}</h3>
       {Object.keys(detail.properties).length === 0 ? (

@@ -207,7 +207,7 @@ dependencies { implementation("local.signaldock:sdk-android:0.1.0") }
 - 호스트 앱이 `INTERNET`을 선언해야 합니다. SDK 자체의 R8 규칙은 필요 없습니다. 앱이 해당 host에 cleartext를 허용하지 않으면 `https://` endpoint를 설정해야 합니다. SDK는 `http://` endpoint를 HTTPS로 바꾸지 않습니다(ADR-0009).
 - `SignalDock.initialize(context, SignalDockConfig(endpoint, collectionKey))`를 한 번 호출합니다(예: `Application.onCreate`). 이후 반환된 인스턴스에서 `track("name") { property("key", value) }`와 `diagnostics()`를 호출합니다.
 
-[SDK 통합 가이드](docs/integration-guide.ko.md)([English](docs/integration-guide.md))는 `track()` 결과, 취소, 오프라인과 재시도 동작, diagnostics, 개인정보, 버전, 문제 해결을 다룹니다. 선택 사항으로, tracking plan에서 생성한 타입 있는 이벤트 함수는 [`tracking-plan/`](tracking-plan/)과 [ADR-0021](docs/adr/0021-tracking-plan-codegen.md)을 참고하세요.
+[SDK 통합 가이드](docs/integration-guide.ko.md)([English](docs/integration-guide.md))는 `track()` 결과, 취소, 오프라인과 재시도 동작, diagnostics, 개인정보, 버전, 문제 해결을 다룹니다. 선택 사항으로, tracking plan에서 생성한 타입 있는 이벤트 함수는 [`tracking-plan/`](tracking-plan/)과 [ADR-0021](docs/adr/0021-tracking-plan-codegen.md)을 참고하세요. 서버는 저장한 이벤트마다 그 plan과 비교해 `planned`, `unplanned_event`, `invalid_properties` 중 하나로 표시하며, 이벤트를 거부하지 않습니다([ADR-0022](docs/adr/0022-server-tracking-plan-status.md)).
 
 ## 저장소 안내
 

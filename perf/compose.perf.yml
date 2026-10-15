@@ -19,6 +19,8 @@ services:
     environment:
       JAVA_TOOL_OPTIONS: -Xmx512m -Xlog:gc:file=/tmp/gc.log:time,uptime -Dorg.slf4j.simpleLogger.showDateTime=true -Dorg.slf4j.simpleLogger.dateTimeFormat=HH:mm:ss.SSS
       SIGNALDOCK_POOL_STATS_MS: "1000"
+      # No tracking plan check: the measured ingest path stays the one of the published results (ADR-0022).
+      SIGNALDOCK_TRACKING_PLAN: ""
       # Benchmark profile (performance-plan.md "Pool comparison and limits"). The pool size comes from the runner.
       # Concurrency and admission wait change only in the overload run (perf/overload.py, ADR-0013); defaults here are the plan's 8 and 1 s.
       SIGNALDOCK_DB_POOL_SIZE: ${PERF_POOL_SIZE:-4}

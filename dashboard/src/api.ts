@@ -1,15 +1,18 @@
 import {
   ErrorResponseFromJSON,
   EventNameCountsFromJSON,
+  EventPlanStatusCountsFromJSON,
   EventReceiptDetailFromJSON,
   EventReceiptPageFromJSON,
   EventTimeCountsFromJSON,
 } from "../../generated/typescript/models";
 import type {
   EventNameCounts,
+  EventPlanStatusCounts,
   EventReceiptDetail,
   EventReceiptPage,
   EventTimeCounts,
+  PlanStatus,
 } from "../../generated/typescript/models";
 import { QueryError } from "./polling";
 
@@ -20,6 +23,7 @@ export interface Filters {
   name?: string;
   installationId?: string;
   eventId?: string;
+  planStatus?: PlanStatus;
 }
 export type Sort = "receivedAt_desc" | "receivedAt_asc";
 export const PAGE_SIZE = 50;
@@ -29,6 +33,8 @@ export interface Api {
   getEvent(eventId: string, signal: AbortSignal): Promise<EventReceiptDetail>;
   countsByName(filters: Filters, signal: AbortSignal): Promise<EventNameCounts>;
   countsByTime(filters: Filters, signal: AbortSignal): Promise<EventTimeCounts>;
+  /** Counts per plan status. The route splits by status, so `planStatus` is never sent (ADR-0022). */
+  countsByPlanStatus(filters: Filters, signal: AbortSignal): Promise<EventPlanStatusCounts>;
 }
 
 async function getJson(path: string, params: Record<string, string | undefined>, signal: AbortSignal): Promise<unknown> {
@@ -58,7 +64,7 @@ async function getJson(path: string, params: Record<string, string | undefined>,
 }
 
 const filterParams = (f: Filters) => ({
-  from: f.from, to: f.to, name: f.name, installationId: f.installationId, eventId: f.eventId,
+  from: f.from, to: f.to, name: f.name, installationId: f.installationId, eventId: f.eventId, planStatus: f.planStatus,
 });
 
 export const realApi: Api = {
@@ -75,5 +81,8 @@ export const realApi: Api = {
   },
   async countsByTime(f, signal) {
     return EventTimeCountsFromJSON(await getJson("/v1/event-counts/by-time", filterParams(f), signal));
+  },
+  async countsByPlanStatus(f, signal) {
+    return EventPlanStatusCountsFromJSON(await getJson("/v1/event-counts/by-plan-status", { ...filterParams(f), planStatus: undefined }, signal));
   },
 };

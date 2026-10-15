@@ -31,7 +31,7 @@ The collection key checks access for local evaluation. An SDK key can be extract
 ### Commit boundaries
 
 1. Room collection commit: return collection success after validation and atomic storage. A server connection is not required.
-2. Server commit: store valid events in PostgreSQL, then return per-event ACK results. This establishes server receipt.
+2. Server commit: store valid events in PostgreSQL, then return per-event ACK results. This establishes server receipt. With an optional tracking plan, each new row also gets a plan status (`planned`, `unplanned_event`, `invalid_properties`). The status only marks the row; it never changes storage or the ACK ([ADR-0022](docs/adr/0022-server-tracking-plan-status.md)).
 3. Room ACK commit: validate the entire ACK and commit queue changes. This records the earlier receipt on the device.
 
 The sender checks the earliest retry time, selects an immutable batch, sends HTTP, validates the entire ACK, and applies it locally.
@@ -162,7 +162,7 @@ Store common fields in typed columns and properties in JSONB. Query with COUNT /
 
 | Query boundary | Design |
 | --- | --- |
-| List | Newest-first receivedAt / eventId cursor. Default 50, maximum 100 records; exact name / installationId / eventId filters |
+| List | Newest-first receivedAt / eventId cursor. Default 50, maximum 100 records; exact name / installationId / eventId filters and an optional plan status filter |
 | Period / buckets | Initial project timezone: Asia/Seoul. [start, end), at most 30 calendar dates. At most 720 hourly / daily buckets |
 | Refresh | Poll every 5 seconds while visible; stop while hidden and prevent overlapping identical requests. Keep past pages and details in place |
 | Errors | Transient failures use 5→10→20→30-second backoff and a longer Retry-After. Explicit contract errors stop polling |
@@ -208,6 +208,7 @@ Record the environment, source revision/hash, fixtures, actual request rate, err
 | Installation identity and SDK backup exclusion | Lose continuity and unsent data across reinstallation and restore | [ADR-0001](docs/adr/0001-installation-scoped-identity.md) |
 | OpenAPI / JSON with generated sources in Git | Maintain generation paths, drift checks, and scalar validation | [ADR-0002](docs/adr/0002-openapi-json-contract.md) |
 | Event deduplication and a shared sender | Deduplication depends on row retention; serialization is limited to one process | [Spec](.scratch/signaldock-portfolio/spec.md) |
+| Server marks events against an optional tracking plan | The status is fixed at ingest; old rows and no-plan servers have none; no hot reload | [ADR-0022](docs/adr/0022-server-tracking-plan-status.md) |
 | Direct SQL and aggregation at query time | Measure query cost, indices, and DB waits | [Performance plan](.scratch/signaldock-portfolio/performance-plan.md) |
 | SDK verification Dashboard | Prioritize receipt lists and details over analytics features | [Dashboard defaults](.scratch/signaldock-portfolio/dashboard-verification-defaults.md) |
 

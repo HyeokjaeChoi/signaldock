@@ -13,12 +13,24 @@
  */
 
 import { mapValues } from '../runtime';
+import type { PlanStatus } from './PlanStatus';
+import {
+    PlanStatusFromJSON,
+    PlanStatusFromJSONTyped,
+    PlanStatusToJSON,
+    PlanStatusToJSONTyped,
+} from './PlanStatus';
+
 /**
  * 
  * @export
  * @interface EventReceiptSummary
  */
 export interface EventReceiptSummary {
+    /**
+     * 
+     */
+    planStatus?: PlanStatus;
     /**
      * 
      */
@@ -45,6 +57,8 @@ export interface EventReceiptSummary {
     sdkVersion: string;
 }
 
+
+
 /**
  * Check if a given object implements the EventReceiptSummary interface.
  */
@@ -68,6 +82,7 @@ export function EventReceiptSummaryFromJSONTyped(json: any, ignoreDiscriminator:
     }
     return {
         
+        'planStatus': json['planStatus'] == null ? undefined : PlanStatusFromJSON(json['planStatus']),
         'eventId': json['eventId'],
         'installationId': json['installationId'],
         'name': json['name'],
@@ -88,6 +103,7 @@ export function EventReceiptSummaryToJSONTyped(value?: EventReceiptSummary | nul
 
     return {
         
+        'planStatus': PlanStatusToJSON(value['planStatus']),
         'eventId': value['eventId'],
         'installationId': value['installationId'],
         'name': value['name'],

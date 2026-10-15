@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { EventReceiptPage, EventTimeCounts } from "../../generated/typescript/models";
-import { lastReceipt, periodTotal, queryHealth, receivedOnDay, topEvent } from "./kpi";
+import { lastReceipt, periodTotal, planViolations, queryHealth, receivedOnDay, topEvent } from "./kpi";
 import { QueryError } from "./polling";
 import type { QueryState } from "./polling";
 
@@ -33,6 +33,16 @@ describe("receivedOnDay", () => {
   });
   it("is 0 for a bucket of the day with no events", () => {
     expect(receivedOnDay(hourly([["2026-10-12T15:00:00Z", 0]]), "2026-10-13", TZ)).toBe(0);
+  });
+});
+
+describe("planViolations", () => {
+  it("adds unplanned events and invalid properties, and counts the checked events (ADR-0022)", () => {
+    expect(planViolations({ planned: 5, unplannedEvent: 2, invalidProperties: 3, notChecked: 7 })).toEqual({
+      violations: 5, unplanned: 2, invalid: 3, checked: 10, notChecked: 7,
+    });
+    expect(planViolations({ planned: 0, unplannedEvent: 0, invalidProperties: 0, notChecked: 4 })?.checked).toBe(0);
+    expect(planViolations(undefined)).toBeUndefined();
   });
 });
 

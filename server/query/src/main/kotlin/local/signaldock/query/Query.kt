@@ -1,5 +1,6 @@
 package local.signaldock.query
 
+import local.signaldock.ingestion.PlanStatus
 import local.signaldock.ingestion.PropertyValue
 import java.time.Instant
 import java.time.OffsetDateTime
@@ -25,7 +26,12 @@ public class QueryFailure(public val code: String, message: String) : RuntimeExc
 public data class Period(val from: Instant, val to: Instant)
 
 /** Exact-value filters. A null value means no filter. */
-public data class EventFilter(val name: String?, val installationId: UUID?, val eventId: UUID?)
+public data class EventFilter(
+    val name: String?,
+    val installationId: UUID?,
+    val eventId: UUID?,
+    val planStatus: PlanStatus? = null,
+)
 
 public enum class SortOrder(public val parameter: String) {
     NEWEST_FIRST("receivedAt_desc"),
@@ -57,6 +63,8 @@ public data class ReceiptSummary(
     val occurredAt: Instant,
     val receivedAt: Instant,
     val sdkVersion: String,
+    /** Null when no plan was configured at ingest, and for events stored before the plan check (ADR-0022). */
+    val planStatus: PlanStatus? = null,
 )
 
 public data class ReceivedEvent(val summary: ReceiptSummary, val properties: Map<String, PropertyValue>)
@@ -71,7 +79,11 @@ public data class NameCounts(val items: List<NameCount>, val truncated: Boolean)
 
 public data class TimeBucketCount(val start: Instant, val count: Long)
 
-private val FILTER_PARAMETERS = setOf("name", "installationId", "eventId")
+/** Events per plan status in a period. `notChecked` counts rows without a status. */
+public data class PlanStatusCounts(val planned: Long, val unplannedEvent: Long, val invalidProperties: Long, val notChecked: Long)
+
+private val ID_FILTER_PARAMETERS = setOf("name", "installationId", "eventId")
+private val FILTER_PARAMETERS = ID_FILTER_PARAMETERS + "planStatus"
 private val PERIOD_PARAMETERS = setOf("from", "to")
 
 public fun parseListQuery(params: Map<String, List<String>>, zone: ZoneId): ListQuery {
@@ -91,6 +103,12 @@ public fun parseListQuery(params: Map<String, List<String>>, zone: ZoneId): List
 
 public fun parseCountQuery(params: Map<String, List<String>>, zone: ZoneId): CountQuery {
     rejectUnknown(params, PERIOD_PARAMETERS + FILTER_PARAMETERS)
+    return CountQuery(parsePeriod(params, zone), parseFilter(params))
+}
+
+/** The plan-status counts take the exact filters but not `planStatus`: they already split by it. */
+public fun parsePlanStatusCountQuery(params: Map<String, List<String>>, zone: ZoneId): CountQuery {
+    rejectUnknown(params, PERIOD_PARAMETERS + ID_FILTER_PARAMETERS)
     return CountQuery(parsePeriod(params, zone), parseFilter(params))
 }
 
@@ -178,6 +196,9 @@ private fun parseFilter(params: Map<String, List<String>>): EventFilter = EventF
     name = single(params, "name")?.also(::checkName),
     installationId = single(params, "installationId")?.let { parseUuid("installationId", it) },
     eventId = single(params, "eventId")?.let { parseUuid("eventId", it) },
+    planStatus = single(params, "planStatus")?.let { raw ->
+        PlanStatus.fromWire(raw) ?: invalid("planStatus", "must be planned, unplanned_event, or invalid_properties")
+    },
 )
 
 /** Exact filter: no trimming or normalization (Q64, Q84), but a value storage cannot hold never matches. */

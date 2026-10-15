@@ -75,6 +75,14 @@ public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
         return (OffsetDateTime) get(6);
     }
 
+    public void setPlanStatus(String value) {
+        set(7, value);
+    }
+
+    public String getPlanStatus() {
+        return (String) get(7);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -92,7 +100,7 @@ public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
         super(Events.EVENTS);
     }
 
-    public EventsRecord(UUID eventId, UUID installationId, String name, OffsetDateTime occurredAt, String sdkVersion, JSONB properties, OffsetDateTime receivedAt) {
+    public EventsRecord(UUID eventId, UUID installationId, String name, OffsetDateTime occurredAt, String sdkVersion, JSONB properties, OffsetDateTime receivedAt, String planStatus) {
         super(Events.EVENTS);
 
         setEventId(eventId);
@@ -102,6 +110,7 @@ public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
         setSdkVersion(sdkVersion);
         setProperties(properties);
         setReceivedAt(receivedAt);
+        setPlanStatus(planStatus);
         resetTouchedOnNotNull();
     }
 }

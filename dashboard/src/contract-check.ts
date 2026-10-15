@@ -7,6 +7,10 @@ import {
   EventIngestFromJSON,
   EventIngestToJSON,
   BatchAckResponseFromJSON,
+  EventPlanStatusCountsFromJSON,
+  EventReceiptDetailFromJSON,
+  EventReceiptDetailToJSON,
+  EventReceiptPageFromJSON,
 } from "../../generated/typescript/models";
 import { purchaseCompleted } from "../../tracking-plan/generated/typescript/events";
 
@@ -67,6 +71,20 @@ assertEq(
   planned.properties,
   { order_id: "o-1", item_count: 2, total_minor: 9000, is_simulated: true },
   "tracking plan builder properties",
+);
+
+// ADR-0022: plan status is optional on received events; absent and null both mean "not checked".
+const receipt = { eventId: "e1", installationId: "i1", name: "x_y", occurredAt: "t", receivedAt: "t", sdkVersion: "0.1.0" };
+const page = EventReceiptPageFromJSON({
+  items: [receipt, { ...receipt, planStatus: "unplanned_event" }, { ...receipt, planStatus: null }, { ...receipt, planStatus: "invalid_properties" }],
+});
+assertEq(page.items.map((i) => i.planStatus), [undefined, "unplanned_event", undefined, "invalid_properties"], "plan status on list items");
+const detail = EventReceiptDetailFromJSON({ ...receipt, properties: {}, planStatus: "planned" });
+assertEq(EventReceiptDetailToJSON(detail).planStatus, "planned", "plan status on detail round-trip");
+assertEq(
+  EventPlanStatusCountsFromJSON({ planned: 1, unplannedEvent: 2, invalidProperties: 3, notChecked: 4 }),
+  { planned: 1, unplannedEvent: 2, invalidProperties: 3, notChecked: 4 },
+  "plan status counts",
 );
 
 console.log("ALL CONTRACT-CHECK ASSERTIONS PASSED");

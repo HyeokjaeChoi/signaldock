@@ -179,7 +179,7 @@ sdk.productViewed(productId = "P-001", priceMinor = 59_000)
 sdk.track("product_viewed") { property("product_id", "P-001") }
 ```
 
-TypeScript 출력에는 타입과, `{ name, properties }`를 반환하는 builder 함수가 있습니다. 서버는 plan을 검사하지 않습니다(spec Q152).
+TypeScript 출력에는 타입과, `{ name, properties }`를 반환하는 builder 함수가 있습니다. SDK는 plan을 검사하지 않습니다. 서버는 검사할 수 있습니다. 서버에 plan이 있으면(`SIGNALDOCK_TRACKING_PLAN`, Compose가 설정) 저장한 이벤트마다 `planned`, `unplanned_event`, `invalid_properties` 중 하나로 표시합니다. plan 때문에 이벤트를 거부하거나 버리지 않으며 ACK도 바뀌지 않습니다(spec Q155, [ADR-0022](adr/0022-server-tracking-plan-status.md)). Dashboard가 상태와 위반 건수를 보여 줍니다.
 
 ## 4. TrackResult의 모든 경우 처리
 

@@ -20,6 +20,13 @@ import {
     PropertyValueToJSON,
     PropertyValueToJSONTyped,
 } from './PropertyValue';
+import type { PlanStatus } from './PlanStatus';
+import {
+    PlanStatusFromJSON,
+    PlanStatusFromJSONTyped,
+    PlanStatusToJSON,
+    PlanStatusToJSONTyped,
+} from './PlanStatus';
 
 /**
  * 
@@ -27,6 +34,10 @@ import {
  * @interface EventReceiptDetail
  */
 export interface EventReceiptDetail {
+    /**
+     * 
+     */
+    planStatus?: PlanStatus;
     /**
      * 
      */
@@ -58,6 +69,8 @@ export interface EventReceiptDetail {
     properties: { [key: string]: PropertyValue; };
 }
 
+
+
 /**
  * Check if a given object implements the EventReceiptDetail interface.
  */
@@ -82,6 +95,7 @@ export function EventReceiptDetailFromJSONTyped(json: any, ignoreDiscriminator: 
     }
     return {
         
+        'planStatus': json['planStatus'] == null ? undefined : PlanStatusFromJSON(json['planStatus']),
         'eventId': json['eventId'],
         'installationId': json['installationId'],
         'name': json['name'],
@@ -103,6 +117,7 @@ export function EventReceiptDetailToJSONTyped(value?: EventReceiptDetail | null,
 
     return {
         
+        'planStatus': PlanStatusToJSON(value['planStatus']),
         'eventId': value['eventId'],
         'installationId': value['installationId'],
         'name': value['name'],
