@@ -49,6 +49,8 @@ This portfolio for mobile SDK engineer roles covers public API design, lifecycle
 | Foreground response and background recovery | Share the sender and durable retry state with WorkManager. Keep collection writes separate from the send lock | Sender contention, cancellation, Worker recovery, and retry waits across restart ran on two emulators ([issue 20](.scratch/signaldock-portfolio/issues/20-sdk-durability-device.md)) |
 | Shared contracts and independent releases | OpenAPI / JSON with generated source drift checks. Install the Maven ZIP in a separate R8 consumer app | Round trips, earlier-version fixtures, and DB migrations ([issue 22](.scratch/signaldock-portfolio/issues/22-contract-db-change-checks.md)); Maven ZIP installation and an R8 release consumer app ([issue 06](.scratch/signaldock-portfolio/issues/06-distribution.md), [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md)) |
 
+Engineering judgment: [design review, failure modes, postmortems, and threat model](docs/engineering/README.md).
+
 ## Event flow
 
 1. After initialization succeeds, the host app calls `track()`. Collection succeeds after input validation and Room storage.
