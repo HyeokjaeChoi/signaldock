@@ -3,7 +3,7 @@
 Status: resolved
 Type: task
 Blocked by: None
-Execution: Done (merged in PR #123, 2026-10-15 UTC) SDK part only; the server part is deferred to contract 2 (ADR-0030).
+Execution: Done (merged in PR #123, 2026-10-15 UTC) SDK part only. The server part is deferred to contract 2 by the same Q159 decision (ADR-0030). The Q159 date 2026-10-16 is local time (KST, UTC+9); it is 2026-10-15 UTC, before the merge.
 
 ## Scope and completion criteria
 
