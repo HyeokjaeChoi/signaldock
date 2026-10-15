@@ -17,6 +17,9 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import local.signaldock.persistence.Database
 import local.signaldock.persistence.DatabaseLimits
 import local.signaldock.persistence.DatabaseUnavailable
@@ -265,6 +268,24 @@ class IngestionIntegrationTest {
             }
         }
         assertEquals(0, runBlocking { countRows() })
+    }
+
+    // Issue 46: names, property keys, and values reach SQL only as bound parameters. The hostile text is stored as is.
+    @Test
+    fun `sql injection text in name, property key, and value is stored verbatim and tables stay intact`() = runBlocking {
+        val ingestion = Ingestion(database)
+        val payloads = listOf("' OR 1=1--", "'; DROP TABLE events;--", "x' UNION SELECT NULL--", "1; DELETE FROM events")
+        payloads.forEachIndexed { i, payload ->
+            val id = "30d66f95-2435-4e56-b52a-70b1c8bba5%02d".format(i)
+            val response = ingestion.ingest(parse(batch(event(id, name = payload, properties = """{"$payload":"$payload"}"""))))
+            assertEquals(ItemAck.Status.ACCEPTED, response.results.single().status, payload)
+        }
+        assertEquals(payloads.size, countRows()) // no DROP or DELETE ran, no extra row
+        val stored = database.transaction { query { select(EVENTS.NAME, EVENTS.PROPERTIES).from(EVENTS).fetch().map { it.value1() to it.value2().data() } } }
+        assertEquals(payloads.toSet(), stored.map { it.first }.toSet())
+        for ((name, properties) in stored) {
+            assertEquals(name, Json.parseToJsonElement(properties).jsonObject[name]?.jsonPrimitive?.content)
+        }
     }
 
     private suspend fun countRows(): Int = database.transaction { query { fetchCount(EVENTS) } }
