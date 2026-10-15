@@ -60,7 +60,7 @@ class DeprecationTest {
 
     @Test
     fun `malformed headers are ignored and delivery is unchanged`() = runBlocking {
-        val cases = listOf("true" to "soon", "@abc" to "2026-12-31", "@" to "", "@99999999999999999999" to "Fri, 31 Dec 2026 23:59:59 GMT", "x" to "Thu, 31 Dec 2026 23:59:59 GMTbogus")
+        val cases = listOf("true" to "soon", "@abc" to "2026-12-31", "@" to "", "@99999999999999999999" to "Fri, 31 Dec 2026 23:59:59 GMT", "x" to "Thu, 31 Dec 2026 23:59:59 GMTbogus", "x" to "Thu, 31 Dec 2026 23:59:59 PST")
         for ((dep, sun) in cases) {
             transport.handler = withHeaders(dep, sun)
             val sdk = sendBatches(1)
@@ -76,6 +76,19 @@ class DeprecationTest {
         val d = sendBatches(1).diagnostics().contractDeprecation!!
         assertNull(d.deprecatedAtEpochMillis)
         assertEquals(SUNSET_MILLIS, d.sunsetAtEpochMillis)
+    }
+
+    @Test
+    fun `a later response with one header keeps the other earlier valid value`() = runBlocking {
+        val sdk = newSdk(transport = transport, logger = logger)
+        transport.handler = withHeaders(null, SUNSET)
+        sdk.track("e"); sdk.delivery.sender.run()
+        transport.handler = withHeaders(DEPRECATION, null)
+        sdk.track("e"); sdk.delivery.sender.run()
+        val d = sdk.diagnostics().contractDeprecation!!
+        assertEquals(1_767_225_600_000L, d.deprecatedAtEpochMillis)
+        assertEquals(SUNSET_MILLIS, d.sunsetAtEpochMillis)
+        assertEquals(1, deprecationWarnings().size)
     }
 
     @Test

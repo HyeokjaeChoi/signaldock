@@ -43,10 +43,15 @@ internal fun parseRetryAfterMillis(value: String?, nowMillis: Long): Long? {
     return (date - nowMillis).takeIf { it > 0 }
 }
 
-/** Parses an HTTP-date (RFC 9110 IMF-fixdate) to epoch milliseconds, or null if it is malformed. */
-internal fun parseHttpDateMillis(value: String): Long? {
+/** Parses an HTTP-date for Retry-After (any zone name `zzz`) to epoch milliseconds, or null if it is malformed. */
+internal fun parseHttpDateMillis(value: String): Long? = parseDateMillis(value, "EEE, dd MMM yyyy HH:mm:ss zzz")
+
+/** Strict RFC 9110 IMF-fixdate with the literal `GMT` suffix, for Sunset (ADR-0030). */
+internal fun parseImfFixdateMillis(value: String): Long? = parseDateMillis(value, "EEE, dd MMM yyyy HH:mm:ss 'GMT'")
+
+private fun parseDateMillis(value: String, pattern: String): Long? {
     val pos = ParsePosition(0)
-    val date = SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US)
+    val date = SimpleDateFormat(pattern, Locale.US)
         .apply { timeZone = TimeZone.getTimeZone("GMT"); isLenient = false }
         .parse(value, pos)
     return if (date != null && pos.index == value.length) date.time else null // trailing text is invalid

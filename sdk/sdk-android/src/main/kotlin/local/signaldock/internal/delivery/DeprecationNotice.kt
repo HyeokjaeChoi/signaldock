@@ -22,9 +22,13 @@ internal class DeprecationNotice(private val logger: Logger) {
 
     fun observe(deprecation: String?, sunset: String?) {
         val deprecatedAt = parseDeprecationMillis(deprecation)
-        val sunsetAt = sunset?.trim()?.let { parseHttpDateMillis(it) }
+        val sunsetAt = sunset?.trim()?.let { parseImfFixdateMillis(it) }
         if (deprecatedAt == null && sunsetAt == null) return
-        current = ContractDeprecation(deprecatedAt, sunsetAt)
+        val previous = current // each field keeps its latest valid value
+        current = ContractDeprecation(
+            deprecatedAt ?: previous?.deprecatedAtEpochMillis,
+            sunsetAt ?: previous?.sunsetAtEpochMillis,
+        )
         if (warned.compareAndSet(false, true)) {
             val date = sunsetAt?.let { isoDate(it) } ?: "unknown"
             logger.warn("server contract version is deprecated; sunset date: $date")
