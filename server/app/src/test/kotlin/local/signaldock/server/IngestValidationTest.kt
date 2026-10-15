@@ -67,6 +67,47 @@ class IngestValidationTest {
     }
 
     @Test
+    fun `rejects a lone surrogate escape per item and keeps valid siblings`() {
+        val id = { n: Int -> "0f96a970-a1c4-4b78-9934-fca05faeab2$n" }
+        val parsed = parse(
+            batch(
+                listOf(
+                    event(id = id(0)),
+                    event(id = id(1), name = "bad\\ud800"),
+                    event(id = id(2), properties = """{"k":"\udc00"}"""),
+                    event(id = id(3), properties = """{"a\ud83d":1}"""),
+                    event(id = id(4), properties = """{"k":"😀"}"""),
+                ).joinToString(","),
+            ),
+        )
+
+        assertEquals(listOf(null, "INVALID_TEXT", "INVALID_PROPERTIES", "INVALID_PROPERTIES", null), parsed.items.map { it.rejectionCode })
+    }
+
+    @Test
+    fun `rejects a nested property value per item however deep`() {
+        val deep = "[".repeat(5000) + "]".repeat(5000)
+        val parsed = parse(
+            batch(
+                listOf(
+                    event(id = "0f96a970-a1c4-4b78-9934-fca05faeab20"),
+                    event(id = "0f96a970-a1c4-4b78-9934-fca05faeab21", properties = """{"k":{"a":{"b":[{"c":[1,"x",true,null]}]}}}"""),
+                    event(id = "0f96a970-a1c4-4b78-9934-fca05faeab22", properties = """{"k":$deep}"""),
+                    event(id = "0f96a970-a1c4-4b78-9934-fca05faeab23", properties = """{"k":[]}"""),
+                ).joinToString(","),
+            ),
+        )
+
+        assertEquals(listOf(null, "INVALID_PROPERTIES", "INVALID_PROPERTIES", "INVALID_PROPERTIES"), parsed.items.map { it.rejectionCode })
+    }
+
+    @Test
+    fun `keeps raw syntax errors inside a nested property value at request level`() {
+        for (bad in listOf("""{"k":[1,}""", """{"k":{"a":1,}}""", """{"k":[1 2]}""", """{"k":{"a" 1}}""", """{"k":[[[[[[[[1]]}"""))
+            assertEquals("MALFORMED_REQUEST", assertFailsWith<RequestFailure> { parse(batch(event(properties = bad))) }.code, bad)
+    }
+
+    @Test
     fun `rejects occurredAt outside the supported UTC year range per item`() {
         val parsed = parse(batch(event(occurredAt = "+300000-01-01T00:00:00.000Z")))
 
