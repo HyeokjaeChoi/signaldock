@@ -202,8 +202,10 @@ ADRs:
 - ADR-0021 (`docs/adr/0021-tracking-plan-codegen.md`), for step 7 of `scripts/verify-contract.sh` (issue 37)
 - ADR-0009 (`docs/adr/0009-maven-zip-and-consumer-app.md`), for `scripts/verify-consumer.sh` and `scripts/release.sh` (issue 32; release notes in `docs/releases/`)
 - ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for `scripts/host-cost-measure.sh` (issue 36)
+- ADR-0024 (`docs/adr/0024-release-workflow-and-dependency-updates.md`), for `.github/workflows/release.yml`, `.github/dependabot.yml`, the `--check` flag of `scripts/release.sh`, and `docs/releases/README.md` (issue 41)
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
+- Q149 (first release)
 - 7. Completion criteria and verification plan
 - 8, C. Small modules and local execution
 - 9. Technical conditions to check on entry into implementation

@@ -1,0 +1,73 @@
+# Issue 41 (ADR-0024): a pushed tag vX.Y.Z builds the Maven ZIP and creates the GitHub Release.
+# It runs only on a new tag push. v0.1.0 was published by hand and is not touched.
+name: release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      TAG: ${{ github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify tag
+        run: |
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "error: tag '$TAG' is not vMAJOR.MINOR.PATCH (pre-release tags are not supported)" >&2; exit 1
+          fi
+          VERSION="${TAG#v}"
+          # Same comparison as a local run; exits before any build.
+          scripts/release.sh "$VERSION" --check
+          # Release only commits that are on main.
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main \
+            || { echo "error: $TAG is not on main" >&2; exit 1; }
+          [ -f "docs/releases/$TAG.md" ] \
+            || { echo "error: release notes docs/releases/$TAG.md are required; add them and move the tag" >&2; exit 1; }
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "error: a release for $TAG already exists; the workflow never overwrites one" >&2; exit 1
+          fi
+      - run: scripts/setup-toolchain.sh
+      # ubuntu-latest ships an Android SDK at $ANDROID_HOME.
+      - name: Build ZIP and checksum
+        run: |
+          export JAVA_HOME="$PWD/.tools/$(ls .tools | grep '^jdk-')"
+          scripts/release.sh "${TAG#v}"
+          cp "docs/releases/$TAG.md" dist/RELEASE_NOTES.md
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  # Separate job: only this one gets a write token, and it runs no project code.
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: dist
+      - name: Create release
+        run: |
+          # gh fails if the release exists; --verify-tag fails if the tag is not on the remote.
+          gh release create "$TAG" dist/*.zip dist/*.sha256 \
+            --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --title "SignalDock $TAG" --notes-file dist/RELEASE_NOTES.md
