@@ -211,6 +211,21 @@ Spec (`.scratch/signaldock-portfolio/spec.md`):
 
 Also read `TOOLCHAIN.md`.
 
+## Community health files (`.github/ISSUE_TEMPLATE/`; also `SECURITY.md`, `CONTRIBUTING.md`, `.github/PULL_REQUEST_TEMPLATE.md`, `docs/versioning.md`, issue 42)
+
+Keep these files in step with `AGENTS.md` (PR and review rules), `README.md` (limitations, supported versions), and the spec. `docs/versioning.md` is the one source of what counts as a breaking change and of the deprecation rule. Change the supported-version table in both READMEs when the AAR requirements change. Do not add a support promise or a contact address that the repository does not already state.
+
+ADRs:
+- ADR-0012 (`docs/adr/0012-contract-and-db-change-checks.md`), for the contract version
+- ADR-0019 (`docs/adr/0019-sdk-public-api-check.md`), for the public API dump
+- ADR-0009 (`docs/adr/0009-maven-zip-and-consumer-app.md`), for the AAR requirements
+
+Spec (`.scratch/signaldock-portfolio/spec.md`):
+- 1. Goal and scope
+- 3. SDK public behavior
+- 5. Server receipt and duplicate handling (the collection key is not a secret)
+- Q148 to Q150 (license, release, bridges out of scope)
+
 ## Rejected alternatives
 
 This section only points to where each decision is recorded.
