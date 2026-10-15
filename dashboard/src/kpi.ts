@@ -1,5 +1,5 @@
 // KPI cards (Q140, ADR-0016). Every value comes from data the page already fetched: no new request, no new API.
-import type { EventNameCounts, EventReceiptPage, EventTimeCounts } from "../../generated/typescript/models";
+import type { EventNameCounts, EventPlanStatusCounts, EventReceiptPage, EventTimeCounts } from "../../generated/typescript/models";
 import type { Sort } from "./api";
 import { dateIn } from "./period";
 import type { QueryState } from "./polling";
@@ -17,6 +17,20 @@ export function receivedOnDay(counts: EventTimeCounts | undefined, day: string, 
 /** Events of the whole shown period: the sum of all by-time buckets (Q144). `undefined` before the first result. Filters in force apply. */
 export function periodTotal(counts: EventTimeCounts | undefined): number | undefined {
   return counts ? counts.items.reduce((sum, b) => sum + b.count, 0) : undefined;
+}
+
+/** Plan violations of the shown period (ADR-0022): events whose name is not in the plan, plus events with properties that do not match.
+ *  `checked` is the events that carry a status; with 0 checked no plan was in force for them. `undefined` before the first result. */
+export function planViolations(counts: EventPlanStatusCounts | undefined):
+  { violations: number; unplanned: number; invalid: number; checked: number; notChecked: number } | undefined {
+  if (!counts) return undefined;
+  return {
+    violations: counts.unplannedEvent + counts.invalidProperties,
+    unplanned: counts.unplannedEvent,
+    invalid: counts.invalidProperties,
+    checked: counts.planned + counts.unplannedEvent + counts.invalidProperties,
+    notChecked: counts.notChecked,
+  };
 }
 
 /** The name with the largest count. A tie keeps the first name in server order. */

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { NameChart, TimeChart } from "./Charts";
 import { CopyButton, Details } from "./Details";
+import { PlanBadge } from "./PlanBadge";
 import { realApi } from "./api";
 import type { Api, Filters, Sort } from "./api";
 import { dateIn, resolvePeriod } from "./period";
@@ -9,12 +10,13 @@ import type { Preset } from "./period";
 import { usePolledQuery } from "./polling";
 import type { QueryState } from "./polling";
 import { errorText } from "./errorText";
-import { lastReceipt, periodTotal, queryHealth, receivedOnDay, topEvent } from "./kpi";
+import { lastReceipt, periodTotal, planViolations, queryHealth, receivedOnDay, topEvent } from "./kpi";
 import type { Health } from "./kpi";
 import { useTranslation } from "./i18n";
 import type { T } from "./i18n";
 import { LANGUAGES, formatBucketLabel, formatClock, formatDate, formatDateTimeParts, formatNumber } from "../../web-shared/i18n";
 import type { Language } from "../../web-shared/i18n";
+import { PlanStatus } from "../../generated/typescript/models";
 import { THEMES, useTheme } from "../../web-shared/theme";
 import type { Theme } from "../../web-shared/theme";
 
@@ -22,8 +24,9 @@ import type { Theme } from "../../web-shared/theme";
 export const PROJECT_TIME_ZONE: string = import.meta.env.VITE_SIGNALDOCK_TIME_ZONE ?? "Asia/Seoul";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-interface Draft { name: string; installationId: string; eventId: string }
-const EMPTY: Draft = { name: "", installationId: "", eventId: "" };
+interface Draft { name: string; installationId: string; eventId: string; planStatus: "" | PlanStatus }
+const EMPTY: Draft = { name: "", installationId: "", eventId: "", planStatus: "" };
+const PLAN_STATUSES = Object.values(PlanStatus);
 
 const HEALTH_BADGE: Record<Health, string> = { live: "ok", paused: "idle", loading: "idle", retrying: "warn", stopped: "bad", idle: "idle" };
 
@@ -159,6 +162,7 @@ export function App({ api = realApi }: { api?: Api }) {
         name: applied.name || undefined,
         installationId: applied.installationId || undefined,
         eventId: applied.eventId || undefined,
+        planStatus: applied.planStatus || undefined,
       }
     : undefined;
   const filterKey = filters ? JSON.stringify(filters) : null;
@@ -167,6 +171,8 @@ export function App({ api = realApi }: { api?: Api }) {
   const list = usePolledQuery(filterKey && `list|${filterKey}|${sort}|${cursor ?? ""}`, (s) => api.listEvents(filters!, sort, cursor, s), cursors.length === 0);
   const byName = usePolledQuery(filterKey && `name|${filterKey}`, (s) => api.countsByName(filters!, s));
   const byTime = usePolledQuery(filterKey && `time|${filterKey}`, (s) => api.countsByTime(filters!, s));
+  // The plan-status counts split by status, so the status filter does not apply to them (ADR-0022).
+  const byPlan = usePolledQuery(filterKey && `plan|${JSON.stringify({ ...filters, planStatus: undefined })}`, (s) => api.countsByPlanStatus(filters!, s));
 
   const resetPaging = () => setCursors([]);
   const applyFilters = (e: React.FormEvent<HTMLFormElement>) => {
@@ -188,20 +194,22 @@ export function App({ api = realApi }: { api?: Api }) {
     list.refresh();
     byName.refresh();
     byTime.refresh();
+    byPlan.refresh();
   };
   const timeLabel = (iso: string, bucket: string) => formatBucketLabel(iso, bucket === "hour", tz, lang);
 
   const page = list.state.data;
   const today = formatDate(now, tz, lang);
-  const filtered = Boolean(applied.name || applied.installationId || applied.eventId);
+  const filtered = Boolean(applied.name || applied.installationId || applied.eventId || applied.planStatus);
 
   // KPI values: derived from the three queries above (Q140). No extra request.
   const receivedToday = receivedOnDay(byTime.state.data, dateIn(now, tz), tz);
   const shownTotal = periodTotal(byTime.state.data);
   const lastAt = lastReceipt(page, sort, cursors.length === 0);
   const top = topEvent(byName.state.data);
-  const { health, nextEligibleAt } = queryHealth([list.state, byName.state, byTime.state], [cursors.length === 0, true, true]);
-  const lastSuccess = Math.max(0, list.state.lastSuccessAt ?? 0, byName.state.lastSuccessAt ?? 0, byTime.state.lastSuccessAt ?? 0);
+  const violations = planViolations(byPlan.state.data);
+  const { health, nextEligibleAt } = queryHealth([list.state, byName.state, byTime.state, byPlan.state], [cursors.length === 0, true, true, true]);
+  const lastSuccess = Math.max(0, list.state.lastSuccessAt ?? 0, byName.state.lastSuccessAt ?? 0, byTime.state.lastSuccessAt ?? 0, byPlan.state.lastSuccessAt ?? 0);
   const clock = (ms: number) => formatClock(ms, tz, lang);
   // A card without another sub line still says what is known: the last success of any query, or that there is none yet (Q144).
   const lastSuccessSub = lastSuccess ? t("kpi.liveSub", { time: clock(lastSuccess) }) : t("kpi.noSuccessSub");
@@ -230,6 +238,12 @@ export function App({ api = realApi }: { api?: Api }) {
       <label className="field">{t("controls.eventName")} <input name="eventName" autoComplete="off" spellCheck={false} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></label>
       <label className="field">installationId <input name="installationId" autoComplete="off" spellCheck={false} aria-invalid={filterError === "filter.installationIdUuid" || undefined} aria-describedby={filterError === "filter.installationIdUuid" ? "filter-error" : undefined} value={draft.installationId} onChange={(e) => setDraft({ ...draft, installationId: e.target.value })} /></label>
       <label className="field">eventId <input name="eventId" autoComplete="off" spellCheck={false} aria-invalid={filterError === "filter.eventIdUuid" || undefined} aria-describedby={filterError === "filter.eventIdUuid" ? "filter-error" : undefined} value={draft.eventId} onChange={(e) => setDraft({ ...draft, eventId: e.target.value })} /></label>
+      <label className="field">{t("controls.planStatus")}{" "}
+        <select name="planStatus" value={draft.planStatus} onChange={(e) => setDraft({ ...draft, planStatus: e.target.value as Draft["planStatus"] })}>
+          <option value="">{t("plan.all")}</option>
+          {PLAN_STATUSES.map((s) => <option key={s} value={s}>{t(`plan.${s}`)}</option>)}
+        </select>
+      </label>
     </>
   );
 
@@ -264,6 +278,15 @@ export function App({ api = realApi }: { api?: Api }) {
           }
         />
         <Kpi label={t("kpi.top")} value={top ? <code className="kpi-name">{top.name}</code> : <span className="kpi-none">{t("kpi.none")}</span>} sub={top ? t("kpi.topCount", { value: formatNumber(top.count, lang) }) : t("kpi.topNoneSub")} />
+        <Kpi
+          label={t("kpi.violations")}
+          value={!violations || violations.checked === 0 ? <span className="kpi-none">{violations ? t("plan.notChecked") : t("kpi.none")}</span> : formatNumber(violations.violations, lang)}
+          sub={
+            !violations ? t("kpi.violationsHint")
+            : violations.checked === 0 ? t("kpi.violationsNotChecked", { value: formatNumber(violations.notChecked, lang) })
+            : t("kpi.violationsSub", { unplanned: formatNumber(violations.unplanned, lang), invalid: formatNumber(violations.invalid, lang) })
+          }
+        />
       </section>
 
       <section ref={toolbarRef} className="toolbar" aria-label={t("controls.label")}>
@@ -313,6 +336,7 @@ export function App({ api = realApi }: { api?: Api }) {
         <Status label={t("status.events")} state={list.state} tz={tz} onRefresh={list.refresh} polled={cursors.length === 0} />
         <Status label={t("status.byName")} state={byName.state} tz={tz} onRefresh={byName.refresh} />
         <Status label={t("status.byTime")} state={byTime.state} tz={tz} onRefresh={byTime.refresh} />
+        <Status label={t("status.byPlan")} state={byPlan.state} tz={tz} onRefresh={byPlan.refresh} />
       </div>
 
       <div className="split">
@@ -325,7 +349,7 @@ export function App({ api = realApi }: { api?: Api }) {
               <table>
                 <caption className="sr-only">{t("list.title", { page: formatNumber(cursors.length + 1, i18n.language) })}</caption>
                 <thead>
-                  <tr><th scope="col">receivedAt</th><th scope="col">{t("list.name")}</th><th scope="col">{t("list.eventId")}</th><th scope="col">{t("list.installationId")}</th><th scope="col">{t("list.sdk")}</th></tr>
+                  <tr><th scope="col">receivedAt</th><th scope="col">{t("list.name")}</th><th scope="col">{t("list.eventId")}</th><th scope="col">{t("list.installationId")}</th><th scope="col">{t("list.sdk")}</th><th scope="col">{t("list.plan")}</th></tr>
                 </thead>
                 <tbody>
                   {page.items.map((ev) => (
@@ -335,6 +359,7 @@ export function App({ api = realApi }: { api?: Api }) {
                       <td><code>{ev.eventId.slice(0, 8)}</code> <CopyButton text={ev.eventId} label={t("copy.eventIdOf", { id: ev.eventId })} /></td>
                       <td><code>{ev.installationId.slice(0, 8)}</code> <CopyButton text={ev.installationId} label={t("copy.installationIdOf", { id: ev.installationId })} /></td>
                       <td>{ev.sdkVersion}</td>
+                      <td><PlanBadge status={ev.planStatus} /></td>
                     </tr>
                   ))}
                 </tbody>
