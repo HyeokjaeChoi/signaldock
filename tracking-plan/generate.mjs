@@ -32,8 +32,9 @@ export function validatePlan(plan) {
   const bad = (m) => errors.push(m);
   const isText = (s) => typeof s === "string" && s.trim() !== "" && !/[\r\n]|\*\/|\/\*/.test(s) && s === s.trim();
   if (plan?.version !== 1) bad("version must be 1");
-  const pkg = plan?.kotlinPackage ?? "";
-  if (!/^[a-z][a-z0-9]*(\.[a-z][a-z0-9_]*)*$/.test(pkg) || pkg.split(".").some((w) => KOTLIN_KEYWORDS.has(w))) {
+  // typeof first: a regex test or Object.hasOwn would turn an array like ["a.b"] into a string.
+  const pkg = plan?.kotlinPackage;
+  if (typeof pkg !== "string" || !/^[a-z][a-z0-9]*(\.[a-z][a-z0-9_]*)*$/.test(pkg) || pkg.split(".").some((w) => KOTLIN_KEYWORDS.has(w))) {
     bad("kotlinPackage must be a lowercase dotted package name with no Kotlin keyword");
   }
   if (!Array.isArray(plan?.events) || plan.events.length === 0) bad("events must be a non-empty array");
@@ -65,7 +66,7 @@ export function validatePlan(plan) {
         if (params.has(camel(p.key))) bad(`${pat}: generated parameter name ${camel(p.key)} is also made by another key`);
         params.add(camel(p.key));
       }
-      if (!Object.hasOwn(TYPES, p?.type)) bad(`${pat}: type must be one of ${Object.keys(TYPES).join(", ")}`);
+      if (typeof p?.type !== "string" || !Object.hasOwn(TYPES, p.type)) bad(`${pat}: type must be one of ${Object.keys(TYPES).join(", ")}`);
       if (typeof p?.required !== "boolean") bad(`${pat}: required must be true or false`);
       if (!isText(p?.description)) bad(`${pat}: description must be one trimmed line of text without "/*" or "*/"`);
     }
