@@ -57,7 +57,7 @@ Dismissed alerts:
 
 `paths-ignore` does not apply to the compiled `java-kotlin` analysis (CodeQL documents it for interpreted languages only). So the generated jOOQ alerts are dismissed, not ignored. Gap: a regeneration of the jOOQ classes can raise new alerts for the same rule; dismiss them again.
 
-Gap: I did not yet check the CodeQL result on the PR merge ref. The PR description records it.
+Result on the PR merge ref (2026-10-16 UTC, PR #158): `gh api "repos/HyeokjaeChoi/signaldock/code-scanning/alerts?state=open&ref=refs/pull/158/merge&per_page=100" --jq length` returned 0 open alerts.
 
 ## Gaps
 
