@@ -19,3 +19,11 @@ Spec Q149 made the first release by hand (`scripts/release.sh`, then `gh release
 
 - The workflow ran on no tag. `actionlint` was not installed; the YAML parses, and the tag logic ran in a shell (see issue 41). The Dependabot file has not been parsed by GitHub; its result shows in the repository's Insights, Dependency graph, Dependabot.
 - Pushing a tag from a protected-tag rule, or a repository setting that blocks `GITHUB_TOKEN` from writing releases ("Workflow permissions"), would fail the `publish` job.
+
+## Amendment (2026-10-16 UTC)
+
+The first Dependabot run (PRs #115 to #122) showed two problems.
+
+1. **Runtime majors.** It proposed PostgreSQL 17 to 18, Node 24 to 26, Eclipse Temurin 21 to 24 and `@types/node` 24 to 26. PostgreSQL 18 cannot read a PostgreSQL 17 data directory without a dump and restore, and the JDK and Node lines are pinned in `TOOLCHAIN.md`. Dependabot now ignores semver-major updates for Docker images, Compose images and `@types/node`. A runtime major is a manual decision with its own PR.
+2. **PR description length.** The `length` job (3,500 characters) failed on every Dependabot PR, because Dependabot writes release notes into the body. The job now skips PRs opened by `dependabot[bot]`. The limit exists for CodeRabbit and for human-written design records; release notes are neither.
+
