@@ -1,9 +1,9 @@
 # 52. Renovate for dependency updates
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Branch `ci/renovate`. The decision is spec Q160, ADR-0031.
+Execution: Done (merged in PR #144, 2026-10-16 16:31:14 UTC)
 
 ## Scope and completion criteria
 
@@ -20,4 +20,9 @@ Verification:
 
 ## Comments
 
-- Gap: the Renovate app is not installed. The first real run log must show the catalog and Google Maven lookups.
+- 2026-10-16 UTC: PR #144 merged (config, Dependabot version updates removed, ADR-0031).
+- 2026-10-16 UTC: Renovate GitHub App installed, limited to the `signaldock` repository only (it was "All repositories"). Mend onboarding: "Renovate Only" (Community, free), mode "Scan and Alert" (Interactive).
+- 2026-10-16 UTC: first Renovate output is PR #149 "Update dependency org.postgresql:postgresql to v42.7.12 [SECURITY]", labels `dependencies` and `security`. It comes from the OSV and alerts path (ADR-0031 item 9).
+- 2026-10-16 UTC: Dependency Dashboard issue #150 exists (created 17:03:03Z; `gh issue list --author app/renovate --state all`). It did not exist right after the merge.
+- ADR-0031 "Gaps" and `docs/engineering/threat-model.md` now state the install.
+- Gap: I did not read the Renovate run log, so Google Maven lookups for AndroidX and AGP are not confirmed.

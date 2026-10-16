@@ -39,5 +39,5 @@ The user decided (Q162, 2026-10-16 UTC) to replace the CodeQL default setup with
 
 - Gap: the independent consumer app (`compatibility/`, built by `scripts/verify-consumer.sh`) and `sdk/measure-app` are not built, so CodeQL does not analyze them.
 - Gap: test source sets are not analyzed.
-- Gap: the first run on `main` must show `java-kotlin` results in the Security tab. Until then, CodeQL results are not a verified claim. The PR run cannot upload results while the default setup is on (expected).
+- The default setup was turned off on 2026-10-16 UTC before PR #148 merged. The first run on `main` (workflow `codeql.yml`, run 38936500321, commit 625cfec) succeeded in all four jobs. The code-scanning API lists `java-kotlin` (8 results), `javascript-typescript` (25), `python` (18), and `actions` (0), all uploaded 2026-10-16 UTC with no error (issue 54). Gap: I did not triage these results.
 - Gap: `actionlint` was not run (not installed).

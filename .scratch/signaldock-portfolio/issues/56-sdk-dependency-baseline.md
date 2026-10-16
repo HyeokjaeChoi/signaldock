@@ -1,9 +1,9 @@
 # 56. Commit the SDK published dependency baseline
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Branch `impl/sdk-dependency-baseline` (ADR-0033)
+Execution: Done (merged in PR #147, 2026-10-16 16:49:52 UTC)
 
 ## Scope and completion criteria
 
@@ -17,3 +17,6 @@ The dependency tree that the SDK puts into a host app is committed as a baseline
 Verification: `sdk/gradlew -p sdk :sdk-android:dependencyGuard`; `scripts/check-repo-rules.sh`; `coderabbit review --base main --deep --agent`.
 
 ## Comments
+
+- 2026-10-16 UTC: PR #147 merged 16:49:52Z (ADR-0033).
+- 2026-10-16 UTC: open follow-up: the runtime `kotlin-stdlib` resolves to 2.3.20, while the POM states 2.2.21 (spec Q132, ADR-0009 decision 4). Tracked in issue 57.

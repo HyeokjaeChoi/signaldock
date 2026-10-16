@@ -37,6 +37,6 @@ Dependabot cannot read the shared catalog `gradle/libs.versions.toml`. Four buil
 
 ## Gaps
 
-- Gap: the config was validated locally only (`renovate-config-validator` and a dry run, see issue 52). The Renovate app is not installed on the repository. The first real run log must show that the catalog is detected and that Google Maven lookups work.
+- Gap: the config was validated locally only (`renovate-config-validator` and a dry run, see issue 52). The Renovate GitHub App was installed on 2026-10-16 UTC, limited to the `signaldock` repository (issue 52). Its first output was PR #149 (`org.postgresql:postgresql` to v42.7.12, labels `dependencies` and `security`) and the Dependency Dashboard issue #150, which confirm that the Gradle catalog is read and that the OSV path of item 9 works. Gap: I did not read the Renovate run log, so Google Maven lookups for AndroidX and AGP are not confirmed yet.
 - Gap (accepted, Q161 amended): GitHub sees no Gradle dependency, because dependency submission was rejected. Gradle vulnerability fix PRs come from Renovate's OSV check of the declared dependencies only; a vulnerable transitive Gradle dependency raises no alert.
 - Gap: the local dry run read the config as global config (`RENOVATE_CONFIG_FILE`). Renovate's local platform does not read `.github/renovate.json5` by itself.
