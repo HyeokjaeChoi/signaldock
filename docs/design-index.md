@@ -32,8 +32,11 @@ ADRs:
 - ADR-0027 (`docs/adr/0027-request-400-contract-only.md`), for `WireCorpusTest` and `fixtures/sdk-wire/` (issue 49)
 - ADR-0029 (`docs/adr/0029-device-fault-tests-and-power-loss.md`), for the fault phases (`FaultPhases.kt`, `PowerLossSemanticsDeviceTest.kt`, `scripts/ack-server.py`) and the power-loss semantics (issue 47)
 - ADR-0030 (`docs/adr/0030-sdk-contract-deprecation-warning.md`), for `DeprecationNotice.kt` and `Diagnostics.contractDeprecation` (issue 50)
+- ADR-0033 (`docs/adr/0033-sdk-dependency-baseline.md`), for `sdk/sdk-android/dependencies/` and the `dependencyGuard` and `dependencyGuardBaseline` tasks (issue 56)
 
 Public API change: update the dump (`sdk/gradlew -p sdk :sdk-android:apiDump`), the integration guide, and `CHANGELOG.md` in the same PR.
+
+Dependency tree change of `:sdk-android`: update the baseline (`sdk/gradlew -p sdk :sdk-android:dependencyGuardBaseline`) and add a `CHANGELOG.md` line in the same PR.
 
 Integration guide: when you change the public API, its KDoc, or the behavior that it describes, update `docs/integration-guide.md` and `docs/integration-guide.ko.md` in the same PR. The guide samples are in `sdk/sdk-android/src/test/kotlin/local/signaldock/IntegrationGuideSamplesTest.kt` (issue 34).
 
@@ -249,7 +252,7 @@ Spec (`.scratch/signaldock-portfolio/spec.md`):
 Design review, failure mode table, postmortems, and threat model. Every claim must cite a file, an ADR, a spec Q, a test, or a result path, and a gap must be marked as a gap. When you change delivery, retry, storage, key, or contract behavior, check whether rows in `failure-modes.md` or `threat-model.md` are now wrong and update them in the same PR.
 
 ADRs:
-- ADR-0004, ADR-0006, ADR-0007, ADR-0013, ADR-0017, ADR-0024 to ADR-0030, as the documents cite them
+- ADR-0004, ADR-0006, ADR-0007, ADR-0013, ADR-0017, ADR-0024 to ADR-0030, ADR-0033, as the documents cite them
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 1. Goal and scope

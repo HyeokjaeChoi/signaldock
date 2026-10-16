@@ -16,6 +16,9 @@ ksp = "2.3.12"
 # Public API check (issue 35, ADR-0019). The Kotlin built-in abiValidation dumps nothing for an AGP library.
 binary-compatibility-validator = "0.18.2"
 
+# Dependency baseline (issue 56, ADR-0033).
+dependency-guard = "0.5.0"
+
 # Android (doc-pinned; full AGP compilation verified in later issues)
 compileSdk = "36"
 minSdk = "24"
@@ -100,3 +103,4 @@ android-library = { id = "com.android.library", version.ref = "agp" }
 binary-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binary-compatibility-validator" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+dependency-guard = { id = "com.dropbox.dependency-guard", version.ref = "dependency-guard" }
