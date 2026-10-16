@@ -19,7 +19,8 @@ Dependabot cannot read the shared catalog `gradle/libs.versions.toml`. Four buil
 5. **Consumer-facing label.** The `sdk-consumer-facing` group changes the published POM. Its PRs get the label `sdk-consumer-facing` and a PR-body note: add a line to `CHANGELOG.md` before merge (`docs/releases/README.md`).
 6. **No automatic majors.** Docker images (JDK 21 LTS, Node 24 LTS, nginx), the Compose PostgreSQL image (a major needs dump and restore), and npm `@types/node` (follows Node 24; `TOOLCHAIN.md`). Digest, minor, and patch updates still come. A runtime major is a manual decision with its own PR.
 7. **`pr-description.yml`.** The `length` job skips `dependabot[bot]` and `renovate[bot]`. Both write release notes into the body.
-8. **`.github/dependabot.yml` is deleted.** Dependabot security alerts and security updates are a repository setting; they stay.
+8. **`.github/dependabot.yml` is deleted.** No Dependabot PRs remain: version updates and security updates are both off.
+9. **Security fixes (spec Q161).** GitHub Dependabot alerts are on (a repository setting, 2026-10-16 UTC). They raise no PR. Renovate reads them (`vulnerabilityAlerts`, label `security`, own budget of 5 PRs, it skips the schedule, no automerge). The Renovate app needs read access to Dependabot alerts. Gradle dependencies reach the alerts only through dependency submission, which is a separate change (issue 53).
 
 ## Accepted costs
 

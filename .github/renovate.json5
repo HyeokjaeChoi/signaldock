@@ -15,6 +15,13 @@
   prConcurrentLimit: 4,
   prHourlyLimit: 2,
   dependencyDashboard: true,
+  // Q161: fix PRs for GitHub Dependabot alerts (the repo setting; no Dependabot PRs).
+  // They skip the schedule and the PR limits above, and have their own budget. No automerge.
+  vulnerabilityAlerts: {
+    enabled: true,
+    labels: ["dependencies", "security"],
+    prConcurrentLimit: 5,
+  },
   // Only the web packages that exist today (both private, exact pins).
   npm: {
     managerFilePatterns: ["/^dashboard/package\\.json$/", "/^perf/report/package\\.json$/"],
