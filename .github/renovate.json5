@@ -15,12 +15,21 @@
   prConcurrentLimit: 4,
   prHourlyLimit: 2,
   dependencyDashboard: true,
+  // Supply-chain delay, like the Dependabot `cooldown` that Mixpanel (30 days), PostHog (7) and
+  // RevenueCat (3) use: a new release must be 3 days old. A registry with no release timestamp
+  // does not block the update (logged as a warning). Security fixes are not delayed (below).
+  minimumReleaseAge: "3 days",
+  minimumReleaseAgeBehaviour: "timestamp-optional",
+  // Q161: Renovate also checks the OSV database, so the Gradle catalog entries get vulnerability
+  // fix PRs although GitHub does not parse Gradle builds (no dependency submission).
+  osvVulnerabilityAlerts: true,
   // Q161: fix PRs for GitHub Dependabot alerts (the repo setting; no Dependabot PRs).
   // They skip the schedule and the PR limits above, and have their own budget. No automerge.
   vulnerabilityAlerts: {
     enabled: true,
     labels: ["dependencies", "security"],
     prConcurrentLimit: 5,
+    minimumReleaseAge: null,
   },
   // Only the web packages that exist today (both private, exact pins).
   npm: {

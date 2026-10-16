@@ -20,7 +20,8 @@ Dependabot cannot read the shared catalog `gradle/libs.versions.toml`. Four buil
 6. **No automatic majors.** Docker images (JDK 21 LTS, Node 24 LTS, nginx), the Compose PostgreSQL image (a major needs dump and restore), and npm `@types/node` (follows Node 24; `TOOLCHAIN.md`). Digest, minor, and patch updates still come. A runtime major is a manual decision with its own PR.
 7. **`pr-description.yml`.** The `length` job skips `dependabot[bot]` and `renovate[bot]`. Both write release notes into the body.
 8. **`.github/dependabot.yml` is deleted.** No Dependabot PRs remain: version updates and security updates are both off.
-9. **Security fixes (spec Q161).** GitHub Dependabot alerts are on (a repository setting, 2026-10-16 UTC). They raise no PR. Renovate reads them (`vulnerabilityAlerts`, label `security`, own budget of 5 PRs, it skips the schedule, no automerge). The Renovate app needs read access to Dependabot alerts. Gradle dependencies reach the alerts only through dependency submission, which is a separate change (issue 53).
+9. **Security fixes (spec Q161).** GitHub Dependabot alerts are on (a repository setting, 2026-10-16 UTC). They raise no PR. Renovate reads them (`vulnerabilityAlerts`, label `security`, own budget of 5 PRs, no schedule, no release-age delay, no automerge); the Renovate app needs read access to Dependabot alerts. GitHub does not parse Gradle builds, so for Gradle Renovate also checks OSV (`osvVulnerabilityAlerts`). OSV sees only the declared dependencies, not the transitive tree. Gradle dependency submission was rejected (2026-10-17 UTC): none of the 12 surveyed SDK repos uses it.
+10. **Release age.** `minimumReleaseAge` is 3 days, as the Dependabot `cooldown` of Mixpanel (30 days), PostHog (7) and RevenueCat (3). `minimumReleaseAgeBehaviour` is `timestamp-optional`, so a registry without release timestamps does not block updates. Security fixes are not delayed.
 
 ## Accepted costs
 
@@ -36,5 +37,5 @@ Dependabot cannot read the shared catalog `gradle/libs.versions.toml`. Four buil
 ## Gaps
 
 - Gap: the config was validated locally only (`renovate-config-validator` and a dry run, see issue 52). The Renovate app is not installed on the repository. The first real run log must show that the catalog is detected and that Google Maven lookups work.
-- Gap: Dependabot security alerts for Gradle still need dependency submission (a workflow that sends the Gradle dependency graph). It is not done. Without it, GitHub sees no Gradle vulnerability.
+- Gap (accepted, Q161 amended): GitHub sees no Gradle dependency, because dependency submission was rejected. Gradle vulnerability fix PRs come from Renovate's OSV check of the declared dependencies only; a vulnerable transitive Gradle dependency raises no alert.
 - Gap: the local dry run read the config as global config (`RENOVATE_CONFIG_FILE`). Renovate's local platform does not read `.github/renovate.json5` by itself.
