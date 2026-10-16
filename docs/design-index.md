@@ -249,7 +249,7 @@ Spec (`.scratch/signaldock-portfolio/spec.md`):
 Design review, failure mode table, postmortems, and threat model. Every claim must cite a file, an ADR, a spec Q, a test, or a result path, and a gap must be marked as a gap. When you change delivery, retry, storage, key, or contract behavior, check whether rows in `failure-modes.md` or `threat-model.md` are now wrong and update them in the same PR.
 
 ADRs:
-- ADR-0004, ADR-0006, ADR-0007, ADR-0013, and ADR-0017, as the documents cite them
+- ADR-0004, ADR-0006, ADR-0007, ADR-0013, ADR-0017, ADR-0024 to ADR-0030, as the documents cite them
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 1. Goal and scope

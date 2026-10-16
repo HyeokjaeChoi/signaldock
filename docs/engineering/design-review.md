@@ -1,6 +1,6 @@
 # Design review
 
-Status: written 2026-10-15 after the first release (`v0.1.0`). Structure follows the [Google design doc](https://www.industrialempathy.com/posts/design-docs-at-google/) outline.
+Status: written 2026-10-15 after the first release (`v0.1.0`), refreshed 2026-10-15 UTC (issue 51). Structure follows the [Google design doc](https://www.industrialempathy.com/posts/design-docs-at-google/) outline.
 Every claim cites a file. A claim without a citation is my analysis and is marked "Analysis".
 
 Short paths used below: `SDK tests` = `sdk/sdk-android/src/test/kotlin/local/signaldock/`; `device tests` = `sdk/sdk-android/src/androidTest/kotlin/local/signaldock/device/`.
@@ -33,12 +33,12 @@ Non-goals (spec 1; Q150):
 | Part | Design | Source |
 | --- | --- | --- |
 | SDK queue and batching | Room table of one transport JSON per event. Limits: 16 KiB per event, 50 events and 256 KiB per batch, 10,000 events or 16 MiB per queue. At the limit, `track()` returns `QueueFull` and keeps old events | spec 4; [ADR-0003](../adr/0003-sdk-storage-decisions.md) item 3; `SDK tests/TrackTest.kt` |
-| Delivery, ACK, retry | One `Sender` with one `Mutex` per process. It validates the whole ACK, then applies it in one Room transaction. Backoff is 10 s doubling to 5 min with Full Jitter, stored on disk. Auth, config, and contract errors hold the queue and recheck every 30 minutes | [ADR-0006](../adr/0006-sdk-delivery-decisions.md) items 5 to 10; `sdk/sdk-android/src/main/kotlin/local/signaldock/internal/delivery/Sender.kt` |
+| Delivery, ACK, retry | One `Sender` with one `Mutex` per process. It validates the whole ACK, then applies it in one Room transaction. Backoff is 10 s doubling to 5 min with Full Jitter, stored on disk with the wait that was meant. The sender clamps the stored time to `now + wait`, so a clock moved back does not delay sending. Exception: a retry row migrated from schema 1 has `waitMillis = null` and is not clamped until the next failure stores a wait ([ADR-0025](../adr/0025-sdk-clock-jump.md)). Auth, config, and contract errors hold the queue and recheck every 30 minutes | [ADR-0006](../adr/0006-sdk-delivery-decisions.md) items 5 to 10; `sdk/sdk-android/src/main/kotlin/local/signaldock/internal/delivery/Sender.kt` |
 | Scheduling | Foreground trigger at 20 events or 10 s. A unique one-time Worker plus a 15-minute periodic Worker. The Worker stops after 10 batches or 30 s | ADR-0006 item 11; spec 8.A (Q57, Q72) |
 | Dedup | `eventId` unique constraint plus content comparison. Same content gives `duplicate`. Different content gives a `conflict` rejection | architecture "Lost ACKs and event deduplication"; spec Q61, Q69 |
-| Ingest and storage | Ktor routes. Four slots, four connections, 250 ms admission wait. Timeouts return 503 with `Retry-After`. PostgreSQL keeps typed columns and JSONB properties | [ADR-0004](../adr/0004-server-runtime-and-receipt-boundaries.md); `server/persistence/src/main/kotlin/local/signaldock/persistence/Database.kt` |
+| Ingest and storage | Ktor routes. Four slots, four connections, 250 ms admission wait. Timeouts return 503 with `Retry-After`. `/health` is liveness; `/ready` runs one database query and Compose uses it as the server health check. PostgreSQL keeps typed columns and JSONB properties | [ADR-0004](../adr/0004-server-runtime-and-receipt-boundaries.md); [ADR-0026](../adr/0026-server-readiness-and-restart.md); `server/persistence/src/main/kotlin/local/signaldock/persistence/Database.kt` |
 | Query and Dashboard | Four read endpoints with a separate query key. `COUNT` and `GROUP BY` at query time. React Dashboard behind an nginx proxy that adds the key | [ADR-0007](../adr/0007-dashboard-query-api.md); [ADR-0008](../adr/0008-dashboard-and-compose-delivery.md); spec Q70, Q128 to Q131 |
-| Contract | OpenAPI is the source. Generated Kotlin and TypeScript are tracked in Git and checked for drift. Header `SignalDock-Contract-Version: 1`. Additive changes keep version 1 | ADR-0002; [ADR-0022](../adr/0022-server-tracking-plan-status.md) item 7 |
+| Contract | OpenAPI is the source. Generated Kotlin and TypeScript are tracked in Git and checked for drift. Header `SignalDock-Contract-Version: 1`. Additive changes keep version 1. A request-level 400 means a contract bug only; content problems of one event are per-item rejections ([ADR-0027](../adr/0027-request-400-contract-only.md)). Support policy: an old version stays at least 12 months and until its traffic is low; the SDK reads `Deprecation` and `Sunset` headers, the server does not send them yet ([ADR-0030](../adr/0030-sdk-contract-deprecation-warning.md)) | ADR-0002; [ADR-0022](../adr/0022-server-tracking-plan-status.md) item 7 |
 | Optional tracking plan | The server marks events `planned`, `unplanned_event`, or `invalid_properties`. It never rejects for plan reasons | ADR-0022; spec Q155 |
 
 ## Alternatives considered
@@ -72,12 +72,15 @@ Privacy:
 - Installation-scoped UUID, no user identity, no `identify` (ADR-0001; [integration guide](../integration-guide.md) section 8).
 - Logs never hold event content, names, IDs, credentials, or bodies (spec Q115; `SDK tests/InitContractTest.kt`).
 - Queue and ID are excluded from backup (`SDK tests/StorageTest.kt`, device `install_check` in `device tests/DurabilityPhases.kt`).
-- Gap: no opt-out or consent API, and no server retention or delete function (integration guide section 11; spec 5).
+- Gap: no opt-out or consent API (integration guide section 11). No server retention or delete function: excluded on purpose for local-only operation ([ADR-0028](../adr/0028-server-production-features-excluded.md), spec Q157).
+- XSS and SQL injection have tests ([threat-model.md](threat-model.md), PR #111).
+- Excluded on purpose (ADR-0028): rate limit and `429`, access log, key policy, retention, and Dashboard login. They are required before any non-local use.
 
 Observability:
 - Device: `diagnostics()` shows queue size, last ACK, next retry, last error, and 100 rejections (spec 6; ADR-0003 item 7).
 - Server: stage timings (admission, connection, commit, lock and statement timeouts) go to logs (`Database.kt`, `Application.kt`). Optional pool stats (`SIGNALDOCK_POOL_STATS_MS`).
-- Gap: no metrics endpoint, no alerting, and `/health` does not check the database (`Application.kt`).
+- `/health` is liveness. `GET /ready` checks the database with `SELECT 1` and returns 503 when it fails (`Application.kt`, ADR-0026). Compose shows the server as `unhealthy` (`docker compose ps` only). `DatabaseOutageTest` covers a real PostgreSQL stop and start. Gap: the live Compose check is recorded in a PR #110 comment only; no committed result file.
+- Gap: no metrics endpoint and no alerting (ADR-0026 item 4). The Compose restart policy was not shown to trigger.
 
 ## Scale: what breaks first at 10x and 100x
 
@@ -111,7 +114,7 @@ What I would change, in this order (none of it is built):
 2. Move aggregates off the hot table: a time-bucket rollup or a read replica. This reverses spec Q70, so it needs a new ADR and a measurement first.
 3. Partition `events` by `received_at` and add a retention job.
 4. Make `Retry-After` grow with the shed rate.
-5. A DB check in `/health`, and metrics for the stage timings that exist as logs.
+5. Metrics for the stage timings that exist as logs. (The DB check exists now: `/ready`, ADR-0026.)
 
 SDK, first bottleneck: serial sending, then the queue cap.
 - Batches go one at a time under one `Mutex` (ADR-0006 item 10), 50 events at most. Analysis: on a 100 ms round trip that is at most about 500 events/s per device. One device does not make 1,000 events/s, so this does not matter at 10x or 100x of the fleet. It matters if one host app emits bursts.
@@ -123,8 +126,8 @@ SDK, first bottleneck: serial sending, then the queue cap.
 
 - Write the rejected options into the ADRs when the choice is made. The repo cannot show why Room and the Worker path won (gap above).
 - Start with a server health and metrics path before load tests. The pilots needed log parsing to see the pool.
-- Keep the SDK retry clock monotonic or add a sanity bound. It uses wall-clock time, and a clock moved back can delay delivery (see [failure-modes.md](failure-modes.md), clock skew).
-- Isolate a poison event. A whole-request 400 holds the entire queue (failure-modes, poison event).
+- Keep the SDK retry clock monotonic from the start. The sanity bound now exists (ADR-0025), but the clock is still wall-clock time and a forward jump sends one batch early (see [failure-modes.md](failure-modes.md), clock skew).
+- Make the poison-event rule explicit at design time. It is now fixed: a request-level 400 means a contract bug, and content problems are per-item (ADR-0027). A third-party client can still hold a queue (failure-modes, poison event).
 - Make the Dashboard and ingest separate pools from day one.
 - Run the pool comparison only if a real question needs it. Q133 was a good cut.
 - Review gates should print all findings. See the [postmortems](postmortems/2026-10-14-review-findings-missed.md).

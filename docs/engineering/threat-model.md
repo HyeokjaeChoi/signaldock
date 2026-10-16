@@ -1,7 +1,7 @@
 # Threat model
 
-Status: written 2026-10-15. Method: the [OWASP threat modeling process](https://owasp.org/www-community/Threat_Modeling_Process) (scope, data flow, threats, mitigations, review) with STRIDE per element. Mobile controls are grouped by the [OWASP MASVS](https://mas.owasp.org/MASVS/) categories.
-Every mitigation cites a file. "Gap" means I found no mitigation in the repo. Ratings are mine, not measured.
+Status: written 2026-10-15, refreshed 2026-10-15 UTC (issue 51) after PRs #104 to #106, #108, and #111. Method: the [OWASP threat modeling process](https://owasp.org/www-community/Threat_Modeling_Process) (scope, data flow, threats, mitigations, review) with STRIDE per element. Mobile controls are grouped by the [OWASP MASVS](https://mas.owasp.org/MASVS/) categories.
+Every mitigation cites a file. "Gap" means I found no mitigation in the repo. "Excluded on purpose" means the user decided to leave the feature out because the server runs only on the local machine ([ADR-0028](../adr/0028-server-production-features-excluded.md), spec Q157). The risk stays real if the server is exposed. Ratings are mine, not measured.
 This is a design-level model of a local evaluation project. It is not a penetration test and no external review was done.
 
 Short paths: `SDK tests` = `sdk/sdk-android/src/test/kotlin/local/signaldock/`; `DEV` = `sdk/sdk-android/src/androidTest/kotlin/local/signaldock/device/`; `SRV` = `server/app/src/test/kotlin/local/signaldock/server/`.
@@ -56,23 +56,23 @@ S spoofing, T tampering, R repudiation, I information disclosure, D denial of se
 | SDK to server (B3) | I, T | Network attacker reads or changes events and the key in transit | The SDK sends the key as Bearer only to the configured endpoint and follows no redirects (`SDK tests/TransportTest.kt` "redirects are not followed"). Android blocks cleartext by default; the consumer and demo apps allow it only for local hosts ([ADR-0009](../adr/0009-maven-zip-and-consumer-app.md) item 5; spec Q134) | The SDK does not require HTTPS: it accepts `http` and never upgrades. A host that allows cleartext sends the key in the clear. The local server has no TLS. No certificate pinning. No payload signing |
 | SDK to server | D | Attacker blocks the network | Queue keeps events; backoff and Worker ([failure-modes.md](failure-modes.md) rows 1 and 7) | Queue cap of 10,000 events; then `QueueFull` |
 | Ingest API (B3) | S | A key holder posts as any `installationId` | Constant-time key compare (`server/app/src/main/kotlin/local/signaldock/server/RequestGuards.kt`); wrong key gives 401 `COLLECTION_KEY_INVALID` | `installationId` and `eventId` are client-chosen and not verified. A key holder can fake any installation (section 3) |
-| Ingest API | T | Malformed or hostile payload | Strict contract: unknown fields rejected, size caps (256 KiB body, 16 KiB event), UTF-8 and range checks, JSON nesting limit, flat scalar properties (`SRV/IngestValidationTest.kt`; body cap in `server/app/src/main/kotlin/local/signaldock/server/Application.kt`) | Properties are free values from a key holder. I found no `innerHTML` or `dangerouslySetInnerHTML` in `dashboard/src`, `perf/report/src`, or `web-shared/`, so React escapes them. Gap: no XSS test exists |
+| Ingest API | T | Malformed or hostile payload | Strict contract: unknown fields rejected, size caps (256 KiB body, 16 KiB event), UTF-8 and range checks, flat scalar properties (`SRV/IngestValidationTest.kt`; body cap in `server/app/src/main/kotlin/local/signaldock/server/Application.kt`). A nested or null property value is rejected per item, not per request ([ADR-0027](../adr/0027-request-400-contract-only.md)). XSS: `dashboard/src/xss.test.tsx` renders hostile names, property keys and values, SDK versions, and filter input through the real `App` ("renders event name, property key and value, and top-event KPI as text only", "keeps a hostile name typed into the filter as input text") and an unknown plan status through `PlanBadge` ("never renders a server-sent unknown status as markup"). `scripts/check-repo-rules.sh` fails on `dangerouslySetInnerHTML`, `innerHTML`, `outerHTML`, or `insertAdjacentHTML` in `dashboard/src`, `perf/report/src`, and `web-shared` (test files exempt) | Properties are free values from a key holder, and React escapes them. Gap: `perf/report` has no test runner, so only the static check covers it (its data comes from the repo's own perf run, not from key holders). Gap: the tests use hostile text in the DOM test environment, not a real browser |
 | Ingest API | T | Same `eventId` with different content overwrites data | Unique constraint; different content gives `conflict` and keeps the first row (spec Q61; `SRV/IngestionIntegrationTest.kt`) | None found |
-| Ingest API | R | A sender denies sending events | The server stores `receivedAt` and the event | Gap: no access log with caller identity, no audit trail. Keys are shared, so a sender cannot be named |
+| Ingest API | R | A sender denies sending events | The server stores `receivedAt` and the event (`received_at` column in `server/persistence/src/main/resources/db/migration/V1__create_events.sql`; spec 5) | Excluded on purpose (ADR-0028, Q157): no access log with caller identity, no audit trail. Keys are shared, so a sender cannot be named. Risk: no record of who called the server |
 | Ingest API | I | Error text reveals keys, SQL, or the key role | Errors name codes only. Startup errors name variables, not values (spec Q131; `SRV/KeyConfigTest.kt`). The DB observer logs stage names and times, not SQL (`server/persistence/src/main/kotlin/local/signaldock/persistence/Database.kt`) | None found |
-| Ingest API | D | Request flood or slow clients | Four slots, bounded admission wait, 503 with `Retry-After`, request time budget ([ADR-0004](../adr/0004-server-runtime-and-receipt-boundaries.md); [overload-1 report](../../perf/results/overload-1/report.md)). Host port is bound to `127.0.0.1` | Gap: no per-key or per-IP rate limit and no connection limit. 503 is global, so one noisy client can shed the others |
+| Ingest API | D | Request flood or slow clients | Four slots, bounded admission wait, 503 with `Retry-After`, request time budget ([ADR-0004](../adr/0004-server-runtime-and-receipt-boundaries.md); [overload-1 report](../../perf/results/overload-1/report.md)). Host port is bound to `127.0.0.1` | Excluded on purpose (ADR-0028, Q157): no per-key or per-IP rate limit, no `429`, and no connection limit. 503 is global, so one noisy client can shed the others |
 | Ingest API | E | Collection key used to read data | Key roles are separate. Query endpoints reject the collection key with 401 `QUERY_KEY_INVALID`; ingest rejects the query key (`SRV/QueryRoutesTest.kt` "every endpoint requires the query key and rejects the collection key"; `SRV/IngestionIntegrationTest.kt` "route rejects the query key with the collection key error"; [ADR-0007](../adr/0007-dashboard-query-api.md)) | None found |
-| Key guessing | S | An attacker guesses a key | The operator sets keys; the server needs them non-blank and different (spec Q131) | Gap: no minimum length (Q131 sets none), no lockout, no rate limit on failed keys. `.env.example` holds sample keys that must be changed |
+| Key guessing | S | An attacker guesses a key | The operator sets keys; the server needs them non-blank and different (spec Q131) | Excluded on purpose (ADR-0028; Q131 sets no length rule, Q128 has no key table): no minimum length, no lockout, no rate limit on failed keys. Risk: a weak key can be guessed without limit. `.env.example` holds sample keys that must be changed |
 | PostgreSQL (B4) | T, I | Direct DB access | Password required; image pinned by digest; DB port bound to `127.0.0.1` (`docker-compose.yml`); server runs as a non-root user (`server/Dockerfile`) | The DB password is in `.env` in plain text. No TLS to the DB. The DB port is published to the host. No disk encryption in the repo |
-| PostgreSQL | T | SQL injection | jOOQ builds typed queries; filters are exact values; request parameters are validated strictly ([ADR-0007](../adr/0007-dashboard-query-api.md); `server/query/src/test/kotlin/local/signaldock/query/QueryTest.kt`) | Gap: design claim only. No injection test was run |
-| PostgreSQL | D | Disk fills | Gap: no TTL (spec 5); about 1 KB per event ([design-review.md](design-review.md)) | The only delete path is `docker compose down --volumes` |
-| Query API and nginx (B5, B6) | S, E | A browser user reads all data | The query key is added by nginx and is never in the bundle (`dashboard/nginx.conf.template`; `npm run check-bundle-key`, ADR-0008). Port bound to `127.0.0.1`. The server has no CORS | Gap: no login. Anyone who reaches the Dashboard port reads everything. This is the spec 1 scope; do not expose it |
+| PostgreSQL | T | SQL injection | jOOQ builds typed queries; filters are exact values; request parameters are validated strictly ([ADR-0007](../adr/0007-dashboard-query-api.md); `server/query/src/test/kotlin/local/signaldock/query/QueryTest.kt`). Tests (PR #111): `SRV/IngestionIntegrationTest.kt` ("sql injection text in name, property key, and value is stored verbatim and tables stay intact"); `SRV/QueryRoutesTest.kt` ("sql injection text in every query parameter matches exactly or is rejected, and tables stay intact"). Gap: the last test run is recorded in the PR #111 description only; no committed result file | Gap: a fixed set of injection strings, not fuzzing. |
+| PostgreSQL | D | Disk fills | Excluded on purpose (ADR-0028; spec 5): no TTL, no retention job, no delete function. About 1 KB per event ([design-review.md](design-review.md)) | There is no application delete function (ADR-0028). Events stay until an explicit deletion or a database reset (spec 5). The repo documents one reset command, `docker compose down --volumes` (the RESET line in the `docker-compose.yml` header). The database grows without limit until then |
+| Query API and nginx (B5, B6) | S, E | A browser user reads all data | The query key is added by nginx and is never in the bundle (`dashboard/nginx.conf.template`; `npm run check-bundle-key`, ADR-0008). Port bound to `127.0.0.1`. The server has no CORS | Excluded on purpose (ADR-0028; spec 1, Q128): no login. Anyone who reaches the Dashboard port reads everything. Do not expose it |
 | Query API and nginx | T | A browser sends writes with the query key | `limit_except GET { deny all; }`; nginx overwrites any client `Authorization` header (ADR-0008) | None found |
 | Query API | I | A wrong role learns that a value is a valid collection key | Always 401 `QUERY_KEY_INVALID`, never 403 (spec Q130) | None found |
 | Query API | D | Heavy aggregate queries | Max 30 dates, 100 rows per page, 720 buckets, statement timeout, shared bounded slots ([ADR-0007](../adr/0007-dashboard-query-api.md)) | Heavy queries can shed ingest ([failure-modes.md](failure-modes.md) row 17) |
 | Query key in nginx | I | Key read from the container environment | Not in the image or build args (ADR-0008 "nginx") | Anyone with Docker access on the host can read it |
 | Tracking plan file | T | A changed plan marks events wrongly | Mounted read-only; read once at start; an invalid file stops the server (`SRV/TrackingPlanFileTest.kt`) | Marks are not authenticated data. Whoever edits the file changes the marks |
-| Dependencies and build | T | Supply chain | Images pinned by digest; tool versions pinned ([TOOLCHAIN.md](../../TOOLCHAIN.md)); generated sources checked for drift (`scripts/verify-contract.sh`) | Gap: I found no dependency vulnerability scan or SBOM in the repo |
+| Dependencies and build | T | Supply chain | Images pinned by digest; tool versions pinned ([TOOLCHAIN.md](../../TOOLCHAIN.md)); generated sources checked for drift (`scripts/verify-contract.sh`). Dependabot proposes weekly updates for Gradle, npm, GitHub Actions, Docker, and Compose (`.github/dependabot.yml`, [ADR-0024](../adr/0024-release-workflow-and-dependency-updates.md) item 5). Release workflow: actions pinned by commit SHA; the build job has read permission only and the publish job runs no project code (ADR-0024 items 3 and 4). `SECURITY.md` gives a private reporting path | Gap: no dependency vulnerability scan and no SBOM. I checked `.github/`, `scripts/`, and the docs and found neither. Dependabot is not a scan of the code that ships. Gap: Dependabot cannot read the version catalog at the repo root, so catalog versions are updated by hand (ADR-0024 item 6). Gap: the Dependabot file and the release workflow were not run by GitHub when ADR-0024 was written ("Not verified here") |
 
 ## 5. MASVS view of the SDK
 
@@ -83,7 +83,7 @@ S spoofing, T tampering, R repudiation, I information disclosure, D denial of se
 | AUTH | Partial | A shared write-only key, not user authentication (spec 5) |
 | NETWORK | Partial | No redirects, strict ACK validation, timeouts. HTTPS is not enforced; no pinning |
 | PLATFORM | Partial | The SDK declares no permissions; the host declares `INTERNET` (ADR-0011 item 1). I did not review exported components |
-| CODE | Partial | Public API check ([ADR-0019](../adr/0019-sdk-public-api-check.md)); generated DTOs are `internal`; R8 release consumer builds ([ADR-0009](../adr/0009-maven-zip-and-consumer-app.md)). No dependency scan |
+| CODE | Partial | Public API check ([ADR-0019](../adr/0019-sdk-public-api-check.md)); generated DTOs are `internal`; R8 release consumer builds ([ADR-0009](../adr/0009-maven-zip-and-consumer-app.md)); Dependabot ([ADR-0024](../adr/0024-release-workflow-and-dependency-updates.md)). No dependency scan |
 | RESILIENCE | Not a goal | No tamper or root detection. The SDK does not defend against a hostile host or device |
 | PRIVACY | Partial | See section 6 |
 
@@ -97,8 +97,8 @@ What the repo shows:
 
 Gaps:
 - No opt-out or consent API. The public API has no such call (`sdk/sdk-android/api/sdk-android.api`; integration guide section 11). The host can avoid calling `track()`, but the SDK has no stop switch, no queue clear, and no data delete for the host. As a comparison, Amplitude's documentation says: "Amplitude doesn't save or send events while `optOut` is `true`" ([Amplitude Android Kotlin SDK](https://amplitude.com/docs/sdks/analytics/android/android-kotlin-sdk)). I checked no other vendor.
-- No retention. The server keeps events until explicit deletion or DB reset (spec 5).
-- No per-installation delete or export on the server.
+- No retention. The server keeps events until explicit deletion or DB reset (spec 5). Excluded on purpose for local-only operation (ADR-0028).
+- No per-installation delete or export on the server. The delete function is excluded on purpose (ADR-0028); export is not covered by it.
 - No data processing notice or consent text in the repo.
 
 ## 7. Residual risks
@@ -106,15 +106,19 @@ Gaps:
 1. Public collection key: fake events are possible (accepted, section 3).
 2. Cleartext allowed by a host app: key and events exposed on the network.
 3. Unencrypted queue on a rooted device.
-4. No rate limit: one client can cause 503 for all.
-5. Dashboard without login: safe only because it is local.
-6. No opt-out, retention, or delete.
+4. No rate limit: one client can cause 503 for all (excluded on purpose, ADR-0028).
+5. Dashboard without login: safe only because it is local (excluded on purpose, ADR-0028).
+6. No opt-out (a gap), and no retention or delete (excluded on purpose, ADR-0028).
 7. Secrets in `.env` and the container environment.
-8. No dependency scan.
+8. No dependency vulnerability scan and no SBOM (Dependabot exists, a scan does not).
+9. No access log, no key policy, no lockout (excluded on purpose, ADR-0028).
+10. Covered by a test since the first version: XSS and SQL injection now have tests (PR #111; the run is recorded only in the PR description, a Gap). They cover fixed strings only.
+
+Before any non-local use, build every feature in the ADR-0028 table first.
 
 ## 8. Out of scope
 
-- Public internet operation, multi-tenant use, and account management (spec 1).
+- Public internet operation, multi-tenant use, and account management (spec 1; [ADR-0028](../adr/0028-server-production-features-excluded.md) lists what the server leaves out for that reason).
 - Physical devices; the tests used two emulator images (ADR-0011 limits).
 - A hostile host app, root detection, and reverse engineering of the AAR.
 - Legal review of privacy law and data processing agreements.
