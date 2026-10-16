@@ -184,7 +184,7 @@ class Sampler(threading.Thread):
                              "AND application_name NOT LIKE 'psql%' GROUP BY 1")
                 row["pg_conns"] = {a.split("|")[0]: int(a.split("|")[1]) for a in act.splitlines()}
             except RuntimeError:
-                pass
+                pass  # best effort: a failed psql sample only leaves pg_conns out of this row
             self.rows.append(row)
             self.stop.wait(max(0, 5 - (time.time() - t0)))
 
@@ -240,7 +240,9 @@ def parse_server_log(path, bounds):
     stages = defaultdict(lambda: defaultdict(list))
     pool = defaultdict(lambda: {"max_active": 0, "max_pending": 0, "samples": 0})
     day, last = bounds["start"].date(), None
-    for line in open(path, errors="replace"):
+    with open(path, errors="replace") as f:
+        lines = f.readlines()
+    for line in lines:
         m = re.match(r"(\d\d):(\d\d):(\d\d)\.(\d{3}) ", line)
         if not m:
             continue
@@ -266,7 +268,8 @@ def parse_server_log(path, bounds):
 
 
 def parse_gc(path):
-    pauses = [float(m[1]) for m in (re.search(r"Pause .*? (\d+\.\d+)ms", l) for l in open(path, errors="replace")) if m]
+    with open(path, errors="replace") as f:
+        pauses = [float(m[1]) for m in (re.search(r"Pause .*? (\d+\.\d+)ms", l) for l in f) if m]
     return {"pause_count": len(pauses), "pause_total_ms": round(sum(pauses), 1), "pause_max_ms": max(pauses) if pauses else 0}
 
 
@@ -456,6 +459,7 @@ def execute(a):
     k6log = open(out / "k6.log", "w")
     k6 = subprocess.Popen(["k6", "run", "--quiet", "--no-usage-report", "--out", f"json={raw}", "--summary-export", str(out / "k6-summary.json"),
                            str(c.PERF / "load.js")], env=k6env, stdout=k6log, stderr=subprocess.STDOUT)
+    k6log.close()  # the child process keeps its own copy of the descriptor
     sampler = Sampler(k6.pid)
     sampler.start()
     snaps = {}

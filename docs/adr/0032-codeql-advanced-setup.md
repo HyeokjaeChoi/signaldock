@@ -35,9 +35,33 @@ The user decided (Q162, 2026-10-16 UTC) to replace the CodeQL default setup with
 - The `java-kotlin` analysis covers the main source sets of `sdk-android`, `demo`, `server`, and `contract-check`. Tests are not built, so test code is not analyzed.
 - The workflow adds one build of three Gradle projects per run. `timeout-minutes` is 60.
 
+## Triage result (issue 59)
+
+The first `main` run left 51 open alerts (list taken from the code-scanning API on 2026-10-16 UTC). None is a security alert. All are `security-and-quality` rules about code quality.
+
+| Count | Action | Reason |
+| --- | --- | --- |
+| 14 | Fixed in issue 59 (`perf/*.py`) | 9 `py/file-not-closed`, 2 `py/empty-except`, 2 `py/unused-local-variable`, 1 `py/procedure-return-value-used`. The output of `perf/summarize.py` and `perf/sdk_summarize.py` over the committed results is byte-identical before and after. |
+| 23 | Removed with `paths-ignore: [generated/typescript]` (`.github/codeql/codeql-config.yml`) | `js/unused-local-variable` in `generated/typescript/models/`. The OpenAPI generator writes these files, so the alerts return after each regeneration. A fix by hand would be lost. |
+| 14 | Dismissed in GitHub on 2026-10-16 UTC | See below. |
+
+Dismissed alerts:
+
+- 2 "won't fix": `java/confusing-method-signature` in the generated jOOQ class `Events.java`. The jOOQ generator writes it.
+- 1 "used in tests": `java/android/backup-enabled` in `sdk/sdk-android/src/androidTest/AndroidManifest.xml`. Only the instrumented tests use this manifest.
+- 11 "false positive":
+  - 5 `java/local-variable-is-never-read`: the variables named `tmp0_other_with_cast` come from the Kotlin compiler (generated `equals` code), not from our source.
+  - 2 `js/superfluous-trailing-arguments` in `web-shared/i18n/i18n.test.ts`: the type test of `t()` (ADR-0015) passes an extra argument to a stub on purpose.
+  - 1 `py/mixed-returns` in `scripts/e2e/fault-proxy.py`: the test proxy returns in mixed ways on purpose.
+  - 3 `py/implicit-string-concatenation-in-list` in `perf/summarize.py` and `perf/sdk_summarize.py`: the joined strings are intended.
+
+`paths-ignore` does not apply to the compiled `java-kotlin` analysis (CodeQL documents it for interpreted languages only). So the generated jOOQ alerts are dismissed, not ignored. Gap: a regeneration of the jOOQ classes can raise new alerts for the same rule; dismiss them again.
+
+Gap: I did not yet check the CodeQL result on the PR merge ref. The PR description records it.
+
 ## Gaps
 
 - Gap: the independent consumer app (`compatibility/`, built by `scripts/verify-consumer.sh`) and `sdk/measure-app` are not built, so CodeQL does not analyze them.
 - Gap: test source sets are not analyzed.
-- The default setup was turned off on 2026-10-16 UTC before PR #148 merged. The first run on `main` (workflow `codeql.yml`, run 38936500321, commit 625cfec) succeeded in all four jobs. The code-scanning API lists `java-kotlin` (8 results), `javascript-typescript` (25), `python` (18), and `actions` (0), all uploaded 2026-10-16 UTC with no error (issue 54). Gap: I did not triage these results.
+- The default setup was turned off on 2026-10-16 UTC before PR #148 merged. The first run on `main` (workflow `codeql.yml`, run 38936500321, commit 625cfec) succeeded in all four jobs. The code-scanning API lists `java-kotlin` (8 results), `javascript-typescript` (25), `python` (18), and `actions` (0), all uploaded 2026-10-16 UTC with no error (issue 54).
 - Gap: `actionlint` was not run (not installed).

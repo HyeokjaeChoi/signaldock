@@ -31,7 +31,8 @@ def pct(vals, p):
 def per_minute(d, m):
     """p50/p95 per 60 s of the measurement phase (request start time). Few samples per minute: a trend check, not a tail estimate."""
     warm = m["load"]["warmup_s"] * 1000
-    rows = [r for r in csv.DictReader(open(d / "requests.csv")) if r["phase"] == "measure"]
+    with open(d / "requests.csv") as f:
+        rows = [r for r in csv.DictReader(f) if r["phase"] == "measure"]
     table, spread = {}, {}
     for ep in TARGET:
         buckets = {}
@@ -55,8 +56,9 @@ def latency_csv(runs, out_dir):
         w = csv.writer(f)
         w.writerow(["run_id", "ep", "phase", "elapsed_s", "duration_ms"])
         for d, m, s in runs:
-            for r in csv.DictReader(open(d / "requests.csv")):
-                w.writerow([m["run_id"], r["ep"], r["phase"], int(r["at_ms"]) / 1000, r["duration_ms"]])
+            with open(d / "requests.csv") as rf:
+                for r in csv.DictReader(rf):
+                    w.writerow([m["run_id"], r["ep"], r["phase"], int(r["at_ms"]) / 1000, r["duration_ms"]])
 
 
 def parse_ts(s):
@@ -71,12 +73,13 @@ def pool_series(d, m):
     start = parse_ts(m["times"]["test_start_wall"])
     base = start.hour * 3600 + start.minute * 60 + start.second + start.microsecond / 1e6
     out = []
-    for line in open(log, errors="replace"):
-        x = re.match(r"(\d\d):(\d\d):(\d\d)\.(\d{3}) .*pool active=(\d+) idle=(\d+) pending=(\d+)", line)
-        if x:
-            sec = int(x[1]) * 3600 + int(x[2]) * 60 + int(x[3]) + int(x[4]) / 1000
-            delta = (sec - base + 43200) % 86400 - 43200  # log lines carry time of day only
-            out.append([round(delta, 1), int(x[5]), int(x[6]), int(x[7])])
+    with open(log, errors="replace") as f:
+        for line in f:
+            x = re.match(r"(\d\d):(\d\d):(\d\d)\.(\d{3}) .*pool active=(\d+) idle=(\d+) pending=(\d+)", line)
+            if x:
+                sec = int(x[1]) * 3600 + int(x[2]) * 60 + int(x[3]) + int(x[4]) / 1000
+                delta = (sec - base + 43200) % 86400 - 43200  # log lines carry time of day only
+                out.append([round(delta, 1), int(x[5]), int(x[6]), int(x[7])])
     return out
 
 
@@ -84,8 +87,9 @@ def container_series(d, m):
     start = parse_ts(m["times"]["test_start_wall"])
     keep = ("db_cpu_pct", "server_cpu_pct", "db_mem_mib", "server_mem_mib")
     out = []
-    for r in csv.DictReader(open(d / "samples.csv")):
-        out.append({"t": round((parse_ts(r["ts"]) - start).total_seconds(), 1), **{k: float(r[k]) for k in keep if r.get(k)}})
+    with open(d / "samples.csv") as f:
+        for r in csv.DictReader(f):
+            out.append({"t": round((parse_ts(r["ts"]) - start).total_seconds(), 1), **{k: float(r[k]) for k in keep if r.get(k)}})
     return out
 
 
@@ -93,7 +97,8 @@ def statements(d, top=20):
     f = d / "statements.csv"
     if not f.exists():
         return None
-    rows = list(csv.DictReader(open(f)))
+    with open(f) as fh:
+        rows = list(csv.DictReader(fh))
     app = [r for r in rows if r["harness"] != "True"]
     keep = lambda r: {"calls": int(r["calls"]), "rows": int(r["rows"]), "total_exec_ms": float(r["total_exec_time"]),
                       "mean_exec_ms": float(r["mean_exec_time"]), "max_exec_ms": float(r["max_exec_time"]), "query": r["query"]}
