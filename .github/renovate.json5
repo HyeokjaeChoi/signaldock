@@ -62,8 +62,9 @@
       groupName: "sdk-consumer-facing",
       matchManagers: ["gradle"],
       matchPackageNames: [
-        "org.jetbrains.kotlin:**",
-        "org.jetbrains.kotlin.**",
+        // Not `org.jetbrains.kotlin`: the compiler and plugins are build-only. The POM's kotlin-stdlib
+        // comes from `coreLibrariesVersion` in sdk/sdk-android/build.gradle.kts (spec Q132, ADR-0009),
+        // which is raised by hand, so a Kotlin update does not change the published POM.
         "org.jetbrains.kotlinx:**",
         "androidx.room:**",
         "androidx.work:**",
