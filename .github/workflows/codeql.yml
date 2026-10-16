@@ -53,9 +53,9 @@ jobs:
         if: matrix.build-mode == 'manual'
         run: |
           export JAVA_HOME="$PWD/.tools/$(ls .tools | grep '^jdk-')"
-          # The CodeQL Kotlin extractor runs inside the compiler. The repo heap of 512 MiB is too small
+          # The CodeQL Kotlin extractor runs inside the compiler. The Gradle default heap of 512 MiB (server) is too small
           # for it (the server persistence module hit "garbage collector is thrashing"), so raise it here only.
-          OPTS=(--no-daemon --no-build-cache '-Dorg.gradle.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=1g')
+          OPTS=(--no-daemon --no-build-cache '-Dorg.gradle.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8')
           sdk/gradlew -p sdk :sdk-android:assembleRelease :demo:app:assembleDebug "${OPTS[@]}"
           server/gradlew -p server classes "${OPTS[@]}"
           contract-check/gradlew -p contract-check classes "${OPTS[@]}"

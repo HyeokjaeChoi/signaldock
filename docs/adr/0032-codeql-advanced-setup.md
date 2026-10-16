@@ -23,7 +23,7 @@ The user decided (Q162, 2026-10-17 UTC) to replace the CodeQL default setup with
    - `server/gradlew -p server classes`
    - `contract-check/gradlew -p contract-check classes`
 
-   All use `--no-daemon` (CodeQL cannot trace a build that an existing daemon runs) and `--no-build-cache` (a cache hit skips the compile tasks, so CodeQL sees no source).
+   All use `--no-daemon` (CodeQL cannot trace a build that an existing daemon runs) and `--no-build-cache` (a cache hit skips the compile tasks, so CodeQL sees no source). They also set `-Dorg.gradle.jvmargs` with a 3 GiB heap: the first PR run failed with "garbage collector is thrashing" in `server:persistence:compileKotlin`, because the CodeQL Kotlin extractor runs inside the compiler and the server build uses the 512 MiB Gradle default.
 4. The release SDK is analyzed because it is the shipped artifact. The demo app is included because it compiles with the SDK build at small cost and is sample code a reader copies. `server` and `contract-check` use `classes` (main source sets only).
 5. Queries: `security-and-quality`, not the default suite. Reason: this is a portfolio repo with a small code base, so the extra quality alerts are cheap to read, and PostHog uses the same suite. If the alerts become noise, go back to the default.
 6. Permissions: `contents: read` at workflow level; the job adds `security-events: write` and `actions: read`.
