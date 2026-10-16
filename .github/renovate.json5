@@ -103,6 +103,17 @@
       matchManagers: ["docker-compose"],
     },
 
+    // Documented version pins (only these). Renovate cannot read the catalog comments.
+    {
+      // okhttp-android 5.5.0 declares minCompileSdk=37; the SDK builds at compileSdk 36 and
+      // consumers would need API 37 (ADR-0006 decision 1, TOOLCHAIN.md, catalog line 26).
+      // mockwebserver3 uses the same version. Lift this when the SDK moves to compileSdk 37.
+      description: "OkHttp stays below 5.5.0 (ADR-0006 decision 1)",
+      matchManagers: ["gradle"],
+      matchPackageNames: ["com.squareup.okhttp3:**"],
+      allowedVersions: "<5.5.0",
+    },
+
     // Manual decisions. A major here has its own PR, written by hand.
     {
       // JDK 21 LTS and Node 24 LTS are pinned in TOOLCHAIN.md. A PostgreSQL major cannot read the

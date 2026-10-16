@@ -23,7 +23,13 @@ Dependabot cannot read the shared catalog `gradle/libs.versions.toml`. Four buil
 
 ## Accepted costs
 
-- Renovate cannot read the pin reasons in catalog comments. It proposes OkHttp 5.5.0 (needs `compileSdk` 37, ADR-0006 item 1) and may propose KSP or Kotlin metadata versions that do not build. CI fails on such a PR; close it or hold the version. No `allowedVersions` pins are added, so a pin is not forgotten in two places.
+- Renovate cannot read the pin reasons in catalog comments, so each documented pin has a `packageRules` entry with `allowedVersions` and a `description` that names its source. Pin mapping:
+
+  | Catalog entry | Rule | Source |
+  | --- | --- | --- |
+  | `okhttp` (`okhttp`, `mockwebserver3`) | `<5.5.0` | 5.5.0 needs compileSdk 37; the SDK builds at 36. ADR-0006 decision 1, TOOLCHAIN.md |
+
+  Not pinned by a rule, because no source gives a version limit: KSP 2.3.12 (ADR-0003 item 1 says only that it is the latest release), Retrofit 3.0.0 and WorkManager 2.12.0 (ADR-0006 says only that they stay, with no limit), `demo-compileSdk` 37 (the demo app builds at 37, so the demo AndroidX versions need no limit), and the Kotlin 2.2 consumer metadata (set by compiler options, not by a catalog version). If a later update breaks the build at compileSdk 36, add a rule in the same PR as the fix.
 - The shared catalog also lists `jdk`, `gradle`, `compileSdk`, `minSdk`, and `targetSdk`. They are not dependencies, and Renovate ignores them.
 
 ## Gaps
