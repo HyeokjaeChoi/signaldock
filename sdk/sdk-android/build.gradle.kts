@@ -5,6 +5,7 @@ plugins {
     `maven-publish`
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.dependency.guard)
 }
 
 android {
@@ -151,4 +152,12 @@ tasks.register<Copy>("apiDump") {
     description = "Rewrites api/sdk-android.api from the release classes."
     from(apiBuild.flatMap { it.outputApiFile })
     into(apiDumpFile.asFile.parentFile)
+}
+
+// Published dependency baseline (issue 56, ADR-0033).
+//   sdk/gradlew -p sdk :sdk-android:dependencyGuard          fails when the trees differ from dependencies/
+//   sdk/gradlew -p sdk :sdk-android:dependencyGuardBaseline  rewrites dependencies/ (intentional change)
+dependencyGuard {
+    configuration("releaseRuntimeClasspath")
+    configuration("releaseCompileClasspath")
 }

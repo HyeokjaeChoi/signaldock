@@ -25,3 +25,13 @@ Renovate proposes weekly updates ([`renovate.json5`](../../.github/renovate.json
 - A PR from the group `sdk-consumer-facing` (label `sdk-consumer-facing`) changes what a consumer resolves from the published POM. Before you merge it, add a line to `CHANGELOG.md` under `[Unreleased]`.
 - Renovate cannot read the pin reasons in the catalog comments. Documented pins have a rule in `renovate.json5` (ADR-0031: OkHttp below 5.5.0). If CI fails for another pin, close the PR, hold the version in the catalog, and add a rule.
 - A new major of a runtime image (JDK, Node, nginx, PostgreSQL) or of `@types/node` is never proposed. Change it by hand in its own PR (`TOOLCHAIN.md`).
+
+## Change the SDK dependency tree
+
+`scripts/verify-contract.sh` fails when the release runtime or compile classpath of `:sdk-android` differs from `sdk/sdk-android/dependencies/` ([ADR-0033](../adr/0033-sdk-dependency-baseline.md)). A dependency bump, a Renovate PR, or a transitive change can cause it. To accept the change:
+
+```sh
+sdk/gradlew -p sdk :sdk-android:dependencyGuardBaseline
+```
+
+Commit the changed baseline files. A baseline change is a change a consumer can see, so add a line to `CHANGELOG.md` in the same PR.
