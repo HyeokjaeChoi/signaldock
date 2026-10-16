@@ -23,7 +23,7 @@ The design sources leave these points open (architecture "Independent distributi
 - Physical devices. The run used the headless AVD `signaldock-api37` (Android 17 / API 37 image) against the Compose stack.
 - A consumer on a Kotlin version other than AGP 9.3.3's default (2.2.10), or on AGP 8.x.
 
-## Check of decision 4: runtime `kotlin-stdlib` (issue 57, 2026-10-17 UTC)
+## Check of decision 4: runtime `kotlin-stdlib` (issue 57, 2026-10-16 UTC)
 
 Question: the baseline `sdk/sdk-android/dependencies/releaseRuntimeClasspath.txt` (ADR-0033) shows `kotlin-stdlib` 2.3.20, but the POM says 2.2.21. Result: decision 4 holds. No code change.
 
