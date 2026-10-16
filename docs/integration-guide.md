@@ -59,7 +59,7 @@ Requirements of the 0.1.0 AAR:
 - `compileSdk` 36 or newer and `minSdk` 24 or newer ([ADR-0006](adr/0006-sdk-delivery-decisions.md) decision 1; spec 2).
 - Kotlin 2.2 or newer and AGP 9.x. The SDK class metadata is 2.2, so the default built-in Kotlin of AGP 9 works (ADR-0009 decision 4, Q132). An app on AGP 8.x cannot use 0.1.0 (ADR-0009 decision 4).
 - The app declares the `INTERNET` permission (the consumer app has it in its [manifest](../compatibility/consumer-android/app/src/main/AndroidManifest.xml); [README](../README.md) "Add the SDK to an app"). The SDK needs no R8 rules of its own (ADR-0009 decision 6).
-- Use an `https://` endpoint. The SDK does not change `http://` to `https://`. For a local server on `http://`, the app must allow cleartext for that host. The consumer app does this for `10.0.2.2`, `127.0.0.1`, and `localhost` only (ADR-0009 decision 5, Q134).
+- Use an `https://` endpoint. The SDK does not change `http://` to `https://`. `initialize` rejects an `http://` endpoint with `InvalidConfiguration`, unless the config has `allowInsecureEndpoint = true` (default `false`, ADR-0035). Set it only for a local server on `http://`. The app must also allow cleartext for that host. The consumer app does this for `10.0.2.2`, `127.0.0.1`, and `localhost` only (ADR-0009 decision 5, Q134).
 
 ## 2. Initialize
 
@@ -71,7 +71,7 @@ The SDK keeps only the application context (spec 3).
 public suspend fun initialize(context: Context, config: SignalDockConfig): InitResult
 ```
 
-`SignalDockConfig` has `endpoint` and `collectionKey`. It also has optional `logLevel` (default `WARN`) and four timeouts. The defaults are 30 seconds for the call and 10 seconds each for connect, read, and write. A timeout must be positive and finite (architecture "Agreed defaults, pending measurement"; spec 8 Q117). The configuration is fixed for the SDK lifetime (spec 3). `toString()` hides the collection key (spec 8 Q115).
+`SignalDockConfig` has `endpoint` and `collectionKey`. It also has optional `logLevel` (default `WARN`), four timeouts, and `allowInsecureEndpoint` (default `false`; see the endpoint rule in section 3). The defaults are 30 seconds for the call and 10 seconds each for connect, read, and write. A timeout must be positive and finite (architecture "Agreed defaults, pending measurement"; spec 8 Q117). The configuration is fixed for the SDK lifetime (spec 3). `toString()` hides the collection key (spec 8 Q115).
 
 ```kotlin
 // sample: initialize
@@ -336,7 +336,7 @@ Notes:
 
 | `InitError` | Cause | What to do |
 | --- | --- | --- |
-| `InvalidConfiguration(message)` | The `collectionKey` is blank, the `endpoint` is not an absolute `http` or `https` URL with a host, or a timeout is not positive and finite. No SDK state was created | Fix the configuration. The message never contains the key |
+| `InvalidConfiguration(message)` | The `collectionKey` is blank, the `endpoint` is not an absolute `https` URL with a host (an `http` URL is accepted only with `allowInsecureEndpoint = true`), or a timeout is not positive and finite. No SDK state was created | Fix the configuration. The message never contains the key |
 | `ConfigurationConflict` | A different configuration is active or starting | Use one configuration for the whole process |
 | `StorageFailure(message)` | Storage could not be prepared. `message` is the exception class name | Call `initialize()` again later. The queue and the installation ID stay |
 

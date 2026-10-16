@@ -30,7 +30,7 @@ import java.io.FileOutputStream
  * coordinator, real Room files in the app's real `noBackupFilesDir` and real WorkManager.
  */
 class DurabilityPhases {
-    private val offline = SignalDockConfig(endpoint = "http://127.0.0.1:9", collectionKey = "device-test-key")
+    private val offline = SignalDockConfig(endpoint = "http://127.0.0.1:9", collectionKey = "device-test-key", allowInsecureEndpoint = true)
 
     private fun phase(name: String) = assumeTrue("phase $name not selected", instrumentationArg("phase") == name)
 

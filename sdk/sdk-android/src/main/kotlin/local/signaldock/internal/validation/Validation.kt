@@ -47,8 +47,12 @@ internal fun validateConfig(c: SignalDockConfig): String? {
     if (c.collectionKey.isBlank()) return "collectionKey is blank"
     val uri = runCatching { java.net.URI(c.endpoint) }.getOrNull()
         ?: return "endpoint is not a valid URI"
-    if (uri.scheme?.lowercase() !in setOf("http", "https") || uri.host.isNullOrEmpty()) {
-        return "endpoint must be an absolute http or https URL with a host"
+    val scheme = uri.scheme?.lowercase()
+    if (scheme !in setOf("http", "https") || uri.host.isNullOrEmpty()) {
+        return "endpoint must be an absolute https URL with a host"
+    }
+    if (scheme == "http" && !c.allowInsecureEndpoint) {
+        return "endpoint uses http; use https, or set allowInsecureEndpoint = true for development"
     }
     val timeouts = listOf(
         "callTimeout" to c.callTimeout, "connectTimeout" to c.connectTimeout,
