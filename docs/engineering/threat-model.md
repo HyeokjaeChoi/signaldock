@@ -83,7 +83,7 @@ S spoofing, T tampering, R repudiation, I information disclosure, D denial of se
 | AUTH | Partial | A shared write-only key, not user authentication (spec 5) |
 | NETWORK | Partial | No redirects, strict ACK validation, timeouts. HTTPS is not enforced; no pinning |
 | PLATFORM | Partial | The SDK declares no permissions; the host declares `INTERNET` (ADR-0011 item 1). I did not review exported components |
-| CODE | Partial | Public API check ([ADR-0019](../adr/0019-sdk-public-api-check.md)); generated DTOs are `internal`; R8 release consumer builds ([ADR-0009](../adr/0009-maven-zip-and-consumer-app.md)); Renovate ([ADR-0031](../adr/0031-renovate-dependency-updates.md)). No dependency scan |
+| CODE | Partial | Public API check ([ADR-0019](../adr/0019-sdk-public-api-check.md)); generated DTOs are `internal`; R8 release consumer builds ([ADR-0009](../adr/0009-maven-zip-and-consumer-app.md)); Renovate with vulnerability fix PRs from GitHub Dependabot alerts (npm, GitHub Actions) and OSV (declared Gradle dependencies) ([ADR-0031](../adr/0031-renovate-dependency-updates.md) item 9). Gap: a vulnerable transitive Gradle dependency raises no alert. Gap: Kotlin code scanning is not set up (CodeQL default setup, a repository setting since 2026-10-16 UTC, cannot build the Kotlin code) |
 | RESILIENCE | Not a goal | No tamper or root detection. The SDK does not defend against a hostile host or device |
 | PRIVACY | Partial | See section 6 |
 
@@ -110,7 +110,7 @@ Gaps:
 5. Dashboard without login: safe only because it is local (excluded on purpose, ADR-0028).
 6. No opt-out (a gap), and no retention or delete (excluded on purpose, ADR-0028).
 7. Secrets in `.env` and the container environment.
-8. No dependency vulnerability scan and no SBOM (Renovate exists, a scan does not).
+8. Dependency vulnerability coverage is partial: GitHub Dependabot alerts cover npm and GitHub Actions, and Renovate checks OSV for the declared Gradle dependencies (ADR-0031 item 9). Transitive Gradle dependencies get no alert, Kotlin code is not scanned by CodeQL, and there is no SBOM.
 9. No access log, no key policy, no lockout (excluded on purpose, ADR-0028).
 10. Covered by a test since the first version: XSS and SQL injection now have tests (PR #111; the run is recorded only in the PR description, a Gap). They cover fixed strings only.
 
