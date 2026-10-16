@@ -1,5 +1,10 @@
 src/main/kotlin/org/openapitools/client/models/BatchAckResponse.kt
 src/main/kotlin/org/openapitools/client/models/BatchIngestRequest.kt
+src/main/kotlin/org/openapitools/client/models/ClientReportCount.kt
+src/main/kotlin/org/openapitools/client/models/ClientReportCounts.kt
+src/main/kotlin/org/openapitools/client/models/ClientReportRequest.kt
+src/main/kotlin/org/openapitools/client/models/DiscardReason.kt
+src/main/kotlin/org/openapitools/client/models/DiscardedEventCount.kt
 src/main/kotlin/org/openapitools/client/models/ErrorResponse.kt
 src/main/kotlin/org/openapitools/client/models/EventIngest.kt
 src/main/kotlin/org/openapitools/client/models/EventIngestPropertiesValue.kt

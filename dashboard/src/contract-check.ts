@@ -7,6 +7,7 @@ import {
   EventIngestFromJSON,
   EventIngestToJSON,
   BatchAckResponseFromJSON,
+  ClientReportCountsFromJSON,
   EventPlanStatusCountsFromJSON,
   EventReceiptDetailFromJSON,
   EventReceiptDetailToJSON,
@@ -85,6 +86,13 @@ assertEq(
   EventPlanStatusCountsFromJSON({ planned: 1, unplannedEvent: 2, invalidProperties: 3, notChecked: 4 }),
   { planned: 1, unplannedEvent: 2, invalidProperties: 3, notChecked: 4 },
   "plan status counts",
+);
+
+// ADR-0036: client report counts (a new query response).
+assertEq(
+  ClientReportCountsFromJSON({ items: [{ sdkVersion: "0.1.0", reason: "queue_full", count: 12 }], truncated: false }),
+  { items: [{ sdkVersion: "0.1.0", reason: "queue_full", count: 12 }], truncated: false },
+  "client report counts",
 );
 
 console.log("ALL CONTRACT-CHECK ASSERTIONS PASSED");
