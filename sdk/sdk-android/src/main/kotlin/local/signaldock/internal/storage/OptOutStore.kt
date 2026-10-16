@@ -23,7 +23,7 @@ internal class OptOutStore(private val dir: File) {
                 throw IOException("cannot delete opt-out marker")
             }
             true
-        } catch (e: IOException) {
+        } catch (e: Exception) { // IOException, SecurityException: reported as data (ADR-0017)
             false
         }
     }
