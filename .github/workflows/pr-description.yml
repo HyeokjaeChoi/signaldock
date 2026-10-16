@@ -11,6 +11,8 @@ permissions: {}
 
 jobs:
   length:
+    # Dependabot writes release notes into the body; nothing reads them as a design record.
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - env:
