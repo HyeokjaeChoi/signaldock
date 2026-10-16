@@ -22,3 +22,14 @@ The design sources leave these points open (architecture "Independent distributi
 - Release signing and Play distribution. The consumer uses the debug key.
 - Physical devices. The run used the headless AVD `signaldock-api37` (Android 17 / API 37 image) against the Compose stack.
 - A consumer on a Kotlin version other than AGP 9.3.3's default (2.2.10), or on AGP 8.x.
+
+## Check of decision 4: runtime `kotlin-stdlib` (issue 57, 2026-10-17 UTC)
+
+Question: the baseline `sdk/sdk-android/dependencies/releaseRuntimeClasspath.txt` (ADR-0033) shows `kotlin-stdlib` 2.3.20, but the POM says 2.2.21. Result: decision 4 holds. No code change.
+
+- The POM and the Gradle module metadata of `local.signaldock:sdk-android:0.1.0` both declare `kotlin-stdlib` 2.2.21 (`compile` scope in the POM; `requires` 2.2.21 in both variants of the `.module` file).
+- `kotlinx-serialization-core-jvm` 1.11.0 (a runtime dependency of the SDK) requires `kotlin-stdlib` 2.3.20 in its module metadata. Gradle selects the highest version, so the runtime classpath gets 2.3.20. `dependencyInsight` shows the selection reason "By constraint".
+- The consumer app with Kotlin Gradle plugin 2.2.10 resolves the same way: `releaseCompileClasspath` has `kotlin-stdlib` 2.2.21 (2.2.10 -> 2.2.21); `releaseRuntimeClasspath` has 2.3.20. The SDK dependencies that need 2.3.20 have runtime scope, so the Kotlin 2.2 compiler never reads them. `scripts/verify-consumer.sh` passed: AAR metadata `mv=[2,2,0]`, consumer Kotlin Gradle plugin 2.2.10, R8 release build successful.
+- A runtime stdlib newer than the compile stdlib is safe: the SDK classes use `apiVersion` 2.2 and the stdlib is backward compatible.
+
+Gap: no emulator run in this check; the R8 release build is the evidence. Gap: a host app that adds `kotlinx-serialization` 1.11.0 to its own compile classpath also gets stdlib 2.3.20 at compile time; this is the host app's own choice and not tested here.
