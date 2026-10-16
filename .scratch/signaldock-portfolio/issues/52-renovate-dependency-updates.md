@@ -22,7 +22,7 @@ Verification:
 
 - 2026-10-16 UTC: PR #144 merged (config, Dependabot version updates removed, ADR-0031).
 - 2026-10-16 UTC: Renovate GitHub App installed, limited to the `signaldock` repository only (it was "All repositories"). Mend onboarding: "Renovate Only" (Community, free), mode "Scan and Alert" (Interactive).
-- 2026-10-16 UTC: first Renovate output is PR #149 "Update dependency org.postgresql:postgresql to v42.7.12 [SECURITY]", labels `dependencies` and `security`. It comes from the OSV and alerts path (ADR-0031 item 9).
+- 2026-10-16 UTC: first Renovate output is PR #149 "Update dependency org.postgresql:postgresql to v42.7.12 [SECURITY]", labels `dependencies` and `security`. For Gradle only the OSV check (`osvVulnerabilityAlerts`) applies, because GitHub does not parse the Gradle builds (ADR-0031 item 9).
 - 2026-10-16 UTC: Dependency Dashboard issue #150 exists (created 17:03:03Z; `gh issue list --author app/renovate --state all`). It did not exist right after the merge.
 - ADR-0031 "Gaps" and `docs/engineering/threat-model.md` now state the install.
 - 2026-10-16 UTC: Google Maven lookups work: Dependency Dashboard #150 (2026-10-16 UTC) lists updates found for `androidx.activity:activity-compose` (1.13.0), `androidx.lifecycle` (2.11.0), and the AGP plugins `com.android.library` and `com.android.application` (9.4.1).
