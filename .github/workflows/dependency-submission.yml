@@ -29,14 +29,21 @@ jobs:
       - run: scripts/setup-toolchain.sh
       - run: echo "JAVA_HOME=$PWD/.tools/$(ls .tools | grep '^jdk-')" >> "$GITHUB_ENV"
       # ubuntu-latest ships an Android SDK at $ANDROID_HOME (needed by sdk and consumer-android).
-      # The consumer build needs -Psignaldock.repo. An empty folder is enough to resolve the other
-      # dependencies. The SDK itself is local.signaldock and is submitted by the sdk build.
-      - run: mkdir -p "$RUNNER_TEMP/empty-maven"
+      # The consumer build gets the SDK (local.signaldock) only from -Psignaldock.repo (ADR-0009).
+      # For that leg, build the Maven ZIP and unzip it, as scripts/verify-consumer.sh does.
+      # The other legs ignore the property.
+      - name: Prepare the SDK Maven folder
+        run: |
+          mkdir -p "$RUNNER_TEMP/maven-repo"
+          if [ "${{ matrix.build-root }}" = compatibility/consumer-android ]; then
+            sdk/gradlew -p sdk :sdk-android:signaldockMavenZip --no-daemon
+            unzip -q sdk/sdk-android/build/distributions/signaldock-sdk-android-*-maven.zip -d "$RUNNER_TEMP/maven-repo"
+          fi
       - name: Generate and submit dependency graph
         uses: gradle/actions/dependency-submission@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           build-root-directory: ${{ matrix.build-root }}
-          additional-arguments: -Psignaldock.repo=${{ runner.temp }}/empty-maven
+          additional-arguments: -Psignaldock.repo=${{ runner.temp }}/maven-repo
           # The default cache provider is a proprietary service. The basic one is plain actions/cache.
           cache-provider: basic
           # Skip the workflow artifact copy of the graph (the default keeps it 30 days).

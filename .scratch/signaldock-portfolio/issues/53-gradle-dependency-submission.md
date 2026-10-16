@@ -15,6 +15,6 @@ Spec Q161 (in PR #144): security fixes use Renovate and GitHub Dependabot alerts
 4. Cache: `cache-provider: basic` (plain `actions/cache`, no proprietary service). The graph is not saved as a workflow artifact.
 5. Docs: supply-chain row in `docs/engineering/threat-model.md`, pointer in `docs/design-index.md`.
 
-Gap: the workflow has not run. After merge, run `workflow_dispatch` once and check Insights, Dependency graph.
+Gap: the workflow has not run. The consumer-android leg builds the SDK Maven ZIP first (CodeRabbit finding, ADR-0009). After merge, run `workflow_dispatch` once and check Insights, Dependency graph.
 
 ## Comments
