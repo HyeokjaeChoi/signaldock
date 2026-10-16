@@ -1,9 +1,9 @@
 # 55. Validate Gradle wrapper JARs in CI
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: PR pending
+Execution: Done (merged in PR #146, 2026-10-16 16:39:15 UTC)
 
 ## Scope and completion criteria
 
@@ -18,3 +18,4 @@ Verification: YAML parse of `.github/workflows/repo-rules.yml`; `scripts/check-r
 ## Comments
 
 - No ADR: the change follows ADR-0024 item 4 and adds no decision of its own.
+- 2026-10-16 UTC: PR #146 merged 16:39:15Z.
