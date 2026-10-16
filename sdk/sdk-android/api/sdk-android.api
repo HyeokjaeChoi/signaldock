@@ -189,7 +189,10 @@ public final class local/signaldock/RejectionDiagnostic {
 
 public final class local/signaldock/SignalDock {
 	public static final field Companion Llocal/signaldock/SignalDock$Companion;
+	public final fun clearQueue (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun diagnostics (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun isOptedOut ()Z
+	public final fun setOptOut (ZLkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun track (Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun track$default (Llocal/signaldock/SignalDock;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
@@ -234,6 +237,13 @@ public final class local/signaldock/TrackResult$Invalid : local/signaldock/Track
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getField ()Ljava/lang/String;
 	public final fun getReason ()Llocal/signaldock/InvalidReason;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class local/signaldock/TrackResult$OptedOut : local/signaldock/TrackResult {
+	public static final field INSTANCE Llocal/signaldock/TrackResult$OptedOut;
+	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }

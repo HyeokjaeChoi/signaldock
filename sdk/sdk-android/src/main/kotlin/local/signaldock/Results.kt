@@ -105,6 +105,12 @@ public sealed interface TrackResult {
      */
     public data class Invalid(val reason: InvalidReason, val field: String?) : TrackResult
 
+    /**
+     * The host called [SignalDock.setOptOut] with `true`. Nothing was validated, stored or sent
+     * (ADR-0034). This is not an error: handle it as "collection is off".
+     */
+    public data object OptedOut : TrackResult
+
     /** The queue is at its event or byte limit. Existing events are kept. */
     public data object QueueFull : TrackResult
 

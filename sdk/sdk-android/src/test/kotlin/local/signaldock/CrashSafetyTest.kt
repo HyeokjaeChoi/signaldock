@@ -23,6 +23,7 @@ import local.signaldock.internal.scheduling.WorkManagerScheduler
 import local.signaldock.internal.storage.AddOutcome
 import local.signaldock.internal.storage.EventEntity
 import local.signaldock.internal.storage.EventSink
+import local.signaldock.internal.storage.OptOutStore
 import local.signaldock.internal.storage.QueueDao
 import local.signaldock.internal.storage.QueueLimits
 import org.junit.Assert.assertEquals
@@ -50,7 +51,7 @@ class CrashSafetyTest {
         dao.javaClass.getDeclaredField("__db").apply { isAccessible = true }.get(dao) as RoomDatabase
 
     private fun collector(sink: EventSink) =
-        EventCollector("inst", sink, FakeClock(), SequenceIds(), QueueLimits(), FakeLogger())
+        EventCollector("inst", sink, FakeClock(), SequenceIds(), QueueLimits(), FakeLogger(), OptOutStore(kotlin.io.path.createTempDirectory().toFile()))
 
     // ---- invalid input (spec 3, Q63, Q64, Q85) ------------------------------------------------
 

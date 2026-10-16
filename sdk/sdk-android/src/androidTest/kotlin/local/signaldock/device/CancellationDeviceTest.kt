@@ -20,6 +20,7 @@ import local.signaldock.internal.init.RandomUuidV4
 import local.signaldock.internal.storage.AddOutcome
 import local.signaldock.internal.storage.EventEntity
 import local.signaldock.internal.storage.EventSink
+import local.signaldock.internal.storage.OptOutStore
 import local.signaldock.internal.storage.QueueLimits
 import local.signaldock.internal.storage.RoomEventSink
 import org.junit.After
@@ -64,7 +65,7 @@ class CancellationDeviceTest {
 
     private fun collector(sink: EventSink, logger: Logger = AndroidLogger(LogLevel.WARN)): EventCollector {
         val installationId = File(rig.context.noBackupFilesDir, "signaldock/installation-id").readText().trim()
-        return EventCollector(installationId, sink, Clock { System.currentTimeMillis() }, RandomUuidV4, QueueLimits(), logger)
+        return EventCollector(installationId, sink, Clock { System.currentTimeMillis() }, RandomUuidV4, QueueLimits(), logger, OptOutStore(File(rig.context.noBackupFilesDir, "signaldock")))
     }
 
     private fun assertNoContent(lines: List<String>) {

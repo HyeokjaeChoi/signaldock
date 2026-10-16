@@ -72,7 +72,7 @@ Privacy:
 - Installation-scoped UUID, no user identity, no `identify` (ADR-0001; [integration guide](../integration-guide.md) section 8).
 - Logs never hold event content, names, IDs, credentials, or bodies (spec Q115; `SDK tests/InitContractTest.kt`).
 - Queue and ID are excluded from backup (`SDK tests/StorageTest.kt`, device `install_check` in `device tests/DurabilityPhases.kt`).
-- Gap: no opt-out or consent API (integration guide section 11). No server retention or delete function: excluded on purpose for local-only operation ([ADR-0028](../adr/0028-server-production-features-excluded.md), spec Q157).
+- Opt-out: `setOptOut` and `clearQueue` ([ADR-0034](../adr/0034-sdk-opt-out.md), spec Q156). Gap: no consent text. No server retention or delete function: excluded on purpose for local-only operation ([ADR-0028](../adr/0028-server-production-features-excluded.md), spec Q157).
 - XSS and SQL injection have tests ([threat-model.md](threat-model.md), PR #111).
 - Excluded on purpose (ADR-0028): rate limit and `429`, access log, key policy, retention, and Dashboard login. They are required before any non-local use.
 

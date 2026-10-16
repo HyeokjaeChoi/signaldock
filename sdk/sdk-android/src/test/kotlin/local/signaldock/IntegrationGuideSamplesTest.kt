@@ -56,9 +56,21 @@ suspend fun onProductViewed(sdk: SignalDock): String {
     return when (result) {
         is TrackResult.Success -> "stored on the device: ${result.eventId}" // not server receipt
         is TrackResult.Invalid -> "fix the call: ${result.reason} (${result.field})" // nothing stored
+        TrackResult.OptedOut -> "collection is off" // nothing stored
         TrackResult.QueueFull -> "queue is full; the event was dropped" // existing events are kept
         is TrackResult.StorageError -> "storage failed: ${result.message}" // nothing stored
     }
+}
+// end sample
+
+// sample: opt-out
+suspend fun onUserWithdrawsConsent(sdk: SignalDock) {
+    sdk.setOptOut(true)   // from now on, track() stores nothing and returns OptedOut
+    sdk.clearQueue()      // optional: delete events that wait on the device
+}
+
+suspend fun onUserGivesConsent(sdk: SignalDock) {
+    sdk.setOptOut(false)  // collection resumes
 }
 // end sample
 
@@ -90,6 +102,17 @@ class IntegrationGuideSamplesTest {
         assertTrue(onProductViewed(sdk).startsWith("stored on the device: "))
         assertEquals(1, sdk.diagnostics().queuedEvents)
         assertTrue(queueSummary(sdk).startsWith("queued=1 "))
+    }
+
+    @Test
+    fun `opt-out sample stops collection and clears the queue`() = runBlocking {
+        val sdk = newSdk()
+        onProductViewed(sdk)
+        onUserWithdrawsConsent(sdk)
+        assertEquals(0, sdk.diagnostics().queuedEvents)
+        assertEquals("collection is off", onProductViewed(sdk))
+        onUserGivesConsent(sdk)
+        assertTrue(onProductViewed(sdk).startsWith("stored on the device: "))
     }
 
     @Test

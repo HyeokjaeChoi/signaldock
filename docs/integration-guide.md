@@ -131,6 +131,7 @@ suspend fun onProductViewed(sdk: SignalDock): String {
     return when (result) {
         is TrackResult.Success -> "stored on the device: ${result.eventId}" // not server receipt
         is TrackResult.Invalid -> "fix the call: ${result.reason} (${result.field})" // nothing stored
+        TrackResult.OptedOut -> "collection is off" // nothing stored
         TrackResult.QueueFull -> "queue is full; the event was dropped" // existing events are kept
         is TrackResult.StorageError -> "storage failed: ${result.message}" // nothing stored
     }
@@ -187,6 +188,7 @@ The TypeScript output has types and builder functions that return `{ name, prope
 | --- | --- | --- | --- |
 | `Success(eventId)` | The event is stored on the device. This is not server receipt | Nothing. The SDK sends it later | spec 3; architecture "Commit boundaries" |
 | `Invalid(reason, field)` | The input broke a rule. Nothing is stored. `field` is `"name"` or the property key. It is `null` for `EVENT_TOO_LARGE` | Fix the call in your code. Do not retry the same input | spec 3; spec 8 Q63 |
+| `OptedOut` | The app called `setOptOut(true)`. Nothing is validated or stored | Nothing. Collection is off on purpose. See [section 8](#8-privacy) | spec Q156; [ADR-0034](adr/0034-sdk-opt-out.md) |
 | `QueueFull` | The queue is at 10,000 events or 16 MiB. The SDK keeps the existing events and does not store this one | Decide in your app whether to drop the event or to try again later. The SDK does not store it for you | spec 4 |
 | `StorageError(message)` | Storage failed. `message` is the simple class name of the exception. No event content | Treat the event as not stored. Do not show it to the user automatically | spec 3; [ADR-0017](adr/0017-sdk-crash-safety.md) decision 1 |
 
@@ -317,6 +319,27 @@ Notes:
 - The SDK has no `identify` call (spec 1).
 - The SDK logs to Logcat with the tag `SignalDock`. It never logs event content, event names, installation IDs, credentials, or HTTP bodies, also at `DEBUG` (spec 3; architecture "SDK lifecycle and cancellation"; spec 8 Q115).
 - `TrackResult.Invalid.field` is never logged (the KDoc and spec 8 Q115).
+- **Opt-out.** To stop collection, for example when a user withdraws consent, call `setOptOut(true)`. Then `track()` stores nothing and returns `OptedOut`. Nothing is sent for those calls. `setOptOut(false)` starts collection again. `isOptedOut()` returns the state (spec Q156; [ADR-0034](adr/0034-sdk-opt-out.md)).
+
+  ```kotlin
+  // sample: opt-out
+  suspend fun onUserWithdrawsConsent(sdk: SignalDock) {
+      sdk.setOptOut(true)   // from now on, track() stores nothing and returns OptedOut
+      sdk.clearQueue()      // optional: delete events that wait on the device
+  }
+
+  suspend fun onUserGivesConsent(sdk: SignalDock) {
+      sdk.setOptOut(false)  // collection resumes
+  }
+  // end sample
+  ```
+
+  - **Events already in the queue stay, and the SDK still sends them.** Opt-out does not stop the sender. To delete the queued events, call `clearQueue()`. It returns how many events it deleted, or `null` if storage failed. A batch that is in flight at that moment can still reach the server.
+  - The state is kept across restarts. It is in the SDK directory in `noBackupFilesDir`, so Auto Backup does not restore it. After a reinstall or a device restore, collection is on again.
+  - `setOptOut` returns `false` if it could not store the state on disk. The change still holds until the process ends.
+  - You can call `setOptOut` as soon as `initialize` succeeded. The SDK loads the saved state during `initialize`, so the first `track()` already follows it.
+  - A `track()` call that started before `setOptOut(true)` returned can still store its event.
+  - The server does not delete events that it already has (ADR-0028).
 - The collection key checks access for local evaluation. The key can be taken out of an app. It is write-only. It does not replace user authentication (spec 5; architecture "Components and responsibilities").
 
 ## 9. Versions and the contract version
@@ -340,7 +363,7 @@ Notes:
 | `ConfigurationConflict` | A different configuration is active or starting | Use one configuration for the whole process |
 | `StorageFailure(message)` | Storage could not be prepared. `message` is the exception class name | Call `initialize()` again later. The queue and the installation ID stay |
 
-`track()` returns `Invalid`, `QueueFull`, or `StorageError` (section 4). `diagnostics()` reports a storage failure as `storageAvailable = false` (section 7).
+`track()` returns `Invalid`, `OptedOut`, `QueueFull`, or `StorageError` (section 4). `diagnostics()` reports a storage failure as `storageAvailable = false` (section 7).
 
 Delivery errors do not reach `track()`. They show in `Diagnostics.lastDeliveryError.kind` ([ADR-0006](adr/0006-sdk-delivery-decisions.md) decisions 4 and 5; architecture "Retry and transport boundaries"):
 
@@ -403,7 +426,7 @@ The SDK also does not:
 
 - Say that the server has an event. `Success` is device storage only (spec 3).
 - Let your app set `eventId` or `occurredAt` (spec 3).
-- Delete queue items for your app, show event content, or give a Flow of diagnostics (spec 6).
+- Delete single queue items, show event content, or give a Flow of diagnostics (spec 6). It can only clear the whole queue (`clearQueue()`, spec Q156).
 - Poll the server database (spec 4).
 - Trim, normalize, or fix your input (spec 3; spec 8 Q64, Q84).
 - Use `ViewModel` or Compose (spec 2).

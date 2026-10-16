@@ -93,6 +93,7 @@ private fun TrackStatus(outcome: TrackOutcome?) {
                 null -> "No event collected yet."
                 is TrackResult.Success -> "Saved on device: ${outcome.eventName} (${r.eventId.take(8)})"
                 is TrackResult.Invalid -> "Not saved: ${outcome.eventName} rejected (${r.reason})"
+                TrackResult.OptedOut -> "Not saved: collection is off (${outcome.eventName})"
                 TrackResult.QueueFull -> "Not saved: queue is full (${outcome.eventName})"
                 is TrackResult.StorageError -> "Not saved: storage error for ${outcome.eventName}"
             },
