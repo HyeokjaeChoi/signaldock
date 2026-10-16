@@ -112,7 +112,7 @@ Gaps:
 7. Secrets in `.env` and the container environment.
 8. No dependency vulnerability scan and no SBOM (Dependabot exists, a scan does not).
 9. No access log, no key policy, no lockout (excluded on purpose, ADR-0028).
-10. Closed since the first version: XSS and SQL injection now have tests (PR #111). They cover fixed strings only.
+10. Covered by a test since the first version: XSS and SQL injection now have tests (PR #111; the run is recorded only in the PR description, a Gap). They cover fixed strings only.
 
 Before any non-local use, build every feature in the ADR-0028 table first.
 
