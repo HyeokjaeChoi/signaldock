@@ -9,7 +9,7 @@
 #    runs the dashboard tests and the bundle-has-no-query-key check (Q129),
 #    type-checks the dashboard, and runs the executable TS round-trip assertions.
 # 5. Evaluates the independent sdk/ and server/ Gradle builds.
-# 6. Checks the SDK public API dump (ADR-0019).
+# 6. Checks the SDK public API dump (ADR-0019) and the published dependency baseline (ADR-0033).
 # 7. Tracking plan (ADR-0021): regenerates into a temp dir and diffs against
 #    tracking-plan/generated/, then runs the generator and cross-language tests.
 set -euo pipefail
@@ -59,7 +59,7 @@ echo "=== 5. independent sdk/ and server/ builds ==="
 (cd "$ROOT/sdk" && ./gradlew help --no-daemon -q)
 (cd "$ROOT/server" && ./gradlew help --no-daemon -q)
 
-echo "=== 6. SDK public API dump (ADR-0019) ==="
+echo "=== 6. SDK public API dump (ADR-0019) and dependency baseline (ADR-0033) ==="
 # Fails when the public API of :sdk-android differs from sdk/sdk-android/api/sdk-android.api.
 # Needs the Android SDK (it compiles the release variant).
 if [ -z "${ANDROID_HOME:-}" ] && [ -z "${ANDROID_SDK_ROOT:-}" ] && ! grep -q '^sdk.dir=' "$ROOT/sdk/local.properties" 2>/dev/null; then
@@ -67,6 +67,9 @@ if [ -z "${ANDROID_HOME:-}" ] && [ -z "${ANDROID_SDK_ROOT:-}" ] && ! grep -q '^s
   exit 1
 fi
 (cd "$ROOT/sdk" && ./gradlew :sdk-android:apiCheck --no-daemon -q)
+# Dependency baseline (ADR-0033): fails when the release runtime or compile classpath of :sdk-android
+# differs from sdk/sdk-android/dependencies/. Update: ./gradlew :sdk-android:dependencyGuardBaseline
+(cd "$ROOT/sdk" && ./gradlew :sdk-android:dependencyGuard --no-daemon -q)
 
 echo "=== 7. tracking plan codegen drift + cross-language test (ADR-0021) ==="
 # Needs only Node (no Android SDK). Verification never rewrites the checkout.

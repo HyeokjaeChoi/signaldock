@@ -1,0 +1,151 @@
+// Issue 52 (ADR-0031). Replaces .github/dependabot.yml (ADR-0024 items 5 and 6).
+// Renovate finds the shared Gradle catalog /gradle/libs.versions.toml at any path;
+// Dependabot could not (four builds load it with from(files("../gradle/libs.versions.toml"))).
+// In packageRules, a later rule wins when two rules set the same option.
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests", // actions stay pinned to a commit SHA, with the tag in a comment
+    "docker:pinDigests", // Dockerfile and Compose images stay pinned by digest
+  ],
+  ignorePresets: ["group:monorepos"], // would override the groups below (react, slf4j)
+  timezone: "UTC",
+  schedule: ["before 6am on monday"], // weekly, as Dependabot did
+  prConcurrentLimit: 4,
+  prHourlyLimit: 2,
+  dependencyDashboard: true,
+  // Supply-chain delay, like the Dependabot `cooldown` that Mixpanel (30 days), PostHog (7) and
+  // RevenueCat (3) use: a new release must be 3 days old. A registry with no release timestamp
+  // does not block the update (logged as a warning). Security fixes are not delayed (below).
+  minimumReleaseAge: "3 days",
+  minimumReleaseAgeBehaviour: "timestamp-optional",
+  // Q161: Renovate also checks the OSV database, so the Gradle catalog entries get vulnerability
+  // fix PRs although GitHub does not parse Gradle builds (no dependency submission).
+  osvVulnerabilityAlerts: true,
+  // Q161: fix PRs for GitHub Dependabot alerts (the repo setting; no Dependabot PRs).
+  // They skip the schedule and the PR limits above, and have their own budget. No automerge.
+  vulnerabilityAlerts: {
+    enabled: true,
+    labels: ["dependencies", "security"],
+    prConcurrentLimit: 5,
+    minimumReleaseAge: null,
+  },
+  // Only the web packages that exist today (both private, exact pins).
+  npm: {
+    managerFilePatterns: ["/^dashboard/package\\.json$/", "/^perf/report/package\\.json$/"],
+  },
+  packageRules: [
+    // Registries. Default Gradle lookup is Maven Central only.
+    {
+      matchManagers: ["gradle"],
+      registryUrls: ["https://repo.maven.apache.org/maven2", "https://plugins.gradle.org/m2"],
+    },
+    {
+      // Google Maven hosts AndroidX and the Android Gradle Plugin (and its plugin marker).
+      // Central stays as fallback for com.google.* artifacts that live there (for example KSP).
+      description: "Google Maven for AndroidX, AGP and com.google.*",
+      matchManagers: ["gradle"],
+      matchPackageNames: ["androidx.**", "com.android.**", "com.google.**"],
+      registryUrls: [
+        "https://maven.google.com",
+        "https://repo.maven.apache.org/maven2",
+        "https://plugins.gradle.org/m2",
+      ],
+    },
+
+    // Groups. The catalog is shared, so groups follow the package, not the directory.
+    {
+      groupName: "build-and-test",
+      matchManagers: ["gradle", "gradle-wrapper"],
+    },
+    {
+      groupName: "server",
+      matchManagers: ["gradle"],
+      matchPackageNames: [
+        "io.ktor:**",
+        "org.jooq:**",
+        "org.flywaydb:**",
+        "com.zaxxer:**",
+        "org.postgresql:**",
+        "org.testcontainers:**",
+        "org.slf4j:**",
+      ],
+    },
+    {
+      // What a consumer resolves from the published POM (ADR-0024 item 5). A change here needs a
+      // CHANGELOG line and gets its own label so the reviewer sees it.
+      groupName: "sdk-consumer-facing",
+      matchManagers: ["gradle"],
+      matchPackageNames: [
+        // Not `org.jetbrains.kotlin`: the compiler and plugins are build-only. The POM's kotlin-stdlib
+        // comes from `coreLibrariesVersion` in sdk/sdk-android/build.gradle.kts (spec Q132, ADR-0009),
+        // which is raised by hand, so a Kotlin update does not change the published POM.
+        "org.jetbrains.kotlinx:**",
+        "androidx.room:**",
+        "androidx.work:**",
+        "com.squareup.**",
+        // Test-only and build-only artifacts stay in build-and-test.
+        "!androidx.work:work-testing",
+        "!com.squareup.okhttp3:mockwebserver3",
+        "!org.jetbrains.kotlinx:kotlinx-coroutines-test",
+        "!org.jetbrains.kotlinx:binary-compatibility-validator",
+        "!org.jetbrains.kotlinx.binary-compatibility-validator",
+      ],
+      labels: ["dependencies", "sdk-consumer-facing"],
+      prBodyNotes: [
+        "This group changes the published SDK POM. Check that `CHANGELOG.md` has a line for it (docs/releases/README.md, ADR-0031).",
+      ],
+    },
+    {
+      groupName: "npm-build-and-test",
+      matchManagers: ["npm"],
+      matchDepTypes: ["devDependencies"],
+    },
+    {
+      groupName: "npm-runtime",
+      matchManagers: ["npm"],
+      matchDepTypes: ["dependencies"],
+    },
+    {
+      groupName: "actions",
+      matchManagers: ["github-actions"],
+    },
+    {
+      groupName: "docker-images",
+      matchManagers: ["dockerfile"],
+    },
+    {
+      groupName: "compose-images",
+      matchManagers: ["docker-compose"],
+    },
+
+    // Documented version pins (only these). Renovate cannot read the catalog comments.
+    {
+      // okhttp-android 5.5.0 declares minCompileSdk=37; the SDK builds at compileSdk 36 and
+      // consumers would need API 37 (ADR-0006 decision 1, TOOLCHAIN.md, catalog line 26).
+      // mockwebserver3 uses the same version. Lift this when the SDK moves to compileSdk 37.
+      description: "OkHttp stays below 5.5.0 (ADR-0006 decision 1)",
+      matchManagers: ["gradle"],
+      matchPackageNames: ["com.squareup.okhttp3:**"],
+      allowedVersions: "<5.5.0",
+    },
+
+    // Manual decisions. A major here has its own PR, written by hand.
+    {
+      // JDK 21 LTS and Node 24 LTS are pinned in TOOLCHAIN.md. A PostgreSQL major cannot read the
+      // old data directory (dump and restore). Digest and minor updates still come.
+      description: "No major updates for runtime images",
+      matchManagers: ["dockerfile", "docker-compose"],
+      matchUpdateTypes: ["major"],
+      enabled: false,
+    },
+    {
+      description: "@types/node follows the Node 24 line",
+      matchManagers: ["npm"],
+      matchPackageNames: ["@types/node"],
+      matchUpdateTypes: ["major"],
+      enabled: false,
+    },
+  ],
+}

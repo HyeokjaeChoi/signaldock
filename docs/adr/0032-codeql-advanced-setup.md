@@ -4,7 +4,7 @@ status: accepted
 
 # CodeQL advanced setup with a manual Kotlin build (issue 54, spec Q162)
 
-The user decided (Q162, 2026-10-17 UTC) to replace the CodeQL default setup with an advanced setup workflow, `.github/workflows/codeql.yml`.
+The user decided (Q162, 2026-10-16 UTC) to replace the CodeQL default setup with an advanced setup workflow, `.github/workflows/codeql.yml`.
 
 ## Context
 
