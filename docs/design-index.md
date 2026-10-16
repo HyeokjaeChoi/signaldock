@@ -219,6 +219,7 @@ ADRs:
 - ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for `scripts/host-cost-measure.sh` (issue 36)
 - ADR-0023 (`docs/adr/0023-ci-device-tests-and-size-budget.md`), for the `device-test` and `size-budget` jobs in `.github/workflows/repo-rules.yml` and `scripts/check-size-budget.sh` (issue 40)
 - ADR-0024 (`docs/adr/0024-release-workflow-and-dependency-updates.md`), for `.github/workflows/release.yml`, `.github/dependabot.yml`, the `--check` flag of `scripts/release.sh`, and `docs/releases/README.md` (issue 41)
+- Spec Q161 (in PR #144) and issue 53, for `.github/workflows/dependency-submission.yml` and the supply-chain row of `docs/engineering/threat-model.md`
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - Q149 (first release)

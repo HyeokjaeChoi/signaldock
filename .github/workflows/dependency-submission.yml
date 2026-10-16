@@ -1,0 +1,43 @@
+# Issue 53, spec Q161. GitHub does not parse Gradle builds. Gradle dependencies (with transitive ones)
+# reach the dependency graph and Dependabot alerts only through the Dependency Submission API.
+# One submission per Gradle build: the four builds are independent (Q89).
+# Runs on push to main only, never on a PR, so it cannot fail PR CI. It publishes no artifact or release.
+name: dependency-submission
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # The Dependency Submission API needs contents: write. No other permission.
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        build-root: [sdk, server, contract-check, compatibility/consumer-android]
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - run: scripts/setup-toolchain.sh
+      - run: echo "JAVA_HOME=$PWD/.tools/$(ls .tools | grep '^jdk-')" >> "$GITHUB_ENV"
+      # ubuntu-latest ships an Android SDK at $ANDROID_HOME (needed by sdk and consumer-android).
+      # The consumer build needs -Psignaldock.repo. An empty folder is enough to resolve the other
+      # dependencies. The SDK itself is local.signaldock and is submitted by the sdk build.
+      - run: mkdir -p "$RUNNER_TEMP/empty-maven"
+      - name: Generate and submit dependency graph
+        uses: gradle/actions/dependency-submission@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          build-root-directory: ${{ matrix.build-root }}
+          additional-arguments: -Psignaldock.repo=${{ runner.temp }}/empty-maven
+          # The default cache provider is a proprietary service. The basic one is plain actions/cache.
+          cache-provider: basic
+          # Skip the workflow artifact copy of the graph (the default keeps it 30 days).
+          dependency-graph: generate-and-submit
