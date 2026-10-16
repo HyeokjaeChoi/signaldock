@@ -20,7 +20,7 @@ Dependabot cannot read the shared catalog `gradle/libs.versions.toml`. Four buil
 6. **No automatic majors.** Docker images (JDK 21 LTS, Node 24 LTS, nginx), the Compose PostgreSQL image (a major needs dump and restore), and npm `@types/node` (follows Node 24; `TOOLCHAIN.md`). Digest, minor, and patch updates still come. A runtime major is a manual decision with its own PR.
 7. **`pr-description.yml`.** The `length` job skips `dependabot[bot]` and `renovate[bot]`. Both write release notes into the body.
 8. **`.github/dependabot.yml` is deleted.** No Dependabot PRs remain: version updates and security updates are both off.
-9. **Security fixes (spec Q161).** GitHub Dependabot alerts are on (a repository setting, 2026-10-16 UTC). They raise no PR. Renovate reads them (`vulnerabilityAlerts`, label `security`, own budget of 5 PRs, no schedule, no release-age delay, no automerge); the Renovate app needs read access to Dependabot alerts. GitHub does not parse Gradle builds, so for Gradle Renovate also checks OSV (`osvVulnerabilityAlerts`). OSV sees only the declared dependencies, not the transitive tree. Gradle dependency submission was rejected (2026-10-17 UTC): none of the 12 surveyed SDK repos uses it.
+9. **Security fixes (spec Q161).** GitHub Dependabot alerts are on (a repository setting, 2026-10-16 UTC). They raise no PR. Renovate reads them (`vulnerabilityAlerts`, label `security`, own budget of 5 PRs, no schedule, no release-age delay, no automerge); the Renovate app needs read access to Dependabot alerts. GitHub does not parse Gradle builds, so for Gradle Renovate also checks OSV (`osvVulnerabilityAlerts`). OSV sees only the declared dependencies, not the transitive tree. Gradle dependency submission was rejected (2026-10-16 UTC): none of the 12 surveyed SDK repos uses it.
 10. **Release age.** `minimumReleaseAge` is 3 days, as the Dependabot `cooldown` of Mixpanel (30 days), PostHog (7) and RevenueCat (3). `minimumReleaseAgeBehaviour` is `timestamp-optional`, so a registry without release timestamps does not block updates. Security fixes are not delayed.
 
 ## Accepted costs
@@ -33,6 +33,7 @@ Dependabot cannot read the shared catalog `gradle/libs.versions.toml`. Four buil
 
   Not pinned by a rule, because no source gives a version limit: KSP 2.3.12 (ADR-0003 item 1 says only that it is the latest release), Retrofit 3.0.0 and WorkManager 2.12.0 (ADR-0006 says only that they stay, with no limit), `demo-compileSdk` 37 (the demo app builds at 37, so the demo AndroidX versions need no limit), and the Kotlin 2.2 consumer metadata (set by compiler options, not by a catalog version). If a later update breaks the build at compileSdk 36, add a rule in the same PR as the fix.
 - The shared catalog also lists `jdk`, `gradle`, `compileSdk`, `minSdk`, and `targetSdk`. They are not dependencies, and Renovate ignores them.
+- Dependabot version updates stop when this PR merges, and Renovate opens no PR until the app is installed. The install follows the merge on the same day; Dependabot alerts stay on during the gap (item 9). Installing first would make Renovate open an onboarding PR against a `main` that has no `renovate.json5` yet.
 
 ## Gaps
 
