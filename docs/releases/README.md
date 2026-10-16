@@ -17,3 +17,11 @@ A pushed tag `vX.Y.Z` builds the Maven ZIP and creates the GitHub Release ([`rel
    ```
 
 The workflow fails, before it builds, when the tag is not `vMAJOR.MINOR.PATCH`, differs from `sdkVersion`, is not on `main`, has no notes file, or already has a release. If a check fails, fix the cause, delete the tag (`git push --delete origin vX.Y.Z`), and tag again. A failed `publish` job leaves no release, so you can re-run it.
+
+## Dependency updates
+
+Renovate proposes weekly updates ([`renovate.json5`](../../.github/renovate.json5), [ADR-0031](../adr/0031-renovate-dependency-updates.md)). It reads the shared catalog `gradle/libs.versions.toml`.
+
+- A PR from the group `sdk-consumer-facing` (label `sdk-consumer-facing`) changes what a consumer resolves from the published POM. Before you merge it, add a line to `CHANGELOG.md` under `[Unreleased]`.
+- Renovate cannot read the pin reasons in the catalog comments (for example OkHttp 5.4.0, ADR-0006). If CI fails for such a pin, close the PR or hold the version in the catalog.
+- A new major of a runtime image (JDK, Node, PostgreSQL) or of `@types/node` is never proposed. Change it by hand in its own PR (`TOOLCHAIN.md`).
