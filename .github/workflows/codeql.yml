@@ -53,9 +53,12 @@ jobs:
         if: matrix.build-mode == 'manual'
         run: |
           export JAVA_HOME="$PWD/.tools/$(ls .tools | grep '^jdk-')"
-          sdk/gradlew -p sdk :sdk-android:assembleRelease :demo:app:assembleDebug --no-daemon --no-build-cache
-          server/gradlew -p server classes --no-daemon --no-build-cache
-          contract-check/gradlew -p contract-check classes --no-daemon --no-build-cache
+          # The CodeQL Kotlin extractor runs inside the compiler. The repo heap of 512 MiB is too small
+          # for it (the server persistence module hit "garbage collector is thrashing"), so raise it here only.
+          OPTS=(--no-daemon --no-build-cache '-Dorg.gradle.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=1g')
+          sdk/gradlew -p sdk :sdk-android:assembleRelease :demo:app:assembleDebug "${OPTS[@]}"
+          server/gradlew -p server classes "${OPTS[@]}"
+          contract-check/gradlew -p contract-check classes "${OPTS[@]}"
       - uses: github/codeql-action/analyze@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
         with:
           category: /language:${{ matrix.language }}
