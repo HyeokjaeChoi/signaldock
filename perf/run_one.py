@@ -241,25 +241,24 @@ def parse_server_log(path, bounds):
     pool = defaultdict(lambda: {"max_active": 0, "max_pending": 0, "samples": 0})
     day, last = bounds["start"].date(), None
     with open(path, errors="replace") as f:
-        lines = f.readlines()
-    for line in lines:
-        m = re.match(r"(\d\d):(\d\d):(\d\d)\.(\d{3}) ", line)
-        if not m:
-            continue
-        sec = int(m[1]) * 3600 + int(m[2]) * 60 + int(m[3])
-        if last is not None and sec < last - 3600:
-            day += dt.timedelta(days=1)
-        last = sec
-        t = dt.datetime.combine(day, dt.time(int(m[1]), int(m[2]), int(m[3]), int(m[4]) * 1000), dt.timezone.utc)
-        phase = "before" if t < bounds["start"] else "warmup" if t < bounds["measure"] else "measure" if t < bounds["end"] else "after"
-        s = re.search(r"stage=(\w+) elapsedMs=(\d+)", line)
-        if s:
-            stages[phase][s[1]].append(int(s[2]))
-        p = re.search(r"pool active=(\d+) idle=(\d+) pending=(\d+) total=(\d+)", line)
-        if p:
-            q = pool[phase]
-            q["samples"] += 1
-            q["max_active"], q["max_pending"] = max(q["max_active"], int(p[1])), max(q["max_pending"], int(p[3]))
+        for line in f:
+            m = re.match(r"(\d\d):(\d\d):(\d\d)\.(\d{3}) ", line)
+            if not m:
+                continue
+            sec = int(m[1]) * 3600 + int(m[2]) * 60 + int(m[3])
+            if last is not None and sec < last - 3600:
+                day += dt.timedelta(days=1)
+            last = sec
+            t = dt.datetime.combine(day, dt.time(int(m[1]), int(m[2]), int(m[3]), int(m[4]) * 1000), dt.timezone.utc)
+            phase = "before" if t < bounds["start"] else "warmup" if t < bounds["measure"] else "measure" if t < bounds["end"] else "after"
+            s = re.search(r"stage=(\w+) elapsedMs=(\d+)", line)
+            if s:
+                stages[phase][s[1]].append(int(s[2]))
+            p = re.search(r"pool active=(\d+) idle=(\d+) pending=(\d+) total=(\d+)", line)
+            if p:
+                q = pool[phase]
+                q["samples"] += 1
+                q["max_active"], q["max_pending"] = max(q["max_active"], int(p[1])), max(q["max_pending"], int(p[3]))
     res = {}
     for phase, d in stages.items():
         res[phase] = {st: {"count": len(v), "p50_ms": c.percentile(sorted(v), 50), "p95_ms": c.percentile(sorted(v), 95), "max_ms": max(v)}
