@@ -14,4 +14,4 @@ The scale section of the design review is analysis. Only the numbers in `perf/re
 
 ## Refresh status
 
-Refreshed 2026-10-16 (issue 51) against `main` after PRs #104 to #106, #108 to #113, and #123. A Gap that a test or a run closed now cites that test or run. A feature that the user left out for local-only operation is "Excluded on purpose" ([ADR-0028](../adr/0028-server-production-features-excluded.md)), not a Gap. Gaps that are still true stay listed: see "Gaps found" in [failure-modes.md](failure-modes.md), "Residual risks" in [threat-model.md](threat-model.md), and the Gap lines in [design-review.md](design-review.md).
+Refreshed 2026-10-15 UTC (issue 51) against `main` after PRs #104 to #106, #108 to #113, and #123. A Gap that a test or a run closed now cites that test or run. A feature that the user left out for local-only operation is "Excluded on purpose" ([ADR-0028](../adr/0028-server-production-features-excluded.md)), not a Gap. Gaps that are still true stay listed: see "Gaps found" in [failure-modes.md](failure-modes.md), "Residual risks" in [threat-model.md](threat-model.md), and the Gap lines in [design-review.md](design-review.md).

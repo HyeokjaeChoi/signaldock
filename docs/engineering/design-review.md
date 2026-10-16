@@ -1,6 +1,6 @@
 # Design review
 
-Status: written 2026-10-15 after the first release (`v0.1.0`), refreshed 2026-10-16 (issue 51). Structure follows the [Google design doc](https://www.industrialempathy.com/posts/design-docs-at-google/) outline.
+Status: written 2026-10-15 after the first release (`v0.1.0`), refreshed 2026-10-15 UTC (issue 51). Structure follows the [Google design doc](https://www.industrialempathy.com/posts/design-docs-at-google/) outline.
 Every claim cites a file. A claim without a citation is my analysis and is marked "Analysis".
 
 Short paths used below: `SDK tests` = `sdk/sdk-android/src/test/kotlin/local/signaldock/`; `device tests` = `sdk/sdk-android/src/androidTest/kotlin/local/signaldock/device/`.
