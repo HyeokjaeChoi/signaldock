@@ -16,7 +16,7 @@ SignalDock is an open-source release from Stackline. It shows SDK API design, de
 - Deliver one entry point for server/DB/Dashboard startup, an SDK Maven folder-repository ZIP, an independent consumer app, reproduction instructions, and a short verification video.
 - The first scope excludes iOS/Flutter SDKs, React Native/Flutter/Unity bridges, a native-web (WebView JavaScript) bridge (Q150), automatic events, user identify, campaign/push, funnel analysis, multiple projects/account management, public internet operation, and Maven Central publication.
 
-Job reference: [Datarize Mobile SDK Engineer listing](https://groupby.kr/positions/12838). The personal résumé was reviewed locally only. Exclude its source and conversation records from repository uploads.
+Personal notes (discovery conversation and résumé review) stay local. Exclude them from repository uploads (`.gitignore`: `.scratch/*/discovery.md`).
 
 ## 2. Agreed stack and boundaries
 
