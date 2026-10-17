@@ -195,7 +195,7 @@ attestation 변경(ADR-0039) 이후의 릴리스에는 서명된 build provenanc
 gh attestation verify signaldock-sdk-android-X.Y.Z-maven.zip --repo HyeokjaeChoi/signaldock
 ```
 
-`v0.2.0` 이하에는 attestation이 없습니다(체크섬만 사용). Gap: attestation은 다음 릴리스 tag까지 만들어지지 않으므로, 이 명령은 실제 릴리스에서 아직 실행하지 않았습니다.
+GitHub CLI 2.102.0 이상을 쓰세요(이전 버전에는 attestation 검증 결함이 있습니다). `v0.2.0` 이하에는 attestation이 없습니다(체크섬만 사용). Gap: attestation은 다음 릴리스 tag까지 만들어지지 않으므로, 이 명령은 실제 릴리스에서 아직 실행하지 않았습니다.
 
 그 폴더를 repository로 추가하고 좌표에 의존하세요.
 

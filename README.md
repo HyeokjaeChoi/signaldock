@@ -193,7 +193,7 @@ Releases made after the attestation change (ADR-0039) also have a signed build p
 gh attestation verify signaldock-sdk-android-X.Y.Z-maven.zip --repo HyeokjaeChoi/signaldock
 ```
 
-`v0.2.0` and earlier have no attestation (use the checksum only). Gap: the attestation is not produced until the next release tag, so this command has not run on a real release yet.
+Use GitHub CLI 2.102.0 or newer (older versions have attestation check flaws). `v0.2.0` and earlier have no attestation (use the checksum only). Gap: the attestation is not produced until the next release tag, so this command has not run on a real release yet.
 
 Add the folder as a repository and depend on the coordinate:
 

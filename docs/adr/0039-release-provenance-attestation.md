@@ -21,7 +21,7 @@ The user approved this item on 2026-10-18 UTC (Q167). The release workflow now s
 3. The step runs in `publish`, not in `build`. `build` runs project code (Gradle, dependencies); it must not get `id-token: write`. `publish` runs no project code (ADR-0024 item 4). The attested digest is the digest of the ZIP that `publish` downloads from the `build` artifact.
 4. The step runs before `gh release create`. If it fails, no release exists, and the job can run again (ADR-0024).
 5. Only the ZIP is a subject. The ZIP is the one unit that a consumer downloads. The `.sha256` file is derived from it. Rejected: attesting the files inside the ZIP (`.aar`, `.pom`, `.module`). A consumer adds the unzipped folder as a Maven repository and does not download these files alone. The ZIP digest already covers them. Per-file subjects need an unzip step and add many subjects with no user need.
-6. Consumers verify with `gh attestation verify <zip> --repo HyeokjaeChoi/signaldock`. A stricter check adds `--signer-workflow HyeokjaeChoi/signaldock/.github/workflows/release.yml`. The commands are in `docs/releases/README.md` and `README.md`.
+6. Consumers verify with `gh attestation verify <zip> --repo HyeokjaeChoi/signaldock`. A stricter check adds `--signer-workflow HyeokjaeChoi/signaldock/.github/workflows/release.yml`. Use GitHub CLI 2.102.0 or newer: versions 2.51.0 to 2.101.0 treat `--signer-workflow` as a prefix (GHSA-wjmr-j3rp-mh2g; found by the CodeRabbit review). The commands are in `docs/releases/README.md` and `README.md`.
 
 ## Consequences
 

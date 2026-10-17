@@ -20,7 +20,7 @@ Each GitHub Release has a Maven ZIP and a `.sha256` file. Releases after ADR-003
 gh attestation verify signaldock-sdk-android-X.Y.Z-maven.zip --repo HyeokjaeChoi/signaldock
 ```
 
-`v0.2.0` and earlier have no attestation. See [docs/releases/README.md](docs/releases/README.md#provenance-attestation).
+Use GitHub CLI 2.102.0 or newer (older versions have attestation check flaws, for example GHSA-wjmr-j3rp-mh2g). `v0.2.0` and earlier have no attestation. See [docs/releases/README.md](docs/releases/README.md#provenance-attestation).
 
 ## Report a vulnerability
 
