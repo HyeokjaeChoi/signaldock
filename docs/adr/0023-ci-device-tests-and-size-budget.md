@@ -22,7 +22,7 @@ Decision 3 counts changed. `sdk-android` now has 30 `@Test` methods. The 13 meth
 
 ## Amendment (2026-10-17 UTC, issue 64)
 
-The opt-out phases (`optout_set`, `optout_check`, `optout_off`) add 3 methods to `DurabilityPhases`. Now 33 methods: 16 skip without `-e phase`, and 17 run (job log of `repo-rules` run 39032066203 of PR #173).
+The opt-out phases (`optout_set`, `optout_check`, `optout_off`) add 3 methods to `DurabilityPhases`. Now 33 methods: 16 skip without `-e phase`, and 17 run (job log of `repo-rules` run 39032066203 of PR #173). These counts replace the counts in decision 3, in Limits ("26 tests"), and in the first amendment.
 
 ## Limits
 
