@@ -29,7 +29,7 @@ class InitDeviceTest {
 
     @Test
     fun Q110_initialization_succeeds_offline_without_a_reachable_server() = runBlocking {
-        val r = rig(SignalDockConfig(endpoint = "http://127.0.0.1:9", collectionKey = "device-test-key"))
+        val r = rig(SignalDockConfig(endpoint = "http://127.0.0.1:9", collectionKey = "device-test-key", allowInsecureEndpoint = true))
         val sdk = r.initialize() // nothing listens on port 9: no server connection is needed
         assertTrue(sdk.track("offline") is TrackResult.Success)
         assertEquals(1, sdk.diagnostics().queuedEvents)

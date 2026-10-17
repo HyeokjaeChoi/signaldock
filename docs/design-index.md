@@ -33,6 +33,8 @@ ADRs:
 - ADR-0029 (`docs/adr/0029-device-fault-tests-and-power-loss.md`), for the fault phases (`FaultPhases.kt`, `PowerLossSemanticsDeviceTest.kt`, `scripts/ack-server.py`) and the power-loss semantics (issue 47)
 - ADR-0030 (`docs/adr/0030-sdk-contract-deprecation-warning.md`), for `DeprecationNotice.kt` and `Diagnostics.contractDeprecation` (issue 50)
 - ADR-0033 (`docs/adr/0033-sdk-dependency-baseline.md`), for `sdk/sdk-android/dependencies/` and the `dependencyGuard` and `dependencyGuardBaseline` tasks (issue 56)
+- ADR-0034 (`docs/adr/0034-sdk-opt-out.md`), for `setOptOut`, `isOptedOut`, `clearQueue`, `TrackResult.OptedOut`, and `OptOutStore.kt` (issue 58)
+- ADR-0035 (`docs/adr/0035-sdk-https-enforcement.md`), for the `https` rule in `validateConfig` and `SignalDockConfig.allowInsecureEndpoint` (issue 60)
 - ADR-0036 (`docs/adr/0036-sdk-client-reports.md`), for `ClientReport.kt`, the `dropped_counts` table (Room schema 3), and the report step of `Sender` (issue 61)
 
 Public API change: update the dump (`sdk/gradlew -p sdk :sdk-android:apiDump`), the integration guide, and `CHANGELOG.md` in the same PR.
@@ -51,6 +53,7 @@ Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 8, C. Small modules and local execution
 - 12. Dashboard role confirmation and default delegation
 - Q159 (contract support policy, deprecation warning)
+- Q156 (opt-out and clearQueue)
 - Q164 (SDK client reports, dropped event counts)
 
 ## `server/`

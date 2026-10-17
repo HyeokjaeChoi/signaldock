@@ -118,6 +118,10 @@ internal abstract class QueueDao {
     @Query("SELECT * FROM events WHERE contractVersion = :contractVersion AND installationId = :installationId ORDER BY seq LIMIT :limit")
     abstract suspend fun oldestOfGroup(contractVersion: String, installationId: String, limit: Int): List<EventEntity>
 
+    /** Host-requested clear (ADR-0034). Returns how many events were deleted. */
+    @Query("DELETE FROM events")
+    abstract suspend fun deleteAll(): Int
+
     @Query("DELETE FROM events WHERE eventId IN (:ids)")
     abstract suspend fun deleteByIds(ids: List<String>): Int
 

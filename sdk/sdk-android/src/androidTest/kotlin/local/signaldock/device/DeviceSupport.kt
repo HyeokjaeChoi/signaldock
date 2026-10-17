@@ -119,7 +119,7 @@ internal class AckServer(private val delayMillis: Long = 0) {
     }
 
     fun config(logLevel: local.signaldock.LogLevel = local.signaldock.LogLevel.WARN) =
-        SignalDockConfig(endpoint = url, collectionKey = "device-test-key", logLevel = logLevel)
+        SignalDockConfig(endpoint = url, collectionKey = "device-test-key", logLevel = logLevel, allowInsecureEndpoint = true)
 
     fun close() { runCatching { server.close() } }
 }

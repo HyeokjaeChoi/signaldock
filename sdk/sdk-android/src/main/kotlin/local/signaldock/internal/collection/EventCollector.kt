@@ -13,6 +13,7 @@ import local.signaldock.internal.init.Logger
 import local.signaldock.internal.storage.AddOutcome
 import local.signaldock.internal.storage.EventEntity
 import local.signaldock.internal.storage.EventSink
+import local.signaldock.internal.storage.OptOutStore
 import local.signaldock.internal.storage.QueueLimits
 import local.signaldock.internal.transport.CONTRACT_VERSION
 import local.signaldock.internal.transport.SDK_VERSION
@@ -32,8 +33,11 @@ internal class EventCollector(
     private val ids: IdGenerator,
     private val limits: QueueLimits,
     private val logger: Logger,
+    private val optOut: OptOutStore,
 ) {
     suspend fun track(name: String, block: EventBuilder.() -> Unit = {}): TrackResult {
+        // Before anything else: nothing is evaluated, stored or sent while opted out (ADR-0034).
+        if (optOut.optedOut) return TrackResult.OptedOut
         val now = clock.nowMillis()
         val builder = EventBuilder().apply(block)
         checkText(name, isName = true)?.let { return TrackResult.Invalid(it, "name") }

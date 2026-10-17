@@ -147,7 +147,6 @@ def execute(a, out):
     c.psql("ANALYZE")
     c.psql("CHECKPOINT")
     assert int(c.psql("SELECT count(*) FROM events")) == P["seed_size"]
-    exp_total = int(c.psql(f"SELECT count(*) FROM events WHERE received_at >= '{frm}' AND received_at < '{to}'"))
     scheduled = P["rate"] * (total_s - P["over_s"]) + P["over_rate"] * P["over_s"]
     bodies = c.WORK / "bodies" / f"{a.run_id}.jsonl"
     bodies.parent.mkdir(parents=True, exist_ok=True)
@@ -179,8 +178,10 @@ def execute(a, out):
     raw = out / "k6-raw.json"
     c.log(f"k6: baseline {P['base_s']}s, overload {P['over_s']}s, recovery {P['rec_s']}s")
     times["k6_start"] = ro.stamp()
+    k6log = open(out / "k6.log", "w")
     k6 = subprocess.Popen(["k6", "run", "--quiet", "--no-usage-report", "--out", f"json={raw}", "--summary-export", str(out / "k6-summary.json"),
-                           str(c.PERF / "overload.js")], env=k6env, stdout=open(out / "k6.log", "w"), stderr=subprocess.STDOUT)
+                           str(c.PERF / "overload.js")], env=k6env, stdout=k6log, stderr=subprocess.STDOUT)
+    k6log.close()  # the child process keeps its own copy of the descriptor
     sampler = ro.Sampler(k6.pid)
     sampler.start()
     k6_exit = None

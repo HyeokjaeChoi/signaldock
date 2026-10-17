@@ -18,6 +18,7 @@ import local.signaldock.internal.init.Clock
 import local.signaldock.internal.collection.EventCollector
 import local.signaldock.internal.storage.EventEntity
 import local.signaldock.internal.storage.EventSink
+import local.signaldock.internal.storage.OptOutStore
 import local.signaldock.internal.init.InitCoordinator
 import local.signaldock.internal.storage.QueueLimits
 import local.signaldock.internal.init.createSdk
@@ -151,6 +152,39 @@ class LifecycleTest {
     }
 
     @Test
+    fun `https only unless allowInsecureEndpoint is set (ADR-0035)`() = runBlocking {
+        val c = Counting()
+        val co = coordinator(c)
+        suspend fun message(cfg: SignalDockConfig) =
+            ((co.initialize(context, cfg) as InitResult.Failure).error as InitError.InvalidConfiguration).message
+        val http = testConfig.copy(endpoint = "http://example.com", allowInsecureEndpoint = false)
+        assertTrue(message(http).contains("allowInsecureEndpoint"))
+        assertFalse(message(http.copy(endpoint = "HTTP://example.com")).isBlank())
+        assertFalse(message(http).contains(http.collectionKey))
+        assertTrue(message(testConfig.copy(endpoint = "ftp://example.com")).contains("https"))
+        assertTrue(message(testConfig.copy(endpoint = "not a url")).isNotBlank())
+        assertEquals(0, c.builds.get())
+        assertTrue(co.initialize(context, testConfig.copy(endpoint = "HTTPS://example.com", allowInsecureEndpoint = false)) is InitResult.Success)
+    }
+
+    @Test
+    fun `the default of allowInsecureEndpoint is false`() = runBlocking {
+        val cfg = SignalDockConfig(endpoint = "http://10.0.2.2:8080", collectionKey = "k")
+        assertFalse(cfg.allowInsecureEndpoint)
+        val c = Counting()
+        val r = coordinator(c).initialize(context, cfg)
+        assertTrue(r is InitResult.Failure && r.error is InitError.InvalidConfiguration)
+        assertEquals(0, c.builds.get())
+    }
+
+    @Test
+    fun `http with allowInsecureEndpoint is accepted`() = runBlocking {
+        val co = coordinator(Counting())
+        val cfg = SignalDockConfig(endpoint = "http://10.0.2.2:8080", collectionKey = "k", allowInsecureEndpoint = true)
+        assertTrue(co.initialize(context, cfg) is InitResult.Success)
+    }
+
+    @Test
     fun `config toString hides the collection key`() {
         assertFalse(testConfig.toString().contains("test-key"))
     }
@@ -176,7 +210,7 @@ class LifecycleTest {
     }
 
     private fun collector(sink: EventSink, log: FakeLogger) =
-        EventCollector("inst", sink, Clock { 0 }, SequenceIds(), QueueLimits(), log)
+        EventCollector("inst", sink, Clock { 0 }, SequenceIds(), QueueLimits(), log, OptOutStore(kotlin.io.path.createTempDirectory().toFile()))
 
     @Test
     fun `cancellation during storage propagates and warns without content`() = runBlocking {

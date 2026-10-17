@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 internal val context: Context get() = ApplicationProvider.getApplicationContext()
 
-internal val testConfig = SignalDockConfig(endpoint = "http://localhost:8080", collectionKey = "test-key")
+internal val testConfig = SignalDockConfig(endpoint = "http://localhost:8080", collectionKey = "test-key", allowInsecureEndpoint = true)
 
 internal class FakeLogger : Logger {
     val warnings = mutableListOf<String>()
