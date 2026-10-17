@@ -124,3 +124,4 @@ Docker 29.4.0 and Compose v5.1.2 (OrbStack) ran `docker compose up -d --build`.
 - Dependency baseline: `com.dropbox.dependency-guard` 0.5.0 (ADR-0033). Baselines are in `sdk/sdk-android/dependencies/`
 - Code scanning: CodeQL advanced setup, `.github/workflows/codeql.yml` (ADR-0032)
 - Gradle wrapper validation: CI job `gradle-wrapper` in `.github/workflows/repo-rules.yml` (Q162)
+- Gradle dependency verification: SHA-256 checksums in `sdk/`, `server/`, `contract-check/`, and `compatibility/consumer-android/` `gradle/verification-metadata.xml` (Q166, ADR-0038). After a dependency change run `scripts/update-gradle-verification.sh`
