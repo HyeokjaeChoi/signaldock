@@ -1,9 +1,9 @@
 # 61. SDK client reports (dropped event counts)
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Branch `impl/sdk-client-reports`, PR pending (ADR-0036).
+Execution: Done (merged in PR #161, 2026-10-17 03:13:00 UTC)
 
 ## Scope and completion criteria
 
@@ -27,3 +27,7 @@ Verification:
   - `server/gradlew -p server cleanTest test verifyJooq --no-daemon`: BUILD SUCCESSFUL, 128 tests, 0 failed (real PostgreSQL through Testcontainers).
   - `cd dashboard && npm run typecheck && npm test && npm run contract-check && npm run check-bundle-key`: pass, 174 tests.
   - `scripts/verify-contract.sh`: ALL CONTRACT CHECKS PASSED.
+
+- 2026-10-17 UTC: PR #161 merged 03:13:00Z (ADR-0036, spec Q164). Verification in the PR: SDK 151 tests, server 128 tests, dashboard 174 tests, `verify-contract.sh` passed; `coderabbit review --base main --deep --agent`: 0 findings.
+- Review (PR #161): the device-test `AckServer` was fixed (PR #161 review).
+- Gap: no end-to-end SDK to server to Dashboard run; not run on a device or emulator. Gap: counts are approximate (no idempotency; drops that cannot be written to storage are not counted) (PR #161).

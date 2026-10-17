@@ -1,9 +1,9 @@
 # 57. Verify the runtime kotlin-stdlib version against the POM
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Check done on branch impl/kotlin-stdlib-consumer-version (docs only). PR open.
+Execution: Done (merged in PR #157, 2026-10-17 00:00:37 UTC)
 
 ## Scope
 
@@ -23,3 +23,6 @@ Result: Q132 holds. See the 2026-10-16 comment and ADR-0009 "Check of decision 4
   4. `scripts/verify-consumer.sh` (exit 0): `metadata versions: mv=[2,2,0]`, `consumer Kotlin Gradle plugin: kotlin-gradle-plugin:2.2.10`, consumer `assembleRelease` (R8 9.3.28) BUILD SUCCESSFUL.
   5. Consumer `:app:dependencyInsight --dependency kotlin-stdlib`: `releaseCompileClasspath` = 2.2.21; `releaseRuntimeClasspath` = 2.3.20.
   Gap: no emulator run in this check.
+
+- 2026-10-17 UTC: PR #157 merged 00:00:37Z (docs only; ADR-0009 "Check of decision 4", spec Q132 note). Q132 holds. Review: CodeRabbit gave no actionable comments on the last reviewed commit. Its pre-merge check "Verification Evidence" warned that metadata inspection and consumer commands were not given in full; this was not applied (PR #157 description lists the commands).
+- Gap: no emulator run. Gap: a host app that adds kotlinx-serialization 1.11.0 to its own compile classpath gets stdlib 2.3.20 at compile time (PR #157).
