@@ -129,12 +129,18 @@ case_optout() {
   echo "== optout: setOptOut(true), process killed, the marker file keeps the opt-out; then setOptOut(false)"
   fresh_install
   phase optout_set
+  pid1="$(get pid)"
   adb shell am force-stop "$PKG"
   sleep 2
   phase optout_check
+  pid2="$(get pid)"
   adb shell am force-stop "$PKG"
   sleep 2
   phase optout_off
+  pid3="$(get pid)"
+  { [ -n "$pid1" ] && [ "$pid1" != "$pid2" ] && [ "$pid1" != "$pid3" ] && [ "$pid2" != "$pid3" ]; } ||
+    { echo "opt-out phases did not run in distinct processes: '$pid1' '$pid2' '$pid3'" >&2; exit 1; }
+  echo "  processes $pid1, $pid2, $pid3"
 }
 
 case_restore() {

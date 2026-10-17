@@ -231,6 +231,6 @@ class DurabilityPhases {
         assertFalse("marker file removed", optOutFile.exists())
         assertTrue(runBlocking { sdk.track("collected_again") } is TrackResult.Success)
         assertEquals(1, runBlocking { sdk.diagnostics().queuedEvents })
-        report("phase", "optout_off", "status", "pass", "queued", "1")
+        report("phase", "optout_off", "status", "pass", "queued", "1", "pid", android.os.Process.myPid().toString())
     }
 }
