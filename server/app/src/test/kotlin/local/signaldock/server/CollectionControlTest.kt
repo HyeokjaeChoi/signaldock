@@ -13,6 +13,7 @@ import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import local.signaldock.persistence.Database
+import local.signaldock.server.jooq.tables.ClientReports.CLIENT_REPORTS
 import local.signaldock.server.jooq.tables.Events.EVENTS
 import org.openapitools.client.models.BatchAckResponse
 import org.openapitools.client.models.ItemAck
@@ -34,7 +35,7 @@ class CollectionControlTest {
         if (!postgres.isRunning) postgres.start()
         database = Database(postgres.jdbcUrl, postgres.username, postgres.password)
         database.migrate()
-        runBlocking { database.transaction { query { deleteFrom(EVENTS).execute() } } }
+        runBlocking { database.transaction { query { deleteFrom(CLIENT_REPORTS).execute(); deleteFrom(EVENTS).execute() } } }
     }
 
     @AfterTest
@@ -106,6 +107,16 @@ class CollectionControlTest {
         assertEquals(HttpStatusCode.ServiceUnavailable, response.status)
         assertEquals("120", response.headers[HttpHeaders.RetryAfter])
         assertEquals(0, stored())
+        // The report route sheds too (valid body, ADR-0036 contract).
+        val report = client.post("/v1/client-reports") {
+            header("SignalDock-Contract-Version", "1")
+            header(HttpHeaders.Authorization, "Bearer collection-key")
+            header(HttpHeaders.ContentType, ContentType.Application.Json)
+            setBody("""{"sdkVersion":"0.2.0","discardedEvents":[{"reason":"queue_full","count":3}]}""")
+        }
+        assertEquals(HttpStatusCode.ServiceUnavailable, report.status)
+        assertEquals("120", report.headers[HttpHeaders.RetryAfter])
+        assertEquals(0, runBlocking { database.transaction { query { fetchCount(CLIENT_REPORTS) } } })
         // The key is checked first: a caller without it learns nothing about the shed state.
         val noKey = client.post("/v1/events:batch") {
             header("SignalDock-Contract-Version", "1")
