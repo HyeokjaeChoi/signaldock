@@ -38,7 +38,7 @@ Before creating or reading an issue, read `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
-Use the five default status names, and `resolved` for merged work.
+Use the five default status names, `claimed` while work is on a branch or in an open PR, and `resolved` for merged work.
 Before evaluating or changing an issue's status, read `docs/agents/triage-labels.md`.
 
 ### Domain docs
@@ -46,10 +46,14 @@ Before evaluating or changing an issue's status, read `docs/agents/triage-labels
 Start with one domain context.
 Before exploring code or designing the domain, read `docs/agents/domain.md`.
 
+## Documentation upkeep
+
+At every release, and when docs may have drifted from the code, run the `update-internal-docs` skill (`.claude/skills/update-internal-docs/SKILL.md`).
+
 ## Setup
 
 Run once per clone: `git config core.hooksPath .githooks`.
-The pre-commit hook runs `scripts/check-repo-rules.sh`. The pre-push hook also runs `scripts/verify-contract.sh` when code changed; it needs `ANDROID_HOME` (or `sdk.dir` in `sdk/local.properties`) for the SDK API check (ADR-0019).
+The pre-commit hook runs `scripts/check-repo-rules.sh`. The pre-push hook also runs `scripts/verify-contract.sh` when code changed; it needs `ANDROID_HOME`, `ANDROID_SDK_ROOT`, or `sdk.dir` in `sdk/local.properties` for the SDK API check (ADR-0019).
 
 ## Roles
 

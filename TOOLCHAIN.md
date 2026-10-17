@@ -1,12 +1,12 @@
-# Toolchain pins (issues #1 and #11)
+# Toolchain pins
 
 Single source of truth: `gradle/libs.versions.toml`. This file records why each
 version was chosen and what actually verified it.
 
 "Build-verified" means a real build/codegen/test ran with the pinned version.
-"Doc-pinned" means the version comes from official release metadata and will be
-build-verified when its module is implemented (see the table below for the
-tracking issue per component).
+Every pin below is build-verified. The section titles name the issue that
+verified it. Some sections, such as "Build-verified in issue #1", also hold
+the later changes of their pins.
 
 ## Setup
 
@@ -99,15 +99,15 @@ Docker 29.4.0 and Compose v5.1.2 (OrbStack) ran `docker compose up -d --build`.
 | vite / @vitejs/plugin-react / typescript | 8.3.4 / 6.1.2 / 7.0.2 | Same as the Dashboard. `@types/react`, `@types/react-dom` 19.3.0 |
 | pg_stat_statements | contrib module of `postgres:17.6-alpine` | No new image. Benchmark stack only (`perf/compose.perf.yml`); ADR-0013 |
 
-## Doc-pinned (build verification deferred to the noted issue)
+## Build-verified in issues #2, #3, and #16
 
-| Component | Pinned | Verified in |
+| Component | Pinned | Why and how verified |
 |---|---|---|
-| KSP | — no 2.4.x release as of 2026-10-09 | #3/#4 (Room/KSP modules) |
-| Compose BOM | 2026.09.00 | #5 |
-| Ktor | 3.6.0 | #2 |
-| Flyway | 13.10.0 | #2 |
-| compileSdk 36 / targetSdk 36 / minSdk 24 | minSdk 24 per spec agreement | #3 |
+| KSP | 2.3.12 | No 2.4.x release as of 2026-10-09 (comment in `gradle/libs.versions.toml`). KSP 2.3.12 ran with Kotlin 2.4.21 for Room in `sdk/gradlew -p sdk :sdk-android:testDebugUnitTest` (issue #1 table above; issue 03) |
+| Compose BOM | 2026.09.00 | Demo app build (issue 16, ADR-0006 decision 1) |
+| Ktor | 3.6.0 | Server tests and the Docker server image (issues 02 and 15) |
+| Flyway | 13.10.0 | Server migrations and `SchemaUpgradeTest` (issues 02 and 22, ADR-0012) |
+| compileSdk 36 / targetSdk 36 / minSdk 24 | minSdk 24 per spec agreement | The SDK builds at compileSdk 36 (issue 03). The demo app uses compileSdk 37 (`demo-compileSdk`, issue 16); it needs platform `android-37` |
 
 ## Evidence locations
 
@@ -118,5 +118,9 @@ Docker 29.4.0 and Compose v5.1.2 (OrbStack) ran `docker compose up -d --build`.
 - DB change check: `server/persistence` `SchemaUpgradeTest` and `src/test/resources/db/previous-data/V<n>.sql` (ADR-0012)
 - Verification build: `contract-check/` (compiles generated Kotlin, runs fixture tests)
 - Independent builds: `sdk/`, `server/`, `compatibility/consumer-android/` (own settings + wrappers, shared catalog; the consumer takes the SDK only from the Maven ZIP). `server/` has the modules `:app`, `:ingestion`, `:persistence`; `cd server && ./gradlew test verifyJooq` runs all of them
-- Root scripts: `scripts/codegen.sh`, `scripts/verify-contract.sh`
+- Root scripts: `scripts/codegen.sh`, `scripts/verify-contract.sh`, `scripts/verify-consumer.sh`, `scripts/check-size-budget.sh`
 - Dependency updates: Renovate (`.github/renovate.json5`, ADR-0031). It proposes no new major for the JDK 21, Node 24, and nginx images, the PostgreSQL image, or `@types/node`; those pins change by hand
+- Public API check: `org.jetbrains.kotlinx.binary-compatibility-validator` 0.18.2 (ADR-0019). The dump is `sdk/sdk-android/api/sdk-android.api`
+- Dependency baseline: `com.dropbox.dependency-guard` 0.5.0 (ADR-0033). Baselines are in `sdk/sdk-android/dependencies/`
+- Code scanning: CodeQL advanced setup, `.github/workflows/codeql.yml` (ADR-0032)
+- Gradle wrapper validation: CI job `gradle-wrapper` in `.github/workflows/repo-rules.yml` (Q162)

@@ -229,6 +229,9 @@ ADRs:
 - ADR-0002
 - ADR-0021 (`docs/adr/0021-tracking-plan-codegen.md`), for step 7 of `scripts/verify-contract.sh` (issue 37)
 - ADR-0009 (`docs/adr/0009-maven-zip-and-consumer-app.md`), for `scripts/verify-consumer.sh` and `scripts/release.sh` (issue 32; release notes in `docs/releases/`)
+- ADR-0010 (`docs/adr/0010-delivery-failure-e2e-harness.md`), for `scripts/e2e-delivery.sh` and `scripts/e2e/` (issue 21)
+- ADR-0019 (`docs/adr/0019-sdk-public-api-check.md`), for the `apiCheck` step in `scripts/verify-contract.sh`
+- ADR-0033 (`docs/adr/0033-sdk-dependency-baseline.md`), for the `dependencyGuard` step in `scripts/verify-contract.sh` and `sdk/sdk-android/dependencies/` (issue 56)
 - ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for `scripts/host-cost-measure.sh` (issue 36)
 - ADR-0023 (`docs/adr/0023-ci-device-tests-and-size-budget.md`), for the `device-test` and `size-budget` jobs in `.github/workflows/repo-rules.yml` and `scripts/check-size-budget.sh` (issue 40)
 - ADR-0024 (`docs/adr/0024-release-workflow-and-dependency-updates.md`), for `.github/workflows/release.yml`, the `--check` flag of `scripts/release.sh`, and `docs/releases/README.md` (issue 41)
@@ -237,7 +240,7 @@ ADRs:
 
 Spec (`.scratch/signaldock/spec.md`):
 - Q149 (first release)
-- Q162 (CodeQL advanced setup, Gradle wrapper validation, release classpath baseline)
+- Q162 (CodeQL advanced setup, Gradle wrapper validation, release classpath baseline); the `gradle-wrapper` job in `.github/workflows/repo-rules.yml` has no ADR (issue 55)
 - 7. Completion criteria and verification plan
 - 8, C. Small modules and local execution
 - 9. Technical conditions to check on entry into implementation
@@ -265,7 +268,7 @@ Spec (`.scratch/signaldock/spec.md`):
 Design review, failure mode table, postmortems, and threat model. Every claim must cite a file, an ADR, a spec Q, a test, or a result path, and a gap must be marked as a gap. When you change delivery, retry, storage, key, or contract behavior, check whether rows in `failure-modes.md` or `threat-model.md` are now wrong and update them in the same PR.
 
 ADRs:
-- ADR-0004, ADR-0006, ADR-0007, ADR-0013, ADR-0017, ADR-0024 to ADR-0033, as the documents cite them
+- ADR-0001 to ADR-0011, ADR-0013, ADR-0017, ADR-0019, ADR-0021 to ADR-0036, as the documents cite them
 
 Spec (`.scratch/signaldock/spec.md`):
 - 1. Goal and scope

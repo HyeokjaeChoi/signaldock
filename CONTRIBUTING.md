@@ -17,7 +17,7 @@ You also need Docker with Compose, Python 3, Node (see [TOOLCHAIN.md](TOOLCHAIN.
 
 ## What the hooks run
 
-- `pre-commit` runs `scripts/check-repo-rules.sh` (static checks: file modes, issue status lines, README sync, design index).
+- `pre-commit` runs `scripts/check-repo-rules.sh` (static checks: file modes, issue status lines, README sync, design index, no raw HTML sinks in the Dashboard and report apps, frozen Room schema files, `SDK_VERSION` equal to `sdkVersion`).
 - `pre-push` always runs `scripts/check-repo-rules.sh`, so it can reject a docs-only push too. When code changed, it also runs `scripts/verify-contract.sh`.
 
 ## Design first
