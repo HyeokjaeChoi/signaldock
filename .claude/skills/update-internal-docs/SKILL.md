@@ -5,7 +5,7 @@ description: Find docs that drifted from the code and fix them. Run at every rel
 
 # Update internal docs
 
-For descriptive docs (README, guides, architecture, toolchain, engineering docs), code, build files, scripts, workflows, `openapi/`, migrations, and fixtures are the source of truth: fix the doc. Design sources (ADRs, `.scratch/*/spec.md` Q decisions, `docs/design-index.md`) are different. If the code disagrees with a design source, do not rewrite either one here. Report it as a possible implementation error and resolve it under AGENTS.md "Roles" (fix the code, or record a new decision in an ADR) before you change the docs.
+For descriptive docs (README, guides, toolchain, engineering docs), code, build files, scripts, workflows, `openapi/`, migrations, and fixtures are the source of truth: fix the doc. Design sources (`architecture.md`, ADRs, `.scratch/*/spec.md` Q decisions, `docs/design-index.md`; see `.coderabbit.yaml`) are different. In `architecture.md`, you can update status and evidence lines from the code. If the code disagrees with a design source, do not rewrite either one here. Report it as a possible implementation error and resolve it under AGENTS.md "Roles" (fix the code, or record a new decision in an ADR) before you change the docs.
 
 ## Scope: what to verify
 
@@ -30,7 +30,7 @@ Doc set: `README*`, `architecture.md`, `GLOSSARY.md`, `TOOLCHAIN.md`, `SECURITY.
 
 ## Exclusions: do not change
 
-- ADRs (records; add a new ADR instead), postmortems, perf results.
+- ADR decision text (records). Add a new ADR, or a dated `## Amendment` section as in ADR-0021, postmortems, perf results.
 - Dated historical rows, for example the `TOOLCHAIN.md` issue #6 row and old test counts.
 - Released sections of `CHANGELOG.md`, except for a factual error.
 - Issue records of other work.

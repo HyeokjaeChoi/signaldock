@@ -16,6 +16,10 @@ ADR-0011 decision 10 kept the instrumented tests out of CI, and ADR-0020 measure
 6. **Size budget: `scripts/check-size-budget.sh`, job `size-budget`.** It builds the Maven ZIP, then the consumer app (`compatibility/consumer-android`, R8 release) with the SDK and with `-Psignaldock.sdk=false` (ADR-0020), compares the APK file bytes, prints both sizes and the delta, and exits 1 when the delta is above the budget. No emulator, no new dependency. The job is separate from `consumer-r8` so that both run in parallel; it builds the ZIP a second time, which costs a few minutes of CI time and no extra logic in `verify-consumer.sh`.
 7. **Budget value: 700,000 bytes.** The measured delta is 616,829 bytes (ADR-0020, macOS run). A local run of the script on the current code gave 617,077 bytes (the small difference is the build, not the method). 700,000 is about 13 % above, a round number that leaves room for a different R8 or zip result on the Linux runner and for small SDK growth, and does not allow a large new dependency. The number lives only in `BUDGET_BYTES` at the top of the script. **To raise it on purpose,** change that constant in the same PR that adds the size, and update `CHANGELOG.md` and this section (new value, the measured delta, and the reason) in that PR. Do not raise it only to make the job pass. If the first CI run on Linux is outside the budget because of the platform and not the code, record the measured Linux value here and set the budget from it.
 
+## Amendment (2026-10-17 UTC)
+
+Decision 3 counts changed. `sdk-android` now has 30 `@Test` methods. The 13 methods of `DurabilityPhases`, `FaultPhases`, and `MeasurePhases` skip themselves without `-e phase`, and 17 run (job log of `repo-rules` run 39002096383 on main at `cbb6210`). The rest of decision 3 is unchanged.
+
 ## Limits
 
 - GitHub Actions cannot run here. The workflow was checked by YAML parsing only (`actionlint` is not installed on the author's machine). Whether the emulator boots, the 26 tests pass on API 34 x86_64, the AVD cache hits on the second run, and the Linux APK delta is inside the budget can be shown only by CI.

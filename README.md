@@ -210,7 +210,7 @@ Requirements of the 0.2.0 AAR:
 - Kotlin 2.2 or newer and AGP 9.x. The SDK metadata is 2.2, so AGP 9's default built-in Kotlin works with no extra Kotlin plugin ([ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md), Q132).
 - The host app declares `INTERNET`. The SDK needs no R8 rules of its own. Use an `https://` endpoint. The SDK rejects an `http://` endpoint at init unless `allowInsecureEndpoint = true` is set, and the app must also allow cleartext for that host ([ADR-0035](docs/adr/0035-sdk-https-enforcement.md)). The SDK does not switch an `http://` endpoint to HTTPS (ADR-0009).
 - Call `SignalDock.initialize(context, SignalDockConfig(endpoint, collectionKey))` once (for example in `Application.onCreate`), then `track("name") { property("key", value) }` and `diagnostics()` on the returned instance.
-- 0.2.0 API additions: `setOptOut()`, `isOptedOut()`, and `clearQueue()` on the instance, the result `TrackResult.OptedOut`, and `Diagnostics.contractDeprecation` ([ADR-0034](docs/adr/0034-sdk-opt-out.md), [ADR-0030](docs/adr/0030-sdk-contract-deprecation-warning.md)).
+- 0.2.0 API additions: `setOptOut(Boolean)`, `isOptedOut()`, and `clearQueue()` on the instance, the result `TrackResult.OptedOut`, and `Diagnostics.contractDeprecation` ([ADR-0034](docs/adr/0034-sdk-opt-out.md), [ADR-0030](docs/adr/0030-sdk-contract-deprecation-warning.md)).
 
 ### Supported versions
 

@@ -35,7 +35,7 @@ Confirmation that the server has accepted an event and taken responsibility for 
 _Avoid_: aggregation completed
 
 **Opt-out**:
-A host app setting that stops event collection in the SDK. While it is on, `track()` stores nothing and returns `OptedOut`. Events that are already queued stay and are still sent, unless the host clears the queue.
+A host app setting that stops event collection in the SDK. While it is on, `track()` stores nothing and returns `OptedOut`. A `track()` call that started before `setOptOut(true)` returned can still store its event ([ADR-0034](docs/adr/0034-sdk-opt-out.md) decision 8). Events that are already queued stay and are still sent, unless the host clears the queue.
 _Avoid_: pause, disable delivery
 
 **Client report**:

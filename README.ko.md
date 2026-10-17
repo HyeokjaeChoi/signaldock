@@ -212,7 +212,7 @@ dependencies { implementation("local.signaldock:sdk-android:0.2.0") }
 - Kotlin 2.2 이상과 AGP 9.x. SDK metadata가 2.2이므로, AGP 9의 기본 built-in Kotlin으로 추가 Kotlin 플러그인 없이 동작합니다([ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md), Q132).
 - 호스트 앱이 `INTERNET`을 선언해야 합니다. SDK 자체의 R8 규칙은 필요 없습니다. `https://` endpoint를 사용하세요. SDK는 `allowInsecureEndpoint = true`를 설정하지 않으면 `http://` endpoint를 init에서 거부하고, 앱도 해당 host에 cleartext를 허용해야 합니다([ADR-0035](docs/adr/0035-sdk-https-enforcement.md)). SDK는 `http://` endpoint를 HTTPS로 바꾸지 않습니다(ADR-0009).
 - `SignalDock.initialize(context, SignalDockConfig(endpoint, collectionKey))`를 한 번 호출합니다(예: `Application.onCreate`). 이후 반환된 인스턴스에서 `track("name") { property("key", value) }`와 `diagnostics()`를 호출합니다.
-- 0.2.0 API 추가: 인스턴스의 `setOptOut()`, `isOptedOut()`, `clearQueue()`, 결과 `TrackResult.OptedOut`, `Diagnostics.contractDeprecation`([ADR-0034](docs/adr/0034-sdk-opt-out.md), [ADR-0030](docs/adr/0030-sdk-contract-deprecation-warning.md)).
+- 0.2.0 API 추가: 인스턴스의 `setOptOut(Boolean)`, `isOptedOut()`, `clearQueue()`, 결과 `TrackResult.OptedOut`, `Diagnostics.contractDeprecation`([ADR-0034](docs/adr/0034-sdk-opt-out.md), [ADR-0030](docs/adr/0030-sdk-contract-deprecation-warning.md)).
 
 ### 지원 버전
 
