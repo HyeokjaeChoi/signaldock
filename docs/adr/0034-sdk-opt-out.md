@@ -35,3 +35,13 @@ The user decided (Q156, option a, 2026-10-16) that a host app can stop collectio
 - Gap: the tests use Robolectric and re-create the SDK on the same files. A real process restart with the marker file is not run on a device.
 - The opt-out does not remove events already on the server. Server delete is excluded on purpose (ADR-0028).
 - The marker file is written with `fsync` of the file but not of the directory. After a power loss right after `setOptOut(true)`, the marker may be missing and collection would restart. This is the same durability as the installation ID file.
+
+## Amendment: vendor sources (2026-10-17 UTC)
+
+The Context line about Amplitude and Segment had no source. A source check (read 2026-10-17 UTC) gives:
+
+- Amplitude Kotlin: while `optOut` is `true`, `process()` returns before the timeline, so a new event is not stored and not sent ([Amplitude.kt](https://github.com/amplitude/Amplitude-Kotlin/blob/main/analytics-core/src/main/java/com/amplitude/core/Amplitude.kt)). The setter does not change the queue. Gap: what happens to queued events is not documented.
+- Segment Analytics-Kotlin: the consent plugin blocks events per consent category (`ConsentBlocker`), not for the whole SDK ([analytics-kotlin-consent](https://github.com/segment-integrations/analytics-kotlin-consent)). The SDK-wide switch is core `enabled` ([Analytics.kt](https://github.com/segmentio/analytics-kotlin/blob/main/core/src/main/java/com/segment/analytics/kotlin/core/Analytics.kt)). So "works in the same way" is true only for a blocked event, not for the scope.
+- Other vendors differ on queued events. Mixpanel `optOutTracking()` deletes unsent events ([MixpanelAPI.java](https://github.com/mixpanel/mixpanel-android/blob/master/analytics/src/main/java/com/mixpanel/android/mpmetrics/MixpanelAPI.java)). PostHog `optOut()` keeps the queue and persists the state ([PostHog.kt](https://github.com/PostHog/posthog-android/blob/main/posthog/src/main/java/com/posthog/PostHog.kt)). Braze has a separate `wipeData()` ([docs](https://www.braze.com/docs/developer_guide/analytics/managing_data_collection?sdktab=android)).
+
+The decision does not change. SignalDock keeps queued events and offers `clearQueue()` separately, which matches PostHog plus a Braze-style explicit delete.
