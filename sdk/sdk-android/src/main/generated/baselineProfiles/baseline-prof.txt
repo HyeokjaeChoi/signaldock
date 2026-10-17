@@ -1,15 +1,16 @@
 Llocal/signaldock/DeliveryErrorDiagnostic;
-SPLlocal/signaldock/DeliveryErrorDiagnostic;-><init>(Llocal/signaldock/DeliveryErrorKind;Ljava/lang/Integer;J)V
+PLlocal/signaldock/DeliveryErrorDiagnostic;-><init>(Llocal/signaldock/DeliveryErrorKind;Ljava/lang/Integer;J)V
 SPLlocal/signaldock/DeliveryErrorDiagnostic;->toString()Ljava/lang/String;
 Llocal/signaldock/DeliveryErrorKind;
 SPLlocal/signaldock/DeliveryErrorKind;->$values()[Llocal/signaldock/DeliveryErrorKind;
 SPLlocal/signaldock/DeliveryErrorKind;-><clinit>()V
 SPLlocal/signaldock/DeliveryErrorKind;-><init>(Ljava/lang/String;I)V
-SPLlocal/signaldock/DeliveryErrorKind;->valueOf(Ljava/lang/String;)Llocal/signaldock/DeliveryErrorKind;
+PLlocal/signaldock/DeliveryErrorKind;->valueOf(Ljava/lang/String;)Llocal/signaldock/DeliveryErrorKind;
 SPLlocal/signaldock/DeliveryErrorKind;->values()[Llocal/signaldock/DeliveryErrorKind;
 Llocal/signaldock/Diagnostics;
 SPLlocal/signaldock/Diagnostics;-><init>(Ljava/lang/String;IJLjava/lang/Long;Ljava/util/List;Llocal/signaldock/AckDiagnostic;Llocal/signaldock/DeliveryErrorDiagnostic;ILjava/lang/Long;Z)V
 SPLlocal/signaldock/Diagnostics;-><init>(Ljava/lang/String;IJLjava/lang/Long;Ljava/util/List;Llocal/signaldock/AckDiagnostic;Llocal/signaldock/DeliveryErrorDiagnostic;ILjava/lang/Long;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+PLlocal/signaldock/Diagnostics;->getLastDeliveryError()Llocal/signaldock/DeliveryErrorDiagnostic;
 SPLlocal/signaldock/Diagnostics;->setContractDeprecation$sdk_android(Llocal/signaldock/ContractDeprecation;)V
 SPLlocal/signaldock/Diagnostics;->toString()Ljava/lang/String;
 Llocal/signaldock/EventBuilder;
@@ -306,7 +307,7 @@ SPLlocal/signaldock/internal/scheduling/ForegroundTrigger;-><init>(Lkotlinx/coro
 SPLlocal/signaldock/internal/scheduling/ForegroundTrigger;-><init>(Lkotlinx/coroutines/CoroutineScope;IJLkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 SPLlocal/signaldock/internal/scheduling/ForegroundTrigger;->access$getDelayMillis$p(Llocal/signaldock/internal/scheduling/ForegroundTrigger;)J
 SPLlocal/signaldock/internal/scheduling/ForegroundTrigger;->access$getDrain$p(Llocal/signaldock/internal/scheduling/ForegroundTrigger;)Lkotlin/jvm/functions/Function1;
-SPLlocal/signaldock/internal/scheduling/ForegroundTrigger;->access$getDrainState$p(Llocal/signaldock/internal/scheduling/ForegroundTrigger;)Ljava/util/concurrent/atomic/AtomicInteger;
+PLlocal/signaldock/internal/scheduling/ForegroundTrigger;->access$getDrainState$p(Llocal/signaldock/internal/scheduling/ForegroundTrigger;)Ljava/util/concurrent/atomic/AtomicInteger;
 SPLlocal/signaldock/internal/scheduling/ForegroundTrigger;->onEventStored()V
 SPLlocal/signaldock/internal/scheduling/ForegroundTrigger;->requestDrain()V
 Llocal/signaldock/internal/scheduling/ForegroundTrigger$onEventStored$now$1$1;

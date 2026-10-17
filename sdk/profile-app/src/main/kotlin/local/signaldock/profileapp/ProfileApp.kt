@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import local.signaldock.InitResult
 import local.signaldock.SignalDock
@@ -55,15 +56,24 @@ class MainActivity : Activity() {
         // they fail on emulators without render-thread slices.
         if (Build.VERSION.SDK_INT >= 29) Trace.beginAsyncSection(SDK_READY, 0)
         scope.launch {
-            try {
+            val sdk = try {
                 val sdk = (application as ProfileApplication).init.await().let { (it as? InitResult.Success)?.sdk }
                 if (sdk == null) { output.text = "init failed"; return@launch }
                 repeat(EVENTS) { i -> sdk.track("profile_event") { property("i", i) } }
                 output.text = sdk.diagnostics().toString()
+                sdk
             } finally {
                 if (Build.VERSION.SDK_INT >= 29) Trace.endAsyncSection(SDK_READY, 0)
             }
             reportFullyDrawn()
+            // The generator needs the sender path too. Wait (outside the measured section) until the sender has
+            // tried one request and failed, then show a second text the generator waits for.
+            var attempted = false
+            for (i in 1..SENDER_POLLS) {
+                if (sdk.diagnostics().lastDeliveryError != null) { attempted = true; break }
+                delay(SENDER_POLL_MS)
+            }
+            output.text = if (attempted) "Delivery attempted" else "Delivery not attempted"
         }
     }
 
@@ -72,5 +82,5 @@ class MainActivity : Activity() {
         super.onDestroy()
     }
 
-    private companion object { const val EVENTS = 20 }
+    private companion object { const val EVENTS = 20; const val SENDER_POLLS = 50; const val SENDER_POLL_MS = 200L }
 }

@@ -11,6 +11,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
+import java.util.regex.Pattern
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -52,8 +53,8 @@ class StartupBenchmark {
     ) {
         pressHome()
         startActivityAndWait()
-        // The first frame comes before the SDK work ends. The activity shows the diagnostics when it ends.
-        check(device.wait(Until.hasObject(By.textStartsWith("Diagnostics")), 15_000)) { "SDK work did not finish" }
+        // The first frame comes before the SDK work ends. The activity shows the diagnostics when it ends (and later a \"Delivery\" text).
+        check(device.wait(Until.hasObject(By.text(Pattern.compile("(Diagnostics|Delivery).*"))), 15_000)) { "SDK work did not finish" }
     }
 
     private companion object { const val PACKAGE = "local.signaldock.profileapp" }
