@@ -76,9 +76,10 @@ suspend fun onUserWithdrawsConsent(sdk: SignalDock): Boolean {
     return stored && deleted != null
 }
 
-suspend fun onUserGivesConsent(sdk: SignalDock) {
-    sdk.setOptOut(false)  // collection resumes
-}
+suspend fun onUserGivesConsent(sdk: SignalDock): Boolean =
+    // Collection resumes at once. false: the state could not be stored, so after a restart
+    // collection is off again; call setOptOut(false) again later or tell the user.
+    sdk.setOptOut(false)
 // end sample
 
 // sample: cancellation
@@ -118,8 +119,24 @@ class IntegrationGuideSamplesTest {
         assertTrue(onUserWithdrawsConsent(sdk))
         assertEquals(0, sdk.diagnostics().queuedEvents)
         assertEquals("collection is off", onProductViewed(sdk))
-        onUserGivesConsent(sdk)
+        assertTrue(onUserGivesConsent(sdk))
         assertTrue(onProductViewed(sdk).startsWith("stored on the device: "))
+    }
+
+    @Test
+    fun `resume sample reports a failed marker delete`() = runBlocking {
+        val sdk = newSdk()
+        assertTrue(onUserWithdrawsConsent(sdk)) // creates the marker
+        val dir = File(context.noBackupFilesDir, "signaldock")
+        // A read-only SDK directory makes deleting the marker fail.
+        assertTrue(dir.setWritable(false))
+        try {
+            assertFalse(onUserGivesConsent(sdk))
+        } finally {
+            dir.setWritable(true)
+        }
+        assertFalse(sdk.isOptedOut()) // collection resumed in this process
+        assertTrue(File(dir, "opt-out").exists()) // a restart would be opted out again
     }
 
     @Test

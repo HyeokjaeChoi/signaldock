@@ -333,9 +333,10 @@ Notes:
       return stored && deleted != null
   }
 
-  suspend fun onUserGivesConsent(sdk: SignalDock) {
-      sdk.setOptOut(false)  // collection resumes
-  }
+  suspend fun onUserGivesConsent(sdk: SignalDock): Boolean =
+      // Collection resumes at once. false: the state could not be stored, so after a restart
+      // collection is off again; call setOptOut(false) again later or tell the user.
+      sdk.setOptOut(false)
   // end sample
   ```
 
