@@ -18,6 +18,7 @@ import local.signaldock.internal.init.Clock
 import local.signaldock.internal.collection.EventCollector
 import local.signaldock.internal.storage.EventEntity
 import local.signaldock.internal.storage.EventSink
+import local.signaldock.internal.storage.OptOutStore
 import local.signaldock.internal.init.InitCoordinator
 import local.signaldock.internal.storage.QueueLimits
 import local.signaldock.internal.init.createSdk
@@ -209,7 +210,7 @@ class LifecycleTest {
     }
 
     private fun collector(sink: EventSink, log: FakeLogger) =
-        EventCollector("inst", sink, Clock { 0 }, SequenceIds(), QueueLimits(), log)
+        EventCollector("inst", sink, Clock { 0 }, SequenceIds(), QueueLimits(), log, OptOutStore(kotlin.io.path.createTempDirectory().toFile()))
 
     @Test
     fun `cancellation during storage propagates and warns without content`() = runBlocking {

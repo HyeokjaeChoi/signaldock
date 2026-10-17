@@ -184,7 +184,7 @@ class Sampler(threading.Thread):
                              "AND application_name NOT LIKE 'psql%' GROUP BY 1")
                 row["pg_conns"] = {a.split("|")[0]: int(a.split("|")[1]) for a in act.splitlines()}
             except RuntimeError:
-                pass
+                pass  # best effort: a failed psql sample only leaves pg_conns out of this row
             self.rows.append(row)
             self.stop.wait(max(0, 5 - (time.time() - t0)))
 
@@ -240,24 +240,25 @@ def parse_server_log(path, bounds):
     stages = defaultdict(lambda: defaultdict(list))
     pool = defaultdict(lambda: {"max_active": 0, "max_pending": 0, "samples": 0})
     day, last = bounds["start"].date(), None
-    for line in open(path, errors="replace"):
-        m = re.match(r"(\d\d):(\d\d):(\d\d)\.(\d{3}) ", line)
-        if not m:
-            continue
-        sec = int(m[1]) * 3600 + int(m[2]) * 60 + int(m[3])
-        if last is not None and sec < last - 3600:
-            day += dt.timedelta(days=1)
-        last = sec
-        t = dt.datetime.combine(day, dt.time(int(m[1]), int(m[2]), int(m[3]), int(m[4]) * 1000), dt.timezone.utc)
-        phase = "before" if t < bounds["start"] else "warmup" if t < bounds["measure"] else "measure" if t < bounds["end"] else "after"
-        s = re.search(r"stage=(\w+) elapsedMs=(\d+)", line)
-        if s:
-            stages[phase][s[1]].append(int(s[2]))
-        p = re.search(r"pool active=(\d+) idle=(\d+) pending=(\d+) total=(\d+)", line)
-        if p:
-            q = pool[phase]
-            q["samples"] += 1
-            q["max_active"], q["max_pending"] = max(q["max_active"], int(p[1])), max(q["max_pending"], int(p[3]))
+    with open(path, errors="replace") as f:
+        for line in f:
+            m = re.match(r"(\d\d):(\d\d):(\d\d)\.(\d{3}) ", line)
+            if not m:
+                continue
+            sec = int(m[1]) * 3600 + int(m[2]) * 60 + int(m[3])
+            if last is not None and sec < last - 3600:
+                day += dt.timedelta(days=1)
+            last = sec
+            t = dt.datetime.combine(day, dt.time(int(m[1]), int(m[2]), int(m[3]), int(m[4]) * 1000), dt.timezone.utc)
+            phase = "before" if t < bounds["start"] else "warmup" if t < bounds["measure"] else "measure" if t < bounds["end"] else "after"
+            s = re.search(r"stage=(\w+) elapsedMs=(\d+)", line)
+            if s:
+                stages[phase][s[1]].append(int(s[2]))
+            p = re.search(r"pool active=(\d+) idle=(\d+) pending=(\d+) total=(\d+)", line)
+            if p:
+                q = pool[phase]
+                q["samples"] += 1
+                q["max_active"], q["max_pending"] = max(q["max_active"], int(p[1])), max(q["max_pending"], int(p[3]))
     res = {}
     for phase, d in stages.items():
         res[phase] = {st: {"count": len(v), "p50_ms": c.percentile(sorted(v), 50), "p95_ms": c.percentile(sorted(v), 95), "max_ms": max(v)}
@@ -266,7 +267,8 @@ def parse_server_log(path, bounds):
 
 
 def parse_gc(path):
-    pauses = [float(m[1]) for m in (re.search(r"Pause .*? (\d+\.\d+)ms", l) for l in open(path, errors="replace")) if m]
+    with open(path, errors="replace") as f:
+        pauses = [float(m[1]) for m in (re.search(r"Pause .*? (\d+\.\d+)ms", l) for l in f) if m]
     return {"pause_count": len(pauses), "pause_total_ms": round(sum(pauses), 1), "pause_max_ms": max(pauses) if pauses else 0}
 
 
@@ -456,6 +458,7 @@ def execute(a):
     k6log = open(out / "k6.log", "w")
     k6 = subprocess.Popen(["k6", "run", "--quiet", "--no-usage-report", "--out", f"json={raw}", "--summary-export", str(out / "k6-summary.json"),
                            str(c.PERF / "load.js")], env=k6env, stdout=k6log, stderr=subprocess.STDOUT)
+    k6log.close()  # the child process keeps its own copy of the descriptor
     sampler = Sampler(k6.pid)
     sampler.start()
     snaps = {}

@@ -9,6 +9,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import java.io.File
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -56,10 +58,28 @@ suspend fun onProductViewed(sdk: SignalDock): String {
     return when (result) {
         is TrackResult.Success -> "stored on the device: ${result.eventId}" // not server receipt
         is TrackResult.Invalid -> "fix the call: ${result.reason} (${result.field})" // nothing stored
+        TrackResult.OptedOut -> "collection is off" // nothing stored
         TrackResult.QueueFull -> "queue is full; the event was dropped" // existing events are kept
         is TrackResult.StorageError -> "storage failed: ${result.message}" // nothing stored
     }
 }
+// end sample
+
+// sample: opt-out
+suspend fun onUserWithdrawsConsent(sdk: SignalDock): Boolean {
+    // false: the state could not be stored. It holds until the process ends, but after a
+    // restart collection can resume, so call setOptOut(true) again later or tell the user.
+    val stored = sdk.setOptOut(true) // from now on, track() stores nothing and returns OptedOut
+    // Optional: delete events that wait on the device. null: storage failed, the events are
+    // still queued, so call clearQueue() again later or tell the user.
+    val deleted = sdk.clearQueue()
+    return stored && deleted != null
+}
+
+suspend fun onUserGivesConsent(sdk: SignalDock): Boolean =
+    // Collection resumes at once. false: the state could not be stored, so after a restart
+    // collection is off again; call setOptOut(false) again later or tell the user.
+    sdk.setOptOut(false)
 // end sample
 
 // sample: cancellation
@@ -90,6 +110,59 @@ class IntegrationGuideSamplesTest {
         assertTrue(onProductViewed(sdk).startsWith("stored on the device: "))
         assertEquals(1, sdk.diagnostics().queuedEvents)
         assertTrue(queueSummary(sdk).startsWith("queued=1 "))
+    }
+
+    @Test
+    fun `opt-out sample stops collection and clears the queue`() = runBlocking {
+        val sdk = newSdk()
+        onProductViewed(sdk)
+        assertTrue(onUserWithdrawsConsent(sdk))
+        assertEquals(0, sdk.diagnostics().queuedEvents)
+        assertEquals("collection is off", onProductViewed(sdk))
+        assertTrue(onUserGivesConsent(sdk))
+        assertTrue(onProductViewed(sdk).startsWith("stored on the device: "))
+    }
+
+    @Test
+    fun `resume sample reports a failed marker delete`() = runBlocking {
+        val sdk = newSdk()
+        assertTrue(onUserWithdrawsConsent(sdk)) // creates the marker
+        val dir = File(context.noBackupFilesDir, "signaldock")
+        // A read-only SDK directory makes deleting the marker fail.
+        assertTrue(dir.setWritable(false))
+        try {
+            assertFalse(onUserGivesConsent(sdk))
+        } finally {
+            dir.setWritable(true)
+        }
+        assertFalse(sdk.isOptedOut()) // collection resumed in this process
+        assertTrue(File(dir, "opt-out").exists()) // a restart would be opted out again
+    }
+
+    @Test
+    fun `opt-out sample reports a failed clearQueue and still stops collection`() = runBlocking {
+        val sdk = newSdk()
+        onProductViewed(sdk)
+        (sdk.dao.javaClass.getDeclaredField("__db").apply { isAccessible = true }.get(sdk.dao) as androidx.room.RoomDatabase).close()
+        assertFalse(onUserWithdrawsConsent(sdk)) // clearQueue returned null
+        assertTrue(sdk.isOptedOut())
+    }
+
+    @Test
+    fun `opt-out sample reports a failed marker write even when clearQueue succeeds`() = runBlocking {
+        val sdk = newSdk()
+        onProductViewed(sdk)
+        val dir = File(context.noBackupFilesDir, "signaldock")
+        // A read-only SDK directory makes creating the marker file fail; the open database still works.
+        assertTrue(dir.setWritable(false))
+        try {
+            assertFalse(onUserWithdrawsConsent(sdk)) // setOptOut(true) returned false
+        } finally {
+            dir.setWritable(true)
+        }
+        assertTrue(sdk.isOptedOut())              // holds for this process
+        assertEquals(0, sdk.diagnostics().queuedEvents) // clearQueue succeeded
+        assertFalse(File(dir, "opt-out").exists())
     }
 
     @Test

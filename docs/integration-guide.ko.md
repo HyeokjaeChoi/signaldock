@@ -131,6 +131,7 @@ suspend fun onProductViewed(sdk: SignalDock): String {
     return when (result) {
         is TrackResult.Success -> "stored on the device: ${result.eventId}" // not server receipt
         is TrackResult.Invalid -> "fix the call: ${result.reason} (${result.field})" // nothing stored
+        TrackResult.OptedOut -> "collection is off" // nothing stored
         TrackResult.QueueFull -> "queue is full; the event was dropped" // existing events are kept
         is TrackResult.StorageError -> "storage failed: ${result.message}" // nothing stored
     }
@@ -187,6 +188,7 @@ TypeScript 출력에는 타입과, `{ name, properties }`를 반환하는 builde
 | --- | --- | --- | --- |
 | `Success(eventId)` | 이벤트가 기기에 저장됨. 서버 수신이 아님 | 없음. SDK가 나중에 보냄 | spec 3, architecture "Commit boundaries" |
 | `Invalid(reason, field)` | 입력이 규칙을 어김. 저장된 것 없음. `field`는 `"name"` 또는 property key. `EVENT_TOO_LARGE`이면 `null` | 코드의 호출을 고침. 같은 입력을 다시 보내지 않음 | spec 3, spec 8 Q63 |
+| `OptedOut` | 앱이 `setOptOut(true)`를 호출함. 검증도 저장도 하지 않음 | 없음. 수집을 의도적으로 껐음. [8절](#8-개인정보) 참고 | spec Q156, [ADR-0034](adr/0034-sdk-opt-out.md) |
 | `QueueFull` | 큐가 10,000개 또는 16 MiB에 도달. SDK는 기존 이벤트를 유지하고 이 이벤트는 저장하지 않음 | 앱이 이벤트를 버릴지 나중에 다시 시도할지 정함. SDK는 대신 저장하지 않음 | spec 4 |
 | `StorageError(message)` | 저장 실패. `message`는 예외의 simple class name. 이벤트 내용 없음 | 이벤트가 저장되지 않은 것으로 처리. 사용자에게 자동으로 보이지 않음 | spec 3, [ADR-0017](adr/0017-sdk-crash-safety.md) 결정 1 |
 
@@ -317,6 +319,33 @@ suspend fun queueSummary(sdk: SignalDock): String {
 - SDK에는 `identify` 호출이 없습니다(spec 1).
 - SDK는 `SignalDock` tag로 Logcat에 기록합니다. `DEBUG`에서도 이벤트 내용, 이벤트 이름, installation ID, 자격 증명, HTTP body를 기록하지 않습니다(spec 3, architecture "SDK lifecycle and cancellation", spec 8 Q115).
 - `TrackResult.Invalid.field`는 기록하지 않습니다(KDoc과 spec 8 Q115).
+- **옵트아웃.** 사용자가 동의를 철회하는 등 수집을 멈추려면 `setOptOut(true)`를 호출합니다. 이후 `track()`은 아무것도 저장하지 않고 `OptedOut`을 반환합니다. 이 호출들의 이벤트는 전송되지 않습니다. `setOptOut(false)`는 수집을 다시 시작합니다. `isOptedOut()`은 현재 상태를 반환합니다(spec Q156, [ADR-0034](adr/0034-sdk-opt-out.md)).
+
+  ```kotlin
+  // sample: opt-out
+  suspend fun onUserWithdrawsConsent(sdk: SignalDock): Boolean {
+      // false: the state could not be stored. It holds until the process ends, but after a
+      // restart collection can resume, so call setOptOut(true) again later or tell the user.
+      val stored = sdk.setOptOut(true) // from now on, track() stores nothing and returns OptedOut
+      // Optional: delete events that wait on the device. null: storage failed, the events are
+      // still queued, so call clearQueue() again later or tell the user.
+      val deleted = sdk.clearQueue()
+      return stored && deleted != null
+  }
+
+  suspend fun onUserGivesConsent(sdk: SignalDock): Boolean =
+      // Collection resumes at once. false: the state could not be stored, so after a restart
+      // collection is off again; call setOptOut(false) again later or tell the user.
+      sdk.setOptOut(false)
+  // end sample
+  ```
+
+  - **이미 큐에 있는 이벤트는 남고, SDK는 계속 전송합니다.** 옵트아웃은 sender를 멈추지 않습니다. 큐의 이벤트를 지우려면 `clearQueue()`를 호출합니다. 지운 개수를 반환하며, 저장소 실패 시 `null`입니다. 그 순간 전송 중인 batch는 서버에 도달할 수 있습니다.
+  - 상태는 재시작 뒤에도 유지됩니다. `noBackupFilesDir`의 SDK 디렉터리에 있으므로 Auto Backup이 복원하지 않습니다. 재설치나 기기 복원 뒤에는 수집이 다시 켜집니다.
+  - 상태를 디스크에 저장하지 못하면 `setOptOut`은 `false`를 반환합니다. 변경은 프로세스가 끝날 때까지 유지됩니다.
+  - `initialize`가 성공하면 바로 `setOptOut`을 호출할 수 있습니다. SDK는 `initialize` 중에 저장된 상태를 읽으므로 첫 `track()`도 이를 따릅니다.
+  - `setOptOut(true)`가 반환되기 전에 시작된 `track()` 호출은 이벤트를 저장할 수 있습니다.
+  - 서버가 이미 가진 이벤트는 지우지 않습니다(ADR-0028).
 - collection key는 로컬 평가의 접근을 확인합니다. 키는 앱에서 꺼낼 수 있습니다. 쓰기 전용입니다. 사용자 인증을 대신하지 않습니다(spec 5, architecture "Components and responsibilities").
 
 ## 9. 버전과 계약 버전
@@ -340,7 +369,7 @@ suspend fun queueSummary(sdk: SignalDock): String {
 | `ConfigurationConflict` | 다른 설정이 활성이거나 시작 중 | 프로세스 전체에서 설정 하나를 사용 |
 | `StorageFailure(message)` | 저장소를 준비하지 못함. `message`는 예외 class 이름 | 나중에 `initialize()`를 다시 호출. 큐와 installation ID는 유지됨 |
 
-`track()`은 `Invalid`, `QueueFull`, `StorageError`를 반환합니다(4절). `diagnostics()`는 저장소 실패를 `storageAvailable = false`로 보고합니다(7절).
+`track()`은 `Invalid`, `OptedOut`, `QueueFull`, `StorageError`를 반환합니다(4절). `diagnostics()`는 저장소 실패를 `storageAvailable = false`로 보고합니다(7절).
 
 전송 오류는 `track()`에 도달하지 않습니다. `Diagnostics.lastDeliveryError.kind`에 나타납니다([ADR-0006](adr/0006-sdk-delivery-decisions.md) 결정 4와 5, architecture "Retry and transport boundaries").
 
@@ -403,7 +432,7 @@ SDK는 또한 다음을 하지 않습니다.
 
 - 서버가 이벤트를 가졌다고 말하지 않습니다. `Success`는 기기 저장만 뜻합니다(spec 3).
 - 앱이 `eventId`나 `occurredAt`을 정하게 하지 않습니다(spec 3).
-- 앱 대신 큐 항목을 지우거나, 이벤트 내용을 보여 주거나, diagnostics Flow를 제공하지 않습니다(spec 6).
+- 큐 항목을 하나씩 지우거나, 이벤트 내용을 보여 주거나, diagnostics Flow를 제공하지 않습니다(spec 6). 큐 전체만 지울 수 있습니다(`clearQueue()`, spec Q156).
 - 서버 database를 polling하지 않습니다(spec 4).
 - 입력을 trim, 정규화, 수정하지 않습니다(spec 3, spec 8 Q64, Q84).
 - `ViewModel`이나 Compose를 쓰지 않습니다(spec 2).
