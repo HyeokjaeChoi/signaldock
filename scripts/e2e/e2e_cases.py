@@ -330,23 +330,43 @@ def dropped_count(reason):
     return sum(i["count"] for i in body["items"] if i["reason"] == reason)
 
 
+def reports_after(t):
+    return [e for e in proxy_log() if e["path"] == "/v1/client-reports" and e["t"] > t]
+
+
+def settle_reports():
+    """Wait until the last rejecting batch (case 3 or a failed attempt) has its report, so a late report cannot count for case 5."""
+    def done():
+        log = proxy_log()
+        mutated = [e["t"] for e in log if e.get("mutatedEventId")]
+        return not mutated or bool(reports_after(mutated[-1]))
+    wait_for("earlier client reports to settle", done, 120)
+
+
 def case5_client_report():
     """ADR-0036 client reports: a counted drop on the device reaches the Dashboard query.
     The drop is server_rejected (the SDK counts each per-item rejection in the ACK), caused as in case 3."""
-    proxy_mode("pass")
-    r0 = dropped_count("server_rejected")
-    rows0 = int(sql("select count(*) from client_reports")[0])
-    say(f"  before: Dashboard client-report-counts server_rejected={r0}, client_reports rows={rows0}")
-    retry_split(lambda: mutated_batch(events=2))
+    state = {}
+
+    def attempt():
+        proxy_mode("pass")
+        settle_reports()
+        state["r0"] = dropped_count("server_rejected")
+        state["rows0"] = int(sql("select count(*) from client_reports")[0])
+        say(f"  before: Dashboard client-report-counts server_rejected={state['r0']}, client_reports rows={state['rows0']}")
+        return mutated_batch(events=2)
+
+    d, tapped, bad, batch = retry_split(attempt)
+    r0, rows0 = state["r0"], state["rows0"]
     # The SDK sends the report after the batch of the same send cycle (a few seconds, no extra tap).
-    wait_for("client report on the server", lambda: dropped_count("server_rejected") > r0, 120)
+    mine = wait_for("client report of this batch", lambda: reports_after(batch["t"]), 120)
+    wait_for("client report on the server", lambda: dropped_count("server_rejected") > r0, 30)
     r1 = dropped_count("server_rejected")
     status, body = dashboard(f"/v1/client-report-counts?{window()}")
     say(f"  Dashboard GET /v1/client-report-counts: {status} {json.dumps(body)}")
+    check(len(mine) == 1 and mine[0]["upstreamStatus"] == 204, f"proxy saw one POST /v1/client-reports after the batch, answered {mine[0]['upstreamStatus']}")
     check(r1 == r0 + 1, f"Dashboard server_rejected {r0} -> {r1} (exactly one rejected event)")
     check(int(sql("select count(*) from client_reports")[0]) == rows0 + 1, "server stored exactly one new client_reports row")
-    posts = [e for e in proxy_log() if e["path"] == "/v1/client-reports"]
-    check(bool(posts) and posts[-1]["upstreamStatus"] == 204, f"proxy saw POST /v1/client-reports answered {posts[-1]['upstreamStatus'] if posts else None}")
 
 
 def case4_conflict():

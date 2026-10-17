@@ -50,6 +50,6 @@ The user chose (Q164, option a) an SDK health report like Sentry client reports.
 
 Case 5 of `scripts/e2e-delivery.sh` closes the "no end-to-end run" Gap for one reason. The real SDK (consumer app, R8 release) on an emulator gets a per-item rejection from the server. The fault proxy `mutate` mode causes it, as in case 3. The SDK counts one `server_rejected`, sends `POST /v1/client-reports` after the batch, and the server answers 204. The case checks that `GET /v1/client-report-counts` (the Dashboard path, query key added by nginx) goes up by exactly 1 and that `client_reports` has one new row. No product code changed.
 
-- Run: emulator-5556 (faults37, API 37), `E2E_SKIP_BUILD=1 scripts/e2e-delivery.sh 5 3 1`: PASS for cases 1, 3, and 5 (details in the issue 65 file).
+- Run: emulator-5556 (faults37, API 37), `E2E_SKIP_BUILD=1 scripts/e2e-delivery.sh 3 5 1`: PASS for cases 1, 3, and 5 (details in the issue 65 file).
 - Gap: the other four reasons are not caused on a device. The Dashboard card is not rendered in a browser; the case reads the same endpoint.
 - Not run in CI (needs an emulator and Docker, as ADR-0010 item 3).
