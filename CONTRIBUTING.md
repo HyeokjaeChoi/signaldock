@@ -20,6 +20,16 @@ You also need Docker with Compose, Python 3, Node (see [TOOLCHAIN.md](TOOLCHAIN.
 - `pre-commit` runs `scripts/check-repo-rules.sh` (static checks: file modes, issue status lines, README sync, design index, no raw HTML sinks in the Dashboard and report apps, frozen Room schema files, `SDK_VERSION` equal to `sdkVersion`).
 - `pre-push` always runs `scripts/check-repo-rules.sh`, so it can reject a docs-only push too. When code changed, it also runs `scripts/verify-contract.sh`.
 
+## Change a Gradle dependency
+
+Each Gradle build checks every dependency and plugin file against `gradle/verification-metadata.xml` ([ADR-0038](docs/adr/0038-gradle-dependency-verification.md)). When you change `gradle/libs.versions.toml`, a plugin, or a dependency, the build fails with "Dependency verification failed" until you run:
+
+```sh
+scripts/update-gradle-verification.sh
+```
+
+Commit the changed `verification-metadata.xml` files. Read the diff: a new entry must belong to the dependency that you changed. A Renovate Gradle PR needs the same step. Check out its branch, run the script, and push once.
+
 ## Design first
 
 Before you edit files in an area, read the sections that [docs/design-index.md](docs/design-index.md) lists for it. Build what the design sources say. If you must make a new decision, record it in an ADR in `docs/adr/` in the same pull request and name it in the description.
