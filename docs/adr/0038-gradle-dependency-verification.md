@@ -33,8 +33,7 @@ The user approved this item on 2026-10-17 UTC. This ADR records the implementer 
 
 ## Gaps
 
-- Gap: the macOS file was checked on macOS. The first CI run on Linux is the check for the Linux-only files. Item 5 covers aapt2; another OS-specific file would fail the job with a clear message.
-- Gap: `connectedDebugAndroidTest` (the `device-test` job, emulator) was not run here. Its classpath is the one of `assembleDebugAndroidTest` plus the device test runner, and no task of this ADR resolves any extra file. If the job fails on an unlisted file, run the script with that task added.
+- Checked in CI (PR #181, Linux, cold cache): every Gradle job passes, among them `device-test` with `connectedDebugAndroidTest`, so the aapt2 handling of item 5 and the cold-cache rule of item 3 work. Another OS-specific file would fail a job with a clear message.
 - Gap: Robolectric downloads its `android-all` jars at test run time by itself, not through Gradle, so they are not verified here. The Gradle wrapper distribution is guarded by `distributionSha256Sum` and the `gradle-wrapper` job. The JDK, `oasdiff`, and the OpenAPI generator are guarded by `scripts/setup-toolchain.sh`, npm by `package-lock.json`, and images by digests.
 - Gap: Gradle only adds entries. A removed dependency leaves a stale entry. This is harmless. To prune, delete the `<components>` block of one file and run the script again (the `trusted-artifacts` block stays).
 - Gap: the unit test of `:demo:core:data` fails on `main` (an `http` endpoint without `allowInsecureEndpoint`, ADR-0035). CI does not run it. The script excludes that one test task and compiles its tests, so the metadata may lack a file that only that test run resolves. Remove the exclusion when the test is fixed.
