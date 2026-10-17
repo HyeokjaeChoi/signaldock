@@ -19,5 +19,5 @@ Verification:
 
 ## Comments
 
-- 2026-10-18 baseline (main, before the fix): `sdk/gradlew -p sdk :demo:core:data:testDebugUnitTest --no-daemon`: BUILD FAILED, 1 test failed.
-- 2026-10-18 verification (branch, after the fix): the CI test command above: BUILD SUCCESSFUL. Test counts from the JUnit XML reports: data 1 (0 failures), shop 8 (0), diagnostics 5 (0), sdk-android 167 (0).
+- 2026-10-17 UTC baseline (main, before the fix): `sdk/gradlew -p sdk :demo:core:data:testDebugUnitTest --no-daemon`: BUILD FAILED, 1 test failed.
+- 2026-10-17 UTC verification (branch, after the fix): the CI test command above: BUILD SUCCESSFUL. Test counts from the JUnit XML reports: data 1 (0 failures), shop 8 (0), diagnostics 5 (0), sdk-android 167 (0).
