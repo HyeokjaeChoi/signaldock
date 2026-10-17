@@ -283,19 +283,19 @@ def retry_split(once):
             return once()
         except Split as e:
             say(f"  attempt {attempt}: {e}; starting over with a fresh app")
-    raise AssertionError("the three taps never landed in one batch in 3 attempts")
+    raise AssertionError("in 3 attempts of three taps each, no batch held the required events")
 
 
 def mutated_batch(events=3):
-    """Three taps in proxy mode mutate: the proxy corrupts event index 1, so the server rejects it.
-    `events` is how many events the batch must hold (case 5 needs only 2: index 1 exists).
+    """Each attempt taps three times in proxy mode mutate: the proxy corrupts event index 1, so the server rejects it.
+    `events` is the minimum number of events the batch must hold (case 5 needs only 2: index 1 exists).
     Returns (device diagnostics after the ACK, tapped eventIds, rejected eventId, proxy log entry)."""
     proxy_mode("pass")
     before_log = len(proxy_log())
     proxy_mode("mutate")
     fresh_app()
     tap("Track consumer_ping", times=3)
-    say("  3 taps on device (proxy mode mutate: event index 1 of the batch gets a leading space in its name)")
+    say(f"  3 taps on device, batch needs >= {events} events (proxy mode mutate: event index 1 of the batch gets a leading space in its name)")
     d = wait_for("ACK on device", lambda: (lambda x: x if x["queued"] == 0 and x["ack"] else None)(diagnostics()), 120)
     proxy_mode("pass")
     batches = [e for e in proxy_log()[before_log:] if e.get("mutatedEventId")]
@@ -364,7 +364,7 @@ def case5_client_report():
     r1 = dropped_count("server_rejected")
     status, body = dashboard(f"/v1/client-report-counts?{window()}")
     say(f"  Dashboard GET /v1/client-report-counts: {status} {json.dumps(body)}")
-    check(len(mine) == 1 and mine[0]["upstreamStatus"] == 204, f"proxy saw one POST /v1/client-reports after the batch, answered {mine[0]['upstreamStatus']}")
+    check(len(mine) == 1 and mine[0]["upstreamStatus"] == 204, f"proxy saw one POST /v1/client-reports after the batch, answered {[m['upstreamStatus'] for m in mine]}")
     check(r1 == r0 + 1, f"Dashboard server_rejected {r0} -> {r1} (exactly one rejected event)")
     check(int(sql("select count(*) from client_reports")[0]) == rows0 + 1, "server stored exactly one new client_reports row")
 
