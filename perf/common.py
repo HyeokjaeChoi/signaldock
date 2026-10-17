@@ -166,7 +166,7 @@ def git_state():
         try:
             h.update((ROOT / f).read_bytes())
         except OSError:
-            pass
+            pass  # best effort: a file that vanished or cannot be read only weakens the dirty-diff hash
     return {"revision": g("rev-parse", "HEAD"), "branch": g("rev-parse", "--abbrev-ref", "HEAD"),
             "dirty": bool(g("status", "--porcelain", "--", ".", skip)), "dirty_diff_sha256": h.hexdigest()}
 

@@ -173,6 +173,7 @@ def main():
             print(m.read_text())
     else:
         build(a.size, a.dist, a.day, a.force)
+    return 0
 
 
 if __name__ == "__main__":

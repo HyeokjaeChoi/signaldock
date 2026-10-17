@@ -142,8 +142,6 @@ def analyze(d):
     if drain_s is None or d_src["queuedAfterDrain"]:
         reasons_fail.append("queue did not drain")
 
-    def total(files):
-        return None if files is None else sum(files.values())
     if drain_res:
         run["files_bytes"] = {"after_store": res["files"], "after_drain": drain_res["filesAfterDrain"]}
     else:
