@@ -39,7 +39,7 @@ Doc set: `README*`, `architecture.md`, `GLOSSARY.md`, `TOOLCHAIN.md`, `SECURITY.
 
 1. Fan out read-only audits by doc group, in parallel, with low-cost subagents (AGENTS.md "Research models"). Each returns lines of `file:line | stale claim | evidence in the source of truth | fix`.
 2. Re-verify every finding yourself. Skip a finding the code contradicts. Apply minimal fixes in one docs PR, with its own issue file. Rules for engineering docs: every claim cites a file, ADR, spec Q, test, or result; gaps are marked `Gap:`; dates are UTC. Write English in ASD-STE100 style.
-3. Run `scripts/check-repo-rules.sh` and the pre-push hook (`scripts/verify-contract.sh`).
+3. Run `scripts/check-repo-rules.sh`. Run `scripts/verify-contract.sh` directly. The pre-push hook skips it when only Markdown, `docs/`, and `.scratch/` files changed. State in the PR any step that did not run.
 4. Run `coderabbit review --base main --deep --agent`. Fix the findings.
 5. Open the PR as AGENTS.md "Review workflow" says. List fixed and skipped items, with reasons. A docs-only PR may merge when the review is clean.
 
