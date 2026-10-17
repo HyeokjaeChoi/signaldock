@@ -248,6 +248,7 @@ WorkManager는 정확한 실행 시각을 약속하지 않습니다(architecture
 - 이벤트 둘 이상인 batch의 413: SDK가 batch를 나누고 ID를 유지합니다. 이벤트 하나의 413: SDK가 일반 전송을 멈추고 그 이벤트를 30분마다 시도합니다(spec 8.B Q60, ADR-0006 결정 6).
 - 잘못된 ACK(읽을 수 없음, 결과 누락, 모순)는 적용하지 않습니다. batch 전체가 남고 SDK는 기다립니다(spec 8.B Q59, architecture "Validate the entire ACK before changing the queue").
 - 이벤트 하나의 알려진 영구 거부는 그 이벤트를 큐에서 지웁니다. SDK는 이벤트 내용 없는 diagnostic을 저장합니다(spec 4, architecture "Validate the entire ACK before changing the queue").
+- 서버 운영자는 이벤트를 이름이나 SDK 버전으로 차단하거나 모든 수집을 멈출 수 있습니다. 차단된 이벤트는 이벤트별 영구 거부(code `COLLECTION_BLOCKED`)로 돌아오며, SDK는 그 이벤트를 큐에서 지우고 `server_rejected`로 셉니다. 멈춘 서버는 `Retry-After`가 있는 503으로 응답하므로 SDK는 큐를 유지하고 기다립니다. SDK는 전송 전에는 차단 사실을 모르고 계속 수집합니다. 차단된 이벤트는 한 번 전송한 뒤 큐에서 나가지만, 서버가 멈춰 있거나 SDK의 전송 속도보다 빠르게 수집하면 큐가 `QueueFull`까지 찰 수 있습니다(spec Q165, [ADR-0037](adr/0037-server-collection-kill-switch.md)).
 - SDK는 실패 횟수만으로 이벤트를 버리지 않습니다(spec 4). 큐 TTL은 없습니다(spec 4).
 - 실패 횟수는 유효한 ACK가 적용된 뒤에만 0이 됩니다(spec 8.A Q75).
 

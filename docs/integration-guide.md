@@ -248,6 +248,7 @@ WorkManager does not promise an exact run time (architecture "Agreed defaults, p
 - 413 for a batch of more than one event: the SDK splits the batch and keeps the IDs. 413 for one event: the SDK pauses normal sending and tries that event every 30 minutes (spec 8.B Q60; ADR-0006 decision 6).
 - A bad ACK (unreadable, missing results, or contradictory) is not applied. The whole batch stays and the SDK waits (spec 8.B Q59; architecture "Validate the entire ACK before changing the queue").
 - A known permanent rejection of one event removes it from the queue. The SDK saves a diagnostic without event content (spec 4; architecture "Validate the entire ACK before changing the queue").
+- The server operator can block events by name or SDK version, or pause all ingest. A blocked event comes back as a permanent per-event rejection (code `COLLECTION_BLOCKED`): the SDK removes it and counts `server_rejected`. A paused server answers 503 with `Retry-After`, so the SDK keeps the queue and waits. The SDK does not know about the block before it sends, and it still collects. Blocked events leave the queue after one send, but while the server is paused, or when you collect faster than the SDK delivers, the queue can fill up to `QueueFull` (spec Q165; [ADR-0037](adr/0037-server-collection-kill-switch.md)).
 - The SDK never discards an event because of a failure count (spec 4). There is no queue TTL (spec 4).
 - The failure count goes to zero only after a valid ACK is applied (spec 8.A Q75).
 
