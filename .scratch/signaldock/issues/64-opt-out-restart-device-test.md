@@ -1,9 +1,9 @@
 # 64. Device test of opt-out across a process restart
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Branch `test/opt-out-restart-device`. PR open; not merged.
+Execution: Done (merged in PR #173, 2026-10-17 14:58:16 UTC)
 
 ## Scope and completion criteria
 
@@ -18,3 +18,4 @@ ADR-0034 (Limits) and issue 58 list a Gap: no device test restarts the process w
 
 - Item 4 done on emulator-5556 (API 37) on 2026-10-17: `scripts/device-durability.sh emulator-5556 optout` and `... restart` passed. `connectedDebugAndroidTest`: 33 tests, 0 failed, 16 skipped (phase classes), 17 ran.
 - Cause of the earlier failure on emulator-5554: a lock credential on user 0 (`RUNNING_LOCKED`); credential-encrypted storage was never unlocked, so the app data directory was not created. No script sets a credential.
+- 2026-10-17 UTC: PR #173 merged 14:58:16Z. Verification in the PR: the `optout` and `restart` cases of `scripts/device-durability.sh` passed on emulator-5556 (AVD faults37, API 37); `connectedDebugAndroidTest` 33 tests, 16 skipped, 17 ran; CI `repo-rules` passed.
