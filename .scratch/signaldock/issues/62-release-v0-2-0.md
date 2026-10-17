@@ -1,9 +1,9 @@
 # 62. Release v0.2.0
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: PR on branch `release/v0.2.0`
+Execution: Done (merged in PR #167, 2026-10-17 04:18:53 UTC)
 
 ## Scope and completion criteria
 
@@ -14,3 +14,7 @@ Prepare the v0.2.0 SDK release PR by `docs/releases/README.md` "Cut a release" s
 3. `CHANGELOG.md`: `[Unreleased]` is renamed `[0.2.0] - 2026-10-17`, and a new empty `[Unreleased]` exists.
 4. `scripts/release.sh 0.2.0` ran locally. `dist/` is not committed.
 5. No tag and no GitHub Release in this PR. The maintainer tags the merge commit.
+
+## Comments
+
+- 2026-10-17 UTC: PR #167 merged 04:18:53Z. Tag `v0.2.0` on `cbb6210`. Release workflow run 39002106137 succeeded (build, publish): https://github.com/HyeokjaeChoi/signaldock/releases/tag/v0.2.0. The ZIP `.sha256` check passed.
