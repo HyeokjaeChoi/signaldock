@@ -27,13 +27,13 @@ Tap a product, then "Add to cart". The screen shows "Saved on device: add_to_car
 
 Evidence: [video](../.scratch/signaldock/evidence/25-demo-track-to-dashboard.mp4) (phone left, Dashboard right), [demo screen](../.scratch/signaldock/evidence/25-demo-saved-on-device.png), [Dashboard](../.scratch/signaldock/evidence/25-dashboard-received.png).
 
-## Delivery failure E2E (case 1 ran; cases 2 to 4 not run for this guide)
+## Delivery failure E2E (case 1 ran; cases 2 to 5 not run for this guide, except as in the case 5 line)
 
 ```sh
-scripts/e2e-delivery.sh 1         # normal E2E: consumer app and demo app. Or: scripts/e2e-delivery.sh (all four cases)
+scripts/e2e-delivery.sh 1         # normal E2E: consumer app and demo app. Or: scripts/e2e-delivery.sh (all five cases)
 ```
 
-It needs `.env`, the running stack, and a booted emulator. It builds and installs both apps, starts a fault proxy on `127.0.0.1:8081`, and prints a PASS/FAIL summary. It does not delete data. See [ADR-0010](adr/0010-delivery-failure-e2e-harness.md). Cases 2 to 4 (ACK loss, partial rejection, content conflict) have their own results in issue 21.
+It needs `.env`, the running stack, and a booted emulator. It builds and installs both apps, starts a fault proxy on `127.0.0.1:8081`, and prints a PASS/FAIL summary. It does not delete data. See [ADR-0010](adr/0010-delivery-failure-e2e-harness.md). Cases 2 to 4 (ACK loss, partial rejection, content conflict) have their own results in issue 21. Case 5 (client report: a counted `server_rejected` drop reaches `GET /v1/client-report-counts`, [ADR-0036](adr/0036-sdk-client-reports.md) Amendment) ran in issue 65.
 
 ## Device durability (one case ran)
 

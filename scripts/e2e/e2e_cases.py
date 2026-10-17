@@ -5,7 +5,7 @@ Run through scripts/e2e-delivery.sh. Expects: the Compose stack up, a booted emu
 consumer app and the demo app installed (both built for the fault proxy endpoint), and the
 entry script's environment (it sources .env and exports E2E_*_PORT, SIGNALDOCK_*). Do not run
 this file directly. Cases: 1 normal E2E (consumer app and demo app), 2 ACK loss, 3 partial
-rejection, 4 content conflict. Unknown case numbers exit nonzero before anything runs. Prints evidence for
+rejection, 4 content conflict, 5 client report (SDK drop count to the Dashboard query). Unknown case numbers exit nonzero before anything runs. Prints evidence for
 each case and a PASS/FAIL summary; the exit code is 1 when any case failed.
 """
 import json
@@ -276,18 +276,21 @@ class Split(Exception):
     """The taps did not land in one batch (slow emulator); the case starts over."""
 
 
-def case3_partial():
+def retry_split(once):
+    """Run once() until the taps land in one batch (a slow emulator can split them)."""
     for attempt in range(1, 4):
         try:
-            return case3_once()
+            return once()
         except Split as e:
             say(f"  attempt {attempt}: {e}; starting over with a fresh app")
     raise AssertionError("the three taps never landed in one batch in 3 attempts")
 
 
-def case3_once():
+def mutated_batch(events=3):
+    """Three taps in proxy mode mutate: the proxy corrupts event index 1, so the server rejects it.
+    `events` is how many events the batch must hold (case 5 needs only 2: index 1 exists).
+    Returns (device diagnostics after the ACK, tapped eventIds, rejected eventId, proxy log entry)."""
     proxy_mode("pass")
-    ids0 = event_ids()
     before_log = len(proxy_log())
     proxy_mode("mutate")
     fresh_app()
@@ -297,18 +300,53 @@ def case3_once():
     proxy_mode("pass")
     batches = [e for e in proxy_log()[before_log:] if e.get("mutatedEventId")]
     tapped = batches[0]["eventIds"] if batches else []
-    if len(batches) != 1 or len(tapped) != 3:
-        raise Split(f"the tapped events were split across batches: {[e['eventIds'] for e in proxy_log()[before_log:]]}")
-    check(True, f"the three tapped events went out in one batch: {tapped}")
-    bad = batches[0]["mutatedEventId"]
-    say(f"  proxy: upstream status {batches[0]['upstreamStatus']} body={batches[0]['upstreamBody']}")
+    if len(batches) != 1 or len(tapped) < events:
+        raise Split(f"the tapped events were split across batches: {[e.get('eventIds') for e in proxy_log()[before_log:]]}")
+    check(True, f"the tapped events went out in one batch: {tapped}")
+    return d, tapped, batches[0]["mutatedEventId"], batches[0]
+
+
+def case3_partial():
+    retry_split(case3_once)
+
+
+def case3_once():
+    ids0 = event_ids()
+    d, tapped, bad, batch = mutated_batch()
+    say(f"  proxy: upstream status {batch['upstreamStatus']} body={batch['upstreamBody']}")
     say(f"  device diagnostics: queued={d['queued']} lastAck(accepted,duplicate,rejected)={d['ack']} recentRejections={d['rejections']} retryFailureCount={d['failures']}")
-    check(bad == tapped[1], f"rejected eventId is {bad} (index 1)")
+    check(len(tapped) == 3 and bad == tapped[1], f"three events in the batch; rejected eventId is {bad} (index 1)")
     new = event_ids() - ids0
     check(new == {tapped[0], tapped[2]}, f"server stored the two valid events {sorted(new)} and not {bad}")
     check(d["ack"] == (2, 0, 1), "device lastAck is accepted=2 rejected=1")
     check(d["rejections"] == [(bad, "INVALID_TEXT")], "device recentRejections lists only the invalid eventId with its code")
     check(d["queued"] == 0 and d["failures"] == 0, "device queue is empty and the failure count is 0")
+
+
+def dropped_count(reason):
+    """Sum of the client report counts for one reason, as the Dashboard 'Dropped events' card reads them."""
+    status, body = dashboard(f"/v1/client-report-counts?{window()}")
+    assert status == 200, (status, body)
+    return sum(i["count"] for i in body["items"] if i["reason"] == reason)
+
+
+def case5_client_report():
+    """ADR-0036 client reports: a counted drop on the device reaches the Dashboard query.
+    The drop is server_rejected (the SDK counts each per-item rejection in the ACK), caused as in case 3."""
+    proxy_mode("pass")
+    r0 = dropped_count("server_rejected")
+    rows0 = int(sql("select count(*) from client_reports")[0])
+    say(f"  before: Dashboard client-report-counts server_rejected={r0}, client_reports rows={rows0}")
+    retry_split(lambda: mutated_batch(events=2))
+    # The SDK sends the report after the batch of the same send cycle (a few seconds, no extra tap).
+    wait_for("client report on the server", lambda: dropped_count("server_rejected") > r0, 120)
+    r1 = dropped_count("server_rejected")
+    status, body = dashboard(f"/v1/client-report-counts?{window()}")
+    say(f"  Dashboard GET /v1/client-report-counts: {status} {json.dumps(body)}")
+    check(r1 == r0 + 1, f"Dashboard server_rejected {r0} -> {r1} (exactly one rejected event)")
+    check(int(sql("select count(*) from client_reports")[0]) == rows0 + 1, "server stored exactly one new client_reports row")
+    posts = [e for e in proxy_log() if e["path"] == "/v1/client-reports"]
+    check(bool(posts) and posts[-1]["upstreamStatus"] == 204, f"proxy saw POST /v1/client-reports answered {posts[-1]['upstreamStatus'] if posts else None}")
 
 
 def case4_conflict():
@@ -351,7 +389,8 @@ def case4_conflict():
 
 
 CASES = [("1 normal E2E", case1_normal), ("2 ACK loss", case2_ack_loss),
-         ("3 partial rejection", case3_partial), ("4 content conflict", case4_conflict)]
+         ("3 partial rejection", case3_partial), ("4 content conflict", case4_conflict),
+         ("5 client report", case5_client_report)]
 
 
 def environment():

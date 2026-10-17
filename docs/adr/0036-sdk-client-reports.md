@@ -43,5 +43,13 @@ The user chose (Q164, option a) an SDK health report like Sentry client reports.
 - No report when no event is sent (no HTTP for an empty queue, spec 8.A). Counters wait for the next send cycle.
 - No `diagnostics()` field for the counters; it would change the public API.
 - No retention or delete of report rows (ADR-0028).
-- Gap: not run on a device or emulator. JVM (Robolectric) tests and a real server through the server tests only; no end-to-end run of SDK against server.
+- Gap: not run on a device or emulator. JVM (Robolectric) tests and a real server through the server tests only; no end-to-end run of SDK against server. (Closed for `server_rejected` by the 2026-10-17 Amendment.)
 - Gap: with opt-out (ADR-0034, in review as PR 159), a new `TrackResult` case is not a drop unless it is added to `dropReason()` on purpose.
+
+## Amendment 2026-10-17: end-to-end run (issue 65)
+
+Case 5 of `scripts/e2e-delivery.sh` closes the "no end-to-end run" Gap for one reason. The real SDK (consumer app, R8 release) on an emulator gets a per-item rejection from the server. The fault proxy `mutate` mode causes it, as in case 3. The SDK counts one `server_rejected`, sends `POST /v1/client-reports` after the batch, and the server answers 204. The case checks that `GET /v1/client-report-counts` (the Dashboard path, query key added by nginx) goes up by exactly 1 and that `client_reports` has one new row. No product code changed.
+
+- Run: emulator-5556 (faults37, API 37), `E2E_SKIP_BUILD=1 scripts/e2e-delivery.sh 5 3 1`: PASS for cases 1, 3, and 5 (details in the issue 65 file).
+- Gap: the other four reasons are not caused on a device. The Dashboard card is not rendered in a browser; the case reads the same endpoint.
+- Not run in CI (needs an emulator and Docker, as ADR-0010 item 3).
