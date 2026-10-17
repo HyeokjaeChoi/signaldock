@@ -310,6 +310,14 @@ suspend fun queueSummary(sdk: SignalDock): String {
 - 화면을 열 때와 수동 새로고침에서 호출하세요. Flow API는 없습니다(spec 6).
 - SDK는 서버를 polling하지 않습니다. 서버 기록은 Dashboard에서 봅니다(spec 4, spec 6 "Dashboard").
 
+### 버려진 이벤트 수 (client report)
+
+SDK는 버린 이벤트를 이유별로 세고, 그 수를 `POST /v1/client-reports`로 서버에 보냅니다. 새 public API와 설정은 없습니다. 이유는 `queue_full`(`TrackResult.QueueFull`), `storage_error`(`TrackResult.StorageError`), `invalid_event`와 `event_too_large`(`TrackResult.Invalid`), `server_rejected`(유효한 ACK의 영구 거부)입니다. opt-out은 세지 않습니다. 카운터는 Room에 저장하므로 재시작해도 사라지지 않고, 각 카운터는 1,000,000에서 멈춥니다.
+
+- SDK는 전송 주기마다 이벤트 batch 뒤에 report를 최대 한 번 보냅니다. 그 주기에서 유효한 ACK를 적용했고 카운터가 0이 아닐 때만 보냅니다. report에는 SDK 버전과 수만 있습니다. installation ID, 이벤트 이름, 이벤트 ID는 없습니다(spec Q164, [ADR-0036](adr/0036-sdk-client-reports.md)).
+- 2xx 응답은 보낸 수를 지웁니다. 404(오래된 서버)나 다른 영구 4xx도 재시도 없이 지웁니다. 네트워크 오류, 408, 429, 5xx는 다음 주기를 위해 유지합니다. report는 이벤트의 재시도 상태를 바꾸지 않습니다.
+- 수는 근사값입니다. 서버가 report를 저장했는데 응답이 사라지면 SDK는 같은 수를 다시 보냅니다. SDK가 storage에 쓰지 못한 drop은 세지 않습니다.
+
 ## 8. 개인정보
 
 - **설치 단위 식별.** SDK는 첫 초기화에서 UUIDv4 installation ID를 하나 만듭니다. 로그인한 사용자와 연결하지 않습니다. 데이터 삭제, 재설치, 지원되는 복원 뒤에는 새 ID가 시작됩니다(ADR-0001).

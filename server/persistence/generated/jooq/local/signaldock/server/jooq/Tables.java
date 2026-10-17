@@ -4,11 +4,14 @@
 package local.signaldock.server.jooq;
 
 
+import local.signaldock.server.jooq.tables.ClientReports;
 import local.signaldock.server.jooq.tables.Events;
 
 
 @SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class Tables {
+
+    public static final ClientReports CLIENT_REPORTS = ClientReports.CLIENT_REPORTS;
 
     public static final Events EVENTS = Events.EVENTS;
 }

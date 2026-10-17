@@ -3,7 +3,11 @@ package local.signaldock.persistence
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import local.signaldock.ingestion.PlanStatus
+import local.signaldock.ingestion.DiscardReason
 import local.signaldock.query.Bucket
+import local.signaldock.query.ClientReportCount
+import local.signaldock.query.ClientReportCounts
+import local.signaldock.query.MAX_CLIENT_REPORT_COUNTS
 import local.signaldock.query.CountQuery
 import local.signaldock.query.EventFilter
 import local.signaldock.query.ListQuery
@@ -17,6 +21,7 @@ import local.signaldock.query.ReceiptSummary
 import local.signaldock.query.ReceivedEvent
 import local.signaldock.query.SortOrder
 import local.signaldock.query.TimeCountQuery
+import local.signaldock.server.jooq.tables.ClientReports.CLIENT_REPORTS
 import local.signaldock.server.jooq.tables.Events.EVENTS
 import org.jooq.Condition
 import org.jooq.Record
@@ -100,6 +105,24 @@ public class QueryStore(private val database: Database) {
                     .fetchSingle()
             }
             PlanStatusCounts(row.value1().toLong(), row.value2().toLong(), row.value3().toLong(), row.value4().toLong())
+        }
+
+    /** Dropped events by SDK version and reason (ADR-0036): rows are summed at query time, largest first. */
+    public suspend fun countClientReports(period: Period, budget: RequestBudget = database.budget()): ClientReportCounts =
+        database.transaction(budget) {
+            readOnly()
+            val total = DSL.sum(CLIENT_REPORTS.COUNT)
+            val rows = query {
+                select(CLIENT_REPORTS.SDK_VERSION, CLIENT_REPORTS.REASON, total)
+                    .from(CLIENT_REPORTS)
+                    .where(CLIENT_REPORTS.RECEIVED_AT.ge(period.from.atOffset(ZoneOffset.UTC)))
+                    .and(CLIENT_REPORTS.RECEIVED_AT.lt(period.to.atOffset(ZoneOffset.UTC)))
+                    .groupBy(CLIENT_REPORTS.SDK_VERSION, CLIENT_REPORTS.REASON)
+                    .orderBy(total.desc(), CLIENT_REPORTS.SDK_VERSION.asc(), CLIENT_REPORTS.REASON.asc())
+                    .limit(MAX_CLIENT_REPORT_COUNTS + 1)
+                    .fetch { ClientReportCount(it.value1()!!, DiscardReason.fromWire(it.value2()!!)!!, it.value3()!!.toLong()) }
+            }
+            ClientReportCounts(rows.take(MAX_CLIENT_REPORT_COUNTS), rows.size > MAX_CLIENT_REPORT_COUNTS)
         }
 
     /** Counts per bucket start. Empty buckets are absent; the domain fills them. */

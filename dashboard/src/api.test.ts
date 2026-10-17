@@ -38,3 +38,19 @@ describe("plan status requests (ADR-0022)", () => {
     expect(counts).toEqual({ planned: 1, unplannedEvent: 2, invalidProperties: 3, notChecked: 4 });
   });
 });
+
+describe("client report counts (Q164)", () => {
+  it("sends only from and to, with the contract header, and decodes the rows", async () => {
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) =>
+      new Response(JSON.stringify({ items: [{ sdkVersion: "0.1.0", reason: "queue_full", count: 3 }], truncated: true }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const counts = await realApi.clientReportCounts({ ...filters, eventId: "e", installationId: "i" }, signal);
+    const url = new URL(fetchMock.mock.calls[0]![0], "http://dashboard.test");
+    expect(url.pathname).toBe("/v1/client-report-counts");
+    expect([...url.searchParams.keys()].sort()).toEqual(["from", "to"]);
+    expect(url.searchParams.get("from")).toBe(filters.from);
+    expect(url.searchParams.get("to")).toBe(filters.to);
+    expect((fetchMock.mock.calls[0]![1]!.headers as Record<string, string>)["SignalDock-Contract-Version"]).toBe("1");
+    expect(counts).toEqual({ items: [{ sdkVersion: "0.1.0", reason: "queue_full", count: 3 }], truncated: true });
+  });
+});

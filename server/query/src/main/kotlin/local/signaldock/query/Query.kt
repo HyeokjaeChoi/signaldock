@@ -1,5 +1,6 @@
 package local.signaldock.query
 
+import local.signaldock.ingestion.DiscardReason
 import local.signaldock.ingestion.PlanStatus
 import local.signaldock.ingestion.PropertyValue
 import java.time.Instant
@@ -17,6 +18,7 @@ public const val MAX_PAGE_SIZE: Int = 100
 public const val MAX_PERIOD_DATES: Int = 30
 public const val MAX_BUCKETS: Int = 720
 public const val MAX_NAME_COUNTS: Int = 100
+public const val MAX_CLIENT_REPORT_COUNTS: Int = 100
 private const val MAX_NAME_BYTES = 16 * 1024
 
 /** A rejected query. `code` is machine readable; the caller maps it to HTTP 400. */
@@ -77,6 +79,12 @@ public data class NameCount(val name: String, val count: Long)
 /** At most [MAX_NAME_COUNTS] names; `truncated` means more names matched. */
 public data class NameCounts(val items: List<NameCount>, val truncated: Boolean)
 
+/** Events the SDKs reported as dropped, for one SDK version and reason. */
+public data class ClientReportCount(val sdkVersion: String, val reason: DiscardReason, val count: Long)
+
+/** At most [MAX_CLIENT_REPORT_COUNTS] rows; `truncated` means more rows matched. */
+public data class ClientReportCounts(val items: List<ClientReportCount>, val truncated: Boolean)
+
 public data class TimeBucketCount(val start: Instant, val count: Long)
 
 /** Events per plan status in a period. `notChecked` counts rows without a status. */
@@ -110,6 +118,12 @@ public fun parseCountQuery(params: Map<String, List<String>>, zone: ZoneId): Cou
 public fun parsePlanStatusCountQuery(params: Map<String, List<String>>, zone: ZoneId): CountQuery {
     rejectUnknown(params, PERIOD_PARAMETERS + ID_FILTER_PARAMETERS)
     return CountQuery(parsePeriod(params, zone), parseFilter(params))
+}
+
+/** The client report counts take only the period: a report has no event name, installation, or plan status. */
+public fun parseClientReportCountQuery(params: Map<String, List<String>>, zone: ZoneId): Period {
+    rejectUnknown(params, PERIOD_PARAMETERS)
+    return parsePeriod(params, zone)
 }
 
 public fun parseTimeCountQuery(params: Map<String, List<String>>, zone: ZoneId): TimeCountQuery {

@@ -24,7 +24,7 @@ const detail: EventReceiptDetail = {
   properties: { price: 19900, in_stock: true, note: "hello" },
 };
 
-function fakeApi(overrides: Partial<Api> = {}): Api & Record<"listEvents" | "countsByName" | "countsByPlanStatus", ReturnType<typeof vi.fn>> {
+function fakeApi(overrides: Partial<Api> = {}): Api & Record<"listEvents" | "countsByName" | "countsByPlanStatus" | "clientReportCounts", ReturnType<typeof vi.fn>> {
   return {
     listEvents: vi.fn(async (_f, _s, cursor?: string) =>
       cursor === "c2"
@@ -35,6 +35,7 @@ function fakeApi(overrides: Partial<Api> = {}): Api & Record<"listEvents" | "cou
     countsByName: vi.fn(async () => ({ items: [], truncated: false })),
     countsByTime: vi.fn(async () => ({ timeZone: "Asia/Seoul", bucket: "hour" as const, items: [] })),
     countsByPlanStatus: vi.fn(async () => ({ planned: 0, unplannedEvent: 0, invalidProperties: 0, notChecked: 0 })),
+    clientReportCounts: vi.fn(async () => ({ items: [], truncated: false })),
     ...overrides,
   } as never;
 }
@@ -328,6 +329,96 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
       fireEvent.click(screen.getAllByRole("button", { name: t("controls.refresh") })[0]!);
       await flush();
       expect(api.countsByPlanStatus.mock.calls.length).toBe(calls + 1);
+    });
+  });
+
+  describe("dropped events (Q164)", () => {
+    const rows = [
+      { sdkVersion: "0.2.0", reason: "queue_full" as const, count: 1500 },
+      { sdkVersion: "0.1.0", reason: "server_rejected" as const, count: 4 },
+    ];
+    const card = () => screen.getByRole("region", { name: t("dropped.title") });
+    const fmt = (n: number) => new Intl.NumberFormat(lang).format(n);
+
+    it("shows the rows with the translated reason, the wire name, the formatted count, and the total of the shown rows", async () => {
+      render(fakeApi({ clientReportCounts: vi.fn(async () => ({ items: rows, truncated: false })) as never }));
+      await flush();
+      const table = within(card()).getByRole("table", { name: t("dropped.title") });
+      const body = Array.from(table.querySelectorAll("tbody tr")).map((r) => Array.from(r.children).map((c) => c.textContent));
+      expect(body).toEqual([
+        ["0.2.0", `${t("dropped.reasons.queue_full")} queue_full`, fmt(1500)],
+        ["0.1.0", `${t("dropped.reasons.server_rejected")} server_rejected`, "4"],
+      ]);
+      expect(table.querySelector("tfoot")!.textContent).toBe(`${t("dropped.total")}${fmt(1504)}`);
+      expect(within(card()).queryByText(t("dropped.truncated", { limit: fmt(100) }))).toBeNull();
+    });
+
+    it("shows the empty state and the truncated note", async () => {
+      const api = fakeApi();
+      render(api);
+      await flush();
+      expect(within(card()).getByText(t("dropped.empty"))).toBeTruthy();
+      expect(within(card()).queryByRole("table")).toBeNull();
+      cleanup();
+      render(fakeApi({ clientReportCounts: vi.fn(async () => ({ items: rows, truncated: true })) as never }));
+      await flush();
+      expect(within(card()).getByText(t("dropped.truncated", { limit: fmt(100) }))).toBeTruthy();
+    });
+
+    it("uses the period only, never the event filters", async () => {
+      const api = fakeApi();
+      render(api);
+      await flush();
+      fireEvent.change(screen.getByRole("textbox", { name: new RegExp(t("controls.eventName")) }), { target: { value: "purchase" } });
+      fireEvent.change(screen.getByRole("combobox", { name: new RegExp(t("controls.planStatus")) }), { target: { value: "planned" } });
+      const calls = api.clientReportCounts.mock.calls.length;
+      fireEvent.click(screen.getByRole("button", { name: t("controls.apply") }));
+      await flush();
+      expect(api.countsByName.mock.calls.at(-1)?.[0].name).toBe("purchase");
+      expect(api.clientReportCounts.mock.calls.length).toBe(calls); // a filter change does not restart it
+      fireEvent.change(screen.getByRole("combobox", { name: new RegExp(t("controls.period")) }), { target: { value: "7d" } });
+      await flush();
+      expect(api.clientReportCounts.mock.calls.length).toBe(calls + 1); // a period change does
+    });
+
+    it("keeps the rows on a transient error and shows its own status with a retry", async () => {
+      let fail = false;
+      const api = fakeApi({
+        clientReportCounts: vi.fn(async () => {
+          if (fail) throw new QueryError("HTTP 503", 503);
+          return { items: rows, truncated: false };
+        }) as never,
+      });
+      render(api);
+      await flush();
+      fail = true;
+      await advance(5000);
+      expect(within(card()).getByText("0.2.0")).toBeTruthy();
+      const status = screen.getByText(t("status.dropped"), { selector: "strong" }).parentElement!;
+      expect(status.textContent).toContain("HTTP 503");
+      fail = false;
+      fireEvent.click(within(status).getByRole("button", { name: t("status.retry") }));
+      await advance(5000); // the retry waits for the backoff (Q109)
+      expect(status.textContent).not.toContain("HTTP 503");
+    });
+
+    it("stops on a contract error and keeps the rows (Q108)", async () => {
+      let fail = false;
+      const api = fakeApi({
+        clientReportCounts: vi.fn(async () => {
+          if (fail) throw new QueryError("no", 400, "CONTRACT_VERSION_UNSUPPORTED");
+          return { items: rows, truncated: false };
+        }) as never,
+      });
+      render(api);
+      await flush();
+      fail = true;
+      await advance(5000);
+      const calls = api.clientReportCounts.mock.calls.length;
+      await advance(60000);
+      expect(api.clientReportCounts.mock.calls.length).toBe(calls);
+      expect(within(card()).getByText("0.2.0")).toBeTruthy();
+      expect(screen.getByText(t("status.dropped"), { selector: "strong" }).parentElement!.textContent).toContain(t("status.stopped"));
     });
   });
 

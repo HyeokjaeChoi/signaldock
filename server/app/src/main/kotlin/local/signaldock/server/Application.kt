@@ -10,6 +10,7 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.request.contentType
 import io.ktor.server.request.receiveChannel
+import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
@@ -24,6 +25,7 @@ import org.openapitools.client.models.ErrorResponse
 import java.io.ByteArrayOutputStream
 import local.signaldock.ingestion.RequestFailure
 import local.signaldock.ingestion.TrackingPlan
+import local.signaldock.persistence.ClientReportStore
 import local.signaldock.persistence.Database
 import local.signaldock.persistence.DatabaseLimits
 import local.signaldock.persistence.DatabaseObserver
@@ -39,6 +41,7 @@ internal fun Application.ingestionModule(
 ) {
     require(collectionKey.isNotBlank())
     val ingestion = Ingestion(database, trackingPlan)
+    val reports = ClientReportStore(database)
     routing {
         get("/health") { call.respondText("ok") }
         // Readiness (ADR-0026): one cheap query. /health stays liveness, so a database outage never restarts the server.
@@ -58,22 +61,8 @@ internal fun Application.ingestionModule(
                 withTimeout(budget.remainingMs()) {
                     val requestContractVersion = call.requireContractVersion()
                     call.requireCollectionKey(collectionKey)
-                    if (!call.request.contentType().match(ContentType.Application.Json)) {
-                        throw RequestFailure("CONTENT_TYPE_UNSUPPORTED")
-                    }
-                    if (call.request.headers[HttpHeaders.ContentEncoding]?.lowercase()?.let { it != "identity" } == true) {
-                        throw RequestFailure("CONTENT_ENCODING_UNSUPPORTED")
-                    }
-                    val channel = call.receiveChannel()
-                    val body = ByteArrayOutputStream()
-                    val buffer = ByteArray(8192)
-                    while (true) {
-                        val count = channel.readAvailable(buffer, 0, minOf(buffer.size, 262145 - body.size()))
-                        if (count < 0) break
-                        body.write(buffer, 0, count)
-                        if (body.size() > 262144) throw RequestFailure("PAYLOAD_TOO_LARGE")
-                    }
-                    val ack = ingestion.ingest(parseBatch(body.toByteArray(), requestContractVersion), budget)
+                    val body = call.receiveJsonBody(262144)
+                    val ack = ingestion.ingest(parseBatch(body, requestContractVersion), budget)
                     afterCommit(ack)
                     call.respondText(Json.encodeToString(ack), ContentType.Application.Json)
                 }
@@ -90,7 +79,50 @@ internal fun Application.ingestionModule(
                     ContentType.Application.Json, HttpStatusCode.ServiceUnavailable)
             }
         }
+        // SDK health report (ADR-0036). Same budget and error mapping as the batch; the body is at most 4 KiB.
+        post("/v1/client-reports") {
+            val budget = database.budget()
+            try {
+                withTimeout(budget.remainingMs()) {
+                    call.requireContractVersion()
+                    call.requireCollectionKey(collectionKey)
+                    reports.store(parseClientReport(call.receiveJsonBody(4096)), budget)
+                    call.respond(HttpStatusCode.NoContent)
+                }
+            } catch (error: RequestFailure) {
+                call.respondText(Json.encodeToString(ErrorResponse(error.code, error.code)), ContentType.Application.Json,
+                    HttpStatusCode.fromValue(httpStatusOf(error.code)))
+            } catch (_: DatabaseUnavailable) {
+                call.response.headers.append(HttpHeaders.RetryAfter, "1")
+                call.respondText(Json.encodeToString(ErrorResponse("TEMPORARILY_UNAVAILABLE", "Retry later; a resent report counts twice")),
+                    ContentType.Application.Json, HttpStatusCode.ServiceUnavailable)
+            } catch (_: TimeoutCancellationException) {
+                call.response.headers.append(HttpHeaders.RetryAfter, "1")
+                call.respondText(Json.encodeToString(ErrorResponse("REQUEST_TIMEOUT", "Storage outcome can be uncertain; a resent report counts twice")),
+                    ContentType.Application.Json, HttpStatusCode.ServiceUnavailable)
+            }
+        }
     }
+}
+
+/** Content-Type and Content-Encoding checks, then the body, read at most `limit + 1` bytes. Over the limit: PAYLOAD_TOO_LARGE. */
+private suspend fun io.ktor.server.application.ApplicationCall.receiveJsonBody(limit: Int): ByteArray {
+    if (!request.contentType().match(ContentType.Application.Json)) {
+        throw RequestFailure("CONTENT_TYPE_UNSUPPORTED")
+    }
+    if (request.headers[HttpHeaders.ContentEncoding]?.lowercase()?.let { it != "identity" } == true) {
+        throw RequestFailure("CONTENT_ENCODING_UNSUPPORTED")
+    }
+    val channel = receiveChannel()
+    val body = ByteArrayOutputStream()
+    val buffer = ByteArray(8192)
+    while (true) {
+        val count = channel.readAvailable(buffer, 0, minOf(buffer.size, limit + 1 - body.size()))
+        if (count < 0) break
+        body.write(buffer, 0, count)
+        if (body.size() > limit) throw RequestFailure("PAYLOAD_TOO_LARGE")
+    }
+    return body.toByteArray()
 }
 
 private suspend fun io.ktor.server.application.ApplicationCall.notReady() {

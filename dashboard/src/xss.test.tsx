@@ -40,6 +40,7 @@ describe.each(PAYLOADS)("hostile text %s", (payload) => {
     countsByName: vi.fn(async () => ({ items: [{ name: payload, count: 3 }], truncated: false })),
     countsByTime: vi.fn(async () => ({ timeZone: "Asia/Seoul", bucket: "hour" as const, items: [] })),
     countsByPlanStatus: vi.fn(async () => ({ planned: 0, unplannedEvent: 0, invalidProperties: 0, notChecked: 0 })),
+    clientReportCounts: vi.fn(async () => ({ items: [], truncated: false })),
   } as unknown as Api;
   const render = () => rtlRender(<I18nProvider initialLanguage="en"><App api={api} /></I18nProvider>);
 

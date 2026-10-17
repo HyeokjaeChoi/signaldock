@@ -34,6 +34,8 @@ The collection key checks access for local evaluation. An SDK key can be extract
 2. Server commit: store valid events in PostgreSQL, then return per-event ACK results. This establishes server receipt. With an optional tracking plan, each new row also gets a plan status (`planned`, `unplanned_event`, `invalid_properties`). The status only marks the row; it never changes storage or the ACK ([ADR-0022](docs/adr/0022-server-tracking-plan-status.md)).
 3. Room ACK commit: validate the entire ACK and commit queue changes. This records the earlier receipt on the device.
 
+The SDK also counts the events it drops, by reason, in Room. After a send cycle that applied a valid ACK, it sends the counts once to `POST /v1/client-reports`. The report is separate from the batch contract and from the retry state; a 404 or another permanent 4xx discards it, a transient failure keeps the counters ([ADR-0036](docs/adr/0036-sdk-client-reports.md)).
+
 The sender checks the earliest retry time, selects an immutable batch, sends HTTP, validates the entire ACK, and applies it locally.
 Foreground work and the Worker serialize this sequence with the same Mutex. Release the lock after each batch and check cancellation and execution conditions.
 New `track()` writes use a separate path from the send lock. Hold no Room transaction open during HTTP.
@@ -209,6 +211,7 @@ Record the environment, source revision/hash, fixtures, actual request rate, err
 | Installation identity and SDK backup exclusion | Lose continuity and unsent data across reinstallation and restore | [ADR-0001](docs/adr/0001-installation-scoped-identity.md) |
 | OpenAPI / JSON with generated sources in Git | Maintain generation paths, drift checks, and scalar validation | [ADR-0002](docs/adr/0002-openapi-json-contract.md) |
 | Event deduplication and a shared sender | Deduplication depends on row retention; serialization is limited to one process | [Spec](.scratch/signaldock-portfolio/spec.md) |
+| SDK health report of dropped events | Counts are approximate (no idempotency, drops that cannot be stored are lost); one more small request per send cycle with drops | [ADR-0036](docs/adr/0036-sdk-client-reports.md) |
 | Server marks events against an optional tracking plan | The status is fixed at ingest; old rows and no-plan servers have none; no hot reload | [ADR-0022](docs/adr/0022-server-tracking-plan-status.md) |
 | Direct SQL and aggregation at query time | Measure query cost, indices, and DB waits | [Performance plan](.scratch/signaldock-portfolio/performance-plan.md) |
 | SDK verification Dashboard | Prioritize receipt lists and details over analytics features | [Dashboard defaults](.scratch/signaldock-portfolio/dashboard-verification-defaults.md) |

@@ -9,6 +9,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Transaction
+import org.openapitools.client.models.DiscardReason
 
 /**
  * Queue item. [payloadJson] is the transport JSON of one event (contract [contractVersion]).
@@ -32,6 +33,16 @@ internal data class RejectionEntity(
     val eventId: String,
     val code: String,
     val rejectedAtMillis: Long,
+)
+
+/**
+ * Events the SDK dropped, counted per reason ([org.openapitools.client.models.DiscardReason] wire name).
+ * Reported to the server and then subtracted (ADR-0036). [count] stops at [MAX_DROPPED_COUNT].
+ */
+@Entity(tableName = "dropped_counts")
+internal data class DroppedCountEntity(
+    @PrimaryKey val reason: String,
+    val count: Int,
 )
 
 /** Single row (id = 1). Written by the sender (issue 04); read by diagnostics. */
@@ -69,6 +80,9 @@ internal data class DiagnosticsSnapshot(
 )
 
 internal const val MAX_REJECTIONS = 100
+
+/** A counter stops here, like the contract limit of one report entry (ADR-0036). */
+internal const val MAX_DROPPED_COUNT = 1_000_000
 
 internal data class QueueLimits(
     val maxEvents: Int = 10_000,
@@ -131,9 +145,41 @@ internal abstract class QueueDao {
         if (rejections.isNotEmpty()) {
             insertRejections(rejections)
             trimRejections()
+            addDropped(DiscardReason.SERVER_REJECTED.value, rejections.size) // same commit as the removal (ADR-0036)
         }
         deleteByIds(removeIds)
         saveRetryState(state)
+    }
+
+    @Query("SELECT * FROM dropped_counts WHERE count > 0 ORDER BY reason")
+    abstract suspend fun droppedCounts(): List<DroppedCountEntity>
+
+    @Query("SELECT count FROM dropped_counts WHERE reason = :reason")
+    abstract suspend fun droppedCount(reason: String): Int?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    abstract suspend fun putDropped(row: DroppedCountEntity)
+
+    @Query("DELETE FROM dropped_counts WHERE reason = :reason")
+    abstract suspend fun deleteDropped(reason: String)
+
+    /** Adds [n] to a counter. It stops at [MAX_DROPPED_COUNT] and never overflows. */
+    @Transaction
+    open suspend fun addDropped(reason: String, n: Int) {
+        val now = droppedCount(reason) ?: 0
+        putDropped(DroppedCountEntity(reason, if (n >= MAX_DROPPED_COUNT - now) MAX_DROPPED_COUNT else now + n))
+    }
+
+    /**
+     * Removes counts that a report carried. Drops counted during the HTTP call stay. A counter that
+     * was saturated while the report was in flight loses only what was sent.
+     */
+    @Transaction
+    open suspend fun subtractDropped(sent: List<DroppedCountEntity>) {
+        for (row in sent) {
+            val left = (droppedCount(row.reason) ?: 0) - row.count
+            if (left > 0) putDropped(DroppedCountEntity(row.reason, left)) else deleteDropped(row.reason)
+        }
     }
 
     @Query("SELECT * FROM rejections ORDER BY id DESC")

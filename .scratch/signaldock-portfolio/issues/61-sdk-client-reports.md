@@ -20,3 +20,10 @@ Verification:
 - `sdk/gradlew -p sdk :sdk-android:testDebugUnitTest :sdk-android:apiCheck --no-daemon`; `server/gradlew -p server test verifyJooq --no-daemon`; `scripts/verify-contract.sh`; `scripts/check-repo-rules.sh`; `cd dashboard && npm run typecheck && npm test`.
 
 ## Comments
+
+- 2026-10-17 contract check (ADR-0002 amendment): `oasdiff breaking fixtures/contract/contract-v1.baseline.yaml openapi/contract-v1.yaml`, with the baseline from `main` as the base, printed "No breaking changes to report, but the specs are different." (exit 0). `oasdiff changelog` printed `2 changes: 0 error, 0 warning, 2 info`: `endpoint-added` `GET /v1/client-report-counts` and `endpoint-added` `POST /v1/client-reports`. The baseline is updated on purpose. Contract version stays 1.
+- 2026-10-17 verification (run on this branch):
+  - `sdk/gradlew -p sdk :sdk-android:testDebugUnitTest :sdk-android:apiCheck :sdk-android:dependencyGuard --no-daemon`: BUILD SUCCESSFUL (ClientReportTest 17 tests; public API dump and dependency baseline unchanged).
+  - `server/gradlew -p server cleanTest test verifyJooq --no-daemon`: BUILD SUCCESSFUL, 128 tests, 0 failed (real PostgreSQL through Testcontainers).
+  - `cd dashboard && npm run typecheck && npm test && npm run contract-check && npm run check-bundle-key`: pass, 174 tests.
+  - `scripts/verify-contract.sh`: ALL CONTRACT CHECKS PASSED.

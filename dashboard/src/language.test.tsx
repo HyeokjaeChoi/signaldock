@@ -28,6 +28,7 @@ const fakeApi = (overrides: Partial<Api> = {}): Api =>
     countsByName: vi.fn(async () => ({ items: [], truncated: false })),
     countsByTime: vi.fn(async () => ({ timeZone: "Asia/Seoul", bucket: "hour" as const, items: [] })),
     countsByPlanStatus: vi.fn(async () => ({ planned: 0, unplannedEvent: 0, invalidProperties: 0, notChecked: 0 })),
+    clientReportCounts: vi.fn(async () => ({ items: [], truncated: false })),
     ...overrides,
   }) as never;
 const failing = (error: QueryError) => fakeApi({ listEvents: vi.fn(async () => { throw error; }) as never });

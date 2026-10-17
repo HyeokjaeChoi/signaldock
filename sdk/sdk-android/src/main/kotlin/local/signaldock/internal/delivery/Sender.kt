@@ -1,5 +1,6 @@
 package local.signaldock.internal.delivery
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
@@ -10,6 +11,7 @@ import local.signaldock.internal.init.Logger
 import local.signaldock.internal.storage.QueueDao
 import local.signaldock.internal.storage.RejectionEntity
 import local.signaldock.internal.storage.RetryStateEntity
+import local.signaldock.internal.transport.CONTRACT_VERSION
 import org.openapitools.client.models.ItemAck
 
 /** Soft budget of one Worker run (Q72), checked between batches. */
@@ -39,25 +41,62 @@ internal class Sender(
     private sealed interface Step {
         data object Empty : Step
         data object Continue : Step
+
+        /** A valid ACK was applied. The client report rides on a send cycle that has one (ADR-0036). */
+        data object Acked : Step
         class Wait(val atMillis: Long) : Step
     }
 
-    /** Sends batches until the queue is empty, a wait applies or [budget] is used up. */
+    /**
+     * Sends batches until the queue is empty, a wait applies or [budget] is used up. When the run applied
+     * a valid ACK, it then sends the client report once (ADR-0036).
+     */
     suspend fun run(budget: RunBudget? = null): RunResult {
+        val result = sendBatches(budget)
+        if (result.acked) sendClientReport()
+        return result.result
+    }
+
+    private class Cycle(val result: RunResult, val acked: Boolean)
+
+    private suspend fun sendBatches(budget: RunBudget?): Cycle {
         val start = clock.nowMillis()
         var batches = 0
+        var acked = false
         while (true) {
             currentCoroutineContext().ensureActive()
             when (val step = mutex.withLock { sendOne() }) {
-                Step.Empty -> return RunResult(batches, RunEnd.QUEUE_EMPTY)
-                is Step.Wait -> return RunResult(batches, RunEnd.WAITING, step.atMillis)
-                Step.Continue -> {
+                Step.Empty -> return Cycle(RunResult(batches, RunEnd.QUEUE_EMPTY), acked)
+                is Step.Wait -> return Cycle(RunResult(batches, RunEnd.WAITING, step.atMillis), acked)
+                Step.Continue, Step.Acked -> {
                     batches++
+                    if (step == Step.Acked) acked = true
                     if (budget != null && (batches >= budget.maxBatches || clock.nowMillis() - start >= budget.softMillis)) {
-                        return RunResult(batches, RunEnd.BUDGET_EXHAUSTED)
+                        return Cycle(RunResult(batches, RunEnd.BUDGET_EXHAUSTED), acked)
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * One report per send cycle, after the event batch, when a counter is not zero. It never touches the
+     * retry state, so a failed report cannot delay events. 2xx or a permanent answer (404 from an old
+     * server, another 4xx) removes the sent counts; a transient failure keeps them for the next cycle.
+     */
+    private suspend fun sendClientReport() {
+        try {
+            mutex.withLock {
+                val report = buildClientReport(dao.droppedCounts()) ?: return
+                val outcome = classifyReport(transport.sendReport(BatchHttpRequest(CONTRACT_VERSION, report.body)))
+                if (outcome != ReportOutcome.KEPT) dao.subtractDropped(report.rows)
+                logger.debug("client report: $outcome")
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // A report problem must not hide the batch result: scheduling still needs it.
+            logger.warn("client report failed: ${e.javaClass.simpleName}")
         }
     }
 
@@ -131,7 +170,7 @@ internal class Sender(
         // One transaction: delete settled events, store rejection diagnostics, reset retry state.
         dao.applyAck(batch.events.map { it.eventId }, rejections, next)
         if (state.hold) logger.warn("delivery resumed after a successful ACK")
-        return Step.Continue
+        return Step.Acked
     }
 
     /** Temporary failure: persist failureCount + 1 and one Full Jitter draw, once per failure (Q74). */

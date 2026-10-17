@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { NameChart, TimeChart } from "./Charts";
 import { CopyButton, Details } from "./Details";
+import { DroppedCard } from "./DroppedCard";
 import { PlanBadge } from "./PlanBadge";
 import { realApi } from "./api";
 import type { Api, Filters, Sort } from "./api";
@@ -173,8 +174,10 @@ export function App({ api = realApi }: { api?: Api }) {
   const byTime = usePolledQuery(filterKey && `time|${filterKey}`, (s) => api.countsByTime(filters!, s));
   // The plan-status counts split by status, so the status filter does not apply to them (ADR-0022).
   const byPlan = usePolledQuery(filterKey && `plan|${JSON.stringify({ ...filters, planStatus: undefined })}`, (s) => api.countsByPlanStatus(filters!, s));
+  // SDK-reported dropped events: the period only. No event filter applies to them (Q164).
+  const dropped = usePolledQuery(filters ? `dropped|${filters.from}|${filters.to}` : null, (s) => api.clientReportCounts(filters!, s));
 
-  const resetPaging = () => setCursors([]);
+  const resetPaging =() => setCursors([]);
   const applyFilters = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
@@ -195,6 +198,7 @@ export function App({ api = realApi }: { api?: Api }) {
     byName.refresh();
     byTime.refresh();
     byPlan.refresh();
+    dropped.refresh();
   };
   const timeLabel = (iso: string, bucket: string) => formatBucketLabel(iso, bucket === "hour", tz, lang);
 
@@ -208,8 +212,8 @@ export function App({ api = realApi }: { api?: Api }) {
   const lastAt = lastReceipt(page, sort, cursors.length === 0);
   const top = topEvent(byName.state.data);
   const violations = planViolations(byPlan.state.data);
-  const { health, nextEligibleAt } = queryHealth([list.state, byName.state, byTime.state, byPlan.state], [cursors.length === 0, true, true, true]);
-  const lastSuccess = Math.max(0, list.state.lastSuccessAt ?? 0, byName.state.lastSuccessAt ?? 0, byTime.state.lastSuccessAt ?? 0, byPlan.state.lastSuccessAt ?? 0);
+  const { health, nextEligibleAt } = queryHealth([list.state, byName.state, byTime.state, byPlan.state, dropped.state], [cursors.length === 0, true, true, true, true]);
+  const lastSuccess = Math.max(0, list.state.lastSuccessAt ?? 0, byName.state.lastSuccessAt ?? 0, byTime.state.lastSuccessAt ?? 0, byPlan.state.lastSuccessAt ?? 0, dropped.state.lastSuccessAt ?? 0);
   const clock = (ms: number) => formatClock(ms, tz, lang);
   // A card without another sub line still says what is known: the last success of any query, or that there is none yet (Q144).
   const lastSuccessSub = lastSuccess ? t("kpi.liveSub", { time: clock(lastSuccess) }) : t("kpi.noSuccessSub");
@@ -337,6 +341,7 @@ export function App({ api = realApi }: { api?: Api }) {
         <Status label={t("status.byName")} state={byName.state} tz={tz} onRefresh={byName.refresh} />
         <Status label={t("status.byTime")} state={byTime.state} tz={tz} onRefresh={byTime.refresh} />
         <Status label={t("status.byPlan")} state={byPlan.state} tz={tz} onRefresh={byPlan.refresh} />
+        <Status label={t("status.dropped")} state={dropped.state} tz={tz} onRefresh={dropped.refresh} />
       </div>
 
       <div className="split">
@@ -391,6 +396,7 @@ export function App({ api = realApi }: { api?: Api }) {
           <h2>{t("counts.byTime", { bucket: byTime.state.data ? t(`buckets.${byTime.state.data.bucket}`) : "-" })}</h2>
           {byTime.state.data && <TimeChart counts={byTime.state.data} label={timeLabel} />}
         </section>
+        <DroppedCard counts={dropped.state.data} />
       </div>
     </main>
     </>

@@ -7,6 +7,8 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import local.signaldock.internal.collection.EventCollector
 import local.signaldock.internal.delivery.DeprecationNotice
+import local.signaldock.internal.delivery.DropCounter
+import local.signaldock.internal.delivery.dropReason
 import local.signaldock.internal.init.InitCoordinator
 import local.signaldock.internal.init.Logger
 import local.signaldock.internal.scheduling.DeliveryCoordinator
@@ -28,6 +30,8 @@ public class SignalDock internal constructor(
     private val logger: Logger,
     private val notice: DeprecationNotice,
 ) {
+    private val drops = DropCounter(dao, logger)
+
     /**
      * Collects one event named [name]. Returns [TrackResult.Success] after the event is committed
      * to Room. This is not server receipt. [kotlin.coroutines.cancellation.CancellationException] is
@@ -43,7 +47,8 @@ public class SignalDock internal constructor(
      * @return the collection result. Handle every case; see [TrackResult].
      */
     public suspend fun track(name: String, block: EventBuilder.() -> Unit = {}): TrackResult =
-        collector.track(name, block)
+        // A dropped event is counted for the client report (ADR-0036). The count never changes the result.
+        collector.track(name, block).also { result -> result.dropReason()?.let { drops.record(it) } }
 
     /**
      * Read-only snapshot of the device queue, recent permanent rejections, ACK and retry state.

@@ -39,7 +39,7 @@ public final class JooqCodegen {
                 .withGenerator(new Generator()
                     .withName("org.jooq.codegen.JavaGenerator")
                     .withDatabase(new Database().withName("org.jooq.meta.postgres.PostgresDatabase")
-                        .withInputSchema("public").withIncludes("events"))
+                        .withInputSchema("public").withIncludes("events|client_reports"))
                     .withGenerate(new Generate().withGeneratedAnnotation(false).withJavadoc(false).withComments(false))
                     .withTarget(new Target().withPackageName("local.signaldock.server.jooq")
                         .withDirectory(output.toString()).withClean(true))));

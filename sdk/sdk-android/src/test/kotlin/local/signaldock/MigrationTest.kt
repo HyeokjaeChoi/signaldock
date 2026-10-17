@@ -2,6 +2,7 @@ package local.signaldock
 
 import android.database.sqlite.SQLiteDatabase
 import kotlinx.coroutines.runBlocking
+import local.signaldock.internal.storage.DroppedCountEntity
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -34,7 +35,7 @@ class MigrationTest {
     }
 
     @Test
-    fun `a schema 1 database keeps its events and retry state and has no stored wait`() = runBlocking {
+    fun `a schema 1 database keeps its events and retry state, has no stored wait, and gets the dropped-count table`() = runBlocking {
         val dir = File(context.noBackupFilesDir, "signaldock").apply { mkdirs() }
         createV1(File(dir, "queue.db").absolutePath)
         val sdk = newSdk()
@@ -44,5 +45,9 @@ class MigrationTest {
         assertEquals(9000L, state.nextAttemptAtMillis)
         assertEquals(true, state.hold)
         assertNull(state.waitMillis)
+        // Schema 3 adds the dropped-count table (ADR-0036); it works after the chain 1 -> 2 -> 3.
+        assertEquals(emptyList<DroppedCountEntity>(), sdk.dao.droppedCounts())
+        sdk.dao.addDropped("queue_full", 2)
+        assertEquals(listOf(DroppedCountEntity("queue_full", 2)), sdk.dao.droppedCounts())
     }
 }

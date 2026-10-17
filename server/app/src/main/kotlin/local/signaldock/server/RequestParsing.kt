@@ -13,6 +13,9 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.decodeFromJsonElement
+import local.signaldock.ingestion.ClientReport
+import local.signaldock.ingestion.RawDiscardedCount
+import local.signaldock.ingestion.validateClientReport
 import local.signaldock.ingestion.EventCandidate
 import local.signaldock.ingestion.EventFields
 import local.signaldock.ingestion.PropertyValue
@@ -103,6 +106,32 @@ internal fun parseBatch(body: ByteArray, requestContractVersion: String): Valida
         validateEvent(index, candidateOf(node, documentEvents[index]), installationId)
     }
     return resolveEventIdConflicts(items)
+}
+
+/**
+ * Parses a client report body (ADR-0036) with the same strict scanner as the batch. Wrong shape,
+ * duplicate or missing keys: MALFORMED_REQUEST. A key outside the contract: UNKNOWN_FIELD. A number
+ * that is not a plain integer reaches the rules, which answer INVALID_REPORT.
+ */
+internal fun parseClientReport(body: ByteArray): ClientReport {
+    val source = decodeUtf8(body)
+    val root = try {
+        StrictJsonScanner(source).parseDocument()
+    } catch (_: JsonSyntaxFailure) {
+        throw RequestFailure("MALFORMED_REQUEST")
+    }
+    val rootFields = requiredUniqueFields(root.asObjectOrNull() ?: throw RequestFailure("MALFORMED_REQUEST"), setOf("sdkVersion", "discardedEvents"))
+    val sdkVersion = rootFields.getValue("sdkVersion").stringValue ?: throw RequestFailure("MALFORMED_REQUEST")
+    val nodes = rootFields.getValue("discardedEvents").arrayValues ?: throw RequestFailure("MALFORMED_REQUEST")
+    val entries = nodes.map { node ->
+        val fields = requiredUniqueFields(node.asObjectOrNull() ?: throw RequestFailure("MALFORMED_REQUEST"), setOf("reason", "count"))
+        val reason = fields.getValue("reason").stringValue ?: throw RequestFailure("MALFORMED_REQUEST")
+        val count = fields.getValue("count") as? JsonAtomNode ?: throw RequestFailure("MALFORMED_REQUEST")
+        val literal = source.substring(count.start, count.end)
+        if (literal[0] != '-' && literal[0] !in '0'..'9') throw RequestFailure("MALFORMED_REQUEST") // true, false, null
+        RawDiscardedCount(reason, literal)
+    }
+    return validateClientReport(sdkVersion, entries)
 }
 
 private fun candidateOf(node: JsonNode, element: JsonElement): EventCandidate? {
