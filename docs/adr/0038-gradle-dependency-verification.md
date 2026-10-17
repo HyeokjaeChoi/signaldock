@@ -4,7 +4,7 @@ status: accepted
 
 # Gradle dependency verification (issue 68, spec Q166)
 
-The user approved this item on 2026-10-18 UTC. This ADR records the implementer decisions. The user can change them.
+The user approved this item on 2026-10-17 UTC. This ADR records the implementer decisions. The user can change them.
 
 ## Context
 
@@ -16,7 +16,7 @@ The user approved this item on 2026-10-18 UTC. This ADR records the implementer 
 ## Decisions
 
 1. **SHA-256 checksums only. No PGP signatures.** `<verify-metadata>true</verify-metadata>` and `<verify-signatures>false</verify-signatures>`.
-   - What public projects do: AndroidX uses checksums and signatures, with `key-servers` off and about 300 `trust` entries, among them Google's own R8, aapt2, and bundletool, so even Google cannot sign everything ([androidx `gradle/verification-metadata.xml`](https://raw.githubusercontent.com/androidx/androidx/master/gradle/verification-metadata.xml)). Signal-Android uses checksums only and its own regeneration task ([Signal-Android `gradle/verification-metadata.xml`](https://raw.githubusercontent.com/signalapp/Signal-Android/main/gradle/verification-metadata.xml)). Checked on 2026-10-18 UTC: sentry-java, okhttp, dd-sdk-android, posthog-android, retrofit, mixpanel-android, purchases-android, and firebase-android-sdk have no `gradle/verification-metadata.xml` on their default branch. So this is not a common practice among SDK repos, and the choice here is a supply-chain hardening beyond what they do.
+   - What public projects do: AndroidX uses checksums and signatures, with `key-servers` off and about 300 `trust` entries, among them Google's own R8, aapt2, and bundletool, so even Google cannot sign everything ([androidx `gradle/verification-metadata.xml`](https://raw.githubusercontent.com/androidx/androidx/master/gradle/verification-metadata.xml)). Signal-Android uses checksums only and its own regeneration task ([Signal-Android `gradle/verification-metadata.xml`](https://raw.githubusercontent.com/signalapp/Signal-Android/main/gradle/verification-metadata.xml)). Checked on 2026-10-17 UTC: sentry-java, okhttp, dd-sdk-android, posthog-android, retrofit, mixpanel-android, purchases-android, and firebase-android-sdk have no `gradle/verification-metadata.xml` on their default branch. So this is not a common practice among SDK repos, and the choice here is a supply-chain hardening beyond what they do.
    - Why not signatures: Gradle supports only ASCII-armored `.asc` files, not every artifact has one, and a valid signature proves only that some key signed the file, so each new publisher key needs a trust decision ([Gradle docs](https://docs.gradle.org/current/userguide/dependency_verification.html)). That is a decision in every Renovate PR for a one-maintainer project. Checksums need no decision: the diff shows which files are new.
    - Limit (accepted): a checksum is trust on first use. The file records what Gradle downloaded when the metadata was written. It catches a later change of a file. It does not catch a file that was already bad at that time. Signatures are the later path, and the current file works with them (`--write-verification-metadata sha256,pgp`).
 2. **One file for each build,** at `<build>/gradle/verification-metadata.xml`: 4 files, 690 (`sdk`), 212 (`server`), 64 (`contract-check`), and 366 (`consumer-android`) components.

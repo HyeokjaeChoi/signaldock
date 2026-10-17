@@ -15,7 +15,7 @@ if [ -z "${JAVA_HOME:-}" ]; then
   export JAVA_HOME="$ROOT/.tools/$(ls "$ROOT/.tools" | grep '^jdk-21')"
 fi
 [ -x "$JAVA_HOME/bin/java" ] || { echo "error: no JDK at $JAVA_HOME; run scripts/setup-toolchain.sh or set JAVA_HOME" >&2; exit 1; }
-[ -n "${ANDROID_HOME:-}${ANDROID_SDK_ROOT:-}" ] || { echo "error: set ANDROID_HOME to the Android SDK (platform android-36)" >&2; exit 1; }
+[ -n "${ANDROID_HOME:-}${ANDROID_SDK_ROOT:-}" ] || { echo "error: set ANDROID_HOME to the Android SDK (platforms android-36 and android-37; the demo app builds at 37)" >&2; exit 1; }
 
 W="--write-verification-metadata sha256 --no-daemon --no-build-cache -q"
 
