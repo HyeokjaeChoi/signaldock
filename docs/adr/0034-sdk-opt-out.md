@@ -45,3 +45,13 @@ The Context line about Amplitude and Segment had no source. A source check (read
 - Other vendors differ on queued events. Mixpanel `optOutTracking()` deletes unsent events ([MixpanelAPI.java](https://github.com/mixpanel/mixpanel-android/blob/master/analytics/src/main/java/com/mixpanel/android/mpmetrics/MixpanelAPI.java)). PostHog `optOut()` keeps the queue and persists the state ([PostHog.kt](https://github.com/PostHog/posthog-android/blob/main/posthog/src/main/java/com/posthog/PostHog.kt)). Braze has a separate `wipeData()` ([docs](https://www.braze.com/docs/developer_guide/analytics/managing_data_collection?sdktab=android)).
 
 The decision does not change. SignalDock keeps queued events and offers `clearQueue()` separately, which matches PostHog plus a Braze-style explicit delete.
+
+## Amendment (2026-10-17, issue 64)
+
+The Gap in "Limits" about a real process restart is partly closed. `DurabilityPhases` has the phases `optout_set`, `optout_check`, and `optout_off`. `scripts/device-durability.sh <serial> optout` runs them with `am force-stop` between them. The phases check three facts:
+
+- After `setOptOut(true)`, the marker file `opt-out` exists, and `track()` returns `OptedOut` with an empty queue.
+- After the process kill, a new `initialize` reads the marker: `isOptedOut()` is `true`, `track()` returns `OptedOut`, nothing is stored, and the local `AckServer` gets no request.
+- After a second kill, `setOptOut(false)` removes the marker, and `track()` stores an event.
+
+Verified on 2026-10-17: `scripts/device-durability.sh emulator-5556 optout` passed on an API 37 emulator in three different processes, with 0 requests in the second phase. Gap: the "no request" check is a fixed 3-second wait. It is not an event.

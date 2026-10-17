@@ -184,4 +184,53 @@ class DurabilityPhases {
         }
         report("phase", "install_check", "status", "pass", "expect", expect, "installationId", id, "queued", "${queued.size}")
     }
+
+    // --- Opt-out across a real process restart (ADR-0034): the marker file `opt-out` ---
+
+    private val optOutFile get() = File(sdkDir, "opt-out")
+
+    @Test
+    fun optout_set() {
+        phase("optout_set")
+        val sdk = init(offline)
+        assertFalse("collection is on at the first start", sdk.isOptedOut())
+        assertTrue(runBlocking { sdk.setOptOut(true) })
+        assertTrue(sdk.isOptedOut())
+        assertTrue("marker file written", optOutFile.exists())
+        assertEquals(TrackResult.OptedOut, runBlocking { sdk.track("opted_out_before_restart") })
+        assertEquals(0, runBlocking { sdk.diagnostics().queuedEvents })
+        report("phase", "optout_set", "status", "pass", "pid", android.os.Process.myPid().toString())
+    }
+
+    @Test
+    fun optout_check() {
+        phase("optout_check")
+        assertTrue("marker file survived the process kill", optOutFile.exists())
+        val server = AckServer().start()
+        try {
+            val sdk = init(server.config())
+            assertTrue("opt-out is read from the marker at initialization", sdk.isOptedOut())
+            assertEquals(TrackResult.OptedOut, runBlocking { sdk.track("opted_out_after_restart") })
+            assertEquals(0, runBlocking { sdk.diagnostics().queuedEvents })
+            assertEquals(emptyList<String>(), readQueueFile(targetContext.noBackupFilesDir).map { it.first })
+            Thread.sleep(3_000) // A send needs a stored event, so any request in this wait is a bug (Gap: a fixed wait, not an event)
+            assertEquals("nothing is sent while opted out", 0, server.requestCount.get())
+            report("phase", "optout_check", "status", "pass", "requests", "${server.requestCount.get()}", "pid", android.os.Process.myPid().toString())
+        } finally {
+            server.close()
+        }
+    }
+
+    @Test
+    fun optout_off() {
+        phase("optout_off")
+        val sdk = init(offline)
+        assertTrue("still opted out at the third start", sdk.isOptedOut())
+        assertTrue(runBlocking { sdk.setOptOut(false) })
+        assertFalse(sdk.isOptedOut())
+        assertFalse("marker file removed", optOutFile.exists())
+        assertTrue(runBlocking { sdk.track("collected_again") } is TrackResult.Success)
+        assertEquals(1, runBlocking { sdk.diagnostics().queuedEvents })
+        report("phase", "optout_off", "status", "pass", "queued", "1", "pid", android.os.Process.myPid().toString())
+    }
 }

@@ -2,7 +2,7 @@
 # Device verification of SDK durability (issue 20, ADR-0011). Local only: not run in CI.
 #
 # Usage: scripts/device-durability.sh <adb-serial> [case ...]
-# Cases: offline kill restart update clear reinstall restore airplane fulldisk workmanager   (default: all)
+# Cases: offline kill restart update clear reinstall restore airplane fulldisk workmanager optout   (default: all)
 #
 # Each case drives phases of local.signaldock.device.DurabilityPhases (sdk-android androidTest) with real
 # process boundaries between the instrumentation runs: am force-stop (SIGKILL), adb install -r, pm clear,
@@ -17,7 +17,7 @@ cd "$(dirname "$0")/.."
 serial="${1:?usage: scripts/device-durability.sh <adb-serial> [case ...]}"
 shift || true
 cases=("$@")
-[ ${#cases[@]} -gt 0 ] || cases=(offline kill restart update clear reinstall restore airplane fulldisk workmanager)
+[ ${#cases[@]} -gt 0 ] || cases=(offline kill restart update clear reinstall restore airplane fulldisk workmanager optout)
 
 # The cases switch Backup Manager off and select the local transport: that must never touch a physical device.
 case "$serial" in emulator-*) ;; *) echo "refusing $serial: emulators only (backup settings are changed)" >&2; exit 1 ;; esac
@@ -124,6 +124,24 @@ case_restart() { echo "== restart: process killed, same installation"; seed; adb
 case_update() { echo "== update: adb install -r over the installed package"; seed; adb install -r -t "$APK" >/dev/null; sleep 2; check kept present; }
 case_clear() { echo "== clear: pm clear (app data cleared)"; seed; adb shell pm clear "$PKG" >/dev/null; check fresh absent; }
 case_reinstall() { echo "== reinstall: uninstall, install"; seed; adb uninstall "$PKG" >/dev/null; adb install -t "$APK" >/dev/null; check fresh absent; }
+
+case_optout() {
+  echo "== optout: setOptOut(true), process killed, the marker file keeps the opt-out; then setOptOut(false)"
+  fresh_install
+  phase optout_set
+  pid1="$(get pid)"
+  adb shell am force-stop "$PKG"
+  sleep 2
+  phase optout_check
+  pid2="$(get pid)"
+  adb shell am force-stop "$PKG"
+  sleep 2
+  phase optout_off
+  pid3="$(get pid)"
+  { [ -n "$pid1" ] && [ "$pid1" != "$pid2" ] && [ "$pid1" != "$pid3" ] && [ "$pid2" != "$pid3" ]; } ||
+    { echo "opt-out phases did not run in distinct processes: '$pid1' '$pid2' '$pid3'" >&2; exit 1; }
+  echo "  processes $pid1, $pid2, $pid3"
+}
 
 case_restore() {
   echo "== restore: Auto Backup to the local transport, uninstall, install, bmgr restore"

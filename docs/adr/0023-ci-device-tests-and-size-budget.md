@@ -20,6 +20,10 @@ ADR-0011 decision 10 kept the instrumented tests out of CI, and ADR-0020 measure
 
 Decision 3 counts changed. `sdk-android` now has 30 `@Test` methods. The 13 methods of `DurabilityPhases`, `FaultPhases`, and `MeasurePhases` skip themselves without `-e phase`, and 17 run (job log of `repo-rules` run 39002096383 on main at `cbb6210`). In that run the 17 methods passed. This also replaces the "26 tests pass" count in Limits. The rest of decision 3 is unchanged.
 
+## Amendment (2026-10-17 UTC, issue 64)
+
+The opt-out phases (`optout_set`, `optout_check`, `optout_off`) add 3 methods to `DurabilityPhases`. Now 33 methods: 16 skip without `-e phase`, and 17 run (job log of `repo-rules` run 39032066203 of PR #173). These counts replace the counts in decision 3, in Limits ("26 tests"), and in the first amendment.
+
 ## Limits
 
 - GitHub Actions cannot run here. The workflow was checked by YAML parsing only (`actionlint` is not installed on the author's machine). Whether the emulator boots, the 26 tests pass on API 34 x86_64, the AVD cache hits on the second run, and the Linux APK delta is inside the budget can be shown only by CI.
