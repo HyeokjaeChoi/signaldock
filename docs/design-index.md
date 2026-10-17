@@ -34,6 +34,7 @@ ADRs:
 - ADR-0030 (`docs/adr/0030-sdk-contract-deprecation-warning.md`), for `DeprecationNotice.kt` and `Diagnostics.contractDeprecation` (issue 50)
 - ADR-0033 (`docs/adr/0033-sdk-dependency-baseline.md`), for `sdk/sdk-android/dependencies/` and the `dependencyGuard` and `dependencyGuardBaseline` tasks (issue 56)
 - ADR-0034 (`docs/adr/0034-sdk-opt-out.md`), for `setOptOut`, `isOptedOut`, `clearQueue`, `TrackResult.OptedOut`, and `OptOutStore.kt` (issue 58)
+- ADR-0035 (`docs/adr/0035-sdk-https-enforcement.md`), for the `https` rule in `validateConfig` and `SignalDockConfig.allowInsecureEndpoint` (issue 60)
 
 Public API change: update the dump (`sdk/gradlew -p sdk :sdk-android:apiDump`), the integration guide, and `CHANGELOG.md` in the same PR.
 

@@ -59,7 +59,7 @@ dependencies { implementation("local.signaldock:sdk-android:0.1.0") }
 - `compileSdk` 36 이상, `minSdk` 24 이상([ADR-0006](adr/0006-sdk-delivery-decisions.md) 결정 1, spec 2).
 - Kotlin 2.2 이상과 AGP 9.x. SDK 클래스 metadata가 2.2이므로 AGP 9의 기본 built-in Kotlin으로 동작합니다(ADR-0009 결정 4, Q132). AGP 8.x 앱은 0.1.0을 쓸 수 없습니다(ADR-0009 결정 4).
 - 앱이 `INTERNET` 권한을 선언해야 합니다(consumer 앱의 [manifest](../compatibility/consumer-android/app/src/main/AndroidManifest.xml)에 있습니다. [README](../README.md) "Add the SDK to an app"). SDK 자체의 R8 규칙은 필요 없습니다(ADR-0009 결정 6).
-- `https://` endpoint를 쓰세요. SDK는 `http://`를 `https://`로 바꾸지 않습니다. `http://` 로컬 서버를 쓰려면 앱이 그 host에 cleartext를 허용해야 합니다. consumer 앱은 `10.0.2.2`, `127.0.0.1`, `localhost`에만 허용합니다(ADR-0009 결정 5, Q134).
+- `https://` endpoint를 쓰세요. SDK는 `http://`를 `https://`로 바꾸지 않습니다. config에 `allowInsecureEndpoint = true`(기본값 `false`, ADR-0035)가 없으면 `initialize`는 `http://` endpoint를 `InvalidConfiguration`으로 거부합니다. `http://` 로컬 서버에만 설정하세요. `http://` 로컬 서버를 쓰려면 앱이 그 host에 cleartext를 허용해야 합니다. consumer 앱은 `10.0.2.2`, `127.0.0.1`, `localhost`에만 허용합니다(ADR-0009 결정 5, Q134).
 
 ## 2. 초기화
 
@@ -365,7 +365,7 @@ suspend fun queueSummary(sdk: SignalDock): String {
 
 | `InitError` | 원인 | 할 일 |
 | --- | --- | --- |
-| `InvalidConfiguration(message)` | `collectionKey`가 비어 있음, `endpoint`가 host가 있는 절대 `http` 또는 `https` URL이 아님, timeout이 양수이고 유한하지 않음. SDK 상태는 만들어지지 않음 | 설정을 고침. message에는 키가 들어 있지 않음 |
+| `InvalidConfiguration(message)` | `collectionKey`가 비어 있음, `endpoint`가 host가 있는 절대 `https` URL이 아님(`http` URL은 `allowInsecureEndpoint = true`일 때만 허용), timeout이 양수이고 유한하지 않음. SDK 상태는 만들어지지 않음 | 설정을 고침. message에는 키가 들어 있지 않음 |
 | `ConfigurationConflict` | 다른 설정이 활성이거나 시작 중 | 프로세스 전체에서 설정 하나를 사용 |
 | `StorageFailure(message)` | 저장소를 준비하지 못함. `message`는 예외 class 이름 | 나중에 `initialize()`를 다시 호출. 큐와 installation ID는 유지됨 |
 

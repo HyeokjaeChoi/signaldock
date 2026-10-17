@@ -33,6 +33,8 @@ class ConsumerApplication : Application() {
                     endpoint = BuildConfig.SIGNALDOCK_ENDPOINT,
                     collectionKey = BuildConfig.SIGNALDOCK_COLLECTION_KEY,
                     logLevel = LogLevel.INFO,
+                    // The default endpoint is http://10.0.2.2:8080 (emulator host). Allow http only then (ADR-0035).
+                    allowInsecureEndpoint = BuildConfig.SIGNALDOCK_ENDPOINT.startsWith("http://", ignoreCase = true),
                 ),
             ).also { outcome = if (it is InitResult.Success) "success" else "failure" }
         }

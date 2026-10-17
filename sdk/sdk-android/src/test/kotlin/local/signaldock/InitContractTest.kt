@@ -84,7 +84,7 @@ class InitContractTest {
         // No public log sink type, no logger parameter, no level setter: the only log setting is the config's logLevel.
         assertTrue(runCatching { Class.forName("local.signaldock.LogSink") }.isFailure)
         val configFields = SignalDockConfig::class.java.declaredFields.map { it.name }.toSet()
-        assertEquals(setOf("endpoint", "collectionKey", "logLevel", "callTimeout", "connectTimeout", "readTimeout", "writeTimeout"), configFields)
+        assertEquals(setOf("endpoint", "collectionKey", "logLevel", "callTimeout", "connectTimeout", "readTimeout", "writeTimeout", "allowInsecureEndpoint"), configFields)
         val publicNames = (SignalDock::class.java.methods + SignalDockConfig::class.java.methods).map { it.name.lowercase() }
         assertTrue(publicNames.none { it.startsWith("set") && (it.contains("log") || it.contains("level")) })
         assertTrue(publicNames.none { it.contains("logsink") || it.contains("logger") })

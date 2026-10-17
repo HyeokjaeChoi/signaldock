@@ -202,8 +202,8 @@ public final class local/signaldock/SignalDock$Companion {
 }
 
 public final class local/signaldock/SignalDockConfig {
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Llocal/signaldock/LogLevel;JJJJILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Llocal/signaldock/LogLevel;JJJJLkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Llocal/signaldock/LogLevel;JJJJZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Llocal/signaldock/LogLevel;JJJJZLkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Llocal/signaldock/LogLevel;
@@ -211,9 +211,11 @@ public final class local/signaldock/SignalDockConfig {
 	public final fun component5-UwyO8pc ()J
 	public final fun component6-UwyO8pc ()J
 	public final fun component7-UwyO8pc ()J
-	public final fun copy-9GEBIxs (Ljava/lang/String;Ljava/lang/String;Llocal/signaldock/LogLevel;JJJJ)Llocal/signaldock/SignalDockConfig;
-	public static synthetic fun copy-9GEBIxs$default (Llocal/signaldock/SignalDockConfig;Ljava/lang/String;Ljava/lang/String;Llocal/signaldock/LogLevel;JJJJILjava/lang/Object;)Llocal/signaldock/SignalDockConfig;
+	public final fun component8 ()Z
+	public final fun copy-rEne6nI (Ljava/lang/String;Ljava/lang/String;Llocal/signaldock/LogLevel;JJJJZ)Llocal/signaldock/SignalDockConfig;
+	public static synthetic fun copy-rEne6nI$default (Llocal/signaldock/SignalDockConfig;Ljava/lang/String;Ljava/lang/String;Llocal/signaldock/LogLevel;JJJJZILjava/lang/Object;)Llocal/signaldock/SignalDockConfig;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAllowInsecureEndpoint ()Z
 	public final fun getCallTimeout-UwyO8pc ()J
 	public final fun getCollectionKey ()Ljava/lang/String;
 	public final fun getConnectTimeout-UwyO8pc ()J

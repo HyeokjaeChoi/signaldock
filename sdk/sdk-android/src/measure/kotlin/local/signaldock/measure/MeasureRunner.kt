@@ -52,7 +52,7 @@ class MeasureRunner(
     private val runId get() = arg("runId")!!
     private val outDir get() = File(targetContext.filesDir, "measure/$runId").apply { mkdirs() }
     private val sdkDir get() = File(targetContext.noBackupFilesDir, "signaldock")
-    private fun config() = SignalDockConfig(endpoint = arg("endpoint")!!, collectionKey = arg("key")!!)
+    private fun config() = SignalDockConfig(endpoint = arg("endpoint")!!, collectionKey = arg("key")!!, allowInsecureEndpoint = true)
 
     // About 1 KiB per event on the wire (see `eventBytes` in result.json). The text is fixed so every event has the same size.
     private val pad = "abcdefghijklmnopqrstuvwxyz0123456789".repeat(40).take(PAD_CHARS)

@@ -56,7 +56,7 @@ class FaultPhases {
     fun airplane_mode() {
         phase("airplane_mode")
         val endpoint = instrumentationArg("endpoint")!!
-        val rig = Rig(AckServer(), config = SignalDockConfig(endpoint = endpoint, collectionKey = "device-test-key"))
+        val rig = Rig(AckServer(), config = SignalDockConfig(endpoint = endpoint, collectionKey = "device-test-key", allowInsecureEndpoint = true))
         try {
             runBlocking {
                 val sdk = rig.initialize()

@@ -29,8 +29,9 @@ public enum class LogLevel {
  * Fixed for the SDK lifetime (Q117, Q121). Timeouts must be positive and finite.
  * [collectionKey] is excluded from [toString] (Q115).
  *
- * @property endpoint absolute `http` or `https` URL of the SignalDock server. The SDK does not
- *   change `http` to `https` and does not follow redirects.
+ * @property endpoint absolute `https` URL of the SignalDock server. The SDK does not change `http`
+ *   to `https` and does not follow redirects. An `http` URL is rejected at initialization, unless
+ *   [allowInsecureEndpoint] is `true` (ADR-0035).
  * @property collectionKey the collection key for this project. It is write-only and not a secret
  *   that apps can keep from users (spec section 5). It must not be blank.
  * @property logLevel the Logcat level; the default is [LogLevel.WARN].
@@ -38,6 +39,10 @@ public enum class LogLevel {
  * @property connectTimeout timeout to connect; the default is 10 seconds.
  * @property readTimeout timeout of one read; the default is 10 seconds.
  * @property writeTimeout timeout of one write; the default is 10 seconds.
+ * @property allowInsecureEndpoint `true` lets [endpoint] use `http`. The default is `false`: the SDK
+ *   sends the collection key in every request, so a plain-text endpoint is for development only
+ *   (ADR-0035). The new constructor parameter changes the JVM constructor and `copy` signatures
+ *   (source compatible; allowed before 1.0, docs/versioning.md).
  */
 public data class SignalDockConfig(
     val endpoint: String,
@@ -47,6 +52,7 @@ public data class SignalDockConfig(
     val connectTimeout: Duration = 10.seconds,
     val readTimeout: Duration = 10.seconds,
     val writeTimeout: Duration = 10.seconds,
+    val allowInsecureEndpoint: Boolean = false,
 ) {
     override fun toString(): String = "SignalDockConfig(endpoint=$endpoint, collectionKey=***, logLevel=$logLevel)"
 }
