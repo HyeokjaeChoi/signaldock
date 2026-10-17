@@ -71,6 +71,9 @@ internal class AckServer(private val delayMillis: Long = 0) {
     @Volatile var delay: Long = delayMillis
     val committed: MutableSet<String> = java.util.Collections.synchronizedSet(LinkedHashSet())
     val bodies = CopyOnWriteArrayList<String>()
+
+    /** Bodies of client report requests (`POST /v1/client-reports`). */
+    val reports = CopyOnWriteArrayList<String>()
     val receivedIds = CopyOnWriteArrayList<String>()
     val duplicateAcks = AtomicInteger()
     val inFlight = AtomicInteger()
@@ -83,6 +86,11 @@ internal class AckServer(private val delayMillis: Long = 0) {
     fun start(bindTo: java.net.InetAddress? = null): AckServer {
         server.dispatcher = object : Dispatcher() {
             override fun dispatch(request: RecordedRequest): MockResponse {
+                // Client reports (ADR-0036) are not event batches: keep them out of bodies, ids and counts.
+                if (request.url.encodedPath == "/v1/client-reports") {
+                    reports += request.body!!.utf8()
+                    return MockResponse.Builder().code(if (mode == Mode.UNAVAILABLE) 503 else 204).build()
+                }
                 requestCount.incrementAndGet()
                 maxInFlight.accumulateAndGet(inFlight.incrementAndGet()) { a, b -> maxOf(a, b) }
                 try {
