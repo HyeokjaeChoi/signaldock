@@ -184,7 +184,7 @@ Configure the server to preserve its DB volume across normal shutdown and restar
 ## Independent distribution and verification
 
 The planned artifact is a Maven repository ZIP with an AAR, POM, and metadata.
-Planned coordinate: `local.signaldock:sdk-android:0.1.0`. Public Kotlin package: `local.signaldock`. Build it with `sdk/gradlew -p sdk :sdk-android:signaldockMavenZip` (see the README and [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md)).
+Planned coordinate: `local.signaldock:sdk-android:0.2.0`. Public Kotlin package: `local.signaldock`. Build it with `sdk/gradlew -p sdk :sdk-android:signaldockMavenZip` (see the README and [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md)).
 Install by coordinate in an independent Gradle consumer app; verify an R8 release build, execution, and server integration without an SDK source project dependency.
 Android and server use separate Gradle builds. The Dashboard and consumer app also keep independent builds.
 Document the local entry point after implementation and verification. Reproduction that includes initial dependency downloads is not fully offline.

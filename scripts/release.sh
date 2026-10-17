@@ -7,7 +7,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 VERSION="${1:-}"
 if [ -z "$VERSION" ]; then
-  echo "usage: scripts/release.sh <version> [--check]   (for example 0.1.0; --check only compares it with sdkVersion)" >&2
+  echo "usage: scripts/release.sh <version> [--check]   (for example 0.2.0; --check only compares it with sdkVersion)" >&2
   exit 1
 fi
 

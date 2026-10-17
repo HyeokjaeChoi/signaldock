@@ -4,7 +4,7 @@ A pushed tag `vX.Y.Z` builds the Maven ZIP and creates the GitHub Release ([`rel
 
 ## Cut a release
 
-1. Change `sdkVersion` in `sdk/sdk-android/build.gradle.kts` to `X.Y.Z`. Update the version in the README install steps, the integration guide, and `compatibility/consumer-android` if they name it.
+1. Change `sdkVersion` in `sdk/sdk-android/build.gradle.kts` to `X.Y.Z`. Update the version in the README install steps, the integration guide, and `compatibility/consumer-android` if they name it. Change `SDK_VERSION` in `sdk/sdk-android/src/main/kotlin/local/signaldock/internal/transport/Versions.kt` to the same value: `scripts/check-repo-rules.sh` fails when the two differ.
 2. Write the release notes in `docs/releases/vX.Y.Z.md` (format of [v0.1.0.md](v0.1.0.md)). They are required: the workflow fails without them.
 3. In `CHANGELOG.md`, rename `[Unreleased]` to `[X.Y.Z] - date` and add a new empty `[Unreleased]`.
 4. Open a PR and merge it to `main`.

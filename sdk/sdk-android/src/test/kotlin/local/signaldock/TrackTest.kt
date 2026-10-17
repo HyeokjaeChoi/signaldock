@@ -40,7 +40,7 @@ class TrackTest {
         assertEquals(id, o["eventId"]!!.jsonPrimitive.content)
         assertEquals("product_viewed", o["name"]!!.jsonPrimitive.content)
         assertEquals("2025-10-09T08:53:20.123Z", o["occurredAt"]!!.jsonPrimitive.content)
-        assertEquals("0.1.0", o["sdkVersion"]!!.jsonPrimitive.content)
+        assertEquals("0.2.0", o["sdkVersion"]!!.jsonPrimitive.content)
         assertEquals("1", o["contractVersion"]!!.jsonPrimitive.content)
         val p = o["properties"] as JsonObject
         assertEquals("P-001", p["product_id"]!!.jsonPrimitive.content)

@@ -73,7 +73,7 @@ Deduplication lasts while the server row exists. The design does not claim exact
 | Contracts and distribution | OpenAPI / JSON · generated sources tracked in Git · Docker Compose entry point · local Maven repository ZIP |
 
 Exact versions are pinned in `gradle/libs.versions.toml`. [TOOLCHAIN.md](TOOLCHAIN.md) gives the reason for each pin and the build that verified it.
-The first coordinate is `local.signaldock:sdk-android:0.1.0` (local only, not Maven Central). Build the ZIP as described below.
+The first coordinate is `local.signaldock:sdk-android:0.2.0` (local only, not Maven Central). Build the ZIP as described below.
 
 ## Scope and verification
 
@@ -136,7 +136,7 @@ export ANDROID_HOME="$HOME/Library/Android/sdk"     # your Android SDK path
 scripts/verify-consumer.sh
 ```
 
-The script builds `signaldockMavenZip`, unzips it into a clean temporary folder, and builds `compatibility/consumer-android/` from that folder only, by the coordinate `local.signaldock:sdk-android:0.1.0`, as an R8 release. It checks the AAR Kotlin metadata version and prints the ZIP, folder, and APK paths. To keep the folder, set `SIGNALDOCK_REPO_DIR` to a new empty path first. The ZIP alone: `sdk/gradlew -p sdk :sdk-android:signaldockMavenZip --no-daemon` (output `sdk/sdk-android/build/distributions/signaldock-sdk-android-0.1.0-maven.zip`). See [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md).
+The script builds `signaldockMavenZip`, unzips it into a clean temporary folder, and builds `compatibility/consumer-android/` from that folder only, by the coordinate `local.signaldock:sdk-android:0.2.0`, as an R8 release. It checks the AAR Kotlin metadata version and prints the ZIP, folder, and APK paths. To keep the folder, set `SIGNALDOCK_REPO_DIR` to a new empty path first. The ZIP alone: `sdk/gradlew -p sdk :sdk-android:signaldockMavenZip --no-daemon` (output `sdk/sdk-android/build/distributions/signaldock-sdk-android-0.2.0-maven.zip`). See [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md).
 
 Now run the R8 release APK on an emulator and let it reach the server. The collection key is baked in at build time:
 
@@ -177,10 +177,10 @@ Warning: `--volumes` deletes the PostgreSQL data. You cannot undo it. Use it onl
 
 ## Add the SDK to an app
 
-The Maven repository ZIP and its `.sha256` file are release artifacts of the GitHub Release [`v0.1.0`](https://github.com/HyeokjaeChoi/signaldock/releases/tag/v0.1.0) ([release notes](docs/releases/v0.1.0.md), [changelog](CHANGELOG.md)). `scripts/release.sh 0.1.0` builds both into `dist/`. Verify the ZIP, then unzip it into a folder:
+The Maven repository ZIP and its `.sha256` file are release artifacts of the GitHub Release [`v0.2.0`](https://github.com/HyeokjaeChoi/signaldock/releases/tag/v0.2.0) ([release notes](docs/releases/v0.2.0.md), [changelog](CHANGELOG.md)). `scripts/release.sh 0.2.0` builds both into `dist/`. Verify the ZIP, then unzip it into a folder:
 
 ```sh
-shasum -a 256 -c signaldock-sdk-android-0.1.0-maven.zip.sha256   # run in the folder with both files
+shasum -a 256 -c signaldock-sdk-android-0.2.0-maven.zip.sha256   # run in the folder with both files
 ```
 
 Add the folder as a repository and depend on the coordinate:
@@ -198,19 +198,19 @@ dependencyResolutionManagement {
     }
 }
 // app/build.gradle.kts
-dependencies { implementation("local.signaldock:sdk-android:0.1.0") }
+dependencies { implementation("local.signaldock:sdk-android:0.2.0") }
 ```
 
-Requirements of the 0.1.0 AAR:
+Requirements of the 0.2.0 AAR:
 
 - `compileSdk` 36 or newer (`aarMetadata.minCompileSdk=36`, [ADR-0006](docs/adr/0006-sdk-delivery-decisions.md)), `minSdk` 24 or newer.
 - Kotlin 2.2 or newer and AGP 9.x. The SDK metadata is 2.2, so AGP 9's default built-in Kotlin works with no extra Kotlin plugin ([ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md), Q132).
-- The host app declares `INTERNET`. The SDK needs no R8 rules of its own. Use an `https://` endpoint unless the app allows cleartext for that host; the SDK does not switch an `http://` endpoint to HTTPS (ADR-0009).
+- The host app declares `INTERNET`. The SDK needs no R8 rules of its own. Use an `https://` endpoint. The SDK rejects an `http://` endpoint at init unless `allowInsecureEndpoint = true` is set, and the app must also allow cleartext for that host ([ADR-0035](docs/adr/0035-sdk-https-enforcement.md)). The SDK does not switch an `http://` endpoint to HTTPS (ADR-0009).
 - Call `SignalDock.initialize(context, SignalDockConfig(endpoint, collectionKey))` once (for example in `Application.onCreate`), then `track("name") { property("key", value) }` and `diagnostics()` on the returned instance.
 
 ### Supported versions
 
-| Item | 0.1.x |
+| Item | 0.2.x |
 | --- | --- |
 | Minimum Android API (`minSdk`) | 24 |
 | `compileSdk` of the host app | 36 or newer |

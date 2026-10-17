@@ -134,4 +134,12 @@ if git rev-parse --verify -q origin/main >/dev/null; then
   done
 fi
 
+# The wire constant SDK_VERSION must equal sdkVersion of the Maven publication (release.sh and the tag use sdkVersion).
+sdk_gradle_version="$(sed -n 's/^val sdkVersion = "\(.*\)"$/\1/p' sdk/sdk-android/build.gradle.kts)"
+sdk_const_version="$(sed -n 's/^internal const val SDK_VERSION = "\(.*\)"$/\1/p' sdk/sdk-android/src/main/kotlin/local/signaldock/internal/transport/Versions.kt)"
+if [ -z "$sdk_gradle_version" ] || [ "$sdk_gradle_version" != "$sdk_const_version" ]; then
+  echo "error: SDK_VERSION '$sdk_const_version' in Versions.kt differs from sdkVersion '$sdk_gradle_version' in sdk/sdk-android/build.gradle.kts" >&2
+  fail=1
+fi
+
 exit "$fail"
