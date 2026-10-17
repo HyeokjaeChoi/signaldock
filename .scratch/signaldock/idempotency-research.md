@@ -92,7 +92,7 @@ These are inferences about general failure boundaries, not facts about vendor in
 
 ## 7. SignalDock proposal: minimum path within 20-30 hours
 
-The following are proposals, not adopted decisions. The user's 20-30-hour constraint covers the entire Android portfolio, not only server implementation.
+The following are proposals, not adopted decisions. The user's 20-30-hour constraint covers the entire Android project, not only server implementation.
 
 1. Use a stable event ID, DB unique constraint, and atomic transaction. UUIDv4 event IDs are a simple candidate, not an adopted choice. Specify a key such as `(project namespace, event ID)`. The installation ID is a source field. Limit scope to Ktor routes and DB storage/queries; defer a request key cache in the first release. No DB product is selected here.
 2. Define canonical payload comparison and collision policy. Compare schema version, installation ID, event name, collection time, and properties; exclude batch/retry/server metadata. Define equivalence for object key order/whitespace, numbers, null/missing values, and array order. Do not rely only on raw strings or one hash. The proposal preserves the existing event and permanently rejects the same key with different content as `EVENT_ID_CONFLICT`. This policy is not yet agreed.

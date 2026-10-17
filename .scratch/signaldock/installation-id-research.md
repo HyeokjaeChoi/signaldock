@@ -8,7 +8,7 @@ Use UUIDv4 for SignalDock's installation ID. Android's `java.util.UUID.randomUUI
 
 The inspected default random ID generation paths in Segment Kotlin, Amplitude Kotlin, and Mixpanel Android all use `UUID.randomUUID()`. The version was not inferred from the word "UUID" in documentation. The Android API explicitly identifies this function's output as type 4. These three products do not establish a universal industry standard. Firebase Installations uses an FID format that differs from a UUID string. See the code evidence for each product below.
 
-UUIDv7 was the user's example, not a requirement. Installation IDs are not generated for each event. For this project, UUIDv4's simple generation and clear lifecycle matter more than UUIDv7's time ordering. This is a judgment about the two-week, 20-30-hour portfolio scope, not a performance measurement.
+UUIDv7 was the user's example, not a requirement. Installation IDs are not generated for each event. For this project, UUIDv4's simple generation and clear lifecycle matter more than UUIDv7's time ordering. This is a judgment about the two-week, 20-30-hour project scope, not a performance measurement.
 
 ## Comparison
 

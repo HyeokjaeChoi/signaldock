@@ -7,7 +7,7 @@ Execution: Done (merged in PR #53, 2026-10-12 UTC)
 
 ## Scope and completion criteria
 
-Reduced by Q133 (2026-10-12). The user decided that a pool-size benchmark of a Docker-limited local server is not meaningful for an SDK portfolio. Delivered:
+Reduced by Q133 (2026-10-12). The user decided that a pool-size benchmark of a Docker-limited local server is not meaningful for an SDK project. Delivered:
 
 1. The harness and pilot-1 and pilot-2, kept as a local environment record. Not an SLA, not a pool choice.
 2. ONE overload run (`perf/overload.py`): the server sheds load with HTTP 503 and a positive `Retry-After` (spec Q124) instead of timeouts or other 5xx; every ACKed event is stored exactly once; no event of a 503 request is stored; after the overload phase the server answers 2xx again with latency near the baseline, without a restart (checked on the last 30 s of the recovery phase; a few 503 at the first 70 ms of recovery are listed in the result). SDK behavior under 503 is not part of this run (issue 24 and the E2E harness).
