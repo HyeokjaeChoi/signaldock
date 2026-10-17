@@ -1,9 +1,9 @@
 # 67. Server-side collection kill switch
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Branch `feat/server-collection-kill-switch`, PR open (not merged)
+Execution: Done (merged in PR #174, 2026-10-17 14:58:54 UTC)
 
 ## Scope and completion criteria
 
@@ -32,3 +32,4 @@ Verification:
     - Restart with `SIGNALDOCK_INGEST_SHED=true SIGNALDOCK_INGEST_SHED_RETRY_AFTER_SECONDS=120 docker compose -p sdkill ... up -d server`: log `collection control: shed=true`. The same batch POST and a `POST /v1/client-reports` (`{"sdkVersion":"0.2.0","discardedEvents":[{"reason":"queue_full","count":1}]}`) both returned `HTTP/1.1 503 Service Unavailable`, `Retry-After: 120`, `{"code":"TEMPORARILY_UNAVAILABLE","message":"Collection is paused by the operator; retry with the same event IDs"}`.
     - Gap: `SIGNALDOCK_BLOCKED_SDK_VERSIONS` not run through Compose (server test covers it).
   - Contract: `ItemAck.code` is a free string, so the new value `COLLECTION_BLOCKED` changes no schema. `openapi/` and `fixtures/` are untouched.
+- 2026-10-17 UTC: PR #174 merged 14:58:54Z. Verification in the PR: `server/gradlew -p server cleanTest test verifyJooq --no-daemon` 135 tests, 0 failed; `scripts/verify-contract.sh` passed; Compose smoke test on project `sdkill` (blocked event, shed 503 with `Retry-After: 120`); CI passed.
