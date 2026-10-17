@@ -29,5 +29,5 @@ Verification:
   - `scripts/verify-contract.sh`: ALL CONTRACT CHECKS PASSED.
 
 - 2026-10-17 UTC: PR #161 merged 03:13:00Z (ADR-0036, spec Q164). Verification in the PR: SDK 151 tests, server 128 tests, dashboard 174 tests, `verify-contract.sh` passed; `coderabbit review --base main --deep --agent`: 0 findings.
-- Review (PR #161): the device-test `AckServer` was fixed (PR #161 review).
-- Gap: no end-to-end SDK to server to Dashboard run; not run on a device or emulator. Gap: counts are approximate (no idempotency; drops that cannot be written to storage are not counted) (PR #161).
+- 2026-10-17 UTC: the first CI `device-test` run of PR #161 failed in `CapacityDeviceTest` ("List has more than one element"): the test `AckServer` logged the new client-report POST as an event batch. Commit ce30cbc made `AckServer` (and `scripts/ack-server.py`) record `/v1/client-reports` separately; the next CI `device-test` run passed (PR #161 checks).
+- Gap: no end-to-end SDK to server to Dashboard run; the instrumented tests ran only in CI. Gap: counts are approximate (no idempotency; drops that cannot be written to storage are not counted) (PR #161).
