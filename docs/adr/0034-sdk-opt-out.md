@@ -44,4 +44,4 @@ The Gap in "Limits" about a real process restart is partly closed. `DurabilityPh
 - After the process kill, a new `initialize` reads the marker: `isOptedOut()` is `true`, `track()` returns `OptedOut`, nothing is stored, and the local `AckServer` gets no request.
 - After a second kill, `setOptOut(false)` removes the marker, and `track()` stores an event.
 
-Gap: the first run on a device is not recorded here. The local API 37 emulator had a lock credential, so the app data directory was never created (see issue 64). The "no request" check is a fixed 3-second wait. It is not an event.
+Verified on 2026-10-17: `scripts/device-durability.sh emulator-5556 optout` passed on an API 37 emulator in three different processes, with 0 requests in the second phase. Gap: the "no request" check is a fixed 3-second wait. It is not an event.

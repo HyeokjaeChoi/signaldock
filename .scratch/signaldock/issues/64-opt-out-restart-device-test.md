@@ -16,4 +16,5 @@ ADR-0034 (Limits) and issue 58 list a Gap: no device test restarts the process w
 
 ## Comments
 
-- Gap: item 4 was not run. Local emulator-5554 (API 37, `signaldock-api37`) has user 0 in state `RUNNING_LOCKED` with a lock credential (`locksettings verify`: "User has a lock credential"). Credential-encrypted storage is not unlocked, so `/data/user/0/<pkg>` is never created, and the SDK fails with `StorageFailure(IOException)`. No script in the repo sets a credential. Fix: remove the credential in the emulator (Settings, Security, Screen lock, None) or start the AVD with `-wipe-data`; then run the commands in item 4.
+- Item 4 done on emulator-5556 (API 37) on 2026-10-17: `scripts/device-durability.sh emulator-5556 optout` and `... restart` passed. `connectedDebugAndroidTest`: 33 tests, 0 failed, 16 skipped (phase classes), 17 ran.
+- Cause of the earlier failure on emulator-5554: a lock credential on user 0 (`RUNNING_LOCKED`); credential-encrypted storage was never unlocked, so the app data directory was not created. No script sets a credential.
