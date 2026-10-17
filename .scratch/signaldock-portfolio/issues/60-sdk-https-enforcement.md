@@ -20,4 +20,4 @@ Verification:
 
 - 2026-10-17 UTC: PR #160 merged 03:03:07Z (ADR-0035, spec Q163). Checks in the PR: `:sdk-android:test`, `apiCheck`, `verify-consumer.sh`, `verify-contract.sh` passed; `coderabbit review --base main --deep --agent`: 0 findings.
 - Review (PR #160): the binary-level change of `SignalDockConfig` (JVM constructor and `copy` signatures) is listed under Changed in `CHANGELOG.md`.
-- Gap: instrumented tests were compiled (`compileDebugAndroidTestKotlin`) but not run on a device; they run in the CI device-test job (PR #160).
+- Locally the instrumented tests were only compiled (`compileDebugAndroidTestKotlin`). The CI `device-test` job (`connectedDebugAndroidTest` on an emulator) ran them on the merged head of PR #160 and passed: run 38996630244, job 117290516785.
