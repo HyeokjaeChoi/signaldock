@@ -2,13 +2,13 @@
 
 The SDK stores events on the device and retries with the same `eventId`. It removes acknowledged events only after the server commits them and the SDK validates the ACK.
 
-> **Design baseline: 2026-10-09. Q127 approved.**
-> Product implementation has not started. The behavior below is the agreed design; build, device, transport, and performance verification are pending.
+> **Design baseline: 2026-10-09 (Q127 approved). Updated for SDK 0.2.0: 2026-10-17 UTC.**
+> The product is implemented. The behavior below is the agreed design and the built behavior. Open items: no physical device was tested, and the 216-run server matrix was not run (see [Independent distribution and verification](#independent-distribution-and-verification)).
 > See the [spec](.scratch/signaldock/spec.md) for the full contract and the [ADRs](docs/adr/) for the decisions.
 
 ## Components and responsibilities
 
-![Planned SignalDock architecture: demo app to public SDK API, Room queue, shared sender, Ktor, and PostgreSQL. WorkManager schedules the sender; the Dashboard queries Ktor.](docs/architecture/signaldock-architecture.svg)
+![SignalDock architecture: demo app to public SDK API, Room queue, shared sender, Ktor, and PostgreSQL. WorkManager schedules the sender; the Dashboard queries Ktor.](docs/architecture/signaldock-architecture.svg)
 
 The SDK is the main product. The demo app and Dashboard help verify its behavior.
 
@@ -22,6 +22,7 @@ The SDK is the main product. The demo app and Dashboard help verify its behavior
 
 App diagnostics are a snapshot of the device queue, recent ACK, and next retry.
 The Dashboard shows server records. Those records cannot establish the device queue state or retry count.
+The SDK has an opt-out switch: `setOptOut`, `isOptedOut`, and `clearQueue`. While opted out, `track()` returns `TrackResult.OptedOut` and stores nothing. Queued events stay and the sender still sends them. A host app that must stop sending calls `clearQueue()` ([ADR-0034](docs/adr/0034-sdk-opt-out.md)).
 The collection key checks access for local evaluation. An SDK key can be extracted and does not provide user authentication, so the collection key is write-only. A separate query key guards the Dashboard read endpoints and is added by a same-origin proxy (spec Q128 to Q131, ADR-0007).
 
 ## Collection, delivery, and ACK
@@ -34,7 +35,7 @@ The collection key checks access for local evaluation. An SDK key can be extract
 2. Server commit: store valid events in PostgreSQL, then return per-event ACK results. This establishes server receipt. With an optional tracking plan, each new row also gets a plan status (`planned`, `unplanned_event`, `invalid_properties`). The status only marks the row; it never changes storage or the ACK ([ADR-0022](docs/adr/0022-server-tracking-plan-status.md)).
 3. Room ACK commit: validate the entire ACK and commit queue changes. This records the earlier receipt on the device.
 
-The SDK also counts the events it drops, by reason, in Room. After a send cycle that applied a valid ACK, it sends the counts once to `POST /v1/client-reports`. The report is separate from the batch contract and from the retry state; a 404 or another permanent 4xx discards it, a transient failure keeps the counters ([ADR-0036](docs/adr/0036-sdk-client-reports.md)).
+The SDK also counts the events it drops, by reason, in Room. After a send cycle that applied a valid ACK, it sends the counts once to `POST /v1/client-reports`. The report is separate from the batch contract and from the retry state; a permanent result (for example 404, other 4xx, 501, 505, or a redirect) discards it, a transient failure (network error, 408, 429, other 5xx) keeps the counters (`ClientReport.kt`, `classifyReport`) ([ADR-0036](docs/adr/0036-sdk-client-reports.md)).
 
 The sender checks the earliest retry time, selects an immutable batch, sends HTTP, validates the entire ACK, and applies it locally.
 Foreground work and the Worker serialize this sequence with the same Mutex. Release the lock after each batch and check cancellation and execution conditions.
@@ -80,7 +81,7 @@ After row deletion or DB reset, an old event can be stored again. The design doe
 
 Use one SDK instance with one fixed configuration in the default process. Retain only `applicationContext`.
 Separate the public API, storage, delivery, scheduling, and diagnostics within one published module. Connect internal dependencies with manual DI.
-The SDK has no Compose / ViewModel dependency. Exact public API signatures need to be fixed during implementation.
+The SDK has no Compose / ViewModel dependency. The public API signatures are recorded in `sdk/sdk-android/api/sdk-android.api`; CI checks them ([ADR-0019](docs/adr/0019-sdk-public-api-check.md)).
 
 - Call `track()` after suspend initialization succeeds and returns the SDK instance. Prepare storage off the main thread.
 - Concurrent initialization calls with the same configuration share one attempt and result. Reuse a successful instance; reject a different configuration.
@@ -88,6 +89,9 @@ The SDK has no Compose / ViewModel dependency. Exact public API signatures need 
 - A caller can cancel its own wait. Shared initialization continues in the SDK's Application / process scope, with no completion guarantee after process death.
 - Propagate `CancellationException` from collection. An event may already have committed; collecting the same action again can create a second event with a new ID.
 - Store eventId, installationId, occurredAt, the sdkVersion at collection, and the contract version. Preserve them through updates and retries.
+
+The SDK requires an `https` endpoint. An `http` endpoint needs `SignalDockConfig.allowInsecureEndpoint = true`. The SDK never upgrades `http` to `https` ([ADR-0035](docs/adr/0035-sdk-https-enforcement.md)).
+If the server sends `Deprecation` or `Sunset` headers, the SDK writes one WARN per process and exposes `Diagnostics.contractDeprecation`. Delivery does not change ([ADR-0030](docs/adr/0030-sdk-contract-deprecation-warning.md)).
 
 Logcat defaults to WARN / ERROR. Even at DEBUG, omit event payloads, event names, installation IDs, credentials, and HTTP bodies.
 Start with diagnostics for send start, final result, elapsed time, and next retry. Detailed EventListener instrumentation is deferred.
@@ -102,7 +106,7 @@ Start with diagnostics for send start, final result, elapsed time, and next retr
 | Server | No separate automatic retry loop for transient DB failures |
 
 Internal Call callbacks do not each increment the SDK failure count. SDK cooldown does not necessarily apply to each intermediate HTTP response.
-Queue retention and Retry-After rules apply to the final result. Verify the chosen OkHttp version's behavior during implementation.
+Queue retention and Retry-After rules apply to the final result. The SDK reads `Deprecation` and `Sunset` headers from any HTTP response, whatever the status, and does not change the status handling ([ADR-0030](docs/adr/0030-sdk-contract-deprecation-warning.md)).
 
 | Final failure | SDK policy |
 | --- | --- |
@@ -115,7 +119,7 @@ Backoff base B starts at 10 seconds for the first failure, doubles, and caps at 
 Choose and persist the next attempt time once per failure. Honor a longer valid Retry-After and OS constraints, including during recovery checks.
 Foreground work and the Worker share this state. Process restart and new triggers do not bypass the wait. Failure count alone never discards an event.
 
-### Agreed defaults, pending measurement
+### Defaults
 
 | Item | Value and meaning |
 | --- | --- |
@@ -143,7 +147,7 @@ Generate Kotlin models for the SDK / Ktor and TypeScript models for the Dashboar
 - Compare text without Unicode normalization. Reject NUL and lone surrogates. Use UTC RFC 3339 timestamps with milliseconds. The server accepts valid offsets but does not truncate excess precision.
 
 Track generated OpenAPI Kotlin / TypeScript and jOOQ sources in Git. Do not edit them directly.
-CI is planned to regenerate into an empty temporary output with fixed inputs and tools, then check added, deleted, and changed files.
+CI regenerates into an empty temporary output with fixed inputs and tools, then checks added, deleted, and changed files (`scripts/verify-contract.sh`, job `verify-contract`).
 Normal compilation must not overwrite generated sources. Keep schema diffs, earlier JSON fixtures, compilation, and storage/ACK integration checks.
 Verify scalar adapters and generator compatibility during implementation. Generated types that compile do not prove input validation or release compatibility.
 
@@ -183,23 +187,23 @@ Configure the server to preserve its DB volume across normal shutdown and restar
 
 ## Independent distribution and verification
 
-The planned artifact is a Maven repository ZIP with an AAR, POM, and metadata.
-Planned coordinate: `local.signaldock:sdk-android:0.2.0`. Public Kotlin package: `local.signaldock`. Build it with `sdk/gradlew -p sdk :sdk-android:signaldockMavenZip` (see the README and [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md)).
+The artifact is a Maven repository ZIP with an AAR, POM, and metadata. It is a GitHub Release artifact (`scripts/release.sh`, `.github/workflows/release.yml`).
+Coordinate: `local.signaldock:sdk-android:0.2.0`. Public Kotlin package: `local.signaldock`. Build it with `sdk/gradlew -p sdk :sdk-android:signaldockMavenZip` (see the README and [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md)).
 Install by coordinate in an independent Gradle consumer app; verify an R8 release build, execution, and server integration without an SDK source project dependency.
 Android and server use separate Gradle builds. The Dashboard and consumer app also keep independent builds.
-Document the local entry point after implementation and verification. Reproduction that includes initial dependency downloads is not fully offline.
+The [README](README.md) documents the entry point. Reproduction that includes initial dependency downloads is not fully offline.
 
 | Evidence | Required result | Status |
 | --- | --- | --- |
-| Collection / recovery | Normal E2E; preserve IDs and content for 1,000 offline events through process restart | Pending |
-| ACK / deduplication | ACK loss after commit, duplicate / conflict, partial rejection, entire batch retained for ambiguous ACKs | Pending |
-| Concurrency / lifecycle | Sender contention, cancellation, capacity and initialization races, updates, reinstallation, sidecar backup exclusion | Pending |
-| DB resources | Locks, slow SQL, pool exhaustion, cancellation, rollback, connection reuse, and uncertain commits | Pending |
-| Contracts / distribution | Scalar round trips, schema diffs, fixtures, generated source drift, migrations, independent Maven ZIP installation, and R8 | Pending |
-| Android performance | Track p50 / p95, actual injection rate, queue drain, DB / sidecar size, and memory | Unmeasured |
-| Server performance | Collection and query HTTP latency; ID comparisons, errors, resources, and pool 2 / 4 / 8 comparison | Unmeasured |
+| Collection / recovery | Normal E2E; preserve IDs and content for 1,000 offline events through process restart | Done: issues [20](.scratch/signaldock/issues/20-sdk-durability-device.md), [21](.scratch/signaldock/issues/21-delivery-failure-e2e.md) |
+| ACK / deduplication | ACK loss after commit, duplicate / conflict, partial rejection, entire batch retained for ambiguous ACKs | Done: issue [21](.scratch/signaldock/issues/21-delivery-failure-e2e.md) |
+| Concurrency / lifecycle | Sender contention, cancellation, capacity and initialization races, updates, reinstallation, sidecar backup exclusion | Done on emulators: issues [20](.scratch/signaldock/issues/20-sdk-durability-device.md), [33](.scratch/signaldock/issues/33-sdk-crash-safety-and-release-build.md); CI device tests: issue [40](.scratch/signaldock/issues/40-ci-device-tests-and-size-budget.md). Gap: no physical device |
+| DB resources | Locks, slow SQL, pool exhaustion, cancellation, rollback, connection reuse, and uncertain commits | Done: issues [22](.scratch/signaldock/issues/22-contract-db-change-checks.md), [23](.scratch/signaldock/issues/23-server-load-measurement.md) (one overload run). Gap: no deterministic test for a cancel during `COMMIT` |
+| Contracts / distribution | Scalar round trips, schema diffs, fixtures, generated source drift, migrations, independent Maven ZIP installation, and R8 | Done: issues [22](.scratch/signaldock/issues/22-contract-db-change-checks.md), [06](.scratch/signaldock/issues/06-distribution.md) |
+| Android performance | Track p50 / p95, actual injection rate, queue drain, DB / sidecar size, and memory | Done on emulators: issues [24](.scratch/signaldock/issues/24-sdk-device-measurement.md), [36](.scratch/signaldock/issues/36-sdk-host-app-cost.md). Gap: no physical device |
+| Server performance | Collection and query HTTP latency; ID comparisons, errors, resources, and pool 2 / 4 / 8 comparison | Reduced (Q133): two pilots and one overload run, no pool comparison ([issue 23](.scratch/signaldock/issues/23-server-load-measurement.md), [ADR-0013](docs/adr/0013-server-load-measurement-harness.md)) |
 
-The [performance plan](.scratch/signaldock/performance-plan.md) baseline has 24 conditions × 3 pool sizes × 3 runs = 216 runs.
+The [performance plan](.scratch/signaldock/performance-plan.md) baseline has 24 conditions × 3 pool sizes × 3 runs = 216 runs. The 216-run matrix was not run (Q133, [ADR-0013](docs/adr/0013-server-load-measurement-harness.md)).
 Each run has 1 minute of warmup and 5 minutes of measurement: at least 21 hours 36 minutes of automated execution, excluding setup and recovery.
 100 events/s and collection ACK p95 ≤ 500 ms are injection and acceptance targets. Direct HTTP load and SDK performance need separate results.
 Record the environment, source revision/hash, fixtures, actual request rate, errors, and eventId comparisons. Performance figures do not compensate for correctness failures.
@@ -212,6 +216,10 @@ Record the environment, source revision/hash, fixtures, actual request rate, err
 | OpenAPI / JSON with generated sources in Git | Maintain generation paths, drift checks, and scalar validation | [ADR-0002](docs/adr/0002-openapi-json-contract.md) |
 | Event deduplication and a shared sender | Deduplication depends on row retention; serialization is limited to one process | [Spec](.scratch/signaldock/spec.md) |
 | SDK health report of dropped events | Counts are approximate (no idempotency, drops that cannot be stored are lost); one more small request per send cycle with drops | [ADR-0036](docs/adr/0036-sdk-client-reports.md) |
+| SDK opt-out and `clearQueue` | Queued events still send after opt-out; a race can store one event after `setOptOut(true)` | [ADR-0034](docs/adr/0034-sdk-opt-out.md) |
+| HTTPS required by default | Host apps and demo apps set `allowInsecureEndpoint` for local `http` | [ADR-0035](docs/adr/0035-sdk-https-enforcement.md) |
+| Deprecation / Sunset headers read by the SDK | The SDK warns only; the server does not send the headers yet | [ADR-0030](docs/adr/0030-sdk-contract-deprecation-warning.md) |
+| Dependency baseline for the published SDK | A dependency change needs a reviewed baseline update | [ADR-0033](docs/adr/0033-sdk-dependency-baseline.md) |
 | Server marks events against an optional tracking plan | The status is fixed at ingest; old rows and no-plan servers have none; no hot reload | [ADR-0022](docs/adr/0022-server-tracking-plan-status.md) |
 | Direct SQL and aggregation at query time | Measure query cost, indices, and DB waits | [Performance plan](.scratch/signaldock/performance-plan.md) |
 | SDK verification Dashboard | Prioritize receipt lists and details over analytics features | [Dashboard defaults](.scratch/signaldock/dashboard-verification-defaults.md) |

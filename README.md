@@ -7,8 +7,8 @@ An Android event SDK designed to save events on the device and confirm server re
 This monorepo contains the SDK, a local data processing server, and their design.
 Review the path from an app's `track()` call through a durable queue, retries, server deduplication, and independent artifact installation.
 
-> **Status: 2026-10-14**
-> The first release scope is done. The SDK, the server, the Android demo app, and the Dashboard are implemented. Delivery failure E2E, device durability, contract and DB change checks, server load measurement, and SDK device measurement have scripts and recorded results ([issues 20 to 24](.scratch/signaldock/issues/)). [Reproduce from a clean clone](#reproduce-from-a-clean-clone) lists the commands that were run in a fresh clone, and what was not verified: a physical device, and the full server measurement matrix (not run, Q133).
+> **Status: 2026-10-17**
+> The first release scope is done, and SDK v0.2.0 is released. It adds opt-out (`setOptOut`), HTTPS enforcement, and client reports ([CHANGELOG.md](CHANGELOG.md)). The SDK, the server, the Android demo app, and the Dashboard are implemented. Delivery failure E2E, device durability, contract and DB change checks, server load measurement, and SDK device measurement have scripts and recorded results ([issues 20 to 24](.scratch/signaldock/issues/)). [Reproduce from a clean clone](#reproduce-from-a-clean-clone) lists the commands that were run in a fresh clone, and what was not verified: a physical device, and the full server measurement matrix (not run, Q133).
 
 ![The Dashboard with one stored event selected: the event list on the left, the event details and stored JSON on the right.](docs/images/dashboard.png)
 
@@ -62,6 +62,8 @@ Engineering judgment: [design review, failure modes, postmortems, and threat mod
 A lost ACK does not change the event ID. The same ID and content produce duplicate success; different content produces a conflict rejection.
 Deduplication lasts while the server row exists. The design does not claim exactly-once delivery.
 
+The SDK counts the events it drops, by reason, and reports the counts to `POST /v1/client-reports` ([ADR-0036](docs/adr/0036-sdk-client-reports.md)). The Dashboard shows them in a "Dropped events" card. The counts are approximate.
+
 ## Stack
 
 | Area | Choice |
@@ -71,6 +73,7 @@ Deduplication lasts while the server row exists. The design does not claim exact
 | Server | Kotlin / Ktor · PostgreSQL · jOOQ · JDBC / HikariCP · Flyway |
 | Verification Dashboard | React · TypeScript · Vite · Recharts |
 | Contracts and distribution | OpenAPI / JSON · generated sources tracked in Git · Docker Compose entry point · local Maven repository ZIP |
+| CI and supply chain | GitHub Actions · CodeQL · Renovate · `dependency-guard` baseline · `binary-compatibility-validator` · Gradle wrapper validation |
 
 Exact versions are pinned in `gradle/libs.versions.toml`. [TOOLCHAIN.md](TOOLCHAIN.md) gives the reason for each pin and the build that verified it.
 The first coordinate is `local.signaldock:sdk-android:0.2.0` (local only, not Maven Central). Build the ZIP as described below.
@@ -87,7 +90,7 @@ Measured results are local environment records, not an SLA:
 - Server: two pilot runs and one overload run on one Mac with Docker limits, in [`perf/results/`](perf/results/). The overload run shows HTTP 503 with `Retry-After` and recovery without a restart. The 216-run pool-size matrix was not run (Q133, [ADR-0013](docs/adr/0013-server-load-measurement-harness.md), [issue 23](.scratch/signaldock/issues/23-server-load-measurement.md)).
 - SDK: normal, offline, and burst runs on API 24 and API 37 emulators with a debug build, and once more on the API 37 emulator with an R8 release build (debug-signed), in [`perf/sdk-results/summary.md`](perf/sdk-results/summary.md) ([ADR-0014](docs/adr/0014-sdk-device-measurement-harness.md), [ADR-0018](docs/adr/0018-sdk-release-r8-measurement.md), [issue 24](.scratch/signaldock/issues/24-sdk-device-measurement.md), [issue 33](.scratch/signaldock/issues/33-sdk-crash-safety-and-release-build.md)).
 - SDK cost for a host app, on the API 37 emulator with the R8 consumer app with and without the SDK: the APK grows by 616,829 bytes (dex by 966,108 bytes), cold start `TotalTime` p50 is 235 ms without and 238 ms with the SDK, `initialize()` takes 0.26 ms (p50) and 3.0 ms (p95) of the main thread, and PSS is 4.0 MiB higher after 5 s idle ([`perf/sdk-results/host-cost-api37/summary.md`](perf/sdk-results/host-cost-api37/summary.md), [ADR-0020](docs/adr/0020-sdk-host-app-cost.md), [issue 36](.scratch/signaldock/issues/36-sdk-host-app-cost.md)).
-- CI: the 26 instrumented SDK tests run on an API 34 `google_apis` x86_64 emulator in GitHub Actions (`device-test` job), and a size gate fails the build when the SDK adds more than 700,000 bytes to the R8 consumer APK (`size-budget` job). The process-boundary cases of `scripts/device-durability.sh` and the measurements stay local ([ADR-0023](docs/adr/0023-ci-device-tests-and-size-budget.md), [issue 40](.scratch/signaldock/issues/40-ci-device-tests-and-size-budget.md)).
+- CI: the `repo-rules` workflow has the jobs `check`, `verify-contract`, `sdk-test`, `consumer-r8`, `server-test`, `device-test`, `size-budget`, and `gradle-wrapper`. Other workflows are `pr-description` (`length` job), `codeql`, and `release`. The `device-test` job runs the instrumented SDK tests on an API 34 `google_apis` x86_64 emulator: 30 tests start, 13 skip themselves (the phase classes need `-e phase`), and 17 run (job log of `repo-rules` run 39002096383 on main at `cbb6210`, 2026-10-17 UTC). A size gate fails the build when the SDK adds more than 700,000 bytes to the R8 consumer APK (`size-budget` job). The process-boundary cases of `scripts/device-durability.sh` and the measurements stay local ([ADR-0023](docs/adr/0023-ci-device-tests-and-size-budget.md), [issue 40](.scratch/signaldock/issues/40-ci-device-tests-and-size-budget.md)).
 - The [performance plan](.scratch/signaldock/performance-plan.md) holds the original targets and conditions.
 
 Steps to run, stop, and reset the stack, to build the Maven ZIP, and to run the consumer app are below.
@@ -98,7 +101,7 @@ The commands in this section were run in a fresh clone, except `docker compose d
 A short video of demo `track()` to Dashboard receipt is in [`.scratch/signaldock/evidence/25-demo-track-to-dashboard.mp4`](.scratch/signaldock/evidence/25-demo-track-to-dashboard.mp4).
 The first run downloads the JDK, Docker images, Gradle dependencies, and npm packages. It is not fully offline.
 
-You need: macOS or Linux, Docker with Compose, Python 3, `curl`, `openssl`, and an Android SDK with platform `android-36` (`ANDROID_HOME`). The device scripts also need an emulator (AVD). `scripts/device-measure.sh` also needs macOS.
+You need: macOS or Linux, Docker with Compose, Python 3, `curl`, `openssl`, and an Android SDK with platform `android-36` (`ANDROID_HOME`). The demo app needs platform `android-37` (`demo-compileSdk` in `gradle/libs.versions.toml`). The device scripts also need an emulator (AVD). `scripts/device-measure.sh` also needs macOS.
 
 ### 1. Toolchain and hooks
 
@@ -207,6 +210,7 @@ Requirements of the 0.2.0 AAR:
 - Kotlin 2.2 or newer and AGP 9.x. The SDK metadata is 2.2, so AGP 9's default built-in Kotlin works with no extra Kotlin plugin ([ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md), Q132).
 - The host app declares `INTERNET`. The SDK needs no R8 rules of its own. Use an `https://` endpoint. The SDK rejects an `http://` endpoint at init unless `allowInsecureEndpoint = true` is set, and the app must also allow cleartext for that host ([ADR-0035](docs/adr/0035-sdk-https-enforcement.md)). The SDK does not switch an `http://` endpoint to HTTPS (ADR-0009).
 - Call `SignalDock.initialize(context, SignalDockConfig(endpoint, collectionKey))` once (for example in `Application.onCreate`), then `track("name") { property("key", value) }` and `diagnostics()` on the returned instance.
+- 0.2.0 API additions: `setOptOut()`, `isOptedOut()`, and `clearQueue()` on the instance, the result `TrackResult.OptedOut`, and `Diagnostics.contractDeprecation` ([ADR-0034](docs/adr/0034-sdk-opt-out.md), [ADR-0030](docs/adr/0030-sdk-contract-deprecation-warning.md)).
 
 ### Supported versions
 

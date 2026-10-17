@@ -7,8 +7,8 @@
 이 모노레포에는 SDK, 로컬 데이터 처리 서버, 그리고 둘의 설계가 들어 있습니다.
 앱의 `track()` 호출에서 시작해 durable queue, 재시도, 서버 중복 제거, 독립 아티팩트 설치까지 이어지는 경로를 검토할 수 있습니다.
 
-> **상태: 2026-10-14**
-> 첫 릴리스 범위가 완료되었습니다. SDK, 서버, Android 데모 앱, Dashboard가 구현되어 있습니다. 전송 실패 E2E, 기기 내구성, 계약·DB 변경 검사, 서버 부하 측정, SDK 기기 측정은 스크립트와 기록된 결과가 있습니다([이슈 20~24](.scratch/signaldock/issues/)). [클린 클론에서 재현](#클린-클론에서-재현)에는 새 클론에서 실행한 명령과 검증하지 못한 항목이 정리되어 있습니다. 검증하지 못한 항목은 실기기와 서버 측정 matrix 전체(실행하지 않음, Q133)입니다.
+> **상태: 2026-10-17**
+> 첫 릴리스 범위가 완료되었고, SDK v0.2.0이 릴리스되었습니다. v0.2.0은 opt-out(`setOptOut`), HTTPS 강제, client report를 추가합니다([CHANGELOG.md](CHANGELOG.md)). SDK, 서버, Android 데모 앱, Dashboard가 구현되어 있습니다. 전송 실패 E2E, 기기 내구성, 계약·DB 변경 검사, 서버 부하 측정, SDK 기기 측정은 스크립트와 기록된 결과가 있습니다([이슈 20~24](.scratch/signaldock/issues/)). [클린 클론에서 재현](#클린-클론에서-재현)에는 새 클론에서 실행한 명령과 검증하지 못한 항목이 정리되어 있습니다. 검증하지 못한 항목은 실기기와 서버 측정 matrix 전체(실행하지 않음, Q133)입니다.
 
 설계 문서, ADR, 이슈 파일, `docs/reproduce.md`는 영어로만 제공합니다. 이 README는 해당 문서로 연결합니다.
 
@@ -64,6 +64,8 @@ Stackline의 이 오픈소스 릴리스는 공개 API 설계, 수명 주기 관�
 ACK가 유실되어도 이벤트 ID는 바뀌지 않습니다. 같은 ID와 같은 내용은 duplicate 성공이 되고, 내용이 다르면 conflict 거부가 됩니다.
 중복 제거는 서버 row가 남아 있는 동안만 유지됩니다. 이 설계는 exactly-once 전달을 주장하지 않습니다.
 
+SDK는 버린 이벤트를 사유별로 세어 `POST /v1/client-reports`로 보고합니다([ADR-0036](docs/adr/0036-sdk-client-reports.md)). Dashboard는 이 값을 "Dropped events" 카드에 보여 줍니다. 이 수치는 근사값입니다.
+
 ## 스택
 
 | 영역 | 선택 |
@@ -73,6 +75,7 @@ ACK가 유실되어도 이벤트 ID는 바뀌지 않습니다. 같은 ID와 같�
 | 서버 | Kotlin / Ktor · PostgreSQL · jOOQ · JDBC / HikariCP · Flyway |
 | 검증 Dashboard | React · TypeScript · Vite · Recharts |
 | 계약과 배포 | OpenAPI / JSON · Git으로 추적하는 생성 소스 · Docker Compose 진입점 · 로컬 Maven 저장소 ZIP |
+| CI와 공급망 | GitHub Actions · CodeQL · Renovate · `dependency-guard` baseline · `binary-compatibility-validator` · Gradle wrapper 검증 |
 
 정확한 버전은 `gradle/libs.versions.toml`에 고정되어 있습니다. [TOOLCHAIN.md](TOOLCHAIN.md)에 각 고정의 이유와 이를 검증한 빌드가 있습니다(영어).
 첫 좌표는 `local.signaldock:sdk-android:0.2.0`입니다(로컬 전용이며 Maven Central이 아닙니다). ZIP은 아래 설명대로 빌드합니다.
@@ -89,7 +92,7 @@ iOS / Flutter, React Native / Flutter / Unity 또는 WebView(native-web) bridge(
 - 서버: Docker 제한이 있는 Mac 한 대에서 pilot 2회와 overload 1회를 실행했습니다. 결과는 [`perf/results/`](perf/results/)에 있습니다. overload 실행은 `Retry-After`가 붙은 HTTP 503과, 재시작 없는 복구를 보여 줍니다. 216회 pool 크기 matrix는 실행하지 않았습니다(Q133, [ADR-0013](docs/adr/0013-server-load-measurement-harness.md), [issue 23](.scratch/signaldock/issues/23-server-load-measurement.md)).
 - SDK: debug 빌드로 API 24와 API 37 에뮬레이터에서 normal, offline, burst를 실행했고, API 37 에뮬레이터에서 R8 release 빌드(debug 서명)로 한 번 더 실행했습니다. 결과는 [`perf/sdk-results/summary.md`](perf/sdk-results/summary.md)에 있습니다([ADR-0014](docs/adr/0014-sdk-device-measurement-harness.md), [ADR-0018](docs/adr/0018-sdk-release-r8-measurement.md), [issue 24](.scratch/signaldock/issues/24-sdk-device-measurement.md), [issue 33](.scratch/signaldock/issues/33-sdk-crash-safety-and-release-build.md)).
 - 호스트 앱이 치르는 SDK 비용: API 37 에뮬레이터에서 SDK가 있는 R8 consumer 앱과 없는 앱을 비교했습니다. APK는 616,829 bytes(dex는 966,108 bytes) 커지고, 콜드 스타트 `TotalTime` p50은 SDK 없음 235 ms, 있음 238 ms이며, `initialize()`는 메인 스레드를 p50 0.26 ms, p95 3.0 ms 사용하고, 5초 유휴 후 PSS는 4.0 MiB 더 큽니다([`perf/sdk-results/host-cost-api37/summary.md`](perf/sdk-results/host-cost-api37/summary.md), [ADR-0020](docs/adr/0020-sdk-host-app-cost.md), [issue 36](.scratch/signaldock/issues/36-sdk-host-app-cost.md)).
-- CI: GitHub Actions에서 API 34 `google_apis` x86_64 에뮬레이터로 계측 SDK 테스트 26개를 실행하고(`device-test` job), SDK가 R8 consumer APK를 700,000 bytes보다 더 키우면 빌드를 실패시키는 크기 게이트가 있습니다(`size-budget` job). `scripts/device-durability.sh`의 프로세스 경계 케이스와 측정은 로컬에서만 실행합니다([ADR-0023](docs/adr/0023-ci-device-tests-and-size-budget.md), [issue 40](.scratch/signaldock/issues/40-ci-device-tests-and-size-budget.md)).
+- CI: `repo-rules` 워크플로에는 `check`, `verify-contract`, `sdk-test`, `consumer-r8`, `server-test`, `device-test`, `size-budget`, `gradle-wrapper` job이 있습니다. 다른 워크플로는 `pr-description`(`length` job), `codeql`, `release`입니다. `device-test` job은 API 34 `google_apis` x86_64 에뮬레이터에서 계측 SDK 테스트를 실행합니다. 30개가 시작되고, 13개는 스스로 건너뛰며(phase 클래스는 `-e phase`가 필요합니다), 17개가 실행됩니다(main `cbb6210`의 `repo-rules` run 39002096383 job 로그, 2026-10-17 UTC). 또한 SDK가 R8 consumer APK를 700,000 bytes보다 더 키우면 빌드를 실패시키는 크기 게이트가 있습니다(`size-budget` job). `scripts/device-durability.sh`의 프로세스 경계 케이스와 측정은 로컬에서만 실행합니다([ADR-0023](docs/adr/0023-ci-device-tests-and-size-budget.md), [issue 40](.scratch/signaldock/issues/40-ci-device-tests-and-size-budget.md)).
 - [성능 계획](.scratch/signaldock/performance-plan.md)에는 처음의 목표와 조건이 있습니다.
 
 스택 실행, 중지, 초기화 방법과 Maven ZIP 빌드, consumer 앱 실행 방법은 아래에 있습니다.
@@ -100,7 +103,7 @@ iOS / Flutter, React Native / Flutter / Unity 또는 WebView(native-web) bridge(
 데모의 `track()`부터 Dashboard 수신까지 보여 주는 짧은 영상은 [`.scratch/signaldock/evidence/25-demo-track-to-dashboard.mp4`](.scratch/signaldock/evidence/25-demo-track-to-dashboard.mp4)에 있습니다.
 처음 실행할 때는 JDK, Docker 이미지, Gradle 의존성, npm 패키지를 내려받습니다. 완전한 오프라인 실행은 아닙니다.
 
-필요한 것: macOS 또는 Linux, Compose가 있는 Docker, Python 3, `curl`, `openssl`, platform `android-36`이 있는 Android SDK(`ANDROID_HOME`). 기기 스크립트에는 에뮬레이터(AVD)도 필요합니다. `scripts/device-measure.sh`는 macOS도 필요합니다.
+필요한 것: macOS 또는 Linux, Compose가 있는 Docker, Python 3, `curl`, `openssl`, platform `android-36`이 있는 Android SDK(`ANDROID_HOME`). 데모 앱에는 platform `android-37`이 필요합니다(`gradle/libs.versions.toml`의 `demo-compileSdk`). 기기 스크립트에는 에뮬레이터(AVD)도 필요합니다. `scripts/device-measure.sh`는 macOS도 필요합니다.
 
 ### 1. 툴체인과 hook
 
@@ -209,6 +212,7 @@ dependencies { implementation("local.signaldock:sdk-android:0.2.0") }
 - Kotlin 2.2 이상과 AGP 9.x. SDK metadata가 2.2이므로, AGP 9의 기본 built-in Kotlin으로 추가 Kotlin 플러그인 없이 동작합니다([ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md), Q132).
 - 호스트 앱이 `INTERNET`을 선언해야 합니다. SDK 자체의 R8 규칙은 필요 없습니다. `https://` endpoint를 사용하세요. SDK는 `allowInsecureEndpoint = true`를 설정하지 않으면 `http://` endpoint를 init에서 거부하고, 앱도 해당 host에 cleartext를 허용해야 합니다([ADR-0035](docs/adr/0035-sdk-https-enforcement.md)). SDK는 `http://` endpoint를 HTTPS로 바꾸지 않습니다(ADR-0009).
 - `SignalDock.initialize(context, SignalDockConfig(endpoint, collectionKey))`를 한 번 호출합니다(예: `Application.onCreate`). 이후 반환된 인스턴스에서 `track("name") { property("key", value) }`와 `diagnostics()`를 호출합니다.
+- 0.2.0 API 추가: 인스턴스의 `setOptOut()`, `isOptedOut()`, `clearQueue()`, 결과 `TrackResult.OptedOut`, `Diagnostics.contractDeprecation`([ADR-0034](docs/adr/0034-sdk-opt-out.md), [ADR-0030](docs/adr/0030-sdk-contract-deprecation-warning.md)).
 
 ### 지원 버전
 

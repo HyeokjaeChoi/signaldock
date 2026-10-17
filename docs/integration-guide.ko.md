@@ -71,7 +71,7 @@ SDK는 application context만 보관합니다(spec 3).
 public suspend fun initialize(context: Context, config: SignalDockConfig): InitResult
 ```
 
-`SignalDockConfig`에는 `endpoint`와 `collectionKey`가 있습니다. 선택 항목으로 `logLevel`(기본값 `WARN`)과 timeout 네 개가 있습니다. 기본값은 call 30초, connect/read/write 각 10초입니다. timeout은 양수이고 유한해야 합니다(architecture "Agreed defaults, pending measurement", spec 8 Q117). 설정은 SDK 수명 동안 고정입니다(spec 3). `toString()`은 collection key를 숨깁니다(spec 8 Q115).
+`SignalDockConfig`에는 `endpoint`와 `collectionKey`가 있습니다. 선택 항목으로 `logLevel`(기본값 `WARN`), timeout 네 개, `allowInsecureEndpoint`(기본값 `false`, 1절의 endpoint 규칙 참고)가 있습니다. 기본값은 call 30초, connect/read/write 각 10초입니다. timeout은 양수이고 유한해야 합니다(architecture "Agreed defaults, pending measurement", spec 8 Q117). 설정은 SDK 수명 동안 고정입니다(spec 3). `toString()`은 collection key를 숨깁니다(spec 8 Q115).
 
 ```kotlin
 // sample: initialize
@@ -317,7 +317,7 @@ suspend fun queueSummary(sdk: SignalDock): String {
 SDK는 버린 이벤트를 이유별로 세고, 그 수를 `POST /v1/client-reports`로 서버에 보냅니다. 새 public API와 설정은 없습니다. 이유는 `queue_full`(`TrackResult.QueueFull`), `storage_error`(`TrackResult.StorageError`), `invalid_event`와 `event_too_large`(`TrackResult.Invalid`), `server_rejected`(유효한 ACK의 영구 거부)입니다. opt-out은 세지 않습니다. 카운터는 Room에 저장하므로 재시작해도 사라지지 않고, 각 카운터는 1,000,000에서 멈춥니다.
 
 - SDK는 전송 주기마다 이벤트 batch 뒤에 report를 최대 한 번 보냅니다. 그 주기에서 유효한 ACK를 적용했고 카운터가 0이 아닐 때만 보냅니다. report에는 SDK 버전과 수만 있습니다. installation ID, 이벤트 이름, 이벤트 ID는 없습니다(spec Q164, [ADR-0036](adr/0036-sdk-client-reports.md)).
-- 2xx 응답은 보낸 수를 지웁니다. 404(오래된 서버)나 다른 영구 4xx도 재시도 없이 지웁니다. 네트워크 오류, 408, 429, 501과 505를 제외한 5xx는 다음 주기를 위해 유지합니다. 501과 505는 재시도 없이 지웁니다. report는 이벤트의 재시도 상태를 바꾸지 않습니다.
+- 2xx 응답은 보낸 수를 지웁니다. 404(오래된 서버), 408과 429를 제외한 다른 4xx, 3xx, 1xx, 501, 505는 재시도 없이 지웁니다. 네트워크 오류, 408, 429, 501과 505를 제외한 5xx는 다음 주기를 위해 유지합니다. report는 이벤트의 재시도 상태를 바꾸지 않습니다.
 - 수는 근사값입니다. 서버가 report를 저장했는데 응답이 사라지면 SDK는 같은 수를 다시 보냅니다. SDK가 storage에 쓰지 못한 drop은 세지 않습니다.
 
 ## 8. 개인정보
@@ -393,7 +393,7 @@ SDK는 버린 이벤트를 이유별로 세고, 그 수를 `POST /v1/client-repo
 | `INVALID_ACK` | 200 응답의 잘못된 ACK, 또는 1xx나 기타 2xx status | 아무것도 적용하지 않고 backoff | 서버 버전과 앱·서버 사이의 proxy |
 
 이벤트 둘 이상인 batch의 413은 오류 종류가 아닙니다. SDK가 batch를 나눕니다(ADR-0006 결정 6).
-유효한 `Retry-After`는 모든 행에서 지킵니다(ADR-0006 결정 5).
+유효한 `Retry-After`는 HTTP 응답에서 나온 모든 행에서 지킵니다(ADR-0006 결정 5).
 멈춤은 유효한 ACK 뒤에 끝납니다(ADR-0006 결정 8).
 
 ### 로그 tag와 메시지
@@ -410,7 +410,13 @@ tag는 `SignalDock`입니다. 기본 수준은 `WARN`이므로 기본값에서�
 | WARN | `delivery paused by a configuration, authentication or contract error; rechecking every 30 minutes` | `AUTH_OR_CONFIGURATION`과 `CONTRACT` 참고. 멈춤이 시작될 때 한 번 남김 |
 | WARN | `delivery resumed after a successful ACK` | 멈춤이 끝남 |
 | WARN | `installation id file is invalid; generating a new id` | 저장된 ID가 UUIDv4가 아니었음. SDK가 새 ID를 만듦(ADR-0003 결정 6) |
+| WARN | `server contract version is deprecated; sunset date: <date>` | 응답에 유효한 `Deprecation`이나 `Sunset` header가 있었음. 프로세스당 한 번. `Diagnostics.contractDeprecation` 참고(ADR-0030) |
+| WARN | `drop counter failed: <ExceptionClass>` | SDK가 drop 카운터를 갱신하지 못함. 그 drop은 세지 않음 |
+| WARN | `client report failed: <ExceptionClass>` | client report 실행이 실패함. 카운터는 유지됨 |
+| WARN | `opt-out state could not be stored` | `setOptOut`이 상태를 storage에 쓰지 못함 |
+| WARN | `clearQueue storage failed: <ExceptionClass>` | `clearQueue()`가 큐의 이벤트를 지우지 못함 |
 | DEBUG | `initialized`, `delivery attempt started`, `delivery attempt finished in <n> ms`, `delivery failed: <kind>` | 정상 진행. `LogLevel.DEBUG`로 설정하면 보임 |
+| DEBUG | `opt-out set`, `client report: <SENT, DISCARDED, KEPT 중 하나>` | opt-out 상태를 저장함. client report 결과(7절 참고) |
 
 `LogLevel.DEBUG`는 디버깅할 때만 쓰세요. `LogLevel.NONE`은 아무것도 기록하지 않습니다.
 
@@ -452,4 +458,4 @@ SDK는 또한 다음을 하지 않습니다.
 
 이 가이드의 샘플은 [`IntegrationGuideSamplesTest.kt`](../sdk/sdk-android/src/test/kotlin/local/signaldock/IntegrationGuideSamplesTest.kt)에서 복사했습니다. 이 파일의 `sample:`과 `end sample` 표시 사이의 텍스트가 이 가이드의 텍스트입니다. 이 파일은 SDK와 함께 컴파일되며, `cd sdk && ./gradlew test`가 track과 diagnostics 샘플을 실제 Room database에서 실행합니다.
 
-Maven ZIP의 SDK를 쓰는 완전한 앱은 [consumer 앱](../compatibility/consumer-android/)입니다. [`ConsumerApplication.kt`](../compatibility/consumer-android/app/src/main/kotlin/local/signaldock/consumer/ConsumerApplication.kt)와 [`MainActivity.kt`](../compatibility/consumer-android/app/src/main/kotlin/local/signaldock/consumer/MainActivity.kt)를 보세요(ADR-0009 결정 3).
+Maven ZIP의 SDK를 쓰는 완전한 앱은 [consumer 앱](../compatibility/consumer-android/)입니다. [`ConsumerApplication.kt`](../compatibility/consumer-android/app/src/sdk/kotlin/local/signaldock/consumer/ConsumerApplication.kt)와 [`MainActivity.kt`](../compatibility/consumer-android/app/src/sdk/kotlin/local/signaldock/consumer/MainActivity.kt)를 보세요(ADR-0009 결정 3).

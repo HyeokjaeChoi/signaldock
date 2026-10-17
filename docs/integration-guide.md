@@ -71,7 +71,7 @@ The SDK keeps only the application context (spec 3).
 public suspend fun initialize(context: Context, config: SignalDockConfig): InitResult
 ```
 
-`SignalDockConfig` has `endpoint` and `collectionKey`. It also has optional `logLevel` (default `WARN`), four timeouts, and `allowInsecureEndpoint` (default `false`; see the endpoint rule in section 3). The defaults are 30 seconds for the call and 10 seconds each for connect, read, and write. A timeout must be positive and finite (architecture "Agreed defaults, pending measurement"; spec 8 Q117). The configuration is fixed for the SDK lifetime (spec 3). `toString()` hides the collection key (spec 8 Q115).
+`SignalDockConfig` has `endpoint` and `collectionKey`. It also has optional `logLevel` (default `WARN`), four timeouts, and `allowInsecureEndpoint` (default `false`; see the endpoint rule in section 1). The defaults are 30 seconds for the call and 10 seconds each for connect, read, and write. A timeout must be positive and finite (architecture "Agreed defaults, pending measurement"; spec 8 Q117). The configuration is fixed for the SDK lifetime (spec 3). `toString()` hides the collection key (spec 8 Q115).
 
 ```kotlin
 // sample: initialize
@@ -317,7 +317,7 @@ Notes:
 The SDK counts the events it dropped, by reason, and sends the counts to the server at `POST /v1/client-reports`. There is no new public API and no setting. The reasons are `queue_full` (`TrackResult.QueueFull`), `storage_error` (`TrackResult.StorageError`), `invalid_event` and `event_too_large` (`TrackResult.Invalid`), and `server_rejected` (a permanent rejection in a valid ACK). The SDK does not count opt-out. It keeps the counters in Room, so a restart does not lose them, and stops each counter at 1,000,000.
 
 - The SDK sends at most one report for each send cycle, after the event batch, and only when the cycle applied a valid ACK and a counter is not zero. The report has the SDK version and the counts. It has no installation ID, event name, or event ID (spec Q164; [ADR-0036](adr/0036-sdk-client-reports.md)).
-- A 2xx answer removes the sent counts. A 404 (an old server) or another permanent 4xx removes them with no retry. A network error, 408, 429, or a 5xx answer other than 501 or 505 keeps them for the next cycle. A 501 or 505 answer removes them with no retry. A report never changes the retry state of the events.
+- A 2xx answer removes the sent counts. A 404 (an old server), any other 4xx except 408 and 429, a 3xx, a 1xx, 501, or 505 removes them with no retry. A network error, 408, 429, or a 5xx answer other than 501 or 505 keeps them for the next cycle. A report never changes the retry state of the events.
 - The counts are approximate. If the server stores a report but the response is lost, the SDK sends the same counts again. A drop that the SDK cannot write to storage is not counted.
 
 ## 8. Privacy
@@ -393,7 +393,7 @@ Delivery errors do not reach `track()`. They show in `Diagnostics.lastDeliveryEr
 | `INVALID_ACK` | A 200 answer with an invalid ACK, or a 1xx or other 2xx status | Apply nothing, back off | Server version and proxies between the app and the server |
 
 A 413 for a batch of more than one event is not an error kind. The SDK splits the batch (ADR-0006 decision 6).
-A valid `Retry-After` is honored in every row (ADR-0006 decision 5).
+A valid `Retry-After` is honored in every row that comes from an HTTP response (ADR-0006 decision 5).
 A pause ends after a valid ACK (ADR-0006 decision 8).
 
 ### Log tags and messages
@@ -410,7 +410,13 @@ The tag is `SignalDock`. The default level is `WARN`, so the default shows only 
 | WARN | `delivery paused by a configuration, authentication or contract error; rechecking every 30 minutes` | See `AUTH_OR_CONFIGURATION` and `CONTRACT`. The SDK writes this once when the pause starts |
 | WARN | `delivery resumed after a successful ACK` | The pause ended |
 | WARN | `installation id file is invalid; generating a new id` | The stored ID was not a UUIDv4. The SDK made a new one (ADR-0003 decision 6) |
+| WARN | `server contract version is deprecated; sunset date: <date>` | A response had a valid `Deprecation` or `Sunset` header. One per process. See `Diagnostics.contractDeprecation` (ADR-0030) |
+| WARN | `drop counter failed: <ExceptionClass>` | The SDK could not update a drop counter. It does not count that drop |
+| WARN | `client report failed: <ExceptionClass>` | A client report run failed. The counters are kept |
+| WARN | `opt-out state could not be stored` | `setOptOut` could not write the state to storage |
+| WARN | `clearQueue storage failed: <ExceptionClass>` | `clearQueue()` could not delete the queued events |
 | DEBUG | `initialized`, `delivery attempt started`, `delivery attempt finished in <n> ms`, `delivery failed: <kind>` | Normal progress. Set `LogLevel.DEBUG` to see them |
+| DEBUG | `opt-out set`, `client report: <SENT, DISCARDED, or KEPT>` | Opt-out state stored. Result of a client report (see section 7) |
 
 Use `LogLevel.DEBUG` only while you debug. `LogLevel.NONE` writes nothing.
 
@@ -452,4 +458,4 @@ The SDK also does not:
 
 The samples in this guide are copied from [`IntegrationGuideSamplesTest.kt`](../sdk/sdk-android/src/test/kotlin/local/signaldock/IntegrationGuideSamplesTest.kt). The text between its `sample:` and `end sample` markers is the text in this guide. The file compiles with the SDK, and `cd sdk && ./gradlew test` runs the track and diagnostics samples against a real Room database.
 
-A complete app that uses the SDK from the Maven ZIP is the [consumer app](../compatibility/consumer-android/): [`ConsumerApplication.kt`](../compatibility/consumer-android/app/src/main/kotlin/local/signaldock/consumer/ConsumerApplication.kt) and [`MainActivity.kt`](../compatibility/consumer-android/app/src/main/kotlin/local/signaldock/consumer/MainActivity.kt) (ADR-0009 decision 3).
+A complete app that uses the SDK from the Maven ZIP is the [consumer app](../compatibility/consumer-android/): [`ConsumerApplication.kt`](../compatibility/consumer-android/app/src/sdk/kotlin/local/signaldock/consumer/ConsumerApplication.kt) and [`MainActivity.kt`](../compatibility/consumer-android/app/src/sdk/kotlin/local/signaldock/consumer/MainActivity.kt) (ADR-0009 decision 3).

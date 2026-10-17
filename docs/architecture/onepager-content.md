@@ -1,10 +1,10 @@
 # SignalDock architecture onepager content
 
-Baseline: 2026-10-09, Q127. Design is complete and implementation is approved. Product code has not started. Functional checks are pending; performance has not been measured.
+Baseline: 2026-10-09, Q127. Updated for SDK 0.2.0: 2026-10-17 UTC. The product is implemented. No physical device was tested, and the 216-run server matrix was not run (Q133, ADR-0013).
 
 ## Summary
 
-SignalDock is a planned Android event collection SDK. It stores events on the device, retries with the same eventId, and transfers storage responsibility only after an ACK sent after server commit.
+SignalDock is an Android event collection SDK. It stores events on the device, retries with the same eventId, and transfers storage responsibility only after an ACK sent after server commit.
 
 ## Architecture overview and introduction
 
@@ -18,14 +18,14 @@ SignalDock is a planned Android event collection SDK. It stores events on the de
 
 ### 60-second introduction
 
-SignalDock is an open-source Android SDK from Stackline. I designed it to extend my app development experience into public APIs, durable queues, failure recovery, contract management, and artifact distribution. A successful track call means Room has committed the event. Foreground triggers and WorkManager share one sender. The server checks eventId and content for duplicates, then sends an ACK after database commit. If the ACK is lost, the SDK resends the same ID. It updates the queue only after validating the full ACK. Planned checks cover OpenAPI generated-source drift and Maven ZIP installation in an independent R8 consumer app.
+SignalDock is an open-source Android SDK from Stackline. I designed it to extend my app development experience into public APIs, durable queues, failure recovery, contract management, and artifact distribution. A successful track call means Room has committed the event. Foreground triggers and WorkManager share one sender. The server checks eventId and content for duplicates, then sends an ACK after database commit. If the ACK is lost, the SDK resends the same ID. It updates the queue only after validating the full ACK. CI checks cover OpenAPI generated-source drift, and a script checks Maven ZIP installation in an independent R8 consumer app.
 
 ## Contract generation and distribution
 
 1. Generate Kotlin models for the SDK and Ktor, and TypeScript models for the Dashboard, from OpenAPI. Keep the public SDK API, Room entities, jOOQ records, and transport DTOs separate by role.
 2. Apply Flyway SQL migrations to a temporary PostgreSQL schema, generate jOOQ sources, then compile the server. Do not reset the runtime database for code generation.
 3. Track generated Kotlin, TypeScript, and jOOQ sources in Git. Regenerate into an empty temporary output directory and compare file lists and contents. Compilation does not overwrite generated files. Keep schema diffs, fixtures, and integration checks.
-4. Package an AAR, POM, and metadata in a Maven repository ZIP. Install `local.signaldock:sdk-android:0.1.0` in an independent Gradle consumer app. Verify artifact installation and an R8 release run without an SDK source project dependency.
+4. Package an AAR, POM, and metadata in a Maven repository ZIP. The ZIP is a GitHub Release artifact. Install `local.signaldock:sdk-android:0.2.0` in an independent Gradle consumer app. Verify artifact installation and an R8 release run without an SDK source project dependency.
 
 ## Event flow and storage responsibility
 
@@ -45,7 +45,7 @@ The collection commit in Room and the server commit are the two storage responsi
 
 ## Failure and retry
 
-| Condition | Planned behavior |
+| Condition | Behavior |
 | --- | --- |
 | ACK lost after server commit | Retry with the same eventId. Matching content returns duplicate success. Keep the original receivedAt. |
 | Same ID, different content | Permanently reject as conflict. Preserve the original server record. |
@@ -105,18 +105,18 @@ The server needs explicit handling of unique collisions, content comparison, JSO
 
 The server may commit even if the HTTP response is lost. Retry with the same ID and server deduplication provide recovery. Deduplication does not extend beyond deletion of the server row.
 
-### How will the design be verified?
+### How was the design verified?
 
-Planned runs cover 1,000 offline events and process restart, ACK loss after commit, conflicts, partial rejections, ambiguous ACKs, concurrent senders, cancellation, capacity, backup exclusions, contract drift, migrations, and an independent R8 consumer app. Record execution evidence before reporting results.
+Runs cover 1,000 offline events and process restart, ACK loss after commit, conflicts, partial rejections, ambiguous ACKs, concurrent senders, cancellation, capacity, backup exclusions, contract drift, migrations, and an independent R8 consumer app. The evidence is in issues 20 to 24, 33, 36, and 40. Gap: no physical device was tested, and the 216-run server matrix was not run (Q133, ADR-0013).
 
 ## Deliverables and verification status
 
-- Planned deliverables: Android SDK, Compose shopping demo, one Docker Compose entry point for Ktor/PostgreSQL/Dashboard, Maven ZIP, independent consumer app, README, raw verification data, a summary, and a short video.
+- Deliverables: Android SDK, Compose shopping demo, one Docker Compose entry point for Ktor/PostgreSQL/Dashboard, Maven ZIP, independent consumer app, README, raw verification data, a summary, and a short video.
 - Outside the first release: iOS/Flutter SDKs, automatic events, identify, campaigns/push, funnels, multiple projects/login, public hosting, and Maven Central.
-- Functional evidence is pending. Record the environment, Git revision or alternative source hash, and ID reconciliation for each run.
-- Performance is not measured. Separate Android track p50/p95, queue drain, file size, and memory from server HTTP latency. Direct HTTP load does not measure SDK performance.
-- Planned server baseline: 24 conditions × pool sizes 2/4/8 × 3 repeats = 216 runs. Each run has 1 minute of warmup and 5 minutes of measurement: at least 21 hours 36 minutes of automated runtime before setup and recovery. 100 events/s is the target input rate; ACK p95 ≤ 500 ms is the acceptance target. Neither is a measured result or an SLA.
-- Open checks: compatible toolchain versions, generated scalar types, exact API signatures, normal-runtime database timeouts, WorkManager contention, JDBC cancellation and commit, device behavior, and R8 execution.
+- Functional evidence is recorded in issues 20 to 22. Each run records the environment, source revision or alternative source hash, and ID reconciliation.
+- Performance was measured on emulators and one Mac (issues 23, 24, 36). Android track p50/p95, queue drain, file size, and memory are separate from server HTTP latency. Direct HTTP load does not measure SDK performance.
+- Server baseline (not run, Q133): 24 conditions × pool sizes 2/4/8 × 3 repeats = 216 runs. Two pilots and one overload run replaced it. Each run has 1 minute of warmup and 5 minutes of measurement: at least 21 hours 36 minutes of automated runtime before setup and recovery. 100 events/s is the target input rate; ACK p95 ≤ 500 ms is the acceptance target. Neither is an SLA.
+- Open items: no physical device was tested. The 216-run matrix was not run. No deterministic test covers a cancel during `COMMIT` (issue 22).
 
 ## Local sources
 
