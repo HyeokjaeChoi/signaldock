@@ -35,3 +35,13 @@ The user decided (Q156, option a, 2026-10-16) that a host app can stop collectio
 - Gap: the tests use Robolectric and re-create the SDK on the same files. A real process restart with the marker file is not run on a device.
 - The opt-out does not remove events already on the server. Server delete is excluded on purpose (ADR-0028).
 - The marker file is written with `fsync` of the file but not of the directory. After a power loss right after `setOptOut(true)`, the marker may be missing and collection would restart. This is the same durability as the installation ID file.
+
+## Amendment (2026-10-17, issue 64)
+
+The Gap in "Limits" about a real process restart is partly closed. `DurabilityPhases` has the phases `optout_set`, `optout_check`, and `optout_off`. `scripts/device-durability.sh <serial> optout` runs them with `am force-stop` between them. The phases check three facts:
+
+- After `setOptOut(true)`, the marker file `opt-out` exists, and `track()` returns `OptedOut` with an empty queue.
+- After the process kill, a new `initialize` reads the marker: `isOptedOut()` is `true`, `track()` returns `OptedOut`, nothing is stored, and the local `AckServer` gets no request.
+- After a second kill, `setOptOut(false)` removes the marker, and `track()` stores an event.
+
+Gap: the first run on a device is not recorded here. The local API 37 emulator had a lock credential, so the app data directory was never created (see issue 64). The "no request" check is a fixed 3-second wait. It is not an event.
