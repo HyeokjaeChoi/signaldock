@@ -323,9 +323,12 @@ Notes:
 
   ```kotlin
   // sample: opt-out
-  suspend fun onUserWithdrawsConsent(sdk: SignalDock) {
+  suspend fun onUserWithdrawsConsent(sdk: SignalDock): Boolean {
       sdk.setOptOut(true)   // from now on, track() stores nothing and returns OptedOut
-      sdk.clearQueue()      // optional: delete events that wait on the device
+      // Optional: delete events that wait on the device. null means storage failed:
+      // the events are still queued, so tell the user or call clearQueue() again later.
+      val deleted = sdk.clearQueue()
+      return deleted != null
   }
 
   suspend fun onUserGivesConsent(sdk: SignalDock) {

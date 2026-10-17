@@ -9,6 +9,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -64,9 +65,12 @@ suspend fun onProductViewed(sdk: SignalDock): String {
 // end sample
 
 // sample: opt-out
-suspend fun onUserWithdrawsConsent(sdk: SignalDock) {
+suspend fun onUserWithdrawsConsent(sdk: SignalDock): Boolean {
     sdk.setOptOut(true)   // from now on, track() stores nothing and returns OptedOut
-    sdk.clearQueue()      // optional: delete events that wait on the device
+    // Optional: delete events that wait on the device. null means storage failed:
+    // the events are still queued, so tell the user or call clearQueue() again later.
+    val deleted = sdk.clearQueue()
+    return deleted != null
 }
 
 suspend fun onUserGivesConsent(sdk: SignalDock) {
@@ -108,11 +112,20 @@ class IntegrationGuideSamplesTest {
     fun `opt-out sample stops collection and clears the queue`() = runBlocking {
         val sdk = newSdk()
         onProductViewed(sdk)
-        onUserWithdrawsConsent(sdk)
+        assertTrue(onUserWithdrawsConsent(sdk))
         assertEquals(0, sdk.diagnostics().queuedEvents)
         assertEquals("collection is off", onProductViewed(sdk))
         onUserGivesConsent(sdk)
         assertTrue(onProductViewed(sdk).startsWith("stored on the device: "))
+    }
+
+    @Test
+    fun `opt-out sample reports a failed clearQueue and still stops collection`() = runBlocking {
+        val sdk = newSdk()
+        onProductViewed(sdk)
+        (sdk.dao.javaClass.getDeclaredField("__db").apply { isAccessible = true }.get(sdk.dao) as androidx.room.RoomDatabase).close()
+        assertFalse(onUserWithdrawsConsent(sdk)) // clearQueue returned null
+        assertTrue(sdk.isOptedOut())
     }
 
     @Test
