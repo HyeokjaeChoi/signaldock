@@ -1,3 +1,4 @@
 # Issue 59 (ADR-0032): generated TypeScript is rebuilt from the OpenAPI contract, so its alerts return after each regeneration.
 paths-ignore:
   - generated/typescript
+  - tracking-plan/generated/typescript

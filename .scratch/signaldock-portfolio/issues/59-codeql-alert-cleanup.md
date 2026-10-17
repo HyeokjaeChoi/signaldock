@@ -3,7 +3,7 @@
 Status: claimed
 Type: task
 Blocked by: None
-Execution: Branch `ci/codeql-alert-cleanup`; PR not yet recorded
+Execution: Branch `ci/codeql-alert-cleanup`; PR #158 (open)
 
 ## Scope and completion criteria
 

@@ -42,7 +42,7 @@ The first `main` run left 51 open alerts (list taken from the code-scanning API 
 | Count | Action | Reason |
 | --- | --- | --- |
 | 14 | Fixed in issue 59 (`perf/*.py`) | 9 `py/file-not-closed`, 2 `py/empty-except`, 2 `py/unused-local-variable`, 1 `py/procedure-return-value-used`. The output of `perf/summarize.py` and `perf/sdk_summarize.py` over the committed results is byte-identical before and after. |
-| 23 | Removed with `paths-ignore: [generated/typescript]` (`.github/codeql/codeql-config.yml`) | `js/unused-local-variable` in `generated/typescript/models/`. The OpenAPI generator writes these files, so the alerts return after each regeneration. A fix by hand would be lost. |
+| 23 | Removed with `paths-ignore` for `generated/typescript` (`.github/codeql/codeql-config.yml`; the same file also ignores `tracking-plan/generated/typescript`, the other generated TypeScript output, which had no alerts) | `js/unused-local-variable` in `generated/typescript/models/`. The OpenAPI generator writes these files, so the alerts return after each regeneration. A fix by hand would be lost. |
 | 14 | Dismissed in GitHub on 2026-10-16 UTC | See below. |
 
 Dismissed alerts:
