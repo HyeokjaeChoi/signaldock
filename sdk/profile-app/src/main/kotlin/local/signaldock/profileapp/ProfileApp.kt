@@ -55,11 +55,14 @@ class MainActivity : Activity() {
         // they fail on emulators without render-thread slices.
         if (Build.VERSION.SDK_INT >= 29) Trace.beginAsyncSection(SDK_READY, 0)
         scope.launch {
-            val sdk = (application as ProfileApplication).init.await().let { (it as? InitResult.Success)?.sdk }
-            if (sdk == null) { output.text = "init failed"; return@launch }
-            repeat(EVENTS) { i -> sdk.track("profile_event") { property("i", i) } }
-            output.text = sdk.diagnostics().toString()
-            if (Build.VERSION.SDK_INT >= 29) Trace.endAsyncSection(SDK_READY, 0)
+            try {
+                val sdk = (application as ProfileApplication).init.await().let { (it as? InitResult.Success)?.sdk }
+                if (sdk == null) { output.text = "init failed"; return@launch }
+                repeat(EVENTS) { i -> sdk.track("profile_event") { property("i", i) } }
+                output.text = sdk.diagnostics().toString()
+            } finally {
+                if (Build.VERSION.SDK_INT >= 29) Trace.endAsyncSection(SDK_READY, 0)
+            }
             reportFullyDrawn()
         }
     }
