@@ -1,7 +1,7 @@
 # Postmortem: review findings missed before the merge of PR #95
 
 Status: complete. Blameless format after the [Google SRE workbook](https://sre.google/workbook/postmortem-culture/).
-Sources: `gh pr view 95`, `gh pr view 97`, `gh pr view 99` (read-only, checked 2026-10-15); [issue 37](../../../.scratch/signaldock-portfolio/issues/37-tracking-plan-codegen.md); [issue 38](../../../.scratch/signaldock-portfolio/issues/38-tracking-plan-review-followups.md); [AGENTS.md](../../../AGENTS.md) "Review workflow".
+Sources: `gh pr view 95`, `gh pr view 97`, `gh pr view 99` (read-only, checked 2026-10-15); [issue 37](../../../.scratch/signaldock/issues/37-tracking-plan-codegen.md); [issue 38](../../../.scratch/signaldock/issues/38-tracking-plan-review-followups.md); [AGENTS.md](../../../AGENTS.md) "Review workflow".
 
 ## Summary
 
@@ -13,7 +13,7 @@ CodeRabbit found them again on the records PR #97. We fixed them in PR #99 (issu
 - Two review findings were open at merge:
   - Minor: `validatePlan` in `tracking-plan/generate.mjs` checked values before types ("Check field types before validating their values").
   - Trivial: no test ran the demo adapter with the generated wrappers (adapter-boundary test).
-- `main` held both until PR #99 merged. No release, user, or data was affected. The plan generator accepted an invalid plan or threw a `TypeError` for it ([issue 38](../../../.scratch/signaldock-portfolio/issues/38-tracking-plan-review-followups.md)).
+- `main` held both until PR #99 merged. No release, user, or data was affected. The plan generator accepted an invalid plan or threw a `TypeError` for it ([issue 38](../../../.scratch/signaldock/issues/38-tracking-plan-review-followups.md)).
 - The merge rule in AGENTS.md (no Critical or Major open) was met. The process still hid a finding that it should have shown.
 
 ## Timeline (UTC)
@@ -51,7 +51,7 @@ CodeRabbit on PR #97 noted the open review history. This was a lucky second revi
 - The records PR was a second look at PR #95. The findings were not lost.
 - Both findings were small. The fix and tests were done in one PR (#99).
 - The local issue tracker held the follow-up (issue 38), as the review workflow requires.
-- A review of PR #99 caught that ADR-0021 said the adapter test used only the public SDK API, and it was fixed before merge ([issue 38 comments](../../../.scratch/signaldock-portfolio/issues/38-tracking-plan-review-followups.md)).
+- A review of PR #99 caught that ADR-0021 said the adapter test used only the public SDK API, and it was fixed before merge ([issue 38 comments](../../../.scratch/signaldock/issues/38-tracking-plan-review-followups.md)).
 
 ## What went badly
 

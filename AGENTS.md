@@ -3,7 +3,7 @@
 ## Project purpose
 
 Build a mobile event collection SDK and a data processing server in one monorepo.
-Use the project as a portfolio for mobile SDK engineer roles.
+Hold the project to production open-source standards.
 
 ## Communication
 

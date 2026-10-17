@@ -37,7 +37,7 @@ Emulator run (AVD `signaldock-api37`, pixel_8, `system-images;android-37.2;googl
 - PostgreSQL: `docker run -d --name signaldock-demo16-pg -e POSTGRES_PASSWORD=... -e POSTGRES_USER=signaldock -e POSTGRES_DB=signaldock -p 54329:5432 postgres:17.6-alpine`. Server: `cd server && ./gradlew :app:run` with `SIGNALDOCK_COLLECTION_KEY`, `SIGNALDOCK_JDBC_URL`, `SIGNALDOCK_DB_USER`, `SIGNALDOCK_DB_PASSWORD`, `PORT=8080` (test key, not committed). `/health` returned `ok`.
 - `sdk/gradlew -p sdk :demo:app:installDebug`, then `adb shell input tap` through product, add to cart, cart, checkout, place order, and the Diagnostics tab.
 - Server receipt: `select count(*) from events` returned 4 (product_viewed, add_to_cart, checkout_started, purchase_completed, with the typed properties). The Diagnostics screen showed pending 0, last ACK accepted/duplicate/rejected 1/0/0, no delivery error, no retry scheduled.
-- Screenshots: `.scratch/signaldock-portfolio/evidence/16-demo-01-products.png`, `16-demo-02-detail.png`, `16-demo-03-cart.png`, `16-demo-04-checkout.png`, `16-demo-05-order-done.png`, `16-demo-06-diagnostics.png`.
+- Screenshots: `.scratch/signaldock/evidence/16-demo-01-products.png`, `16-demo-02-detail.png`, `16-demo-03-cart.png`, `16-demo-04-checkout.png`, `16-demo-05-order-done.png`, `16-demo-06-diagnostics.png`.
 - Emulator, server, and container were stopped at the end.
 
 Limits: the UI was driven with `adb input`, not Compose UI tests. The ACK counts on the Diagnostics screen show the last ACK only.

@@ -23,7 +23,7 @@ Verification commands and results:
 - `cd server && export JAVA_HOME="$PWD/../.tools/jdk-17.0.20.1+1" && export GRADLE_USER_HOME="$PWD/../.tools/gradle-home" && ./gradlew test verifyJooq --no-daemon` — passed; 13 server tests passed, Flyway applied `V1` to PostgreSQL 17.6, and clean jOOQ regeneration matched all 7 tracked generated files.
 - `export JAVA_HOME="$PWD/.tools/jdk-17.0.20.1+1" && export GRADLE_USER_HOME="$PWD/.tools/gradle-home" && export npm_config_cache="$PWD/.tools/npm-cache" && scripts/verify-contract.sh` — passed; ended with `ALL CONTRACT CHECKS PASSED`.
 - `git switch -c impl/02-server-ingestion` — failed before changing Git state: the sandbox returned `Operation not permitted` while creating the common repository ref lock.
-- `git add .scratch/signaldock-portfolio/issues/02-server-ingestion.md docs/adr/0004-server-runtime-and-receipt-boundaries.md gradle/libs.versions.toml server` — failed before staging: the sandbox returned `Operation not permitted` while creating the worktree index lock.
+- `git add .scratch/signaldock/issues/02-server-ingestion.md docs/adr/0004-server-runtime-and-receipt-boundaries.md gradle/libs.versions.toml server` — failed before staging: the sandbox returned `Operation not permitted` while creating the worktree index lock.
 - Commit — not run because branch creation could not write the common Git metadata. Push and PR creation were not run as requested.
 
 2026-10-11: Verified and fixed two ingestion validation review findings.

@@ -8,14 +8,14 @@ This monorepo contains the SDK, a local data processing server, and their design
 Review the path from an app's `track()` call through a durable queue, retries, server deduplication, and independent artifact installation.
 
 > **Status: 2026-10-14**
-> The first release scope is done. The SDK, the server, the Android demo app, and the Dashboard are implemented. Delivery failure E2E, device durability, contract and DB change checks, server load measurement, and SDK device measurement have scripts and recorded results ([issues 20 to 24](.scratch/signaldock-portfolio/issues/)). [Reproduce from a clean clone](#reproduce-from-a-clean-clone) lists the commands that were run in a fresh clone, and what was not verified: a physical device, and the full server measurement matrix (not run, Q133).
+> The first release scope is done. The SDK, the server, the Android demo app, and the Dashboard are implemented. Delivery failure E2E, device durability, contract and DB change checks, server load measurement, and SDK device measurement have scripts and recorded results ([issues 20 to 24](.scratch/signaldock/issues/)). [Reproduce from a clean clone](#reproduce-from-a-clean-clone) lists the commands that were run in a fresh clone, and what was not verified: a physical device, and the full server measurement matrix (not run, Q133).
 
 ![The Dashboard with one stored event selected: the event list on the left, the event details and stored JSON on the right.](docs/images/dashboard.png)
 
 ![The benchmark report: verdict, collection latency, and the 503 share of one overload run.](docs/images/perf-report.png)
 
 The screenshots show the Dashboard and the benchmark report with 120 seeded test events and the recorded runs in `perf/results/`.
-A short video of demo `track()` to Dashboard receipt: [25-demo-track-to-dashboard.mp4](.scratch/signaldock-portfolio/evidence/25-demo-track-to-dashboard.mp4).
+A short video of demo `track()` to Dashboard receipt: [25-demo-track-to-dashboard.mp4](.scratch/signaldock/evidence/25-demo-track-to-dashboard.mp4).
 
 ## Start here
 
@@ -23,7 +23,7 @@ A short video of demo `track()` to Dashboard receipt: [25-demo-track-to-dashboar
 2. [Architecture SVG](docs/architecture/signaldock-architecture.svg): a static view of the onepager's structure.
 3. [Architecture onepager HTML](docs/architecture/signaldock-onepager.html): diagrams, operation sequence, and design Q&A.
 4. [Installation identity ADR](docs/adr/0001-installation-scoped-identity.md) and [OpenAPI / JSON ADR](docs/adr/0002-openapi-json-contract.md): decisions and tradeoffs.
-5. [First release spec](.scratch/signaldock-portfolio/spec.md): input, ACK, error, lifecycle, and verification contracts.
+5. [First release spec](.scratch/signaldock/spec.md): input, ACK, error, lifecycle, and verification contracts.
 
 Download the HTML and open it in a local browser. GitHub's file view does not run the page.
 Keep the repository's folder structure so the supporting document links work.
@@ -44,10 +44,10 @@ This open-source release from Stackline covers public API design, lifecycle mana
 
 | Design concern | Decision | Recorded evidence |
 | --- | --- | --- |
-| Offline collection within a storage limit | Collection succeeds at Room commit. At the queue limit, preserve existing events and return `QueueFull` for new calls | 1,000 offline events survived a process restart; concurrent inserts and capacity boundaries ran on two emulators ([issue 20](.scratch/signaldock-portfolio/issues/20-sdk-durability-device.md)) |
-| Lost ACKs without duplicate storage | Retry with the same `eventId`. Use a server unique constraint and content comparison; ACK after commit | A fault proxy dropped the response after commit; duplicate and conflict results; unique rows and counts compared ([issue 21](.scratch/signaldock-portfolio/issues/21-delivery-failure-e2e.md)) |
-| Foreground response and background recovery | Share the sender and durable retry state with WorkManager. Keep collection writes separate from the send lock | Sender contention, cancellation, Worker recovery, and retry waits across restart ran on two emulators ([issue 20](.scratch/signaldock-portfolio/issues/20-sdk-durability-device.md)) |
-| Shared contracts and independent releases | OpenAPI / JSON with generated source drift checks. Install the Maven ZIP in a separate R8 consumer app | Round trips, earlier-version fixtures, and DB migrations ([issue 22](.scratch/signaldock-portfolio/issues/22-contract-db-change-checks.md)); Maven ZIP installation and an R8 release consumer app ([issue 06](.scratch/signaldock-portfolio/issues/06-distribution.md), [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md)) |
+| Offline collection within a storage limit | Collection succeeds at Room commit. At the queue limit, preserve existing events and return `QueueFull` for new calls | 1,000 offline events survived a process restart; concurrent inserts and capacity boundaries ran on two emulators ([issue 20](.scratch/signaldock/issues/20-sdk-durability-device.md)) |
+| Lost ACKs without duplicate storage | Retry with the same `eventId`. Use a server unique constraint and content comparison; ACK after commit | A fault proxy dropped the response after commit; duplicate and conflict results; unique rows and counts compared ([issue 21](.scratch/signaldock/issues/21-delivery-failure-e2e.md)) |
+| Foreground response and background recovery | Share the sender and durable retry state with WorkManager. Keep collection writes separate from the send lock | Sender contention, cancellation, Worker recovery, and retry waits across restart ran on two emulators ([issue 20](.scratch/signaldock/issues/20-sdk-durability-device.md)) |
+| Shared contracts and independent releases | OpenAPI / JSON with generated source drift checks. Install the Maven ZIP in a separate R8 consumer app | Round trips, earlier-version fixtures, and DB migrations ([issue 22](.scratch/signaldock/issues/22-contract-db-change-checks.md)); Maven ZIP installation and an R8 release consumer app ([issue 06](.scratch/signaldock/issues/06-distribution.md), [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md)) |
 
 Engineering judgment: [design review, failure modes, postmortems, and threat model](docs/engineering/README.md).
 
@@ -81,21 +81,21 @@ The first release covers a native Android SDK and one local project.
 The demo follows product view, cart, and simulated purchase. The Dashboard helps verify SDK integration.
 iOS / Flutter, React Native / Flutter / Unity or WebView (native-web) bridges (Q150), automatic events, `identify`, campaign / push, funnels, multiple accounts, public internet operation, and Maven Central are outside this release.
 
-The [completion criteria](.scratch/signaldock-portfolio/spec.md#7-completion-criteria-and-verification-plan) require environment records, source revision/hash, and event ID comparisons. Each implementation issue in `.scratch/signaldock-portfolio/issues/` records what ran and what did not.
+The [completion criteria](.scratch/signaldock/spec.md#7-completion-criteria-and-verification-plan) require environment records, source revision/hash, and event ID comparisons. Each implementation issue in `.scratch/signaldock/issues/` records what ran and what did not.
 Measured results are local environment records, not an SLA:
 
-- Server: two pilot runs and one overload run on one Mac with Docker limits, in [`perf/results/`](perf/results/). The overload run shows HTTP 503 with `Retry-After` and recovery without a restart. The 216-run pool-size matrix was not run (Q133, [ADR-0013](docs/adr/0013-server-load-measurement-harness.md), [issue 23](.scratch/signaldock-portfolio/issues/23-server-load-measurement.md)).
-- SDK: normal, offline, and burst runs on API 24 and API 37 emulators with a debug build, and once more on the API 37 emulator with an R8 release build (debug-signed), in [`perf/sdk-results/summary.md`](perf/sdk-results/summary.md) ([ADR-0014](docs/adr/0014-sdk-device-measurement-harness.md), [ADR-0018](docs/adr/0018-sdk-release-r8-measurement.md), [issue 24](.scratch/signaldock-portfolio/issues/24-sdk-device-measurement.md), [issue 33](.scratch/signaldock-portfolio/issues/33-sdk-crash-safety-and-release-build.md)).
-- SDK cost for a host app, on the API 37 emulator with the R8 consumer app with and without the SDK: the APK grows by 616,829 bytes (dex by 966,108 bytes), cold start `TotalTime` p50 is 235 ms without and 238 ms with the SDK, `initialize()` takes 0.26 ms (p50) and 3.0 ms (p95) of the main thread, and PSS is 4.0 MiB higher after 5 s idle ([`perf/sdk-results/host-cost-api37/summary.md`](perf/sdk-results/host-cost-api37/summary.md), [ADR-0020](docs/adr/0020-sdk-host-app-cost.md), [issue 36](.scratch/signaldock-portfolio/issues/36-sdk-host-app-cost.md)).
-- CI: the 26 instrumented SDK tests run on an API 34 `google_apis` x86_64 emulator in GitHub Actions (`device-test` job), and a size gate fails the build when the SDK adds more than 700,000 bytes to the R8 consumer APK (`size-budget` job). The process-boundary cases of `scripts/device-durability.sh` and the measurements stay local ([ADR-0023](docs/adr/0023-ci-device-tests-and-size-budget.md), [issue 40](.scratch/signaldock-portfolio/issues/40-ci-device-tests-and-size-budget.md)).
-- The [performance plan](.scratch/signaldock-portfolio/performance-plan.md) holds the original targets and conditions.
+- Server: two pilot runs and one overload run on one Mac with Docker limits, in [`perf/results/`](perf/results/). The overload run shows HTTP 503 with `Retry-After` and recovery without a restart. The 216-run pool-size matrix was not run (Q133, [ADR-0013](docs/adr/0013-server-load-measurement-harness.md), [issue 23](.scratch/signaldock/issues/23-server-load-measurement.md)).
+- SDK: normal, offline, and burst runs on API 24 and API 37 emulators with a debug build, and once more on the API 37 emulator with an R8 release build (debug-signed), in [`perf/sdk-results/summary.md`](perf/sdk-results/summary.md) ([ADR-0014](docs/adr/0014-sdk-device-measurement-harness.md), [ADR-0018](docs/adr/0018-sdk-release-r8-measurement.md), [issue 24](.scratch/signaldock/issues/24-sdk-device-measurement.md), [issue 33](.scratch/signaldock/issues/33-sdk-crash-safety-and-release-build.md)).
+- SDK cost for a host app, on the API 37 emulator with the R8 consumer app with and without the SDK: the APK grows by 616,829 bytes (dex by 966,108 bytes), cold start `TotalTime` p50 is 235 ms without and 238 ms with the SDK, `initialize()` takes 0.26 ms (p50) and 3.0 ms (p95) of the main thread, and PSS is 4.0 MiB higher after 5 s idle ([`perf/sdk-results/host-cost-api37/summary.md`](perf/sdk-results/host-cost-api37/summary.md), [ADR-0020](docs/adr/0020-sdk-host-app-cost.md), [issue 36](.scratch/signaldock/issues/36-sdk-host-app-cost.md)).
+- CI: the 26 instrumented SDK tests run on an API 34 `google_apis` x86_64 emulator in GitHub Actions (`device-test` job), and a size gate fails the build when the SDK adds more than 700,000 bytes to the R8 consumer APK (`size-budget` job). The process-boundary cases of `scripts/device-durability.sh` and the measurements stay local ([ADR-0023](docs/adr/0023-ci-device-tests-and-size-budget.md), [issue 40](.scratch/signaldock/issues/40-ci-device-tests-and-size-budget.md)).
+- The [performance plan](.scratch/signaldock/performance-plan.md) holds the original targets and conditions.
 
 Steps to run, stop, and reset the stack, to build the Maven ZIP, and to run the consumer app are below.
 
 ## Reproduce from a clean clone
 
-The commands in this section were run in a fresh clone, except `docker compose down --volumes` (the reset), which was not run on purpose. The record (commands, results, wall times) is in [issue 25](.scratch/signaldock-portfolio/issues/25-reproduction-readme-video.md). The longer guide (demo app, E2E, device scripts, measurements, physical device, reset, limits) is [docs/reproduce.md](docs/reproduce.md).
-A short video of demo `track()` to Dashboard receipt is in [`.scratch/signaldock-portfolio/evidence/25-demo-track-to-dashboard.mp4`](.scratch/signaldock-portfolio/evidence/25-demo-track-to-dashboard.mp4).
+The commands in this section were run in a fresh clone, except `docker compose down --volumes` (the reset), which was not run on purpose. The record (commands, results, wall times) is in [issue 25](.scratch/signaldock/issues/25-reproduction-readme-video.md). The longer guide (demo app, E2E, device scripts, measurements, physical device, reset, limits) is [docs/reproduce.md](docs/reproduce.md).
+A short video of demo `track()` to Dashboard receipt is in [`.scratch/signaldock/evidence/25-demo-track-to-dashboard.mp4`](.scratch/signaldock/evidence/25-demo-track-to-dashboard.mp4).
 The first run downloads the JDK, Docker images, Gradle dependencies, and npm packages. It is not fully offline.
 
 You need: macOS or Linux, Docker with Compose, Python 3, `curl`, `openssl`, and an Android SDK with platform `android-36` (`ANDROID_HOME`). The device scripts also need an emulator (AVD). `scripts/device-measure.sh` also needs macOS.
@@ -224,7 +224,7 @@ The [SDK integration guide](docs/integration-guide.md) ([한국어](docs/integra
 ## Repository guide
 
 The repository holds design documents and product code under `sdk/`, `server/`, and `dashboard/`.
-The spec, verification plans, and implementation issues in `.scratch/signaldock-portfolio/` are the approved design sources tracked in Git. Personal conversations and résumé review records are excluded.
+The spec, verification plans, and implementation issues in `.scratch/signaldock/` are the approved design sources tracked in Git. Personal conversations and résumé review records are excluded.
 
 | Path | Contents |
 | --- | --- |
@@ -232,10 +232,10 @@ The spec, verification plans, and implementation issues in `.scratch/signaldock-
 | [docs/architecture/](docs/architecture/) | Diagrams, onepager HTML, and source text |
 | [docs/adr/](docs/adr/) | Architecture decision records, one file for each decision |
 | [GLOSSARY.md](GLOSSARY.md) | Collection success, receipt success, installation ID, and event ID definitions |
-| [.scratch/signaldock-portfolio/spec.md](.scratch/signaldock-portfolio/spec.md) | Detailed design and completion criteria |
-| [.scratch/signaldock-portfolio/final-review.md](.scratch/signaldock-portfolio/final-review.md) | Final design review |
-| [.scratch/signaldock-portfolio/dashboard-verification-defaults.md](.scratch/signaldock-portfolio/dashboard-verification-defaults.md) | Dashboard query and display defaults |
-| [.scratch/signaldock-portfolio/performance-plan.md](.scratch/signaldock-portfolio/performance-plan.md) | Performance test conditions, criteria, and raw data plan |
-| [.scratch/signaldock-portfolio/issues/](.scratch/signaldock-portfolio/issues/) | Implementation tasks |
+| [.scratch/signaldock/spec.md](.scratch/signaldock/spec.md) | Detailed design and completion criteria |
+| [.scratch/signaldock/final-review.md](.scratch/signaldock/final-review.md) | Final design review |
+| [.scratch/signaldock/dashboard-verification-defaults.md](.scratch/signaldock/dashboard-verification-defaults.md) | Dashboard query and display defaults |
+| [.scratch/signaldock/performance-plan.md](.scratch/signaldock/performance-plan.md) | Performance test conditions, criteria, and raw data plan |
+| [.scratch/signaldock/issues/](.scratch/signaldock/issues/) | Implementation tasks |
 
 This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE).

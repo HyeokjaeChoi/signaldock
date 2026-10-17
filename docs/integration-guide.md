@@ -3,7 +3,7 @@
 [한국어](integration-guide.ko.md)
 
 This guide tells an app developer how to add the SignalDock Android SDK to an app and how to use it.
-It adds no new behavior. Each statement names the source it comes from: the [spec](../.scratch/signaldock-portfolio/spec.md) ("spec 3" means section 3), the [architecture](../architecture.md), or an [ADR](adr/).
+It adds no new behavior. Each statement names the source it comes from: the [spec](../.scratch/signaldock/spec.md) ("spec 3" means section 3), the [architecture](../architecture.md), or an [ADR](adr/).
 The SDK public API has KDoc on every public declaration. It agrees with this guide.
 
 The SDK package is `local.signaldock`. The release version is `0.2.0`. The coordinate is `local.signaldock:sdk-android:0.2.0` (spec 8.C, Q126).

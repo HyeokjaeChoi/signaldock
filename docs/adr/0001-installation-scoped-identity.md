@@ -18,7 +18,7 @@ The SDK generates and stores the installation ID during first initialization. It
 
 ## Evidence
 
-- [Sol 6.1 research report: official documentation and pinned commit comparison](../../.scratch/signaldock-portfolio/installation-id-research.md)
+- [Sol 6.1 research report: official documentation and pinned commit comparison](../../.scratch/signaldock/installation-id-research.md)
 - [Android UUID.randomUUID(): UUIDv4 generation](https://developer.android.com/reference/java/util/UUID#randomUUID())
 - [Android Auto Backup: default backup scope and restoration](https://developer.android.com/identity/data/autobackup)
 - [Android getNoBackupFilesDir](https://developer.android.com/reference/android/content/Context#getNoBackupFilesDir())

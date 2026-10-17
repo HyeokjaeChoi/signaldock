@@ -3,7 +3,7 @@
 [English](integration-guide.md)
 
 이 가이드는 앱 개발자가 SignalDock Android SDK를 앱에 추가하고 사용하는 방법을 설명합니다.
-새로운 동작은 추가하지 않습니다. 모든 문장은 출처를 밝힙니다. 출처는 [spec](../.scratch/signaldock-portfolio/spec.md)("spec 3"은 3절), [architecture](../architecture.md), [ADR](adr/)입니다.
+새로운 동작은 추가하지 않습니다. 모든 문장은 출처를 밝힙니다. 출처는 [spec](../.scratch/signaldock/spec.md)("spec 3"은 3절), [architecture](../architecture.md), [ADR](adr/)입니다.
 SDK의 모든 public 선언에는 KDoc이 있습니다. KDoc은 이 가이드와 일치합니다.
 
 SDK 패키지는 `local.signaldock`, 릴리스 버전은 `0.2.0`, 좌표는 `local.signaldock:sdk-android:0.2.0`입니다(spec 8.C, Q126).

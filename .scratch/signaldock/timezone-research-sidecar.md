@@ -63,4 +63,4 @@ All sources were directly checked on 2026-10-08. For some PostHog pages, the web
 - P4: PostHog, Timestamps: https://posthog.com/docs/data/timestamps.md
 - P5: PostHog, Dashboards: https://posthog.com/docs/product-analytics/dashboards
 
-Local comparison documents: `AGENTS.md`, `docs/agents/{domain,issue-tracker,triage-labels}.md`, `GLOSSARY.md`, `docs/adr/0002-openapi-json-contract.md`, `.scratch/signaldock-portfolio/{spec,discovery}.md`. No files outside this report were changed.
+Local comparison documents: `AGENTS.md`, `docs/agents/{domain,issue-tracker,triage-labels}.md`, `GLOSSARY.md`, `docs/adr/0002-openapi-json-contract.md`, `.scratch/signaldock/{spec,discovery}.md`. No files outside this report were changed.

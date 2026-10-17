@@ -4,7 +4,7 @@ status: accepted
 
 # Telemetry-style redesign of the Dashboard and the benchmark report (issue 28)
 
-Spec Q139 and Q140 (2026-10-13) fix the scope and the pattern set: presentation only, no new API, no new view. The sources of the patterns are in `.scratch/signaldock-portfolio/issue-28-design-references.md`. This ADR records how the code follows them and the decisions that Q139 and Q140 leave open. The user can change these decisions.
+Spec Q139 and Q140 (2026-10-13) fix the scope and the pattern set: presentation only, no new API, no new view. The sources of the patterns are in `.scratch/signaldock/issue-28-design-references.md`. This ADR records how the code follows them and the decisions that Q139 and Q140 leave open. The user can change these decisions.
 
 ## Decisions
 
@@ -59,7 +59,7 @@ Spec Q139 and Q140 (2026-10-13) fix the scope and the pattern set: presentation 
 
 ## Verification
 
-`cd dashboard && npm test` runs the unit tests of the KPI derivations (`kpi.test.ts`), the theme module (`web-shared/theme/theme.test.ts`: default, saved choice, storage that throws, the key in both `index.html` files), the token contrast (`web-shared/theme/contrast.test.ts`), and the render tests (theme switch label, `data-theme`, saved key; KPI cards without an extra request). The scan of ADR-0015 decision 5 covers the new components and strings. Screenshots in both languages and both themes are in `.scratch/signaldock-portfolio/evidence/28-*.png`.
+`cd dashboard && npm test` runs the unit tests of the KPI derivations (`kpi.test.ts`), the theme module (`web-shared/theme/theme.test.ts`: default, saved choice, storage that throws, the key in both `index.html` files), the token contrast (`web-shared/theme/contrast.test.ts`), and the render tests (theme switch label, `data-theme`, saved key; KPI cards without an extra request). The scan of ADR-0015 decision 5 covers the new components and strings. Screenshots in both languages and both themes are in `.scratch/signaldock/evidence/28-*.png`.
 
 ## Limits
 

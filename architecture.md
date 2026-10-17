@@ -4,7 +4,7 @@ The SDK stores events on the device and retries with the same `eventId`. It remo
 
 > **Design baseline: 2026-10-09. Q127 approved.**
 > Product implementation has not started. The behavior below is the agreed design; build, device, transport, and performance verification are pending.
-> See the [spec](.scratch/signaldock-portfolio/spec.md) for the full contract and the [ADRs](docs/adr/) for the decisions.
+> See the [spec](.scratch/signaldock/spec.md) for the full contract and the [ADRs](docs/adr/) for the decisions.
 
 ## Components and responsibilities
 
@@ -156,7 +156,7 @@ If admission cannot complete within the limit, return HTTP 503 with a positive R
 Set `lock_timeout < statement_timeout` and apply limits in the transaction on the same connection.
 Statement timeout does not set a deadline for the whole transaction. A timeout response proves neither absence of storage nor rollback or connection recovery.
 Verify rollback or connection disposal after errors, setting leaks on pool reuse, and the cancellation/commit boundary separately.
-Normal runtime values are undecided. Do not copy the [benchmark profile](.scratch/signaldock-portfolio/performance-plan.md) into normal runtime settings automatically.
+Normal runtime values are undecided. Do not copy the [benchmark profile](.scratch/signaldock/performance-plan.md) into normal runtime settings automatically.
 
 Apply Flyway migrations to a temporary PostgreSQL schema, generate jOOQ sources, then compile the server.
 Do not reset the runtime DB for codegen. Add new migrations instead of editing applied migrations.
@@ -199,7 +199,7 @@ Document the local entry point after implementation and verification. Reproducti
 | Android performance | Track p50 / p95, actual injection rate, queue drain, DB / sidecar size, and memory | Unmeasured |
 | Server performance | Collection and query HTTP latency; ID comparisons, errors, resources, and pool 2 / 4 / 8 comparison | Unmeasured |
 
-The [performance plan](.scratch/signaldock-portfolio/performance-plan.md) baseline has 24 conditions × 3 pool sizes × 3 runs = 216 runs.
+The [performance plan](.scratch/signaldock/performance-plan.md) baseline has 24 conditions × 3 pool sizes × 3 runs = 216 runs.
 Each run has 1 minute of warmup and 5 minutes of measurement: at least 21 hours 36 minutes of automated execution, excluding setup and recovery.
 100 events/s and collection ACK p95 ≤ 500 ms are injection and acceptance targets. Direct HTTP load and SDK performance need separate results.
 Record the environment, source revision/hash, fixtures, actual request rate, errors, and eventId comparisons. Performance figures do not compensate for correctness failures.
@@ -210,10 +210,10 @@ Record the environment, source revision/hash, fixtures, actual request rate, err
 | --- | --- | --- |
 | Installation identity and SDK backup exclusion | Lose continuity and unsent data across reinstallation and restore | [ADR-0001](docs/adr/0001-installation-scoped-identity.md) |
 | OpenAPI / JSON with generated sources in Git | Maintain generation paths, drift checks, and scalar validation | [ADR-0002](docs/adr/0002-openapi-json-contract.md) |
-| Event deduplication and a shared sender | Deduplication depends on row retention; serialization is limited to one process | [Spec](.scratch/signaldock-portfolio/spec.md) |
+| Event deduplication and a shared sender | Deduplication depends on row retention; serialization is limited to one process | [Spec](.scratch/signaldock/spec.md) |
 | SDK health report of dropped events | Counts are approximate (no idempotency, drops that cannot be stored are lost); one more small request per send cycle with drops | [ADR-0036](docs/adr/0036-sdk-client-reports.md) |
 | Server marks events against an optional tracking plan | The status is fixed at ingest; old rows and no-plan servers have none; no hot reload | [ADR-0022](docs/adr/0022-server-tracking-plan-status.md) |
-| Direct SQL and aggregation at query time | Measure query cost, indices, and DB waits | [Performance plan](.scratch/signaldock-portfolio/performance-plan.md) |
-| SDK verification Dashboard | Prioritize receipt lists and details over analytics features | [Dashboard defaults](.scratch/signaldock-portfolio/dashboard-verification-defaults.md) |
+| Direct SQL and aggregation at query time | Measure query cost, indices, and DB waits | [Performance plan](.scratch/signaldock/performance-plan.md) |
+| SDK verification Dashboard | Prioritize receipt lists and details over analytics features | [Dashboard defaults](.scratch/signaldock/dashboard-verification-defaults.md) |
 
-[Final design review](.scratch/signaldock-portfolio/final-review.md) · [Glossary](GLOSSARY.md) · [Onepager HTML](docs/architecture/signaldock-onepager.html) · [README](README.md)
+[Final design review](.scratch/signaldock/final-review.md) · [Glossary](GLOSSARY.md) · [Onepager HTML](docs/architecture/signaldock-onepager.html) · [README](README.md)

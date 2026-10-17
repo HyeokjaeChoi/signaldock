@@ -1,7 +1,7 @@
 # Postmortem: PR #95 closed unmerged after a failed merge call
 
 Status: complete. Blameless format after the [Google SRE workbook](https://sre.google/workbook/postmortem-culture/).
-Sources: `gh pr view 95` and the PR #95 timeline from the GitHub API (read-only, checked 2026-10-15); [issue 37 comments](../../../.scratch/signaldock-portfolio/issues/37-tracking-plan-codegen.md).
+Sources: `gh pr view 95` and the PR #95 timeline from the GitHub API (read-only, checked 2026-10-15); [issue 37 comments](../../../.scratch/signaldock/issues/37-tracking-plan-codegen.md).
 
 ## Summary
 

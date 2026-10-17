@@ -38,7 +38,7 @@ AGENTS.md: "Never label a step verified without a run."
 
 ## File to edit
 
-- `.scratch/signaldock-portfolio/issues/01-toolchain-contract.md`: the "Execution evidence" section (lines 38-44) and the "Environment limitation" section (lines 46-47).
+- `.scratch/signaldock/issues/01-toolchain-contract.md`: the "Execution evidence" section (lines 38-44) and the "Environment limitation" section (lines 46-47).
 
 ## Comments
 

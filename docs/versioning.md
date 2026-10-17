@@ -19,7 +19,7 @@ The SDK is before 1.0 (`0.x`). Until 1.0, a MINOR release can contain a breaking
 A change is breaking if an app that builds and works with the old version can fail to build or behave differently with the new one. These cases count:
 
 1. **Public API.** Any difference in the committed dump `sdk/sdk-android/api/sdk-android.api` that removes or changes a declaration. `sdk/gradlew -p sdk :sdk-android:apiCheck` fails on every difference. A pure addition is compatible. A removal or signature change is breaking ([ADR-0019](adr/0019-sdk-public-api-check.md)).
-2. **Documented behavior.** A change to the public behavior in spec section 3 (`track()` results, validation rules, cancellation, collection versus receipt success), for example another result type for the same input ([spec](../.scratch/signaldock-portfolio/spec.md#3-sdk-public-behavior)).
+2. **Documented behavior.** A change to the public behavior in spec section 3 (`track()` results, validation rules, cancellation, collection versus receipt success), for example another result type for the same input ([spec](../.scratch/signaldock/spec.md#3-sdk-public-behavior)).
 3. **Persisted data format.** A change to the Room schema or to the stored queue that the previous version cannot read, or that an upgrade would lose. A schema change needs a migration; the exported schema is in `sdk/sdk-android/schemas/` ([ADR-0003](adr/0003-sdk-storage-decisions.md)).
 4. **Requirements.** A higher `minSdk`, `compileSdk`, or minimum Kotlin or AGP version. The current values are in the [README](../README.md#supported-versions).
 
@@ -48,7 +48,7 @@ The contract version and the SDK version are separate numbers ([ADR-0012](adr/00
 ## Support window
 
 - Only the latest `0.x` release gets fixes, on a best-effort basis. There is no SLA and no promise of a date.
-- There are no long-term support branches. The project has one maintainer and is a portfolio project.
+- There are no long-term support branches. The project has one maintainer and is an open-source project.
 - The SDK is distributed as a Maven repository ZIP on GitHub Releases, not on Maven Central.
 - After 1.0, this section will be revised. Until then, do not rely on a support period.
 

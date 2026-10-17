@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for your interest. SignalDock is a portfolio project with one maintainer. Replies can be slow.
+Thank you for your interest. SignalDock is an open-source project with one maintainer. Replies can be slow.
 
 Report a security problem as described in [SECURITY.md](SECURITY.md), not in a public issue.
 

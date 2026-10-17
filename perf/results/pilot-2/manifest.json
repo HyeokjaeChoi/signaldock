@@ -9,7 +9,7 @@
     "dirty": true,
     "dirty_diff_sha256": "88697f3d8d45725991fcf79c32474d3f16b7ead82e710204a9969fbbda3b1160"
   },
-  "plan": "perf/../.scratch/signaldock-portfolio/performance-plan.md",
+  "plan": "perf/../.scratch/signaldock/performance-plan.md",
   "repetition": 1,
   "pool_order": "pilot",
   "pool_size": 4,

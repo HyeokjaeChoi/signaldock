@@ -8,7 +8,7 @@
 앱의 `track()` 호출에서 시작해 durable queue, 재시도, 서버 중복 제거, 독립 아티팩트 설치까지 이어지는 경로를 검토할 수 있습니다.
 
 > **상태: 2026-10-14**
-> 첫 릴리스 범위가 완료되었습니다. SDK, 서버, Android 데모 앱, Dashboard가 구현되어 있습니다. 전송 실패 E2E, 기기 내구성, 계약·DB 변경 검사, 서버 부하 측정, SDK 기기 측정은 스크립트와 기록된 결과가 있습니다([이슈 20~24](.scratch/signaldock-portfolio/issues/)). [클린 클론에서 재현](#클린-클론에서-재현)에는 새 클론에서 실행한 명령과 검증하지 못한 항목이 정리되어 있습니다. 검증하지 못한 항목은 실기기와 서버 측정 matrix 전체(실행하지 않음, Q133)입니다.
+> 첫 릴리스 범위가 완료되었습니다. SDK, 서버, Android 데모 앱, Dashboard가 구현되어 있습니다. 전송 실패 E2E, 기기 내구성, 계약·DB 변경 검사, 서버 부하 측정, SDK 기기 측정은 스크립트와 기록된 결과가 있습니다([이슈 20~24](.scratch/signaldock/issues/)). [클린 클론에서 재현](#클린-클론에서-재현)에는 새 클론에서 실행한 명령과 검증하지 못한 항목이 정리되어 있습니다. 검증하지 못한 항목은 실기기와 서버 측정 matrix 전체(실행하지 않음, Q133)입니다.
 
 설계 문서, ADR, 이슈 파일, `docs/reproduce.md`는 영어로만 제공합니다. 이 README는 해당 문서로 연결합니다.
 
@@ -17,7 +17,7 @@
 ![벤치마크 보고서: 판정, 수집 지연, 과부하 실행 하나의 503 비율.](docs/images/perf-report.png)
 
 스크린샷은 테스트 이벤트 120개를 넣은 Dashboard와, `perf/results/`에 기록된 실행을 보여 주는 벤치마크 보고서입니다.
-데모 `track()`부터 Dashboard 수신까지 보여 주는 짧은 영상: [25-demo-track-to-dashboard.mp4](.scratch/signaldock-portfolio/evidence/25-demo-track-to-dashboard.mp4).
+데모 `track()`부터 Dashboard 수신까지 보여 주는 짧은 영상: [25-demo-track-to-dashboard.mp4](.scratch/signaldock/evidence/25-demo-track-to-dashboard.mp4).
 
 ## 여기서 시작
 
@@ -25,7 +25,7 @@
 2. [Architecture SVG](docs/architecture/signaldock-architecture.svg): onepager 구조를 정적 그림으로 보여 줍니다.
 3. [Architecture onepager HTML](docs/architecture/signaldock-onepager.html): 다이어그램, 동작 순서, 설계 Q&A.
 4. [Installation identity ADR](docs/adr/0001-installation-scoped-identity.md)과 [OpenAPI / JSON ADR](docs/adr/0002-openapi-json-contract.md): 결정과 tradeoff.
-5. [First release spec](.scratch/signaldock-portfolio/spec.md): 입력, ACK, 오류, 수명 주기, 검증 계약.
+5. [First release spec](.scratch/signaldock/spec.md): 입력, ACK, 오류, 수명 주기, 검증 계약.
 
 HTML을 내려받아 로컬 브라우저에서 여세요. GitHub 파일 보기에서는 페이지가 실행되지 않습니다.
 보조 문서 링크가 동작하도록 저장소 폴더 구조를 그대로 유지하세요.
@@ -46,10 +46,10 @@ Stackline의 이 오픈소스 릴리스는 공개 API 설계, 수명 주기 관�
 
 | 설계 관심사 | 결정 | 기록된 근거 |
 | --- | --- | --- |
-| 저장 한도 안에서 오프라인 수집 | Room commit 시점에 수집 성공. 큐 한도에서는 기존 이벤트를 보존하고 새 호출에 `QueueFull` 반환 | 오프라인 이벤트 1,000개가 프로세스 재시작 후에도 유지됨. 동시 insert와 용량 경계를 에뮬레이터 2대에서 실행([issue 20](.scratch/signaldock-portfolio/issues/20-sdk-durability-device.md)) |
-| ACK가 유실되어도 중복 저장 없음 | 같은 `eventId`로 재시도. 서버 unique 제약과 내용 비교 사용. commit 후 ACK | fault proxy가 commit 후 응답을 버림. duplicate·conflict 결과와 unique row 수·집계를 비교([issue 21](.scratch/signaldock-portfolio/issues/21-delivery-failure-e2e.md)) |
-| 포그라운드 응답과 백그라운드 복구 | sender와 durable 재시도 상태를 WorkManager와 공유. 수집 쓰기는 전송 lock과 분리 | sender 경합, 취소, Worker 복구, 재시작 후 재시도 대기를 에뮬레이터 2대에서 실행([issue 20](.scratch/signaldock-portfolio/issues/20-sdk-durability-device.md)) |
-| 공유 계약과 독립 릴리스 | OpenAPI / JSON과 생성 소스 drift 검사. 별도 R8 consumer 앱에 Maven ZIP 설치 | round trip, 이전 버전 fixture, DB migration([issue 22](.scratch/signaldock-portfolio/issues/22-contract-db-change-checks.md)). Maven ZIP 설치와 R8 release consumer 앱([issue 06](.scratch/signaldock-portfolio/issues/06-distribution.md), [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md)) |
+| 저장 한도 안에서 오프라인 수집 | Room commit 시점에 수집 성공. 큐 한도에서는 기존 이벤트를 보존하고 새 호출에 `QueueFull` 반환 | 오프라인 이벤트 1,000개가 프로세스 재시작 후에도 유지됨. 동시 insert와 용량 경계를 에뮬레이터 2대에서 실행([issue 20](.scratch/signaldock/issues/20-sdk-durability-device.md)) |
+| ACK가 유실되어도 중복 저장 없음 | 같은 `eventId`로 재시도. 서버 unique 제약과 내용 비교 사용. commit 후 ACK | fault proxy가 commit 후 응답을 버림. duplicate·conflict 결과와 unique row 수·집계를 비교([issue 21](.scratch/signaldock/issues/21-delivery-failure-e2e.md)) |
+| 포그라운드 응답과 백그라운드 복구 | sender와 durable 재시도 상태를 WorkManager와 공유. 수집 쓰기는 전송 lock과 분리 | sender 경합, 취소, Worker 복구, 재시작 후 재시도 대기를 에뮬레이터 2대에서 실행([issue 20](.scratch/signaldock/issues/20-sdk-durability-device.md)) |
+| 공유 계약과 독립 릴리스 | OpenAPI / JSON과 생성 소스 drift 검사. 별도 R8 consumer 앱에 Maven ZIP 설치 | round trip, 이전 버전 fixture, DB migration([issue 22](.scratch/signaldock/issues/22-contract-db-change-checks.md)). Maven ZIP 설치와 R8 release consumer 앱([issue 06](.scratch/signaldock/issues/06-distribution.md), [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md)) |
 
 엔지니어링 판단: [설계 리뷰, 장애 모드, 포스트모템, 위협 모델](docs/engineering/README.md) (영어 문서).
 
@@ -83,21 +83,21 @@ ACK가 유실되어도 이벤트 ID는 바뀌지 않습니다. 같은 ID와 같�
 데모는 상품 조회, 장바구니, 모의 구매 흐름을 따릅니다. Dashboard는 SDK 연동을 검증하는 데 도움을 줍니다.
 iOS / Flutter, React Native / Flutter / Unity 또는 WebView(native-web) bridge(Q150), 자동 이벤트, `identify`, 캠페인 / push, 퍼널, 다중 계정, 공개 인터넷 운영, Maven Central은 이번 릴리스에 포함하지 않습니다.
 
-[완료 기준](.scratch/signaldock-portfolio/spec.md#7-completion-criteria-and-verification-plan)은 환경 기록, 소스 revision / hash, 이벤트 ID 비교를 요구합니다. `.scratch/signaldock-portfolio/issues/`의 각 구현 이슈는 무엇을 실행했고 무엇을 실행하지 않았는지 기록합니다.
+[완료 기준](.scratch/signaldock/spec.md#7-completion-criteria-and-verification-plan)은 환경 기록, 소스 revision / hash, 이벤트 ID 비교를 요구합니다. `.scratch/signaldock/issues/`의 각 구현 이슈는 무엇을 실행했고 무엇을 실행하지 않았는지 기록합니다.
 측정 결과는 로컬 환경 기록이며 SLA가 아닙니다.
 
-- 서버: Docker 제한이 있는 Mac 한 대에서 pilot 2회와 overload 1회를 실행했습니다. 결과는 [`perf/results/`](perf/results/)에 있습니다. overload 실행은 `Retry-After`가 붙은 HTTP 503과, 재시작 없는 복구를 보여 줍니다. 216회 pool 크기 matrix는 실행하지 않았습니다(Q133, [ADR-0013](docs/adr/0013-server-load-measurement-harness.md), [issue 23](.scratch/signaldock-portfolio/issues/23-server-load-measurement.md)).
-- SDK: debug 빌드로 API 24와 API 37 에뮬레이터에서 normal, offline, burst를 실행했고, API 37 에뮬레이터에서 R8 release 빌드(debug 서명)로 한 번 더 실행했습니다. 결과는 [`perf/sdk-results/summary.md`](perf/sdk-results/summary.md)에 있습니다([ADR-0014](docs/adr/0014-sdk-device-measurement-harness.md), [ADR-0018](docs/adr/0018-sdk-release-r8-measurement.md), [issue 24](.scratch/signaldock-portfolio/issues/24-sdk-device-measurement.md), [issue 33](.scratch/signaldock-portfolio/issues/33-sdk-crash-safety-and-release-build.md)).
-- 호스트 앱이 치르는 SDK 비용: API 37 에뮬레이터에서 SDK가 있는 R8 consumer 앱과 없는 앱을 비교했습니다. APK는 616,829 bytes(dex는 966,108 bytes) 커지고, 콜드 스타트 `TotalTime` p50은 SDK 없음 235 ms, 있음 238 ms이며, `initialize()`는 메인 스레드를 p50 0.26 ms, p95 3.0 ms 사용하고, 5초 유휴 후 PSS는 4.0 MiB 더 큽니다([`perf/sdk-results/host-cost-api37/summary.md`](perf/sdk-results/host-cost-api37/summary.md), [ADR-0020](docs/adr/0020-sdk-host-app-cost.md), [issue 36](.scratch/signaldock-portfolio/issues/36-sdk-host-app-cost.md)).
-- CI: GitHub Actions에서 API 34 `google_apis` x86_64 에뮬레이터로 계측 SDK 테스트 26개를 실행하고(`device-test` job), SDK가 R8 consumer APK를 700,000 bytes보다 더 키우면 빌드를 실패시키는 크기 게이트가 있습니다(`size-budget` job). `scripts/device-durability.sh`의 프로세스 경계 케이스와 측정은 로컬에서만 실행합니다([ADR-0023](docs/adr/0023-ci-device-tests-and-size-budget.md), [issue 40](.scratch/signaldock-portfolio/issues/40-ci-device-tests-and-size-budget.md)).
-- [성능 계획](.scratch/signaldock-portfolio/performance-plan.md)에는 처음의 목표와 조건이 있습니다.
+- 서버: Docker 제한이 있는 Mac 한 대에서 pilot 2회와 overload 1회를 실행했습니다. 결과는 [`perf/results/`](perf/results/)에 있습니다. overload 실행은 `Retry-After`가 붙은 HTTP 503과, 재시작 없는 복구를 보여 줍니다. 216회 pool 크기 matrix는 실행하지 않았습니다(Q133, [ADR-0013](docs/adr/0013-server-load-measurement-harness.md), [issue 23](.scratch/signaldock/issues/23-server-load-measurement.md)).
+- SDK: debug 빌드로 API 24와 API 37 에뮬레이터에서 normal, offline, burst를 실행했고, API 37 에뮬레이터에서 R8 release 빌드(debug 서명)로 한 번 더 실행했습니다. 결과는 [`perf/sdk-results/summary.md`](perf/sdk-results/summary.md)에 있습니다([ADR-0014](docs/adr/0014-sdk-device-measurement-harness.md), [ADR-0018](docs/adr/0018-sdk-release-r8-measurement.md), [issue 24](.scratch/signaldock/issues/24-sdk-device-measurement.md), [issue 33](.scratch/signaldock/issues/33-sdk-crash-safety-and-release-build.md)).
+- 호스트 앱이 치르는 SDK 비용: API 37 에뮬레이터에서 SDK가 있는 R8 consumer 앱과 없는 앱을 비교했습니다. APK는 616,829 bytes(dex는 966,108 bytes) 커지고, 콜드 스타트 `TotalTime` p50은 SDK 없음 235 ms, 있음 238 ms이며, `initialize()`는 메인 스레드를 p50 0.26 ms, p95 3.0 ms 사용하고, 5초 유휴 후 PSS는 4.0 MiB 더 큽니다([`perf/sdk-results/host-cost-api37/summary.md`](perf/sdk-results/host-cost-api37/summary.md), [ADR-0020](docs/adr/0020-sdk-host-app-cost.md), [issue 36](.scratch/signaldock/issues/36-sdk-host-app-cost.md)).
+- CI: GitHub Actions에서 API 34 `google_apis` x86_64 에뮬레이터로 계측 SDK 테스트 26개를 실행하고(`device-test` job), SDK가 R8 consumer APK를 700,000 bytes보다 더 키우면 빌드를 실패시키는 크기 게이트가 있습니다(`size-budget` job). `scripts/device-durability.sh`의 프로세스 경계 케이스와 측정은 로컬에서만 실행합니다([ADR-0023](docs/adr/0023-ci-device-tests-and-size-budget.md), [issue 40](.scratch/signaldock/issues/40-ci-device-tests-and-size-budget.md)).
+- [성능 계획](.scratch/signaldock/performance-plan.md)에는 처음의 목표와 조건이 있습니다.
 
 스택 실행, 중지, 초기화 방법과 Maven ZIP 빌드, consumer 앱 실행 방법은 아래에 있습니다.
 
 ## 클린 클론에서 재현
 
-이 절의 명령은 `docker compose down --volumes`(초기화)를 제외하고 모두 새 클론에서 실행했습니다. 초기화는 의도적으로 실행하지 않았습니다. 기록(명령, 결과, 소요 시간)은 [issue 25](.scratch/signaldock-portfolio/issues/25-reproduction-readme-video.md)에 있습니다. 더 긴 안내(데모 앱, E2E, 기기 스크립트, 측정, 실기기, 초기화, 한계)는 [docs/reproduce.md](docs/reproduce.md)에 있습니다(영어).
-데모의 `track()`부터 Dashboard 수신까지 보여 주는 짧은 영상은 [`.scratch/signaldock-portfolio/evidence/25-demo-track-to-dashboard.mp4`](.scratch/signaldock-portfolio/evidence/25-demo-track-to-dashboard.mp4)에 있습니다.
+이 절의 명령은 `docker compose down --volumes`(초기화)를 제외하고 모두 새 클론에서 실행했습니다. 초기화는 의도적으로 실행하지 않았습니다. 기록(명령, 결과, 소요 시간)은 [issue 25](.scratch/signaldock/issues/25-reproduction-readme-video.md)에 있습니다. 더 긴 안내(데모 앱, E2E, 기기 스크립트, 측정, 실기기, 초기화, 한계)는 [docs/reproduce.md](docs/reproduce.md)에 있습니다(영어).
+데모의 `track()`부터 Dashboard 수신까지 보여 주는 짧은 영상은 [`.scratch/signaldock/evidence/25-demo-track-to-dashboard.mp4`](.scratch/signaldock/evidence/25-demo-track-to-dashboard.mp4)에 있습니다.
 처음 실행할 때는 JDK, Docker 이미지, Gradle 의존성, npm 패키지를 내려받습니다. 완전한 오프라인 실행은 아닙니다.
 
 필요한 것: macOS 또는 Linux, Compose가 있는 Docker, Python 3, `curl`, `openssl`, platform `android-36`이 있는 Android SDK(`ANDROID_HOME`). 기기 스크립트에는 에뮬레이터(AVD)도 필요합니다. `scripts/device-measure.sh`는 macOS도 필요합니다.
@@ -226,7 +226,7 @@ SDK는 1.0 이전입니다. 수정은 가능한 범위에서 제공합니다(bes
 ## 저장소 안내
 
 저장소에는 설계 문서와, `sdk/`, `server/`, `dashboard/` 아래의 제품 코드가 있습니다.
-`.scratch/signaldock-portfolio/`의 spec, 검증 계획, 구현 이슈는 Git으로 추적하는 승인된 설계 소스입니다. 개인 대화와 이력서 검토 기록은 제외했습니다.
+`.scratch/signaldock/`의 spec, 검증 계획, 구현 이슈는 Git으로 추적하는 승인된 설계 소스입니다. 개인 대화와 이력서 검토 기록은 제외했습니다.
 
 | 경로 | 내용 |
 | --- | --- |
@@ -234,10 +234,10 @@ SDK는 1.0 이전입니다. 수정은 가능한 범위에서 제공합니다(bes
 | [docs/architecture/](docs/architecture/) | 다이어그램, onepager HTML, 원문 텍스트 |
 | [docs/adr/](docs/adr/) | Architecture decision record, 결정마다 파일 하나 |
 | [GLOSSARY.md](GLOSSARY.md) | 수집 성공, 수신 성공, installation ID, event ID 정의 |
-| [.scratch/signaldock-portfolio/spec.md](.scratch/signaldock-portfolio/spec.md) | 상세 설계와 완료 기준 |
-| [.scratch/signaldock-portfolio/final-review.md](.scratch/signaldock-portfolio/final-review.md) | 최종 설계 검토 |
-| [.scratch/signaldock-portfolio/dashboard-verification-defaults.md](.scratch/signaldock-portfolio/dashboard-verification-defaults.md) | Dashboard 조회와 표시 기본값 |
-| [.scratch/signaldock-portfolio/performance-plan.md](.scratch/signaldock-portfolio/performance-plan.md) | 성능 테스트 조건, 기준, 원시 데이터 계획 |
-| [.scratch/signaldock-portfolio/issues/](.scratch/signaldock-portfolio/issues/) | 구현 작업 |
+| [.scratch/signaldock/spec.md](.scratch/signaldock/spec.md) | 상세 설계와 완료 기준 |
+| [.scratch/signaldock/final-review.md](.scratch/signaldock/final-review.md) | 최종 설계 검토 |
+| [.scratch/signaldock/dashboard-verification-defaults.md](.scratch/signaldock/dashboard-verification-defaults.md) | Dashboard 조회와 표시 기본값 |
+| [.scratch/signaldock/performance-plan.md](.scratch/signaldock/performance-plan.md) | 성능 테스트 조건, 기준, 원시 데이터 계획 |
+| [.scratch/signaldock/issues/](.scratch/signaldock/issues/) | 구현 작업 |
 
 이 프로젝트는 Apache License 2.0을 따릅니다. [LICENSE](LICENSE)를 보세요.

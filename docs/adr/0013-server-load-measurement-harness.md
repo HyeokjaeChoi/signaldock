@@ -4,7 +4,7 @@ status: accepted
 
 # Server load measurement harness decisions
 
-Issue 23 builds the harness, the pilots, and one overload run (Q133, below) for `.scratch/signaldock-portfolio/performance-plan.md`. The plan fixes limits, seeds, load, durations, and acceptance. Spec section 11 and Q124 to Q125 keep benchmark values apart from normal runtime values. These decisions fill the gaps those sources leave. They are implementer decisions that the user can change.
+Issue 23 builds the harness, the pilots, and one overload run (Q133, below) for `.scratch/signaldock/performance-plan.md`. The plan fixes limits, seeds, load, durations, and acceptance. Spec section 11 and Q124 to Q125 keep benchmark values apart from normal runtime values. These decisions fill the gaps those sources leave. They are implementer decisions that the user can change.
 
 **Layout.** The harness lives in `perf/`. `perf/compose.perf.yml` is an override of `docker-compose.yml`. The scripts always call Compose with `-p signaldock-perf`, so containers, network, and the DB volume (`signaldock-perf_signaldock-db`) are separate from the default stack. The default `docker compose up` does not read `perf/`. The override sets DB 2 CPUs / 2 GiB and Ktor 2 CPUs / 1 GiB with `-Xmx512m`, and the plan's benchmark profile. It does not start the Dashboard. PostgreSQL settings stay at the defaults of the pinned image; each manifest stores the effective settings. Host ports are 15432 (DB) and 18080 (server). Test keys and the DB password are random, live in `perf/work/env` (gitignored, mode 0600), and are never written to a manifest or a result.
 

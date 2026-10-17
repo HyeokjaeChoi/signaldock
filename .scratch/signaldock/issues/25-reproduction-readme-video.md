@@ -50,7 +50,7 @@ Not verified, with reasons:
 - `docker compose down --volumes` (reset): not run, by rule. The README warns that it deletes data.
 - A first-run download from a machine with empty caches: not measured.
 
-Evidence (folder `.scratch/signaldock-portfolio/evidence/`):
+Evidence (folder `.scratch/signaldock/evidence/`):
 - `25-demo-track-to-dashboard.mp4`: 41 s, 1576x1000, about 360 KB. Left: emulator screen recording (`adb shell screenrecord`) of the demo app. Right: headless Chrome captures of the Dashboard every 1.5 to 2 s. The event ID prefixes on the Dashboard match the demo screen. Frames checked: no key and no secret shown.
 - `25-demo-saved-on-device.png`: demo screen "Saved on device: add_to_cart (8bdf0699)".
 - `25-dashboard-received.png`: Dashboard with `product_viewed`, `add_to_cart`, and the earlier `consumer_ping`.

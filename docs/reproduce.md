@@ -25,7 +25,7 @@ adb -s emulator-5584 shell am start -n local.signaldock.demo/local.signaldock.de
 
 Tap a product, then "Add to cart". The screen shows "Saved on device: add_to_cart (<8 characters of eventId>)". That means the event is in the local queue, not that the server has it. Open `http://127.0.0.1:5173`: after a few seconds the Dashboard lists `product_viewed` and `add_to_cart` with the same ID prefixes. The default endpoint is `http://10.0.2.2:8080`; change it with `-Psignaldock.endpoint=...`.
 
-Evidence: [video](../.scratch/signaldock-portfolio/evidence/25-demo-track-to-dashboard.mp4) (phone left, Dashboard right), [demo screen](../.scratch/signaldock-portfolio/evidence/25-demo-saved-on-device.png), [Dashboard](../.scratch/signaldock-portfolio/evidence/25-dashboard-received.png).
+Evidence: [video](../.scratch/signaldock/evidence/25-demo-track-to-dashboard.mp4) (phone left, Dashboard right), [demo screen](../.scratch/signaldock/evidence/25-demo-saved-on-device.png), [Dashboard](../.scratch/signaldock/evidence/25-dashboard-received.png).
 
 ## Delivery failure E2E (case 1 ran; cases 2 to 4 not run for this guide)
 
@@ -72,7 +72,7 @@ docker compose -p "$MEASURE_PROJECT" --env-file "$MEASURE_ENV" down      # keeps
 It writes `perf/sdk-results/api<api>-<scenario>/` and `perf/sdk-results/summary.md` (the committed results came from the owner's runs; a new run overwrites that folder in your clone, so use a scratch clone). The `normal` scenario ran for this guide. `offline` and `burst` did not.
 By default it uses a debug build of the SDK and the emulator, so the numbers are not release numbers and not an SLA. For the R8 release build (ADR-0018) set `MEASURE_BUILD=release`; it needs an emulator image where `adb root` works (`google_apis`, not Google Play) and writes `perf/sdk-results/api<api>-release-<scenario>/`.
 
-Server load (ADR-0013, [Q133](../.scratch/signaldock-portfolio/spec.md)): two pilots and one overload run are committed in `perf/results/`, with `perf/report/` as the viewer. **Not verified here:** the pilot and overload runs did not run in the clean clone. `perf/` always uses the Compose project `signaldock-perf` and a fixed volume, and this machine already holds such a volume from the earlier runs; a new clone writes new random passwords that would not match the old database password in it (expected, not tried), and the volume must not be deleted. Only the command line was checked:
+Server load (ADR-0013, [Q133](../.scratch/signaldock/spec.md)): two pilots and one overload run are committed in `perf/results/`, with `perf/report/` as the viewer. **Not verified here:** the pilot and overload runs did not run in the clean clone. `perf/` always uses the Compose project `signaldock-perf` and a fixed volume, and this machine already holds such a volume from the earlier runs; a new clone writes new random passwords that would not match the old database password in it (expected, not tried), and the volume must not be deleted. Only the command line was checked:
 
 ```sh
 python3 perf/seed.py --help

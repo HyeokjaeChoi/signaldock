@@ -31,6 +31,6 @@ Done when both pages render fully in each language with no hard-coded visible st
 - `cd dashboard && npm ci && npm run typecheck && npm test && npm run build`: pass (64 tests at the last PR #64 round, including the shared tests and the `t()` option type test, the hard-coded string and unformatted number scan, and the Dashboard tests in both languages). `npm run check-bundle-key` and `npm run contract-check`: pass.
 - `cd perf/report && npm ci && npm run typecheck && npm run build`: pass.
 - `python3 perf/sdk_summarize.py --index perf/sdk-results perf/results/sdk-index.json`: 6 runs. `python3 -m py_compile perf/*.py` and `scripts/check-repo-rules.sh`: pass.
-- Dashboard screenshots: Compose project `signaldock-i18n` (own env file outside the repo, ports 18170 to 18172), 15 seeded events, stopped with `docker compose -p signaldock-i18n down` (no volume deleted). Evidence: `.scratch/signaldock-portfolio/evidence/27-dashboard-en.png`, `27-dashboard-ko.png`, `27-perf-report-en.png`, `27-perf-report-ko.png`.
+- Dashboard screenshots: Compose project `signaldock-i18n` (own env file outside the repo, ports 18170 to 18172), 15 seeded events, stopped with `docker compose -p signaldock-i18n down` (no volume deleted). Evidence: `.scratch/signaldock/evidence/27-dashboard-en.png`, `27-dashboard-ko.png`, `27-perf-report-en.png`, `27-perf-report-ko.png`.
 - Not done: texts that the Python summaries write into the JSON stay in English (ADR-0015 "Not done").
 

@@ -4,7 +4,7 @@ status: accepted
 
 # Dashboard and Docker Compose delivery decisions
 
-Issue 15 builds the Dashboard and the Compose entry point. Spec section 6 "Dashboard" and "Reproduction and deliverables", Q77, Q108, Q109, Q128 to Q131, ADR-0007 "Authentication" and "Left open", and `.scratch/signaldock-portfolio/dashboard-verification-defaults.md` fix the behavior. These decisions fill the gaps those sources leave. They are implementer decisions that the user can change.
+Issue 15 builds the Dashboard and the Compose entry point. Spec section 6 "Dashboard" and "Reproduction and deliverables", Q77, Q108, Q109, Q128 to Q131, ADR-0007 "Authentication" and "Left open", and `.scratch/signaldock/dashboard-verification-defaults.md` fix the behavior. These decisions fill the gaps those sources leave. They are implementer decisions that the user can change.
 
 **Server bind address.** `main()` bound to `127.0.0.1` only. Inside a container, nginx cannot reach that address. The server now reads `SIGNALDOCK_BIND_HOST` (default `127.0.0.1`). The server image sets `0.0.0.0`. This is safe because Compose publishes the server port on the host's `127.0.0.1` only. The server still has no CORS.
 

@@ -390,7 +390,7 @@ def execute(a):
     salt = c.run_salt(a.run_id)
     times = {"run_start": stamp()}
     manifest = {"run_id": a.run_id, "status": "started", "counts_as_measured_run": not a.pilot, "pilot": a.pilot,
-                "git": c.git_state(), "plan": "perf/../.scratch/signaldock-portfolio/performance-plan.md",
+                "git": c.git_state(), "plan": "perf/../.scratch/signaldock/performance-plan.md",
                 "repetition": a.rep, "pool_order": a.position, "pool_size": a.pool,
                 "combination": {"seed_size": a.seed_size, "distribution": a.dist, "window_days": a.window, "clients": a.clients},
                 "reference_time_T": meta["reference_time_T"], "window": {"from": frm, "to": to}, "seed": meta,

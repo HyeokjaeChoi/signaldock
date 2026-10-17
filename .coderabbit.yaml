@@ -81,7 +81,7 @@ reviews:
     - path: "perf/**"
       instructions: >-
         Judge this change against the sections that docs/design-index.md
-        lists for the area `perf/`, and against .scratch/signaldock-portfolio/performance-plan.md. The design sources win over general
+        lists for the area `perf/`, and against .scratch/signaldock/performance-plan.md. The design sources win over general
         best practice. If the code and the design sources disagree, flag it
         and cite the section heading. Report a defect only if you can name the
         input or sequence that fails. Do not report what
@@ -111,7 +111,7 @@ reviews:
         mode: warning
         instructions: >-
           Pass if the PR does not change architecture.md, docs/adr/, or
-          .scratch/signaldock-portfolio/spec.md. If it does, pass only when
+          .scratch/signaldock/spec.md. If it does, pass only when
           the PR description names each changed decision and its reason.
           Review those changes as decision changes, not as documentation
           edits.
@@ -144,7 +144,7 @@ knowledge_base:
         applyTo: "**"
       - files: docs/adr/*.md
         applyTo: "**"
-      - files: .scratch/signaldock-portfolio/spec.md
+      - files: .scratch/signaldock/spec.md
         applyTo: "**"
       - files: TOOLCHAIN.md
         applyTo: "**"

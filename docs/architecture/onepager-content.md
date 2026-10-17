@@ -18,7 +18,7 @@ SignalDock is a planned Android event collection SDK. It stores events on the de
 
 ### 60-second introduction
 
-SignalDock is my Android SDK portfolio for mobile SDK engineer roles. I designed it to extend my app development experience into public APIs, durable queues, failure recovery, contract management, and artifact distribution. A successful track call means Room has committed the event. Foreground triggers and WorkManager share one sender. The server checks eventId and content for duplicates, then sends an ACK after database commit. If the ACK is lost, the SDK resends the same ID. It updates the queue only after validating the full ACK. Planned checks cover OpenAPI generated-source drift and Maven ZIP installation in an independent R8 consumer app.
+SignalDock is an open-source Android SDK from Stackline. I designed it to extend my app development experience into public APIs, durable queues, failure recovery, contract management, and artifact distribution. A successful track call means Room has committed the event. Foreground triggers and WorkManager share one sender. The server checks eventId and content for duplicates, then sends an ACK after database commit. If the ACK is lost, the SDK resends the same ID. It updates the queue only after validating the full ACK. Planned checks cover OpenAPI generated-source drift and Maven ZIP installation in an independent R8 consumer app.
 
 ## Contract generation and distribution
 
@@ -122,10 +122,10 @@ Planned runs cover 1,000 offline events and process restart, ACK loss after comm
 
 Keep these source documents at their relative paths when moving the HTML.
 
-- ../../.scratch/signaldock-portfolio/spec.md
-- ../../.scratch/signaldock-portfolio/final-review.md
-- ../../.scratch/signaldock-portfolio/performance-plan.md
-- ../../.scratch/signaldock-portfolio/dashboard-verification-defaults.md
+- ../../.scratch/signaldock/spec.md
+- ../../.scratch/signaldock/final-review.md
+- ../../.scratch/signaldock/performance-plan.md
+- ../../.scratch/signaldock/dashboard-verification-defaults.md
 - ../adr/0001-installation-scoped-identity.md
 - ../adr/0002-openapi-json-contract.md
 - ../../GLOSSARY.md

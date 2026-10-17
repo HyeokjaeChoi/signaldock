@@ -1,6 +1,6 @@
 # Security policy
 
-SignalDock is a portfolio project. The stack is for local use only. Read [Scope](#scope) before you report.
+SignalDock is an open-source project. The stack is for local use only. Read [Scope](#scope) before you report.
 
 ## Supported versions
 
@@ -34,6 +34,6 @@ In scope:
 Out of scope (known non-goals):
 
 - Operation on the public internet. The stack is local only. It binds to `127.0.0.1`, uses example-grade secrets, and has no TLS ([README](README.md#limitations)).
-- Extraction of the collection key from an app. The collection key is not a secret that cannot be extracted from the SDK. It checks access for local evaluation and does not replace user authentication (spec section 5, [spec](.scratch/signaldock-portfolio/spec.md#5-server-receipt-and-duplicate-handling)). It is write-only: it cannot read events (spec Q128).
+- Extraction of the collection key from an app. The collection key is not a secret that cannot be extracted from the SDK. It checks access for local evaluation and does not replace user authentication (spec section 5, [spec](.scratch/signaldock/spec.md#5-server-receipt-and-duplicate-handling)). It is write-only: it cannot read events (spec Q128).
 - A native-web (WebView JavaScript) bridge and other bridges (spec Q150). They do not exist.
 - Findings that need physical access to a device with the app data, or that need an attacker who already controls the local machine.

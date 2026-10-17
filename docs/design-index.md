@@ -43,7 +43,7 @@ Dependency tree change of `:sdk-android`: update the baseline (`sdk/gradlew -p s
 
 Integration guide: when you change the public API, its KDoc, or the behavior that it describes, update `docs/integration-guide.md` and `docs/integration-guide.ko.md` in the same PR. The guide samples are in `sdk/sdk-android/src/test/kotlin/local/signaldock/IntegrationGuideSamplesTest.kt` (issue 34).
 
-Spec (`.scratch/signaldock-portfolio/spec.md`):
+Spec (`.scratch/signaldock/spec.md`):
 - 1. Goal and scope
 - 3. SDK public behavior
 - 4. Local storage and delivery
@@ -77,7 +77,7 @@ ADRs:
 - ADR-0028 (`docs/adr/0028-server-production-features-excluded.md`), for the server features left out on purpose (rate limit, audit log, key policy, retention, Dashboard login) (issue 48)
 - ADR-0036 (`docs/adr/0036-sdk-client-reports.md`), for `POST /v1/client-reports`, `GET /v1/client-report-counts`, and `V3__create_client_reports.sql` (issue 61)
 
-Spec (`.scratch/signaldock-portfolio/spec.md`):
+Spec (`.scratch/signaldock/spec.md`):
 - 2. Agreed stack and boundaries
 - 5. Server receipt and duplicate handling
 - 6. User screens and distribution, Dashboard (for `server/query`)
@@ -90,7 +90,7 @@ Spec (`.scratch/signaldock-portfolio/spec.md`):
 - Q159 (contract support policy; the server `Deprecation` and `Sunset` headers are deferred to contract 2, ADR-0030)
 - Q164 (client reports: the server stores them and exposes counts)
 
-Also read `.scratch/signaldock-portfolio/dashboard-verification-defaults.md` before you edit `server/query` or the query routes.
+Also read `.scratch/signaldock/dashboard-verification-defaults.md` before you edit `server/query` or the query routes.
 
 ## `openapi/`, `fixtures/`, `generated/`, `contract-check/`
 
@@ -103,7 +103,7 @@ ADRs:
 - ADR-0027 (`docs/adr/0027-request-400-contract-only.md`), for `fixtures/sdk-wire/`, the SDK output corpus (issue 49)
 - ADR-0036 (`docs/adr/0036-sdk-client-reports.md`), for the additive client report endpoints (issue 61)
 
-Spec (`.scratch/signaldock-portfolio/spec.md`):
+Spec (`.scratch/signaldock/spec.md`):
 - 7. Completion criteria and verification plan (contract rows)
 - 8, B. Errors, ACKs, and data representation
 - 8, C. Small modules and local execution
@@ -121,7 +121,7 @@ ADRs:
 - ADR-0005, section "Demo app: feature modules and unidirectional data flow"
 - ADR-0021 (`docs/adr/0021-tracking-plan-codegen.md`), for how `sdk/demo/core/data` sends its events through the generated functions (issue 37)
 
-Spec (`.scratch/signaldock-portfolio/spec.md`):
+Spec (`.scratch/signaldock/spec.md`):
 - 6. User screens and distribution, Demo and diagnostics
 - Q152 to Q154 (tracking plan)
 
@@ -134,7 +134,7 @@ ADRs:
 - ADR-0021 (`docs/adr/0021-tracking-plan-codegen.md`)
 - ADR-0022 (`docs/adr/0022-server-tracking-plan-status.md`)
 
-Spec (`.scratch/signaldock-portfolio/spec.md`):
+Spec (`.scratch/signaldock/spec.md`):
 - 3. SDK public behavior, Collection
 - Q64 (name and key rules)
 - Q152 to Q155 (tracking plan, server plan status)
@@ -149,7 +149,7 @@ ADRs:
 - ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for `src/sdk`, `src/nosdk`, and `-Psignaldock.sdk=false` (issue 36)
 - ADR-0023 (`docs/adr/0023-ci-device-tests-and-size-budget.md`), for the APK size budget that builds the consumer app with and without the SDK (issue 40)
 
-Spec (`.scratch/signaldock-portfolio/spec.md`):
+Spec (`.scratch/signaldock/spec.md`):
 - 6. User screens and distribution, Reproduction and deliverables
 - Q151 (host cost)
 
@@ -168,14 +168,14 @@ ADRs:
 - ADR-0022 (`docs/adr/0022-server-tracking-plan-status.md`), for the plan status badge, filter, and violations card (issue 39)
 - ADR-0036 (`docs/adr/0036-sdk-client-reports.md`), for the "Dropped events" card (issue 61)
 
-Spec (`.scratch/signaldock-portfolio/spec.md`):
+Spec (`.scratch/signaldock/spec.md`):
 - 6. User screens and distribution, Dashboard
 - 8, B. Errors, ACKs, and data representation
 - 11. Delegated performance measurement decisions
 - 12. Dashboard role confirmation and default delegation
 - Q78 and Q79 (project timezone), Q107 to Q109 (contract errors and retry), Q135 to Q137 (UI languages), Q139 and Q140 (presentation redesign, issue 28), Q155 (plan status), Q164 (client reports)
 
-Also read `.scratch/signaldock-portfolio/dashboard-verification-defaults.md`.
+Also read `.scratch/signaldock/dashboard-verification-defaults.md`.
 
 ## `web-shared/` (code that `dashboard/` and `perf/report/` share, issues 27 and 28)
 
@@ -186,7 +186,7 @@ ADRs:
 - ADR-0016 (`docs/adr/0016-telemetry-style-ui.md`), for `web-shared/theme/`
 - ADR-0008 and ADR-0013, for the separate builds and lockfiles that it must not merge
 
-Spec (`.scratch/signaldock-portfolio/spec.md`):
+Spec (`.scratch/signaldock/spec.md`):
 - Q78 and Q79 (project timezone)
 - Q135 to Q137 (UI languages)
 - Q139 and Q140 (presentation redesign, issue 28)
@@ -210,7 +210,7 @@ ADRs:
 - ADR-0015 (`docs/adr/0015-web-ui-languages.md`), for the report page languages and `web-shared/`
 - ADR-0016 (`docs/adr/0016-telemetry-style-ui.md`), for the KPI strip, the table of contents, the overload bands, and the shared tokens (issue 28)
 
-Spec (`.scratch/signaldock-portfolio/spec.md`):
+Spec (`.scratch/signaldock/spec.md`):
 - 7. Completion criteria and verification plan
 - 11. Delegated performance measurement decisions
 - Q124 and Q125 (normal-operation waits stay separate from benchmark values)
@@ -218,7 +218,7 @@ Spec (`.scratch/signaldock-portfolio/spec.md`):
 - Q135 to Q137 (UI languages)
 - Q139 and Q140 (presentation redesign, issue 28)
 
-Also read `.scratch/signaldock-portfolio/performance-plan.md`; it is authoritative for the fixed conditions, load, and acceptance.
+Also read `.scratch/signaldock/performance-plan.md`; it is authoritative for the fixed conditions, load, and acceptance.
 
 ## `scripts/`, `.githooks/`, `.github/workflows/`, `gradle/`
 
@@ -235,7 +235,7 @@ ADRs:
 - ADR-0031 (`docs/adr/0031-renovate-dependency-updates.md`), for `.github/renovate.json5` and the dependency-update section of `docs/releases/README.md`; it supersedes ADR-0024 items 5 and 6 (issue 52)
 - ADR-0032 (`docs/adr/0032-codeql-advanced-setup.md`), for `.github/workflows/codeql.yml` (issue 54)
 
-Spec (`.scratch/signaldock-portfolio/spec.md`):
+Spec (`.scratch/signaldock/spec.md`):
 - Q149 (first release)
 - Q162 (CodeQL advanced setup, Gradle wrapper validation, release classpath baseline)
 - 7. Completion criteria and verification plan
@@ -254,7 +254,7 @@ ADRs:
 - ADR-0019 (`docs/adr/0019-sdk-public-api-check.md`), for the public API dump
 - ADR-0009 (`docs/adr/0009-maven-zip-and-consumer-app.md`), for the AAR requirements
 
-Spec (`.scratch/signaldock-portfolio/spec.md`):
+Spec (`.scratch/signaldock/spec.md`):
 - 1. Goal and scope
 - 3. SDK public behavior
 - 5. Server receipt and duplicate handling (the collection key is not a secret)
@@ -267,7 +267,7 @@ Design review, failure mode table, postmortems, and threat model. Every claim mu
 ADRs:
 - ADR-0004, ADR-0006, ADR-0007, ADR-0013, ADR-0017, ADR-0024 to ADR-0033, as the documents cite them
 
-Spec (`.scratch/signaldock-portfolio/spec.md`):
+Spec (`.scratch/signaldock/spec.md`):
 - 1. Goal and scope
 - 5. Server receipt and duplicate handling
 - Q128 to Q131 (keys), Q133 (load measurement scope), Q150 (bridges)
