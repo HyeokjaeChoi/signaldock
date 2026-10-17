@@ -29,7 +29,10 @@ class SdkSignalDockClientTest {
     fun `each DemoEvent is stored with its plan name and exactly its plan properties`() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<Context>()
         // Nothing listens on this port: delivery fails and every event stays in the queue.
-        val init = SignalDock.initialize(context, SignalDockConfig(endpoint = "http://localhost:9", collectionKey = "test-key"))
+        val init = SignalDock.initialize(
+            context,
+            SignalDockConfig(endpoint = "http://localhost:9", collectionKey = "test-key", allowInsecureEndpoint = true),
+        )
         val client = SdkSignalDockClient(CompletableDeferred(init))
         val events = listOf(
             DemoEvent.ProductViewed("P-1", 1200),
