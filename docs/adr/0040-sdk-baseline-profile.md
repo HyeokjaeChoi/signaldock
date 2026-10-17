@@ -47,6 +47,7 @@ Metric: the trace section above. Raw files: `perf/sdk-results/baseline-profile-a
 ## Limits
 
 - Gap: emulator only. No physical device, no field data (Android Vitals), one app shape.
+- Gap: fixed mode order. Every run measured all 20 samples of `startupNoCompilation` before the 20 samples of `startupBaselineProfile`. Emulator drift during a run can bias the comparison. A later run must alternate the order (or interleave the modes) and record the executed order before any gain is claimed.
 - The profile helps only a host that builds with AGP 7.1 or newer and installs by a path that applies the profile (Google Play, or `profileinstaller` on first run). A host that does not do this gets no change and no harm.
 - The profile ships rules for names that R8 renames in the host. The host's AGP rewrites them with the R8 mapping (checked in the consumer app: 546 SDK rules before R8, the rules after R8 use the short names).
 - A stale profile does not break anything: a rule for a missing method is ignored. It only loses benefit.
