@@ -18,7 +18,7 @@ ADR-0011 decision 10 kept the instrumented tests out of CI, and ADR-0020 measure
 
 ## Amendment (2026-10-17 UTC)
 
-Decision 3 counts changed. `sdk-android` now has 30 `@Test` methods. The 13 methods of `DurabilityPhases`, `FaultPhases`, and `MeasurePhases` skip themselves without `-e phase`, and 17 run (job log of `repo-rules` run 39002096383 on main at `cbb6210`). The rest of decision 3 is unchanged.
+Decision 3 counts changed. `sdk-android` now has 30 `@Test` methods. The 13 methods of `DurabilityPhases`, `FaultPhases`, and `MeasurePhases` skip themselves without `-e phase`, and 17 run (job log of `repo-rules` run 39002096383 on main at `cbb6210`). In that run the 17 methods passed. This also replaces the "26 tests pass" count in Limits. The rest of decision 3 is unchanged.
 
 ## Limits
 
