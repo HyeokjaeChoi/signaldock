@@ -167,9 +167,20 @@ class LifecycleTest {
     }
 
     @Test
+    fun `the default of allowInsecureEndpoint is false`() = runBlocking {
+        val cfg = SignalDockConfig(endpoint = "http://10.0.2.2:8080", collectionKey = "k")
+        assertFalse(cfg.allowInsecureEndpoint)
+        val c = Counting()
+        val r = coordinator(c).initialize(context, cfg)
+        assertTrue(r is InitResult.Failure && r.error is InitError.InvalidConfiguration)
+        assertEquals(0, c.builds.get())
+    }
+
+    @Test
     fun `http with allowInsecureEndpoint is accepted`() = runBlocking {
         val co = coordinator(Counting())
-        assertTrue(co.initialize(context, testConfig.copy(endpoint = "http://10.0.2.2:8080")) is InitResult.Success)
+        val cfg = SignalDockConfig(endpoint = "http://10.0.2.2:8080", collectionKey = "k", allowInsecureEndpoint = true)
+        assertTrue(co.initialize(context, cfg) is InitResult.Success)
     }
 
     @Test
