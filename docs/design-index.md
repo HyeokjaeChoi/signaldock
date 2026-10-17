@@ -76,6 +76,7 @@ ADRs:
 - ADR-0027 (`docs/adr/0027-request-400-contract-only.md`), for `RequestParsing.kt`, `SdkWireCorpusTest`, and what is a request-level 400 (issue 49)
 - ADR-0028 (`docs/adr/0028-server-production-features-excluded.md`), for the server features left out on purpose (rate limit, audit log, key policy, retention, Dashboard login) (issue 48)
 - ADR-0036 (`docs/adr/0036-sdk-client-reports.md`), for `POST /v1/client-reports`, `GET /v1/client-report-counts`, and `V3__create_client_reports.sql` (issue 61)
+- ADR-0037 (`docs/adr/0037-server-collection-kill-switch.md`), for `CollectionControl.kt`, the block lists, and the shed switch (issue 67)
 
 Spec (`.scratch/signaldock/spec.md`):
 - 2. Agreed stack and boundaries
@@ -89,6 +90,7 @@ Spec (`.scratch/signaldock/spec.md`):
 - Q158 (a request-level 400 is a contract bug only)
 - Q159 (contract support policy; the server `Deprecation` and `Sunset` headers are deferred to contract 2, ADR-0030)
 - Q164 (client reports: the server stores them and exposes counts)
+- Q165 (server-only collection kill switch)
 
 Also read `.scratch/signaldock/dashboard-verification-defaults.md` before you edit `server/query` or the query routes.
 
@@ -268,7 +270,7 @@ Spec (`.scratch/signaldock/spec.md`):
 Design review, failure mode table, postmortems, and threat model. Every claim must cite a file, an ADR, a spec Q, a test, or a result path, and a gap must be marked as a gap. When you change delivery, retry, storage, key, or contract behavior, check whether rows in `failure-modes.md` or `threat-model.md` are now wrong and update them in the same PR.
 
 ADRs:
-- ADR-0001 to ADR-0011, ADR-0013, ADR-0017, ADR-0019, ADR-0021 to ADR-0036, as the documents cite them
+- ADR-0001 to ADR-0011, ADR-0013, ADR-0017, ADR-0019, ADR-0021 to ADR-0037, as the documents cite them
 
 Spec (`.scratch/signaldock/spec.md`):
 - 1. Goal and scope

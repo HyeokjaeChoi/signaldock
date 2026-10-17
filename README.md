@@ -130,6 +130,7 @@ curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:5173/   # 200 = Dashbo
 
 - Dashboard: `http://127.0.0.1:5173` (`SIGNALDOCK_DASHBOARD_PORT`). Host server endpoint: `http://127.0.0.1:8080`. The server container binds to `0.0.0.0:8080`, and Compose publishes every host port on `127.0.0.1` only.
 - Apps send events with `SIGNALDOCK_COLLECTION_KEY`. The Dashboard holds no key: nginx proxies `GET /v1/*` and adds `SIGNALDOCK_QUERY_KEY` ([ADR-0008](docs/adr/0008-dashboard-and-compose-delivery.md)).
+- Operator control (optional, [ADR-0037](docs/adr/0037-server-collection-kill-switch.md)): set `SIGNALDOCK_BLOCKED_EVENTS` (event names) or `SIGNALDOCK_BLOCKED_SDK_VERSIONS` in `.env`, as comma lists, to reject those events per item; the SDK deletes them. Set `SIGNALDOCK_INGEST_SHED=true` to answer 503 with `Retry-After` (`SIGNALDOCK_INGEST_SHED_RETRY_AFTER_SECONDS`, default 1) and pause all ingest. Apply with `docker compose up -d server`. The server cannot stop collection on the device: the SDK still collects, and its queue can fill up while ingest is paused.
 - Development mode: `docker compose up -d db`, then run the server from `server/` with the variables in `.env.example` and `npm run dev` in `dashboard/`.
 
 ### 3. SDK Maven ZIP and the independent consumer app

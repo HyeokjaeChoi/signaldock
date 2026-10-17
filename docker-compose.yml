@@ -42,6 +42,11 @@ services:
       # rejects one. SIGNALDOCK_TRACKING_PLAN= (blank, in .env or the shell) turns the check off; `-` without
       # `:` keeps a blank value. A file that is not valid stops the server at start.
       SIGNALDOCK_TRACKING_PLAN: ${SIGNALDOCK_TRACKING_PLAN-/etc/signaldock/tracking-plan.json}
+      # Optional operator control (ADR-0037), read at start. Comma lists; blank means nothing blocked.
+      SIGNALDOCK_BLOCKED_EVENTS: ${SIGNALDOCK_BLOCKED_EVENTS:-}
+      SIGNALDOCK_BLOCKED_SDK_VERSIONS: ${SIGNALDOCK_BLOCKED_SDK_VERSIONS:-}
+      SIGNALDOCK_INGEST_SHED: ${SIGNALDOCK_INGEST_SHED:-false}
+      SIGNALDOCK_INGEST_SHED_RETRY_AFTER_SECONDS: ${SIGNALDOCK_INGEST_SHED_RETRY_AFTER_SECONDS:-1}
     volumes:
       # Long syntax with create_host_path: false, so a missing plan file is an error, not a new directory.
       - type: bind

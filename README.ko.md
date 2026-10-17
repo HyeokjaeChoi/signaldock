@@ -132,6 +132,7 @@ curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:5173/   # 200 = Dashbo
 
 - Dashboard: `http://127.0.0.1:5173`(`SIGNALDOCK_DASHBOARD_PORT`). 호스트의 서버 endpoint: `http://127.0.0.1:8080`. 서버 컨테이너는 `0.0.0.0:8080`에 bind하고, Compose는 모든 호스트 포트를 `127.0.0.1`에만 게시합니다.
 - 앱은 `SIGNALDOCK_COLLECTION_KEY`로 이벤트를 보냅니다. Dashboard는 key를 갖지 않습니다. nginx가 `GET /v1/*`를 프록시하면서 `SIGNALDOCK_QUERY_KEY`를 붙입니다([ADR-0008](docs/adr/0008-dashboard-and-compose-delivery.md)).
+- 운영자 제어(선택, [ADR-0037](docs/adr/0037-server-collection-kill-switch.md)): `.env`에 `SIGNALDOCK_BLOCKED_EVENTS`(이벤트 이름) 또는 `SIGNALDOCK_BLOCKED_SDK_VERSIONS`를 쉼표 목록으로 설정하면 해당 이벤트를 항목별로 거부하고, SDK는 그 이벤트를 삭제합니다. `SIGNALDOCK_INGEST_SHED=true`로 설정하면 `Retry-After`가 있는 503으로 응답하여 모든 수집을 멈춥니다(`SIGNALDOCK_INGEST_SHED_RETRY_AFTER_SECONDS`, 기본 1). `docker compose up -d server`로 적용합니다. 서버는 기기의 수집을 멈출 수 없습니다. SDK는 계속 수집하므로, 수집을 멈춘 동안 큐가 찰 수 있습니다.
 - 개발 모드: `docker compose up -d db`를 실행한 뒤, `server/`에서 `.env.example`의 변수로 서버를 실행하고 `dashboard/`에서 `npm run dev`를 실행합니다.
 
 ### 3. SDK Maven ZIP과 독립 consumer 앱

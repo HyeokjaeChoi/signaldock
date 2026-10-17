@@ -4,6 +4,10 @@ All notable changes to SignalDock are listed here. The format follows [Keep a Ch
 
 ## [Unreleased]
 
+### Added
+
+- Server-side collection kill switch (Q165, option A). The operator can block events by exact name (`SIGNALDOCK_BLOCKED_EVENTS`) and by exact event `sdkVersion` (`SIGNALDOCK_BLOCKED_SDK_VERSIONS`); a blocked event gets the existing per-item rejection with the new code value `COLLECTION_BLOCKED`, so the SDK deletes it and counts `server_rejected`. `SIGNALDOCK_INGEST_SHED=true` makes the two ingest routes answer 503 with `Retry-After` (`SIGNALDOCK_INGEST_SHED_RETRY_AFTER_SECONDS`, default 1). Environment variables read at start; default is nothing blocked. No SDK, wire, or contract change. The server cannot stop collection on the device ([ADR-0037](docs/adr/0037-server-collection-kill-switch.md)).
+
 ## [0.2.0] - 2026-10-17
 
 Second tagged release. It has breaking changes before 1.0: see "Changed" and the upgrade steps in the [release notes](docs/releases/v0.2.0.md).

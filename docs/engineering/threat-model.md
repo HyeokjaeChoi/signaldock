@@ -108,7 +108,7 @@ Gaps:
 1. Public collection key: fake events are possible (accepted, section 3).
 2. A host that sets `allowInsecureEndpoint = true` and allows cleartext: key and events exposed on the network (ADR-0035).
 3. Unencrypted queue on a rooted device.
-4. No rate limit: one client can cause 503 for all (excluded on purpose, ADR-0028).
+4. No rate limit: one client can cause 503 for all (excluded on purpose, ADR-0028). The operator can block an event name or an SDK version, or shed all ingest, with environment variables and a server restart (ADR-0037). This does not stop collection on the device, and it has no per-key or per-IP rule. Gap: no hot reload, no audit trail.
 5. Dashboard without login: safe only because it is local (excluded on purpose, ADR-0028).
 6. No server retention or delete (excluded on purpose, ADR-0028). Opt-out is on the device only (ADR-0034).
 7. Secrets in `.env` and the container environment.

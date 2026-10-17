@@ -38,9 +38,10 @@ internal fun Application.ingestionModule(
     collectionKey: String,
     afterCommit: suspend (BatchAckResponse) -> Unit = {},
     trackingPlan: TrackingPlan? = null,
+    control: CollectionControl = CollectionControl(),
 ) {
     require(collectionKey.isNotBlank())
-    val ingestion = Ingestion(database, trackingPlan)
+    val ingestion = Ingestion(database, trackingPlan, control)
     val reports = ClientReportStore(database)
     routing {
         get("/health") { call.respondText("ok") }
@@ -61,6 +62,7 @@ internal fun Application.ingestionModule(
                 withTimeout(budget.remainingMs()) {
                     val requestContractVersion = call.requireContractVersion()
                     call.requireCollectionKey(collectionKey)
+                    if (control.shed) return@withTimeout call.respondShed(control) // after the key check (ADR-0037)
                     val body = call.receiveJsonBody(262144)
                     val ack = ingestion.ingest(parseBatch(body, requestContractVersion), budget)
                     afterCommit(ack)
@@ -86,6 +88,7 @@ internal fun Application.ingestionModule(
                 withTimeout(budget.remainingMs()) {
                     call.requireContractVersion()
                     call.requireCollectionKey(collectionKey)
+                    if (control.shed) return@withTimeout call.respondShed(control)
                     reports.store(parseClientReport(call.receiveJsonBody(4096)), budget)
                     call.respond(HttpStatusCode.NoContent)
                 }
@@ -123,6 +126,13 @@ private suspend fun io.ktor.server.application.ApplicationCall.receiveJsonBody(l
         if (body.size() > limit) throw RequestFailure("PAYLOAD_TOO_LARGE")
     }
     return body.toByteArray()
+}
+
+/** The same 503 + Retry-After as an outage (ADR-0026). Only the message and the Retry-After value differ (ADR-0037). */
+private suspend fun io.ktor.server.application.ApplicationCall.respondShed(control: CollectionControl) {
+    response.headers.append(HttpHeaders.RetryAfter, control.shedRetryAfterSeconds.toString())
+    respondText(Json.encodeToString(ErrorResponse("TEMPORARILY_UNAVAILABLE", "Collection is paused by the operator; retry with the same event IDs")),
+        ContentType.Application.Json, HttpStatusCode.ServiceUnavailable)
 }
 
 private suspend fun io.ktor.server.application.ApplicationCall.notReady() {
@@ -171,6 +181,8 @@ fun main() {
     val (collectionKey, queryKey) = resolveKeys(System.getenv("SIGNALDOCK_COLLECTION_KEY"), System.getenv("SIGNALDOCK_QUERY_KEY"))
     // Before the database: a bad plan file stops the start with its own error.
     val trackingPlan = trackingPlanFromEnv(System::getenv)
+    val control = CollectionControl.fromEnv(System::getenv)
+    org.slf4j.LoggerFactory.getLogger("ingestion.control").info("collection control: shed={}", control.shed)
     org.slf4j.LoggerFactory.getLogger("ingestion.plan").info(
         if (trackingPlan == null) "no tracking plan configured; events are not checked" else "tracking plan loaded; events are marked, never rejected")
     val database = Database(required("SIGNALDOCK_JDBC_URL"), required("SIGNALDOCK_DB_USER"), required("SIGNALDOCK_DB_PASSWORD"),
@@ -187,7 +199,7 @@ fun main() {
     try {
         database.migrate()
         embeddedServer(Netty, host = System.getenv("SIGNALDOCK_BIND_HOST") ?: "127.0.0.1", port = System.getenv("PORT")?.toInt() ?: 8080) {
-            ingestionModule(database, collectionKey, trackingPlan = trackingPlan)
+            ingestionModule(database, collectionKey, trackingPlan = trackingPlan, control = control)
             queryModule(database, queryKey, parseProjectZone(System.getenv("SIGNALDOCK_TIME_ZONE") ?: "Asia/Seoul"))
             monitor.subscribe(ApplicationStopped) { database.close() }
         }.start(wait = true)
