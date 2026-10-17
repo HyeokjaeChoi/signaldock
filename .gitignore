@@ -9,7 +9,7 @@ local.properties
 *.log
 
 # Personal discovery conversation and resume notes
-.scratch/signaldock-portfolio/discovery.md
+.scratch/*/discovery.md
 
 # Build/runtime outputs
 .gradle/
