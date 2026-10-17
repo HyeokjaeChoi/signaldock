@@ -187,6 +187,14 @@ The Maven repository ZIP and its `.sha256` file are release artifacts of the Git
 shasum -a 256 -c signaldock-sdk-android-0.2.0-maven.zip.sha256   # run in the folder with both files
 ```
 
+Releases made after the attestation change (ADR-0039) also have a signed build provenance attestation. It shows that this repository's release workflow built the ZIP. Check it with the [GitHub CLI](https://cli.github.com/):
+
+```sh
+gh attestation verify signaldock-sdk-android-X.Y.Z-maven.zip --repo HyeokjaeChoi/signaldock
+```
+
+`v0.2.0` and earlier have no attestation (use the checksum only). Gap: the attestation is not produced until the next release tag, so this command has not run on a real release yet.
+
 Add the folder as a repository and depend on the coordinate:
 
 ```kotlin

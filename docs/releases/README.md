@@ -19,6 +19,21 @@ A pushed tag `vX.Y.Z` builds the Maven ZIP and creates the GitHub Release ([`rel
 
 The workflow fails, before it builds, when the tag is not `vMAJOR.MINOR.PATCH`, differs from `sdkVersion`, is not on `main`, has no notes file, or already has a release. If a check fails, fix the cause, delete the tag (`git push --delete origin vX.Y.Z`), and tag again. A failed `publish` job leaves no release, so you can re-run it.
 
+## Provenance attestation
+
+The `publish` job signs a build provenance attestation for the ZIP before it creates the release ([ADR-0039](../adr/0039-release-provenance-attestation.md)). It needs no repository setting. The job has the extra permissions `id-token: write` and `attestations: write`.
+
+After the workflow succeeds, check the attestation of the released ZIP. Download the ZIP, then run:
+
+```sh
+gh attestation verify signaldock-sdk-android-X.Y.Z-maven.zip --repo HyeokjaeChoi/signaldock
+# stricter: also pin the workflow file
+gh attestation verify signaldock-sdk-android-X.Y.Z-maven.zip --repo HyeokjaeChoi/signaldock \
+  --signer-workflow HyeokjaeChoi/signaldock/.github/workflows/release.yml
+```
+
+Both commands must print `Verification succeeded!`. Record the result in the PR or issue of the release. `v0.2.0` and earlier have no attestation. Gap: no release has been made since ADR-0039, so the attestation step has not run yet; the first run is the test.
+
 ## Dependency updates
 
 Renovate proposes weekly updates ([`renovate.json5`](../../.github/renovate.json5), [ADR-0031](../adr/0031-renovate-dependency-updates.md)). It reads the shared catalog `gradle/libs.versions.toml`.
