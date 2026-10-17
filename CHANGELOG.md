@@ -4,6 +4,10 @@ All notable changes to SignalDock are listed here. The format follows [Keep a Ch
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-17
+
+Second tagged release. It has breaking changes before 1.0: see "Changed" and the upgrade steps in the [release notes](docs/releases/v0.2.0.md).
+
 ### Changed
 
 - Breaking at the binary level (source compatible): the JVM constructor and `copy` signatures of `SignalDockConfig` change, because the new `allowInsecureEndpoint` parameter has a default. Recompile against this version. This is allowed before 1.0 when listed here ([docs/versioning.md](docs/versioning.md), [ADR-0035](docs/adr/0035-sdk-https-enforcement.md)).
@@ -43,5 +47,6 @@ First tagged release. License: Apache-2.0. See the [release notes](docs/releases
 
 - Physical devices, the 216-run server pool-size matrix, release signing and Play distribution, a consumer on a Kotlin version other than the AGP 9.3.3 default (2.2.10) or on AGP 8.x, and public internet operation.
 
-[Unreleased]: https://github.com/HyeokjaeChoi/signaldock/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/HyeokjaeChoi/signaldock/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/HyeokjaeChoi/signaldock/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/HyeokjaeChoi/signaldock/releases/tag/v0.1.0

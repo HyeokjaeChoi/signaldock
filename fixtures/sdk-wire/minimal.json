@@ -1,1 +1,1 @@
-{"installationId":"47c4d89f-352a-41da-9b31-529ea756515a","events":[{"eventId":"00000000-0000-4000-8000-000000000001","name":"app_opened","occurredAt":"2025-10-09T08:53:20.123Z","properties":{},"sdkVersion":"0.1.0","contractVersion":"1"}]}
+{"installationId":"47c4d89f-352a-41da-9b31-529ea756515a","events":[{"eventId":"00000000-0000-4000-8000-000000000001","name":"app_opened","occurredAt":"2025-10-09T08:53:20.123Z","properties":{},"sdkVersion":"0.2.0","contractVersion":"1"}]}

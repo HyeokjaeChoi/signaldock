@@ -6,7 +6,7 @@
 새로운 동작은 추가하지 않습니다. 모든 문장은 출처를 밝힙니다. 출처는 [spec](../.scratch/signaldock-portfolio/spec.md)("spec 3"은 3절), [architecture](../architecture.md), [ADR](adr/)입니다.
 SDK의 모든 public 선언에는 KDoc이 있습니다. KDoc은 이 가이드와 일치합니다.
 
-SDK 패키지는 `local.signaldock`, 릴리스 버전은 `0.1.0`, 좌표는 `local.signaldock:sdk-android:0.1.0`입니다(spec 8.C, Q126).
+SDK 패키지는 `local.signaldock`, 릴리스 버전은 `0.2.0`, 좌표는 `local.signaldock:sdk-android:0.2.0`입니다(spec 8.C, Q126).
 
 ## 목차
 
@@ -33,7 +33,7 @@ SDK는 ZIP으로 묶은 로컬 Maven repository 폴더입니다. Maven Central�
    sdk/gradlew -p sdk :sdk-android:signaldockMavenZip
    ```
 
-   결과 파일은 `sdk/sdk-android/build/distributions/signaldock-sdk-android-0.1.0-maven.zip`입니다.
+   결과 파일은 `sdk/sdk-android/build/distributions/signaldock-sdk-android-0.2.0-maven.zip`입니다.
 2. 폴더에 압축을 풉니다.
 3. 그 폴더를 `local.signaldock` 그룹에만 쓰는 repository로 추가하고, 좌표에 의존합니다(ADR-0009 결정 3).
    독립 consumer 앱이 실제 예시입니다. [`settings.gradle.kts`](../compatibility/consumer-android/settings.gradle.kts)와 [`app/build.gradle.kts`](../compatibility/consumer-android/app/build.gradle.kts)를 보세요.
@@ -51,13 +51,13 @@ dependencyResolutionManagement {
     }
 }
 // app/build.gradle.kts
-dependencies { implementation("local.signaldock:sdk-android:0.1.0") }
+dependencies { implementation("local.signaldock:sdk-android:0.2.0") }
 ```
 
-0.1.0 AAR의 요구 사항:
+0.2.0 AAR의 요구 사항:
 
 - `compileSdk` 36 이상, `minSdk` 24 이상([ADR-0006](adr/0006-sdk-delivery-decisions.md) 결정 1, spec 2).
-- Kotlin 2.2 이상과 AGP 9.x. SDK 클래스 metadata가 2.2이므로 AGP 9의 기본 built-in Kotlin으로 동작합니다(ADR-0009 결정 4, Q132). AGP 8.x 앱은 0.1.0을 쓸 수 없습니다(ADR-0009 결정 4).
+- Kotlin 2.2 이상과 AGP 9.x. SDK 클래스 metadata가 2.2이므로 AGP 9의 기본 built-in Kotlin으로 동작합니다(ADR-0009 결정 4, Q132). AGP 8.x 앱은 0.2.0을 쓸 수 없습니다(ADR-0009 결정 4).
 - 앱이 `INTERNET` 권한을 선언해야 합니다(consumer 앱의 [manifest](../compatibility/consumer-android/app/src/main/AndroidManifest.xml)에 있습니다. [README](../README.md) "Add the SDK to an app"). SDK 자체의 R8 규칙은 필요 없습니다(ADR-0009 결정 6).
 - `https://` endpoint를 쓰세요. SDK는 `http://`를 `https://`로 바꾸지 않습니다. config에 `allowInsecureEndpoint = true`(기본값 `false`, ADR-0035)가 없으면 `initialize`는 `http://` endpoint를 `InvalidConfiguration`으로 거부합니다. `http://` 로컬 서버에만 설정하세요. `http://` 로컬 서버를 쓰려면 앱이 그 host에 cleartext를 허용해야 합니다. consumer 앱은 `10.0.2.2`, `127.0.0.1`, `localhost`에만 허용합니다(ADR-0009 결정 5, Q134).
 
@@ -294,7 +294,7 @@ suspend fun queueSummary(sdk: SignalDock): String {
 
 | 필드 | 의미 | 출처 |
 | --- | --- | --- |
-| `sdkVersion` | SDK 릴리스 버전(`0.1.0`). 계약 버전이 아님 | spec 3, spec 8 Q65 |
+| `sdkVersion` | SDK 릴리스 버전(`0.2.0`). 계약 버전이 아님 | spec 3, spec 8 Q65 |
 | `queuedEvents`, `queuedBytes` | 큐에서 기다리는 이벤트와 그 전송 JSON 크기 | spec 6 |
 | `oldestPendingEpochMillis` | 큐에서 가장 오래된 이벤트의 수집 시각. 큐가 비면 `null` | spec 6, `Diagnostics` KDoc |
 | `recentRejections` | 최근 영구 거부: 이벤트 ID, 코드, 시각. payload와 이름 없음 | spec 4, ADR-0003 결정 7 |
@@ -358,7 +358,7 @@ SDK는 버린 이벤트를 이유별로 세고, 그 수를 `POST /v1/client-repo
 
 ## 9. 버전과 계약 버전
 
-- **SDK 릴리스 버전:** `0.1.0`. `Diagnostics.sdkVersion`이 반환합니다. 각 이벤트는 수집 시점의 버전을 저장합니다(spec 3 "Common information").
+- **SDK 릴리스 버전:** `0.2.0`. `Diagnostics.sdkVersion`이 반환합니다. 각 이벤트는 수집 시점의 버전을 저장합니다(spec 3 "Common information").
 - **계약 버전:** `1`. SDK는 `SignalDock-Contract-Version` header로 보냅니다. 계약 버전과 SDK 릴리스 버전은 별개입니다. 호환되지 않는 변경은 계약 버전을 올립니다. 첫 릴리스는 계약 1만 구현합니다(spec 8.B Q65, Q106, architecture "Contracts, generated sources, and JSON").
 - 이벤트는 수집 당시의 계약 버전을 유지합니다. SDK 업데이트 뒤에도 SDK는 큐에 남은 오래된 이벤트를 원래 계약으로, 계약별로 묶은 batch에 담아 보냅니다. 오래된 계약을 끝없이 지원하지는 않습니다(spec 8.B Q66). 새 계약이 나온 뒤 서버는 이전 계약을 최소 12개월, 그리고 트래픽이 낮아질 때까지 유지하고 `Deprecation`, `Sunset` 헤더로 알릴 계획입니다. 서버 쪽은 아직 만들지 않았습니다. SDK는 이 헤더를 이미 읽습니다(spec 8 Q159, [ADR-0030](adr/0030-sdk-contract-deprecation-warning.md)).
 - 서버가 그 계약 버전을 지원하지 않으면 요청 전체를 거부합니다. SDK는 큐를 유지하고 30분마다 다시 확인합니다. 스스로 낮추지 않습니다(spec 8.B Q67).

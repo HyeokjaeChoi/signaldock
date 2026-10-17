@@ -75,7 +75,7 @@ ACK가 유실되어도 이벤트 ID는 바뀌지 않습니다. 같은 ID와 같�
 | 계약과 배포 | OpenAPI / JSON · Git으로 추적하는 생성 소스 · Docker Compose 진입점 · 로컬 Maven 저장소 ZIP |
 
 정확한 버전은 `gradle/libs.versions.toml`에 고정되어 있습니다. [TOOLCHAIN.md](TOOLCHAIN.md)에 각 고정의 이유와 이를 검증한 빌드가 있습니다(영어).
-첫 좌표는 `local.signaldock:sdk-android:0.1.0`입니다(로컬 전용이며 Maven Central이 아닙니다). ZIP은 아래 설명대로 빌드합니다.
+첫 좌표는 `local.signaldock:sdk-android:0.2.0`입니다(로컬 전용이며 Maven Central이 아닙니다). ZIP은 아래 설명대로 빌드합니다.
 
 ## 범위와 검증
 
@@ -138,7 +138,7 @@ export ANDROID_HOME="$HOME/Library/Android/sdk"     # your Android SDK path
 scripts/verify-consumer.sh
 ```
 
-이 스크립트는 `signaldockMavenZip`을 빌드하고, 깨끗한 임시 폴더에 풀고, 그 폴더만 사용해 `compatibility/consumer-android/`를 좌표 `local.signaldock:sdk-android:0.1.0`으로 R8 release로 빌드합니다. AAR의 Kotlin metadata 버전을 확인하고 ZIP, 폴더, APK 경로를 출력합니다. 폴더를 남기려면 먼저 `SIGNALDOCK_REPO_DIR`을 새 빈 경로로 설정하세요. ZIP만 만들려면 `sdk/gradlew -p sdk :sdk-android:signaldockMavenZip --no-daemon`을 실행합니다(출력은 `sdk/sdk-android/build/distributions/signaldock-sdk-android-0.1.0-maven.zip`). [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md)를 참고하세요.
+이 스크립트는 `signaldockMavenZip`을 빌드하고, 깨끗한 임시 폴더에 풀고, 그 폴더만 사용해 `compatibility/consumer-android/`를 좌표 `local.signaldock:sdk-android:0.2.0`으로 R8 release로 빌드합니다. AAR의 Kotlin metadata 버전을 확인하고 ZIP, 폴더, APK 경로를 출력합니다. 폴더를 남기려면 먼저 `SIGNALDOCK_REPO_DIR`을 새 빈 경로로 설정하세요. ZIP만 만들려면 `sdk/gradlew -p sdk :sdk-android:signaldockMavenZip --no-daemon`을 실행합니다(출력은 `sdk/sdk-android/build/distributions/signaldock-sdk-android-0.2.0-maven.zip`). [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md)를 참고하세요.
 
 이제 R8 release APK를 에뮬레이터에서 실행해 서버에 연결합니다. collection key는 빌드 시점에 포함됩니다.
 
@@ -179,10 +179,10 @@ docker compose down --volumes           # RESET: deletes the DB volume and ALL s
 
 ## 앱에 SDK 추가
 
-Maven repository ZIP과 `.sha256` 파일은 GitHub Release [`v0.1.0`](https://github.com/HyeokjaeChoi/signaldock/releases/tag/v0.1.0)의 배포 파일입니다([릴리스 노트](docs/releases/v0.1.0.md), [변경 이력](CHANGELOG.md)). `scripts/release.sh 0.1.0`이 둘을 `dist/`에 만듭니다. ZIP을 검증한 뒤 폴더에 푸세요.
+Maven repository ZIP과 `.sha256` 파일은 GitHub Release [`v0.2.0`](https://github.com/HyeokjaeChoi/signaldock/releases/tag/v0.2.0)의 배포 파일입니다([릴리스 노트](docs/releases/v0.2.0.md), [변경 이력](CHANGELOG.md)). `scripts/release.sh 0.2.0`이 둘을 `dist/`에 만듭니다. ZIP을 검증한 뒤 폴더에 푸세요.
 
 ```sh
-shasum -a 256 -c signaldock-sdk-android-0.1.0-maven.zip.sha256   # 두 파일이 있는 폴더에서 실행
+shasum -a 256 -c signaldock-sdk-android-0.2.0-maven.zip.sha256   # 두 파일이 있는 폴더에서 실행
 ```
 
 그 폴더를 repository로 추가하고 좌표에 의존하세요.
@@ -200,10 +200,10 @@ dependencyResolutionManagement {
     }
 }
 // app/build.gradle.kts
-dependencies { implementation("local.signaldock:sdk-android:0.1.0") }
+dependencies { implementation("local.signaldock:sdk-android:0.2.0") }
 ```
 
-0.1.0 AAR의 요구 사항:
+0.2.0 AAR의 요구 사항:
 
 - `compileSdk` 36 이상(`aarMetadata.minCompileSdk=36`, [ADR-0006](docs/adr/0006-sdk-delivery-decisions.md)), `minSdk` 24 이상.
 - Kotlin 2.2 이상과 AGP 9.x. SDK metadata가 2.2이므로, AGP 9의 기본 built-in Kotlin으로 추가 Kotlin 플러그인 없이 동작합니다([ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md), Q132).
