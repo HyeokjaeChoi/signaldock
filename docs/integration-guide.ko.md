@@ -324,11 +324,13 @@ suspend fun queueSummary(sdk: SignalDock): String {
   ```kotlin
   // sample: opt-out
   suspend fun onUserWithdrawsConsent(sdk: SignalDock): Boolean {
-      sdk.setOptOut(true)   // from now on, track() stores nothing and returns OptedOut
-      // Optional: delete events that wait on the device. null means storage failed:
-      // the events are still queued, so tell the user or call clearQueue() again later.
+      // false: the state could not be stored. It holds until the process ends, but after a
+      // restart collection can resume, so call setOptOut(true) again later or tell the user.
+      val stored = sdk.setOptOut(true) // from now on, track() stores nothing and returns OptedOut
+      // Optional: delete events that wait on the device. null: storage failed, the events are
+      // still queued, so call clearQueue() again later or tell the user.
       val deleted = sdk.clearQueue()
-      return deleted != null
+      return stored && deleted != null
   }
 
   suspend fun onUserGivesConsent(sdk: SignalDock) {

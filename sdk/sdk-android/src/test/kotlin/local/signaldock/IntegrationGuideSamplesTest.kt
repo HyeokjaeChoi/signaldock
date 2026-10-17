@@ -9,6 +9,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import java.io.File
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -66,11 +67,13 @@ suspend fun onProductViewed(sdk: SignalDock): String {
 
 // sample: opt-out
 suspend fun onUserWithdrawsConsent(sdk: SignalDock): Boolean {
-    sdk.setOptOut(true)   // from now on, track() stores nothing and returns OptedOut
-    // Optional: delete events that wait on the device. null means storage failed:
-    // the events are still queued, so tell the user or call clearQueue() again later.
+    // false: the state could not be stored. It holds until the process ends, but after a
+    // restart collection can resume, so call setOptOut(true) again later or tell the user.
+    val stored = sdk.setOptOut(true) // from now on, track() stores nothing and returns OptedOut
+    // Optional: delete events that wait on the device. null: storage failed, the events are
+    // still queued, so call clearQueue() again later or tell the user.
     val deleted = sdk.clearQueue()
-    return deleted != null
+    return stored && deleted != null
 }
 
 suspend fun onUserGivesConsent(sdk: SignalDock) {
@@ -126,6 +129,23 @@ class IntegrationGuideSamplesTest {
         (sdk.dao.javaClass.getDeclaredField("__db").apply { isAccessible = true }.get(sdk.dao) as androidx.room.RoomDatabase).close()
         assertFalse(onUserWithdrawsConsent(sdk)) // clearQueue returned null
         assertTrue(sdk.isOptedOut())
+    }
+
+    @Test
+    fun `opt-out sample reports a failed marker write even when clearQueue succeeds`() = runBlocking {
+        val sdk = newSdk()
+        onProductViewed(sdk)
+        val dir = File(context.noBackupFilesDir, "signaldock")
+        // A read-only SDK directory makes creating the marker file fail; the open database still works.
+        assertTrue(dir.setWritable(false))
+        try {
+            assertFalse(onUserWithdrawsConsent(sdk)) // setOptOut(true) returned false
+        } finally {
+            dir.setWritable(true)
+        }
+        assertTrue(sdk.isOptedOut())              // holds for this process
+        assertEquals(0, sdk.diagnostics().queuedEvents) // clearQueue succeeded
+        assertFalse(File(dir, "opt-out").exists())
     }
 
     @Test
