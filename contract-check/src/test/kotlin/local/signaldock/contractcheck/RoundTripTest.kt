@@ -3,6 +3,9 @@ package local.signaldock.contractcheck
 import kotlinx.serialization.json.Json
 import org.openapitools.client.models.BatchAckResponse
 import org.openapitools.client.models.BatchIngestRequest
+import org.openapitools.client.models.ClientReportCounts
+import org.openapitools.client.models.ClientReportRequest
+import org.openapitools.client.models.DiscardReason
 import org.openapitools.client.models.ErrorResponse
 import org.openapitools.client.models.EventIngestPropertiesValue
 import org.openapitools.client.models.EventNameCounts
@@ -152,6 +155,26 @@ class RoundTripTest {
         // An unknown status is an error, like an unknown ACK status (Q68): a new value is a contract change.
         assertFailsWith<kotlinx.serialization.SerializationException> {
             json.decodeFromString(EventReceiptPage.serializer(), fixture("event-receipt-page-plan-status.json").replace("unplanned_event", "blocked"))
+        }
+    }
+
+    // ADR-0036: the client report is a new endpoint; the batch contract is unchanged. Every reason round-trips,
+    // and an unknown reason is an error (a new one is a contract change). The server rejects unknown fields (ClientReportTest).
+    @Test
+    fun `client report round trips every reason and rejects an unknown reason`() {
+        fun <T> roundTrip(name: String, serializer: kotlinx.serialization.KSerializer<T>): T {
+            val raw = fixture(name)
+            val value = json.decodeFromString(serializer, raw)
+            assertEquals(json.parseToJsonElement(raw), json.parseToJsonElement(json.encodeToString(serializer, value)), name)
+            return value
+        }
+        val request = roundTrip("client-report-request.json", ClientReportRequest.serializer())
+        assertEquals(DiscardReason.entries, request.discardedEvents.map { it.reason })
+        assertEquals(listOf("queue_full", "storage_error", "invalid_event", "event_too_large", "server_rejected"), DiscardReason.entries.map { it.value })
+        val counts = roundTrip("client-report-counts.json", ClientReportCounts.serializer())
+        assertEquals(listOf(12L, 3L), counts.items.map { it.count })
+        assertFailsWith<kotlinx.serialization.SerializationException> {
+            json.decodeFromString(ClientReportRequest.serializer(), fixture("client-report-request.json").replace("queue_full", "ratelimit_backoff"))
         }
     }
 

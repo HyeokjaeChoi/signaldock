@@ -17,6 +17,10 @@ seen = set()
 class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        if self.path == "/v1/client-reports":  # SDK client report (ADR-0036): not an event batch
+            self.send_response(204)
+            self.end_headers()
+            return
         results = []
         with open(log, "a") as f:
             for i, event in enumerate(body["events"]):

@@ -47,14 +47,30 @@ internal class FakeClock(var now: Long = 1_760_000_000_123L) : Clock {
 /** Scripted transport. [handler] decides each response; [gate] holds responses back; in-flight calls are counted. */
 internal class FakeTransport(var handler: suspend (BatchHttpRequest) -> TransportResult = { ackAll(it) }) : BatchTransport {
     val requests = CopyOnWriteArrayList<BatchHttpRequest>()
+
+    /** Client reports (ADR-0036), kept apart from [requests] so batch assertions do not see them. */
+    val reports = CopyOnWriteArrayList<BatchHttpRequest>()
+
+    /** Every call in order: "batch" or "report". */
+    val calls = CopyOnWriteArrayList<String>()
+
+    @Volatile
+    var reportHandler: suspend (BatchHttpRequest) -> TransportResult = { TransportResult.Http(204, null, null) }
     val inFlight = AtomicInteger()
     val maxInFlight = AtomicInteger()
 
     @Volatile
     var gate: kotlinx.coroutines.CompletableDeferred<Unit>? = null
 
+    override suspend fun sendReport(request: BatchHttpRequest): TransportResult {
+        reports += request
+        calls += "report"
+        return reportHandler(request)
+    }
+
     override suspend fun send(request: BatchHttpRequest): TransportResult {
         requests += request
+        calls += "batch"
         maxInFlight.accumulateAndGet(inFlight.incrementAndGet()) { a, b -> maxOf(a, b) }
         try {
             gate?.await()

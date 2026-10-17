@@ -312,6 +312,14 @@ Notes:
 - Call it when a screen opens and on a manual refresh. There is no Flow API (spec 6).
 - The SDK does not poll the server. For server records, use the Dashboard (spec 4; spec 6 "Dashboard").
 
+### Dropped event counts (client report)
+
+The SDK counts the events it dropped, by reason, and sends the counts to the server at `POST /v1/client-reports`. There is no new public API and no setting. The reasons are `queue_full` (`TrackResult.QueueFull`), `storage_error` (`TrackResult.StorageError`), `invalid_event` and `event_too_large` (`TrackResult.Invalid`), and `server_rejected` (a permanent rejection in a valid ACK). The SDK does not count opt-out. It keeps the counters in Room, so a restart does not lose them, and stops each counter at 1,000,000.
+
+- The SDK sends at most one report for each send cycle, after the event batch, and only when the cycle applied a valid ACK and a counter is not zero. The report has the SDK version and the counts. It has no installation ID, event name, or event ID (spec Q164; [ADR-0036](adr/0036-sdk-client-reports.md)).
+- A 2xx answer removes the sent counts. A 404 (an old server) or another permanent 4xx removes them with no retry. A network error, 408, 429, or a 5xx answer other than 501 or 505 keeps them for the next cycle. A 501 or 505 answer removes them with no retry. A report never changes the retry state of the events.
+- The counts are approximate. If the server stores a report but the response is lost, the SDK sends the same counts again. A drop that the SDK cannot write to storage is not counted.
+
 ## 8. Privacy
 
 - **Installation-scoped identity.** The SDK makes one UUIDv4 installation ID at the first initialization. It does not link to a logged-in user. A new ID starts after clearing data, a reinstall, or a supported restore (ADR-0001).

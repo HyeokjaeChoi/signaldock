@@ -4,6 +4,7 @@
 package local.signaldock.server.jooq;
 
 
+import local.signaldock.server.jooq.tables.ClientReports;
 import local.signaldock.server.jooq.tables.Events;
 
 import org.jooq.Index;
@@ -19,5 +20,6 @@ public class Indexes {
     // INDEX definitions
     // -------------------------------------------------------------------------
 
+    public static final Index CLIENT_REPORTS_RECEIVED_IDX = Internal.createIndex(DSL.name("client_reports_received_idx"), ClientReports.CLIENT_REPORTS, new OrderField[] { ClientReports.CLIENT_REPORTS.RECEIVED_AT }, false);
     public static final Index EVENTS_RECEIVED_CURSOR_IDX = Internal.createIndex(DSL.name("events_received_cursor_idx"), Events.EVENTS, new OrderField[] { Events.EVENTS.RECEIVED_AT.desc(), Events.EVENTS.EVENT_ID.desc() }, false);
 }

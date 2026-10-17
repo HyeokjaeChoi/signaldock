@@ -31,6 +31,7 @@ import local.signaldock.internal.scheduling.NotifyingEventSink
 import local.signaldock.internal.scheduling.WorkManagerScheduler
 import local.signaldock.internal.scheduling.WorkScheduler
 import local.signaldock.internal.MIGRATION_1_2
+import local.signaldock.internal.MIGRATION_2_3
 import local.signaldock.internal.SignalDockDatabase
 import local.signaldock.internal.storage.InstallationIdStore
 import local.signaldock.internal.storage.OptOutStore
@@ -133,7 +134,7 @@ internal suspend fun createSdk(
     val installationId = InstallationIdStore(dir).getOrCreate(logger)
     val optOut = OptOutStore(dir)
     val db = Room.databaseBuilder(context, SignalDockDatabase::class.java, File(dir, "queue.db").absolutePath)
-        .addMigrations(MIGRATION_1_2).build()
+        .addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
     val queued = try {
         db.queueDao().usage().count // open now so storage failures surface during initialization
     } catch (t: Throwable) {

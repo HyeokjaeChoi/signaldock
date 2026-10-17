@@ -35,6 +35,7 @@ ADRs:
 - ADR-0033 (`docs/adr/0033-sdk-dependency-baseline.md`), for `sdk/sdk-android/dependencies/` and the `dependencyGuard` and `dependencyGuardBaseline` tasks (issue 56)
 - ADR-0034 (`docs/adr/0034-sdk-opt-out.md`), for `setOptOut`, `isOptedOut`, `clearQueue`, `TrackResult.OptedOut`, and `OptOutStore.kt` (issue 58)
 - ADR-0035 (`docs/adr/0035-sdk-https-enforcement.md`), for the `https` rule in `validateConfig` and `SignalDockConfig.allowInsecureEndpoint` (issue 60)
+- ADR-0036 (`docs/adr/0036-sdk-client-reports.md`), for `ClientReport.kt`, the `dropped_counts` table (Room schema 3), and the report step of `Sender` (issue 61)
 
 Public API change: update the dump (`sdk/gradlew -p sdk :sdk-android:apiDump`), the integration guide, and `CHANGELOG.md` in the same PR.
 
@@ -53,6 +54,7 @@ Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 12. Dashboard role confirmation and default delegation
 - Q159 (contract support policy, deprecation warning)
 - Q156 (opt-out and clearQueue)
+- Q164 (SDK client reports, dropped event counts)
 
 ## `server/`
 
@@ -73,6 +75,7 @@ ADRs:
 - ADR-0026 (`docs/adr/0026-server-readiness-and-restart.md`), for `/health`, `/ready`, and the Compose `server` health check and restart policy (issue 45)
 - ADR-0027 (`docs/adr/0027-request-400-contract-only.md`), for `RequestParsing.kt`, `SdkWireCorpusTest`, and what is a request-level 400 (issue 49)
 - ADR-0028 (`docs/adr/0028-server-production-features-excluded.md`), for the server features left out on purpose (rate limit, audit log, key policy, retention, Dashboard login) (issue 48)
+- ADR-0036 (`docs/adr/0036-sdk-client-reports.md`), for `POST /v1/client-reports`, `GET /v1/client-report-counts`, and `V3__create_client_reports.sql` (issue 61)
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 2. Agreed stack and boundaries
@@ -85,6 +88,7 @@ Spec (`.scratch/signaldock-portfolio/spec.md`):
 - Q157 (server production features left out for local-only operation)
 - Q158 (a request-level 400 is a contract bug only)
 - Q159 (contract support policy; the server `Deprecation` and `Sunset` headers are deferred to contract 2, ADR-0030)
+- Q164 (client reports: the server stores them and exposes counts)
 
 Also read `.scratch/signaldock-portfolio/dashboard-verification-defaults.md` before you edit `server/query` or the query routes.
 
@@ -97,6 +101,7 @@ ADRs:
 - ADR-0002
 - ADR-0022 (`docs/adr/0022-server-tracking-plan-status.md`), for the additive `planStatus` change and the baseline update (issue 39)
 - ADR-0027 (`docs/adr/0027-request-400-contract-only.md`), for `fixtures/sdk-wire/`, the SDK output corpus (issue 49)
+- ADR-0036 (`docs/adr/0036-sdk-client-reports.md`), for the additive client report endpoints (issue 61)
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 7. Completion criteria and verification plan (contract rows)
@@ -105,6 +110,7 @@ Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 9. Technical conditions to check on entry into implementation
 - Q155 (plan status)
 - Q158 (a request-level 400 is a contract bug only)
+- Q164 (client reports, additive endpoints)
 
 ## `sdk/demo/` (Android demo app, issue 05)
 
@@ -160,13 +166,14 @@ ADRs:
 - ADR-0015 (`docs/adr/0015-web-ui-languages.md`), for the UI texts, the language switch, and `web-shared/`
 - ADR-0016 (`docs/adr/0016-telemetry-style-ui.md`), for the layout, the KPI cards, the theme, and the shared tokens (issue 28)
 - ADR-0022 (`docs/adr/0022-server-tracking-plan-status.md`), for the plan status badge, filter, and violations card (issue 39)
+- ADR-0036 (`docs/adr/0036-sdk-client-reports.md`), for the "Dropped events" card (issue 61)
 
 Spec (`.scratch/signaldock-portfolio/spec.md`):
 - 6. User screens and distribution, Dashboard
 - 8, B. Errors, ACKs, and data representation
 - 11. Delegated performance measurement decisions
 - 12. Dashboard role confirmation and default delegation
-- Q78 and Q79 (project timezone), Q107 to Q109 (contract errors and retry), Q135 to Q137 (UI languages), Q139 and Q140 (presentation redesign, issue 28), Q155 (plan status)
+- Q78 and Q79 (project timezone), Q107 to Q109 (contract errors and retry), Q135 to Q137 (UI languages), Q139 and Q140 (presentation redesign, issue 28), Q155 (plan status), Q164 (client reports)
 
 Also read `.scratch/signaldock-portfolio/dashboard-verification-defaults.md`.
 

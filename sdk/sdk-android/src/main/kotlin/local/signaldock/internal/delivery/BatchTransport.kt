@@ -41,12 +41,23 @@ internal sealed interface TransportResult {
 /** HTTP boundary of the sender (Q88). Retrofit implementation below; fakes in tests. */
 internal interface BatchTransport {
     suspend fun send(request: BatchHttpRequest): TransportResult
+
+    /** Sends a client report (`POST /v1/client-reports`, ADR-0036) with the same key and header as [send]. */
+    suspend fun sendReport(request: BatchHttpRequest): TransportResult
 }
 
 internal interface IngestApi {
     @Streaming
     @POST("v1/events:batch")
     suspend fun ingest(
+        @Header("Authorization") authorization: String,
+        @Header("SignalDock-Contract-Version") contractVersion: String,
+        @Body body: RequestBody,
+    ): Response<ResponseBody>
+
+    @Streaming
+    @POST("v1/client-reports")
+    suspend fun clientReport(
         @Header("Authorization") authorization: String,
         @Header("SignalDock-Contract-Version") contractVersion: String,
         @Body body: RequestBody,
@@ -83,10 +94,16 @@ internal class RetrofitBatchTransport(
         .build()
         .create(IngestApi::class.java)
 
-    override suspend fun send(request: BatchHttpRequest): TransportResult {
+    // ByteArray.toRequestBody keeps the media type exactly "application/json".
+    override suspend fun send(request: BatchHttpRequest): TransportResult =
+        execute { api.ingest(authorization, request.contractVersion, request.body.toRequestBody(json)) }
+
+    override suspend fun sendReport(request: BatchHttpRequest): TransportResult =
+        execute { api.clientReport(authorization, request.contractVersion, request.body.toRequestBody(json)) }
+
+    private suspend fun execute(call: suspend () -> Response<ResponseBody>): TransportResult {
         try {
-            // ByteArray.toRequestBody keeps the media type exactly "application/json".
-            val response = api.ingest(authorization, request.contractVersion, request.body.toRequestBody(json))
+            val response = call()
             val retryAfter = response.headers()["Retry-After"]
             val responseBody = response.body() ?: response.errorBody()
             responseBody.use { rb ->

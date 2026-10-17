@@ -1,6 +1,11 @@
 index.ts
 models/BatchAckResponse.ts
 models/BatchIngestRequest.ts
+models/ClientReportCount.ts
+models/ClientReportCounts.ts
+models/ClientReportRequest.ts
+models/DiscardReason.ts
+models/DiscardedEventCount.ts
 models/ErrorResponse.ts
 models/EventIngest.ts
 models/EventIngestPropertiesValue.ts

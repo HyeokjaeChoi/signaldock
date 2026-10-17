@@ -25,11 +25,15 @@ import local.signaldock.query.ListCursor
 import local.signaldock.query.bucketStarts
 import local.signaldock.query.encodeCursor
 import local.signaldock.query.fillBuckets
+import local.signaldock.query.parseClientReportCountQuery
 import local.signaldock.query.parseCountQuery
 import local.signaldock.query.parseDetailRequest
 import local.signaldock.query.parsePlanStatusCountQuery
 import local.signaldock.query.parseListQuery
 import local.signaldock.query.parseTimeCountQuery
+import org.openapitools.client.models.ClientReportCount
+import org.openapitools.client.models.ClientReportCounts
+import org.openapitools.client.models.DiscardReason
 import org.openapitools.client.models.ErrorResponse
 import org.openapitools.client.models.EventNameCount
 import org.openapitools.client.models.EventNameCounts
@@ -83,6 +87,12 @@ internal fun Application.queryModule(database: Database, queryKey: String, zone:
             call.answer(database, queryKey) { budget ->
                 val counts = store.countByName(parseCountQuery(call.queryParameterMap(), zone), budget)
                 json.encodeToString(EventNameCounts(counts.items.map { EventNameCount(it.name, it.count) }, counts.truncated))
+            }
+        }
+        get("/v1/client-report-counts") {
+            call.answer(database, queryKey) { budget ->
+                val counts = store.countClientReports(parseClientReportCountQuery(call.queryParameterMap(), zone), budget)
+                json.encodeToString(ClientReportCounts(counts.items.map { ClientReportCount(it.sdkVersion, DiscardReason.valueOf(it.reason.name), it.count) }, counts.truncated))
             }
         }
         get("/v1/event-counts/by-plan-status") {

@@ -1,7 +1,12 @@
 package local.signaldock.persistence
 
 import kotlinx.coroutines.runBlocking
+import local.signaldock.ingestion.ClientReport
+import local.signaldock.ingestion.DiscardReason
+import local.signaldock.ingestion.DiscardedCount
 import local.signaldock.ingestion.PlanStatus
+import local.signaldock.query.ClientReportCount
+import local.signaldock.server.jooq.tables.ClientReports.CLIENT_REPORTS
 import local.signaldock.ingestion.PropertyValue
 import local.signaldock.ingestion.ReceiptStatus
 import local.signaldock.ingestion.StoredEvent
@@ -52,6 +57,7 @@ class SchemaUpgradeTest {
         val database = freshDatabase()
         database.migrate()
         assertEquals(0, QueryStore(database).countByName(CountQuery(october, noFilter)).items.size)
+        assertEquals(0, QueryStore(database).countClientReports(october).items.size)
         assertEquals(ReceiptStatus.ACCEPTED, store(database, a, "n").status)
         assertEquals(1, QueryStore(database).list(listQuery()).items.size)
     }
@@ -92,6 +98,14 @@ class SchemaUpgradeTest {
         assertEquals(PlanStatus.PLANNED, assertNotNull(query.find(c)).summary.planStatus)
         assertEquals(PlanStatusCounts(planned = 1, unplannedEvent = 0, invalidProperties = 0, notChecked = 2), query.countByPlanStatus(CountQuery(october, noFilter)))
         assertEquals(listOf(c), query.list(ListQuery(october, EventFilter(null, null, null, PlanStatus.PLANNED), SortOrder.NEWEST_FIRST, 50, null)).items.map { it.eventId })
+
+        // Client reports (V3): rows written at V3 are counted, and a new report adds to them (ADR-0036).
+        assertEquals(
+            listOf(ClientReportCount("0.1.0", DiscardReason.QUEUE_FULL, 3), ClientReportCount("0.1.0", DiscardReason.STORAGE_ERROR, 2)),
+            query.countClientReports(october).items,
+        )
+        ClientReportStore(database).store(ClientReport("0.1.0", listOf(DiscardedCount(DiscardReason.QUEUE_FULL, 4))))
+        assertEquals(3, database.transaction { query { fetchCount(CLIENT_REPORTS) } })
 
         // Ingestion against old rows: same content is a duplicate, other content conflicts, a new ID is stored.
         val original = StoredEvent(a, installation, "product_viewed", Instant.parse("2026-10-01T00:00:00.123Z"), "0.1.0",

@@ -51,6 +51,21 @@ class TransportTest {
     private val body = """{"installationId":"i","events":[]}""".toByteArray()
 
     @Test
+    fun `client report goes to the report path with the same key and contract header, JSON type and exact body`() = runBlocking {
+        server.enqueue(MockResponse.Builder().code(204).build())
+        val report = """{"sdkVersion":"0.1.0","discardedEvents":[{"reason":"queue_full","count":1}]}""".toByteArray()
+        val result = RetrofitBatchTransport(config()).sendReport(BatchHttpRequest("1", report)) as TransportResult.Http
+        assertEquals(204, result.status)
+        val r = server.takeRequest(5, TimeUnit.SECONDS)!!
+        assertEquals("POST", r.method)
+        assertEquals("/v1/client-reports", r.url.encodedPath)
+        assertEquals("Bearer secret-key", r.headers["Authorization"])
+        assertEquals("1", r.headers["SignalDock-Contract-Version"])
+        assertEquals("application/json", r.headers["Content-Type"])
+        assertArrayEquals(report, r.body!!.toByteArray())
+    }
+
+    @Test
     fun `request carries the Bearer key, contract header, JSON content type and the exact body`() = runBlocking {
         server.enqueue(MockResponse.Builder().code(200).body("""{"results":[]}""").build())
         val result = RetrofitBatchTransport(config()).send(BatchHttpRequest("1", body)) as TransportResult.Http
@@ -262,6 +277,7 @@ class TransportTest {
             val big = ByteArray(64 shl 20)
             val sdk = sdkWith(cfg, object : BatchTransport {
                 override suspend fun send(request: BatchHttpRequest) = real.send(BatchHttpRequest(request.contractVersion, big))
+                override suspend fun sendReport(request: BatchHttpRequest) = real.sendReport(request)
             })
             sdk.track("e")
             val t0 = System.nanoTime()

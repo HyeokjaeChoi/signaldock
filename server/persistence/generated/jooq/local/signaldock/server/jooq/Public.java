@@ -7,6 +7,7 @@ package local.signaldock.server.jooq;
 import java.util.Arrays;
 import java.util.List;
 
+import local.signaldock.server.jooq.tables.ClientReports;
 import local.signaldock.server.jooq.tables.Events;
 
 import org.jooq.Catalog;
@@ -21,6 +22,8 @@ public class Public extends SchemaImpl {
     private static final long serialVersionUID = 1L;
 
     public static final Public PUBLIC = new Public();
+
+    public final ClientReports CLIENT_REPORTS = ClientReports.CLIENT_REPORTS;
 
     public final Events EVENTS = Events.EVENTS;
 
@@ -37,6 +40,7 @@ public class Public extends SchemaImpl {
     @Override
     public final List<Table<?>> getTables() {
         return Arrays.asList(
+            ClientReports.CLIENT_REPORTS,
             Events.EVENTS
         );
     }

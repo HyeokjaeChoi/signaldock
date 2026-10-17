@@ -30,6 +30,18 @@ class QueryTest {
     }
 
     @Test
+    fun `client report counts take only from and to`() {
+        val period = parseClientReportCountQuery(day(), seoul)
+        assertEquals(Instant.parse("2026-10-11T15:00:00Z"), period.from)
+        assertEquals(Instant.parse("2026-10-12T15:00:00Z"), period.to)
+        assertEquals("INVALID_PARAMETER", code { parseClientReportCountQuery(day("name" to "x"), seoul) })
+        assertEquals("INVALID_PARAMETER", code { parseClientReportCountQuery(mapOf("from" to listOf("a")), seoul) })
+        assertEquals("PERIOD_TOO_LONG", code {
+            parseClientReportCountQuery(params("from" to "2026-09-12T00:00:00+09:00", "to" to "2026-10-13T00:00:00+09:00"), seoul)
+        })
+    }
+
+    @Test
     fun `page size is bounded from 1 to 100`() {
         assertEquals(100, parseListQuery(day("limit" to "100"), seoul).limit)
         assertEquals(1, parseListQuery(day("limit" to "1"), seoul).limit)

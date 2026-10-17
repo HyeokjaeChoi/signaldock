@@ -4,7 +4,9 @@
 package local.signaldock.server.jooq;
 
 
+import local.signaldock.server.jooq.tables.ClientReports;
 import local.signaldock.server.jooq.tables.Events;
+import local.signaldock.server.jooq.tables.records.ClientReportsRecord;
 import local.signaldock.server.jooq.tables.records.EventsRecord;
 
 import org.jooq.TableField;
@@ -20,5 +22,6 @@ public class Keys {
     // UNIQUE and PRIMARY KEY definitions
     // -------------------------------------------------------------------------
 
+    public static final UniqueKey<ClientReportsRecord> CLIENT_REPORTS_PKEY = Internal.createUniqueKey(ClientReports.CLIENT_REPORTS, DSL.name("client_reports_pkey"), new TableField[] { ClientReports.CLIENT_REPORTS.ID }, true);
     public static final UniqueKey<EventsRecord> EVENTS_PKEY = Internal.createUniqueKey(Events.EVENTS, DSL.name("events_pkey"), new TableField[] { Events.EVENTS.EVENT_ID }, true);
 }
