@@ -1,6 +1,7 @@
 #!/bin/bash
 # Issue 21: delivery failure E2E against the Compose stack and a real SDK build (R8 consumer app on an
-# emulator). Cases: 1 normal E2E, 2 ACK loss, 3 partial rejection, 4 content conflict. Local only; not in CI.
+# emulator). Cases: 1 normal E2E, 2 ACK loss, 3 partial rejection, 4 content conflict, 5 client report (ADR-0036: a counted drop reaches
+# GET /v1/client-report-counts). Local only; not in CI.
 #
 # Needs (started by you, never by this script). Case 1 also drives the demo app (sdk/demo/app, debug build).
 #   - .env (cp .env.example .env) and `docker compose up -d --build`
@@ -21,7 +22,7 @@ ADB="$ANDROID_HOME/platform-tools/adb"
 cd "$ROOT"
 
 for c in "$@"; do  # same cases as CASES in scripts/e2e/e2e_cases.py; checked here so a typo does not cost a build
-  case "$c" in 1|2|3|4) ;; *) echo "error: unknown case number '$c'; known: 1 2 3 4" >&2; exit 2 ;; esac
+  case "$c" in 1|2|3|4|5) ;; *) echo "error: unknown case number '$c'; known: 1 2 3 4 5" >&2; exit 2 ;; esac
 done
 [ -f .env ] || { echo "error: no .env; run: cp .env.example .env && docker compose up -d --build" >&2; exit 1; }
 set -a; . ./.env; set +a

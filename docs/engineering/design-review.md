@@ -79,7 +79,7 @@ Privacy:
 - Excluded on purpose (ADR-0028): rate limit and `429`, access log, key policy, retention, and Dashboard login. They are required before any non-local use.
 
 Observability:
-- Device: `diagnostics()` shows queue size, last ACK, next retry, last error, and 100 rejections (spec 6; ADR-0003 item 7). Dropped-event counts are not in `diagnostics()`; they go to the server and show in the Dashboard "Dropped events" card (ADR-0036 items 10 and 11). Gap: an SDK older than 0.2.0 sends no report, so an empty card does not prove that no event was dropped.
+- Device: `diagnostics()` shows queue size, last ACK, next retry, last error, and 100 rejections (spec 6; ADR-0003 item 7). Dropped-event counts are not in `diagnostics()`; they go to the server and show in the Dashboard "Dropped events" card (ADR-0036 items 10 and 11). Gap: an SDK older than 0.2.0 sends no report, so an empty card does not prove that no event was dropped. E2E case 5 (`scripts/e2e-delivery.sh 5`, issue 65) ran the `server_rejected` path from the device to the counts endpoint; the other four reasons are not run on a device.
 - Server: stage timings (admission, connection, commit, lock and statement timeouts) go to logs (`Database.kt`, `Application.kt`). Optional pool stats (`SIGNALDOCK_POOL_STATS_MS`).
 - `/health` is liveness. `GET /ready` checks the database with `SELECT 1` and returns 503 when it fails (`Application.kt`, ADR-0026). Compose shows the server as `unhealthy` (`docker compose ps` only). `DatabaseOutageTest` covers a real PostgreSQL stop and start. Gap: the live Compose check is recorded in a PR #110 comment only; no committed result file.
 - Gap: no metrics endpoint and no alerting (ADR-0026 item 4). The Compose restart policy was not shown to trigger.
