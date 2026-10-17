@@ -4,8 +4,9 @@
 #
 # Run it after you change gradle/libs.versions.toml, a plugin, or a dependency, and commit the result.
 # It runs the same tasks that CI runs, with `--write-verification-metadata sha256`, so every
-# configuration that CI resolves is covered. Gradle only adds entries: to drop stale entries,
-# delete the <components> block of one file and run the script again.
+# configuration that CI resolves is covered. It uses an empty Gradle home, so it downloads everything again.
+# Gradle only adds entries: to drop stale entries, delete the <components> block of one file and run
+# the script again.
 # Check the diff: a new entry for an artifact you did not change is a reason to stop and ask.
 # Needs JAVA_HOME (or .tools/jdk-*) and ANDROID_HOME. No emulator.
 set -euo pipefail
@@ -16,6 +17,12 @@ if [ -z "${JAVA_HOME:-}" ]; then
 fi
 [ -x "$JAVA_HOME/bin/java" ] || { echo "error: no JDK at $JAVA_HOME; run scripts/setup-toolchain.sh or set JAVA_HOME" >&2; exit 1; }
 [ -n "${ANDROID_HOME:-}${ANDROID_SDK_ROOT:-}" ] || { echo "error: set ANDROID_HOME to the Android SDK (platforms android-36 and android-37; the demo app builds at 37)" >&2; exit 1; }
+
+# A new, empty Gradle home. Gradle records only the files that it downloads: with a warm cache it skips
+# files such as BOMs and parent POMs that an earlier build already cached (CI has a cold cache and fails).
+GRADLE_USER_HOME="$(mktemp -d)"
+export GRADLE_USER_HOME
+trap 'rm -rf "$GRADLE_USER_HOME" "${REPO:+$(dirname "$REPO")}"' EXIT
 
 W="--write-verification-metadata sha256 --no-daemon --no-build-cache -q"
 
@@ -38,7 +45,6 @@ echo "=== compatibility/consumer-android ==="
 VERSION="$(sed -n 's/^val sdkVersion = "\(.*\)"$/\1/p' "$ROOT/sdk/sdk-android/build.gradle.kts")"
 [ -n "$VERSION" ] || { echo "error: no sdkVersion in sdk/sdk-android/build.gradle.kts" >&2; exit 1; }
 REPO="$(mktemp -d)/maven-repo"
-trap 'rm -rf "$(dirname "$REPO")"' EXIT
 mkdir -p "$REPO"
 unzip -q "$ROOT/sdk/sdk-android/build/distributions/signaldock-sdk-android-$VERSION-maven.zip" -d "$REPO"
 C="$ROOT/compatibility/consumer-android"
