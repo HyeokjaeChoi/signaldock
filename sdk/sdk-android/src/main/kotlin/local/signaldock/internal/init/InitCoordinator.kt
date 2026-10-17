@@ -33,6 +33,7 @@ import local.signaldock.internal.scheduling.WorkScheduler
 import local.signaldock.internal.MIGRATION_1_2
 import local.signaldock.internal.SignalDockDatabase
 import local.signaldock.internal.storage.InstallationIdStore
+import local.signaldock.internal.storage.OptOutStore
 import local.signaldock.internal.storage.QueueLimits
 import local.signaldock.internal.storage.RoomEventSink
 import local.signaldock.internal.validation.validateConfig
@@ -130,6 +131,7 @@ internal suspend fun createSdk(
     val dir = File(context.noBackupFilesDir, "signaldock")
     if (!dir.isDirectory && !dir.mkdirs() && !dir.isDirectory) throw IOException("cannot create SDK directory")
     val installationId = InstallationIdStore(dir).getOrCreate(logger)
+    val optOut = OptOutStore(dir)
     val db = Room.databaseBuilder(context, SignalDockDatabase::class.java, File(dir, "queue.db").absolutePath)
         .addMigrations(MIGRATION_1_2).build()
     val queued = try {
@@ -152,5 +154,5 @@ internal suspend fun createSdk(
     coordinator.ensureScheduled(if (queued > 0) clock.nowMillis() else clock.nowMillis() + FOREGROUND_TRIGGER_DELAY_MILLIS)
     (context.applicationContext as? Application)?.registerActivityLifecycleCallbacks(ForegroundExitObserver(clock, coordinator))
     logger.debug("initialized")
-    return SignalDock(EventCollector(installationId, sink, clock, ids, limits, logger), dao, coordinator, logger, notice)
+    return SignalDock(EventCollector(installationId, sink, clock, ids, limits, logger, optOut), dao, coordinator, logger, notice, optOut)
 }

@@ -96,7 +96,7 @@ What the repo shows:
 - Rejection diagnostics keep no payload and no name (ADR-0003 item 7).
 
 Gaps:
-- No opt-out or consent API. The public API has no such call (`sdk/sdk-android/api/sdk-android.api`; integration guide section 11). The host can avoid calling `track()`, but the SDK has no stop switch, no queue clear, and no data delete for the host. As a comparison, Amplitude's documentation says: "Amplitude doesn't save or send events while `optOut` is `true`" ([Amplitude Android Kotlin SDK](https://amplitude.com/docs/sdks/analytics/android/android-kotlin-sdk)). I checked no other vendor.
+- Opt-out exists since ADR-0034 (spec Q156): `setOptOut`, `isOptedOut`, and `clearQueue` (`sdk/sdk-android/api/sdk-android.api`; `OptOutTest.kt`). Remaining gaps: queued events are still sent after opt-out unless the host calls `clearQueue()`, there is no consent text, and the server has no delete (ADR-0028). Gap: a real process restart with the opt-out marker is not run on a device. As a comparison, Amplitude's documentation says: "Amplitude doesn't save or send events while `optOut` is `true`" ([Amplitude Android Kotlin SDK](https://amplitude.com/docs/sdks/analytics/android/android-kotlin-sdk)). I checked no other vendor.
 - No retention. The server keeps events until explicit deletion or DB reset (spec 5). Excluded on purpose for local-only operation (ADR-0028).
 - No per-installation delete or export on the server. The delete function is excluded on purpose (ADR-0028); export is not covered by it.
 - No data processing notice or consent text in the repo.
@@ -108,7 +108,7 @@ Gaps:
 3. Unencrypted queue on a rooted device.
 4. No rate limit: one client can cause 503 for all (excluded on purpose, ADR-0028).
 5. Dashboard without login: safe only because it is local (excluded on purpose, ADR-0028).
-6. No opt-out (a gap), and no retention or delete (excluded on purpose, ADR-0028).
+6. No server retention or delete (excluded on purpose, ADR-0028). Opt-out is on the device only (ADR-0034).
 7. Secrets in `.env` and the container environment.
 8. Dependency vulnerability coverage is partial: GitHub Dependabot alerts cover npm (not the SHA-pinned GitHub Actions), and Renovate checks OSV for the declared Gradle dependencies (ADR-0031 item 9). Transitive Gradle dependencies get no alert, and there is no SBOM. CodeQL checks first-party code only, and its first results on `main` (run 38936500321) were triaged: 0 security alerts (ADR-0032 "Triage result").
 9. No access log, no key policy, no lockout (excluded on purpose, ADR-0028).

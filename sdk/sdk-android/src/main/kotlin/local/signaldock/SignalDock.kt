@@ -2,6 +2,9 @@ package local.signaldock
 
 import android.content.Context
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
@@ -10,6 +13,7 @@ import local.signaldock.internal.delivery.DeprecationNotice
 import local.signaldock.internal.init.InitCoordinator
 import local.signaldock.internal.init.Logger
 import local.signaldock.internal.scheduling.DeliveryCoordinator
+import local.signaldock.internal.storage.OptOutStore
 import local.signaldock.internal.storage.QueueDao
 import local.signaldock.internal.transport.SDK_VERSION
 
@@ -17,7 +21,7 @@ import local.signaldock.internal.transport.SDK_VERSION
  * The SDK instance. Get it from [initialize]; call [track] only on a successful result (Q111).
  * One instance with one fixed configuration per process.
  *
- * The public calls are [track], [diagnostics] and [initialize]. Expected failures come back as
+ * The public calls are [track], [diagnostics], [setOptOut], [isOptedOut], [clearQueue] and [initialize]. Expected failures come back as
  * result values; an exception from the SDK's storage or scheduling does not reach the host
  * (ADR-0017). Caller cancellation is the exception: it propagates (spec section 3).
  */
@@ -27,6 +31,7 @@ public class SignalDock internal constructor(
     internal val delivery: DeliveryCoordinator,
     private val logger: Logger,
     private val notice: DeprecationNotice,
+    private val optOut: OptOutStore,
 ) {
     /**
      * Collects one event named [name]. Returns [TrackResult.Success] after the event is committed
@@ -44,6 +49,49 @@ public class SignalDock internal constructor(
      */
     public suspend fun track(name: String, block: EventBuilder.() -> Unit = {}): TrackResult =
         collector.track(name, block)
+
+    /**
+     * Turns collection off or on (ADR-0034). While [optedOut] is `true`, [track] stores nothing and
+     * returns [TrackResult.OptedOut]. The state is kept across app restarts, in SDK storage that
+     * Auto Backup does not restore. The SDK starts with collection on.
+     *
+     * Events already in the queue stay, and the SDK still sends them. To delete them, call
+     * [clearQueue]. A [track] call that started before this call returned can still store its event.
+     *
+     * The change applies at once in this process. The return value says whether it was also stored
+     * for the next start. Caller cancellation does not undo the change.
+     *
+     * @param optedOut `true` to stop collection, `false` to resume it.
+     * @return `true` if the state was stored on disk; `false` if storage failed. The change still
+     *   holds for this process, and the SDK writes a WARN.
+     */
+    public suspend fun setOptOut(optedOut: Boolean): Boolean {
+        optOut.optedOut = optedOut
+        val stored = withContext(NonCancellable + Dispatchers.IO) { optOut.persist() }
+        if (stored) logger.debug("opt-out set") else logger.warn("opt-out state could not be stored")
+        return stored
+    }
+
+    /** `true` while collection is off because of [setOptOut]. */
+    public fun isOptedOut(): Boolean = optOut.optedOut
+
+    /**
+     * Deletes every queued event from the device. Use it with [setOptOut] when a user withdraws
+     * consent. Diagnostics about past rejections and ACKs stay; they hold no event content. A batch
+     * that the SDK is sending at this moment can still reach the server.
+     *
+     * @return how many events were deleted, or `null` if storage failed. A storage failure is not
+     *   thrown (ADR-0017). Caller cancellation propagates.
+     */
+    public suspend fun clearQueue(): Int? = try {
+        dao.deleteAll()
+    } catch (e: Exception) {
+        // Same rule as diagnostics(): caller cancellation propagates; a closed Room database does not.
+        if (e is CancellationException && !currentCoroutineContext().isActive) throw e
+        logger.warn("clearQueue storage failed: ${e.javaClass.simpleName}")
+        currentCoroutineContext().ensureActive()
+        null
+    }
 
     /**
      * Read-only snapshot of the device queue, recent permanent rejections, ACK and retry state.

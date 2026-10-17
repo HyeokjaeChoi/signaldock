@@ -6,6 +6,7 @@ All notable changes to SignalDock are listed here. The format follows [Keep a Ch
 
 ### Added
 
+- Opt-out in the Android SDK. `SignalDock.setOptOut(Boolean)` turns collection off or on, `isOptedOut()` reads the state, and `clearQueue()` deletes all queued events. While opted out, `track()` stores nothing and returns the new `TrackResult.OptedOut`. Queued events stay and are still sent unless the host calls `clearQueue()`. The state is kept across restarts in the backup-excluded SDK directory. The public API change is additive ([ADR-0034](docs/adr/0034-sdk-opt-out.md), spec Q156).
 - Dependency baseline for the Android SDK. `sdk/sdk-android/dependencies/` lists the release runtime and compile classpaths, and `scripts/verify-contract.sh` runs `:sdk-android:dependencyGuard`, which fails when the tree changes without an updated baseline. No code changed in the SDK ([ADR-0033](docs/adr/0033-sdk-dependency-baseline.md)).
 - Contract deprecation warning in the Android SDK. When a server response (any HTTP status) has a valid `Deprecation` (RFC 9745) or `Sunset` (RFC 8594) header, the SDK writes one WARN per process and shows the dates in the new `Diagnostics.contractDeprecation` (type `ContractDeprecation`). Delivery does not change; invalid or absent headers are ignored. Behavior change: a `Retry-After` HTTP-date with trailing text is now ignored (it was accepted before). The public API change is only additive (a new getter and a new class); `Diagnostics` constructor, `copy`, and `componentN` are unchanged. The server does not send these headers yet ([ADR-0030](docs/adr/0030-sdk-contract-deprecation-warning.md)).
 - Engineering judgment documents in `docs/engineering/`: a design review with scale analysis, a failure mode table, two postmortems, and a threat model. They mark the gaps they found. No code changed.
@@ -17,6 +18,10 @@ All notable changes to SignalDock are listed here. The format follows [Keep a Ch
 - This changelog.
 - Optional tracking plan: `tracking-plan/plan.json` describes the demo app events. `node tracking-plan/generate.mjs` generates typed Kotlin functions (demo app) and TypeScript types and builders. The SDK and its public API are unchanged ([ADR-0021](docs/adr/0021-tracking-plan-codegen.md)).
 - Host-cost measurement: `scripts/host-cost-measure.sh` measures APK size, startup time, and PSS of the consumer app with and without the SDK on an emulator. `-Psignaldock.sdk=false` builds the no-SDK baseline. Results are in `perf/sdk-results/host-cost-api37/` ([ADR-0020](docs/adr/0020-sdk-host-app-cost.md)).
+
+### Changed
+
+- `TrackResult` has a new case `OptedOut`. Binary compatible. A host `when` expression over `TrackResult` without an `else` branch must handle it to compile ([ADR-0034](docs/adr/0034-sdk-opt-out.md)).
 
 ## [0.1.0] - 2026-10-14
 
