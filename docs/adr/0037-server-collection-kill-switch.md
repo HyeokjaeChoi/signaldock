@@ -41,5 +41,5 @@ The first and third patterns need an SDK change. The second needs none. Option A
 
 `CollectionControlTest` (`server/app`, real PostgreSQL through Testcontainers): nothing is blocked by default; a blocked name is `rejected` with `COLLECTION_BLOCKED` and the other events are stored; a blocked SDK version is `rejected`; shed gives 503 with the configured `Retry-After` (and 1 by default), stores nothing, and a request with no key still gets 401; environment parsing defaults and malformed values.
 
-Gap: the Compose entries are checked with `docker compose config` only, not with a run of the stack.
+Compose smoke test (2026-10-17 UTC, separate project `-p sdkill` on ports 18080, 15173, and 15432; the record is in the issue 67 file): with `SIGNALDOCK_BLOCKED_EVENTS=noisy_event`, a batch of one blocked and one allowed event got `rejected` with `COLLECTION_BLOCKED` and `accepted`, and the database held only the allowed row. With `SIGNALDOCK_INGEST_SHED=true` and `SIGNALDOCK_INGEST_SHED_RETRY_AFTER_SECONDS=120`, both ingest routes answered 503 with `Retry-After: 120`, and the start log had `collection control: shed=true`. Gap: the `SIGNALDOCK_BLOCKED_SDK_VERSIONS` variable was not run through Compose (the server test covers it).
 Gap: no SDK test against a server with a block. The SDK side of a per-item rejection and of a 503 is already tested (ADR-0036, ADR-0006).
