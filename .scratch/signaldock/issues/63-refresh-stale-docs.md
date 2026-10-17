@@ -1,9 +1,9 @@
 # 63. Refresh stale docs and add the update-internal-docs skill
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: PR on branch `docs/refresh-stale-docs`
+Execution: Done (merged in PR #168, 2026-10-17 11:55:15 UTC)
 
 ## Scope and completion criteria
 
@@ -16,3 +16,7 @@ Docs drifted from the code after v0.2.0 (audit at `main` @ `cbb6210`, 2026-10-17
 
 Verification:
 - `scripts/check-repo-rules.sh`; the pre-push hook (`scripts/verify-contract.sh`); every added path and link exists; `coderabbit review --base main --deep --agent`.
+
+## Comments
+
+- 2026-10-17 UTC: PR #168 merged 11:55:15Z. Last head 3dd44d5: `scripts/check-repo-rules.sh` passed; all 17 PR checks passed. `scripts/verify-contract.sh` printed ALL CONTRACT CHECKS PASSED on an earlier head of the same PR (later commits changed Markdown only). ADR-0023 got a dated amendment for the device-test counts.
