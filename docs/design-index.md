@@ -36,6 +36,7 @@ ADRs:
 - ADR-0034 (`docs/adr/0034-sdk-opt-out.md`), for `setOptOut`, `isOptedOut`, `clearQueue`, `TrackResult.OptedOut`, and `OptOutStore.kt` (issue 58)
 - ADR-0035 (`docs/adr/0035-sdk-https-enforcement.md`), for the `https` rule in `validateConfig` and `SignalDockConfig.allowInsecureEndpoint` (issue 60)
 - ADR-0036 (`docs/adr/0036-sdk-client-reports.md`), for `ClientReport.kt`, the `dropped_counts` table (Room schema 3), and the report step of `Sender` (issue 61)
+- ADR-0040 (`docs/adr/0040-sdk-baseline-profile.md`), for `sdk/profile-app`, `sdk/baseline-profile`, and `sdk/sdk-android/src/main/generated/baselineProfiles/baseline-prof.txt` (issue 70)
 
 Public API change: update the dump (`sdk/gradlew -p sdk :sdk-android:apiDump`), the integration guide, and `CHANGELOG.md` in the same PR.
 
@@ -55,6 +56,7 @@ Spec (`.scratch/signaldock/spec.md`):
 - Q159 (contract support policy, deprecation warning)
 - Q156 (opt-out and clearQueue)
 - Q164 (SDK client reports, dropped event counts)
+- Q168 (SDK Baseline Profile)
 
 ## `server/`
 
@@ -240,11 +242,13 @@ ADRs:
 - ADR-0031 (`docs/adr/0031-renovate-dependency-updates.md`), for `.github/renovate.json5` and the dependency-update section of `docs/releases/README.md`; it supersedes ADR-0024 items 5 and 6 (issue 52)
 - ADR-0032 (`docs/adr/0032-codeql-advanced-setup.md`), for `.github/workflows/codeql.yml` (issue 54)
 - ADR-0038 (`docs/adr/0038-gradle-dependency-verification.md`), for `*/gradle/verification-metadata.xml` and `scripts/update-gradle-verification.sh` (issue 68)
+- ADR-0039 (`docs/adr/0039-release-provenance-attestation.md`), for the attestation step and job permissions of `publish` in `.github/workflows/release.yml`, and the attestation section of `docs/releases/README.md` (issue 69)
 
 Spec (`.scratch/signaldock/spec.md`):
 - Q149 (first release)
 - Q162 (CodeQL advanced setup, Gradle wrapper validation, release classpath baseline); the `gradle-wrapper` job in `.github/workflows/repo-rules.yml` has no ADR (issue 55)
 - Q166 (Gradle dependency verification)
+- Q167 (release provenance attestation)
 - 7. Completion criteria and verification plan
 - 8, C. Small modules and local execution
 - 9. Technical conditions to check on entry into implementation

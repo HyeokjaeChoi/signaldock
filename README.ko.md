@@ -92,6 +92,7 @@ iOS / Flutter, React Native / Flutter / Unity 또는 WebView(native-web) bridge(
 - 서버: Docker 제한이 있는 Mac 한 대에서 pilot 2회와 overload 1회를 실행했습니다. 결과는 [`perf/results/`](perf/results/)에 있습니다. overload 실행은 `Retry-After`가 붙은 HTTP 503과, 재시작 없는 복구를 보여 줍니다. 216회 pool 크기 matrix는 실행하지 않았습니다(Q133, [ADR-0013](docs/adr/0013-server-load-measurement-harness.md), [issue 23](.scratch/signaldock/issues/23-server-load-measurement.md)).
 - SDK: debug 빌드로 API 24와 API 37 에뮬레이터에서 normal, offline, burst를 실행했고, API 37 에뮬레이터에서 R8 release 빌드(debug 서명)로 한 번 더 실행했습니다. 결과는 [`perf/sdk-results/summary.md`](perf/sdk-results/summary.md)에 있습니다([ADR-0014](docs/adr/0014-sdk-device-measurement-harness.md), [ADR-0018](docs/adr/0018-sdk-release-r8-measurement.md), [issue 24](.scratch/signaldock/issues/24-sdk-device-measurement.md), [issue 33](.scratch/signaldock/issues/33-sdk-crash-safety-and-release-build.md)).
 - 호스트 앱이 치르는 SDK 비용: API 37 에뮬레이터에서 SDK가 있는 R8 consumer 앱과 없는 앱을 비교했습니다. APK는 616,829 bytes(dex는 966,108 bytes) 커지고, 콜드 스타트 `TotalTime` p50은 SDK 없음 235 ms, 있음 238 ms이며, `initialize()`는 메인 스레드를 p50 0.26 ms, p95 3.0 ms 사용하고, 5초 유휴 후 PSS는 4.0 MiB 더 큽니다([`perf/sdk-results/host-cost-api37/summary.md`](perf/sdk-results/host-cost-api37/summary.md), [ADR-0020](docs/adr/0020-sdk-host-app-cost.md), [issue 36](.scratch/signaldock/issues/36-sdk-host-app-cost.md)).
+- SDK Baseline Profile: API 37 에뮬레이터에서 Macrobenchmark로 측정했습니다(행마다 콜드 스타트 20회, 지표는 샘플 앱의 `initialize()`, `track()` 20회, `diagnostics()`). 두 번의 실행에서 p50은 컴파일 없음 495 ms와 749 ms, 프로필 적용 358 ms와 351 ms로 각각 28 %와 53 % 낮았고, 세 번째 실행은 413 ms와 410 ms로 차이가 없었습니다. SDK 규칙을 뺀 대조군은 387 ms여서 SDK 규칙만의 효과는 에뮬레이터 잡음 안에 있고, 같은 모드도 실행마다 50 % 달라집니다. 실제 기기는 측정하지 않았습니다([`perf/sdk-results/baseline-profile-api37/`](perf/sdk-results/baseline-profile-api37/), [ADR-0040](docs/adr/0040-sdk-baseline-profile.md), [issue 70](.scratch/signaldock/issues/70-sdk-baseline-profile.md)).
 - CI: `repo-rules` 워크플로에는 `check`, `verify-contract`, `sdk-test`, `consumer-r8`, `server-test`, `device-test`, `size-budget`, `gradle-wrapper` job이 있습니다. 다른 워크플로는 `pr-description`(`length` job), `codeql`, `release`입니다. `device-test` job은 API 34 `google_apis` x86_64 에뮬레이터에서 계측 SDK 테스트를 실행합니다. 33개가 시작되고, 16개는 스스로 건너뛰며(phase 클래스는 `-e phase`가 필요합니다), 17개가 실행됩니다(PR #173의 `repo-rules` run 39032066203 job 로그, 2026-10-17 UTC). 또한 SDK가 R8 consumer APK를 700,000 bytes보다 더 키우면 빌드를 실패시키는 크기 게이트가 있습니다(`size-budget` job). `scripts/device-durability.sh`의 프로세스 경계 케이스와 측정은 로컬에서만 실행합니다([ADR-0023](docs/adr/0023-ci-device-tests-and-size-budget.md), [issue 40](.scratch/signaldock/issues/40-ci-device-tests-and-size-budget.md)).
 - [성능 계획](.scratch/signaldock/performance-plan.md)에는 처음의 목표와 조건이 있습니다.
 
@@ -188,6 +189,14 @@ Maven repository ZIP과 `.sha256` 파일은 GitHub Release [`v0.2.0`](https://gi
 ```sh
 shasum -a 256 -c signaldock-sdk-android-0.2.0-maven.zip.sha256   # 두 파일이 있는 폴더에서 실행
 ```
+
+attestation 변경(ADR-0039) 이후의 릴리스에는 서명된 build provenance attestation도 있습니다. 이 저장소의 릴리스 workflow가 ZIP을 만들었다는 것을 보여 줍니다. [GitHub CLI](https://cli.github.com/)로 확인하세요.
+
+```sh
+gh attestation verify signaldock-sdk-android-X.Y.Z-maven.zip --repo HyeokjaeChoi/signaldock
+```
+
+GitHub CLI 2.102.0 이상을 쓰세요(이전 버전에는 attestation 검증 결함이 있습니다). `v0.2.0` 이하에는 attestation이 없습니다(체크섬만 사용). Gap: attestation은 다음 릴리스 tag까지 만들어지지 않으므로, 이 명령은 실제 릴리스에서 아직 실행하지 않았습니다.
 
 그 폴더를 repository로 추가하고 좌표에 의존하세요.
 

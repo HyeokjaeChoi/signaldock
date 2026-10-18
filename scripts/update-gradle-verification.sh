@@ -30,10 +30,9 @@ gw() { # gw <build dir> <gradle arguments>
 
 echo "=== sdk ==="
 # The SDK build, the tasks of the sdk-test, codeql and verify-contract jobs, and the Maven ZIP.
-# ponytail: the test of :demo:core:data is excluded because it fails on main (it uses an http endpoint
-# without allowInsecureEndpoint, ADR-0035; CI does not run it). Remove the -x flag when it is fixed.
-gw "$ROOT/sdk" build -x :demo:core:data:testDebugUnitTest \
-  :demo:core:data:compileDebugUnitTestKotlin :sdk-android:assembleDebugAndroidTest \
+# `build` covers :profile-app and :baseline-profile (Baseline Profile plugin variants, ADR-0040) except the
+# connected tasks. `generateBaselineProfile` and the benchmark run need an emulator and are not run here.
+gw "$ROOT/sdk" build :sdk-android:assembleDebugAndroidTest \
   :sdk-android:signaldockMavenZip :measure-app:assembleRelease :demo:app:assembleRelease \
   :sdk-android:apiCheck :sdk-android:dependencyGuard
 

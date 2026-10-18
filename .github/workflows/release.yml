@@ -1,5 +1,6 @@
 # Issue 41 (ADR-0024): a pushed tag vX.Y.Z builds the Maven ZIP and creates the GitHub Release.
 # It runs only on a new tag push. v0.1.0 was published by hand and is not touched.
+# Issue 69 (ADR-0039): the publish job signs a build provenance attestation for the ZIP.
 name: release
 
 on:
@@ -57,6 +58,8 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write
+      id-token: write      # Sigstore signing certificate (OIDC)
+      attestations: write  # store the attestation
     env:
       TAG: ${{ github.ref_name }}
       GH_TOKEN: ${{ github.token }}
@@ -65,6 +68,10 @@ jobs:
         with:
           name: dist
           path: dist
+      # Before the release is created: if this step fails, no release exists and the job can re-run.
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/*.zip
       - name: Create release
         run: |
           # gh fails if the release exists; --verify-tag fails if the tag is not on the remote.
