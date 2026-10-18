@@ -19,7 +19,7 @@ binary-compatibility-validator = "0.18.2"
 # Dependency baseline (issue 56, ADR-0033).
 dependency-guard = "0.5.0"
 
-# Baseline Profile (issue 70, ADR-0040). Latest stable on Google Maven, 2026-10-18. profileinstaller is used by
+# Baseline Profile (issue 70, ADR-0040). Latest stable on Google Maven, 2026-10-17. profileinstaller is used by
 # the profile app only; the SDK does not depend on it.
 baselineprofile = "1.5.0"
 benchmark-macro = "1.5.0"
