@@ -13,7 +13,7 @@ git config core.hooksPath .githooks
 scripts/setup-toolchain.sh     # JDK 21, oasdiff, OpenAPI generator -> .tools/
 ```
 
-You also need Docker with Compose, Python 3, Node (see [TOOLCHAIN.md](TOOLCHAIN.md)), and an Android SDK with platform `android-36` (`ANDROID_HOME`). The [README](README.md#reproduce-from-a-clean-clone) lists the run commands.
+You also need Docker with Compose, Python 3, Node (see [TOOLCHAIN.md](TOOLCHAIN.md)), and an Android SDK with platform `android-36` (`ANDROID_HOME`). The demo app and `scripts/update-gradle-verification.sh` also need platform `android-37`. The [README](README.md#reproduce-from-a-clean-clone) lists the run commands.
 
 ## What the hooks run
 
