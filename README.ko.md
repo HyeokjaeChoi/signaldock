@@ -190,6 +190,14 @@ Maven repository ZIP과 `.sha256` 파일은 GitHub Release [`v0.2.0`](https://gi
 shasum -a 256 -c signaldock-sdk-android-0.2.0-maven.zip.sha256   # 두 파일이 있는 폴더에서 실행
 ```
 
+attestation 변경(ADR-0039) 이후의 릴리스에는 서명된 build provenance attestation도 있습니다. 이 저장소의 릴리스 workflow가 ZIP을 만들었다는 것을 보여 줍니다. [GitHub CLI](https://cli.github.com/)로 확인하세요.
+
+```sh
+gh attestation verify signaldock-sdk-android-X.Y.Z-maven.zip --repo HyeokjaeChoi/signaldock
+```
+
+GitHub CLI 2.102.0 이상을 쓰세요(이전 버전에는 attestation 검증 결함이 있습니다). `v0.2.0` 이하에는 attestation이 없습니다(체크섬만 사용). Gap: attestation은 다음 릴리스 tag까지 만들어지지 않으므로, 이 명령은 실제 릴리스에서 아직 실행하지 않았습니다.
+
 그 폴더를 repository로 추가하고 좌표에 의존하세요.
 
 ```kotlin

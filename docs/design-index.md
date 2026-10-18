@@ -241,10 +241,12 @@ ADRs:
 - ADR-0024 (`docs/adr/0024-release-workflow-and-dependency-updates.md`), for `.github/workflows/release.yml`, the `--check` flag of `scripts/release.sh`, and `docs/releases/README.md` (issue 41)
 - ADR-0031 (`docs/adr/0031-renovate-dependency-updates.md`), for `.github/renovate.json5` and the dependency-update section of `docs/releases/README.md`; it supersedes ADR-0024 items 5 and 6 (issue 52)
 - ADR-0032 (`docs/adr/0032-codeql-advanced-setup.md`), for `.github/workflows/codeql.yml` (issue 54)
+- ADR-0039 (`docs/adr/0039-release-provenance-attestation.md`), for the attestation step and job permissions of `publish` in `.github/workflows/release.yml`, and the attestation section of `docs/releases/README.md` (issue 69)
 
 Spec (`.scratch/signaldock/spec.md`):
 - Q149 (first release)
 - Q162 (CodeQL advanced setup, Gradle wrapper validation, release classpath baseline); the `gradle-wrapper` job in `.github/workflows/repo-rules.yml` has no ADR (issue 55)
+- Q167 (release provenance attestation)
 - 7. Completion criteria and verification plan
 - 8, C. Small modules and local execution
 - 9. Technical conditions to check on entry into implementation
