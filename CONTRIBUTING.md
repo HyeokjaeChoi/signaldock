@@ -13,12 +13,22 @@ git config core.hooksPath .githooks
 scripts/setup-toolchain.sh     # JDK 21, oasdiff, OpenAPI generator -> .tools/
 ```
 
-You also need Docker with Compose, Python 3, Node (see [TOOLCHAIN.md](TOOLCHAIN.md)), and an Android SDK with platform `android-36` (`ANDROID_HOME`). The [README](README.md#reproduce-from-a-clean-clone) lists the run commands.
+You also need Docker with Compose, Python 3, Node (see [TOOLCHAIN.md](TOOLCHAIN.md)), and an Android SDK with platform `android-36` (`ANDROID_HOME`). The demo app and `scripts/update-gradle-verification.sh` also need platform `android-37`. The [README](README.md#reproduce-from-a-clean-clone) lists the run commands.
 
 ## What the hooks run
 
 - `pre-commit` runs `scripts/check-repo-rules.sh` (static checks: file modes, issue status lines, README sync, design index, no raw HTML sinks in the Dashboard and report apps, frozen Room schema files, `SDK_VERSION` equal to `sdkVersion`).
 - `pre-push` always runs `scripts/check-repo-rules.sh`, so it can reject a docs-only push too. When code changed, it also runs `scripts/verify-contract.sh`.
+
+## Change a Gradle dependency
+
+Each Gradle build checks every dependency and plugin file against `gradle/verification-metadata.xml` ([ADR-0038](docs/adr/0038-gradle-dependency-verification.md)). When you change `gradle/libs.versions.toml`, a plugin, or a dependency, the build fails with "Dependency verification failed" until you run:
+
+```sh
+scripts/update-gradle-verification.sh
+```
+
+Commit the changed `verification-metadata.xml` files. Read the diff: a new entry must belong to the dependency that you changed. A Renovate Gradle PR needs the same step. Check out its branch, run the script, and push once.
 
 ## Design first
 
