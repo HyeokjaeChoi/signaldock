@@ -1,9 +1,9 @@
 # 72. Verification script stops on a stale SDK dependency baseline
 
-Status: needs-triage
+Status: claimed
 Type: task
 Blocked by: None
-Execution: Not started
+Execution: Branch `claude/issue-72-dependency-guard-fwteah`, PR pending
 
 ## Scope and completion criteria
 

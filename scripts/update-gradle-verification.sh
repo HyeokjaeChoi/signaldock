@@ -8,6 +8,9 @@
 # Gradle only adds entries: to drop stale entries, delete the <components> block of one file and run
 # the script again.
 # Check the diff: a new entry for an artifact you did not change is a reason to stop and ask.
+# It runs `:sdk-android:dependencyGuardBaseline` in place of `dependencyGuard`: the two tasks resolve the same
+# configurations, and a stale baseline (ADR-0033) does not stop the run. It rewrites sdk/sdk-android/dependencies/
+# when the SDK release classpath changed: commit that change and add a CHANGELOG.md line (docs/releases/README.md).
 # Needs JAVA_HOME (or .tools/jdk-*) and ANDROID_HOME. No emulator.
 set -euo pipefail
 
@@ -34,7 +37,7 @@ echo "=== sdk ==="
 # connected tasks. `generateBaselineProfile` and the benchmark run need an emulator and are not run here.
 gw "$ROOT/sdk" build :sdk-android:assembleDebugAndroidTest \
   :sdk-android:signaldockMavenZip :measure-app:assembleRelease :demo:app:assembleRelease \
-  :sdk-android:apiCheck :sdk-android:dependencyGuard
+  :sdk-android:apiCheck :sdk-android:dependencyGuardBaseline
 
 echo "=== server ==="
 gw "$ROOT/server" build verifyJooq
@@ -76,4 +79,4 @@ for path in sys.argv[1:]:
             print(f"{path}: added {name}")
     open(path, "w").write(text)
 EOF
-echo "done: review 'git diff --stat' and commit the four verification-metadata.xml files"
+echo "done: review 'git diff --stat' and commit the four verification-metadata.xml files and any change in sdk/sdk-android/dependencies/"

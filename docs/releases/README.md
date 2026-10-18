@@ -40,7 +40,7 @@ Renovate proposes weekly updates ([`renovate.json5`](../../.github/renovate.json
 
 - A PR from the group `sdk-consumer-facing` (label `sdk-consumer-facing`) changes what a consumer resolves from the published POM. Before you merge it, add a line to `CHANGELOG.md` under `[Unreleased]`.
 - Renovate cannot read the pin reasons in the catalog comments. Documented pins have a rule in `renovate.json5` (ADR-0031: OkHttp below 5.5.0). If CI fails for another pin, close the PR, hold the version in the catalog, and add a rule.
-- A Renovate Gradle PR fails the Gradle CI jobs with "Dependency verification failed", because Renovate does not update `gradle/verification-metadata.xml` in this repo ([ADR-0038](../adr/0038-gradle-dependency-verification.md)). Check out the PR branch, run `scripts/update-gradle-verification.sh`, check that the new entries match the update, and push the changed files once.
+- A Renovate Gradle PR fails the Gradle CI jobs with "Dependency verification failed", because Renovate does not update `gradle/verification-metadata.xml` in this repo ([ADR-0038](../adr/0038-gradle-dependency-verification.md)). Check out the PR branch, run `scripts/update-gradle-verification.sh`, check that the new entries match the update, and push the changed files once. The script runs `dependencyGuardBaseline`, so it also rewrites `sdk/sdk-android/dependencies/` when the SDK release classpath changed: commit that change and add the `CHANGELOG.md` line (see "Change the SDK dependency tree").
 - A new major of a runtime image (JDK, Node, nginx, PostgreSQL) or of `@types/node` is never proposed. Change it by hand in its own PR (`TOOLCHAIN.md`).
 
 ## Change the SDK dependency tree
