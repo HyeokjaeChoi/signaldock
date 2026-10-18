@@ -1,9 +1,9 @@
 # 72. Verification script stops on a stale SDK dependency baseline
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Branch `claude/issue-72-dependency-guard-fwteah`, PR pending
+Execution: Done (merged in PR #185, 2026-10-18 UTC)
 
 ## Scope and completion criteria
 
@@ -19,3 +19,5 @@ Completion criteria:
 3. Verification: run the script after a catalog change that changes the SDK release classpath; it finishes and the four metadata files and the baseline are updated.
 
 ## Comments
+
+- 2026-10-18 UTC: PR #185. The script runs `dependencyGuardBaseline` in place of `dependencyGuard`. Verification in the PR: `bash -n` and `scripts/check-repo-rules.sh` passed; CI passed. Gap: the script itself was not run after a catalog change (criterion 3); no JDK or Android SDK in the agent environment.
