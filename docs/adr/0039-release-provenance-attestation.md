@@ -4,7 +4,7 @@ status: accepted
 
 # Build provenance attestation for the release ZIP (issue 69, spec Q167)
 
-The user approved this item on 2026-10-18 UTC (Q167). The release workflow now signs a build provenance attestation for the Maven ZIP. A consumer can check that the ZIP came from this repository's workflow.
+The user approved this item on 2026-10-17 UTC (Q167). The release workflow now signs a build provenance attestation for the Maven ZIP. A consumer can check that the ZIP came from this repository's workflow.
 
 ## Context
 
