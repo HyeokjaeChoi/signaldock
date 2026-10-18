@@ -17,4 +17,7 @@ Spec Q167. The decisions are in ADR-0039.
 Verification:
 - YAML parse (`yq`) and `actionlint` 1.7.12 on `release.yml`; `scripts/check-repo-rules.sh`.
 - Gap: no tag push, so the attestation is not produced until the next release tag. After that tag, run `gh attestation verify` on the released ZIP.
+
+## Comments
+
 - 2026-10-18 UTC: PR #180 merged 00:45:46Z. Verification in the PR: `actionlint` 1.7.12 on `release.yml` gave no findings; `yq` parsed the `publish` permissions; `scripts/check-repo-rules.sh` exit 0; pre-push `verify-contract.sh` passed. The Gap stays open: `gh attestation verify` has not run on a released ZIP.

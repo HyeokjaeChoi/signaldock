@@ -19,4 +19,7 @@ Spec Q168. The decisions are in ADR-0040. The user approved the item on 2026-10-
 Verification:
 - `sdk/gradlew -p sdk build :sdk-android:apiCheck :sdk-android:dependencyGuard --no-daemon`; `scripts/check-size-budget.sh`; `scripts/verify-consumer.sh`; `scripts/verify-contract.sh`; `scripts/check-repo-rules.sh`.
 - `sdk/gradlew -p sdk :baseline-profile:connectedBenchmarkReleaseAndroidTest -Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.suppressErrors=EMULATOR --no-daemon` (emulator only, not in CI).
+
+## Comments
+
 - 2026-10-18 UTC: PR #182 merged 00:58:18Z. Verification in the PR: `build`, `apiCheck`, `dependencyGuard` passed with no baseline change; `scripts/check-size-budget.sh` delta 623,417 B (budget 700,000); `scripts/verify-consumer.sh`, `scripts/verify-contract.sh`, `scripts/check-repo-rules.sh` passed. Gap: the p50 gain is not proved on the emulator, and no physical device was measured.
