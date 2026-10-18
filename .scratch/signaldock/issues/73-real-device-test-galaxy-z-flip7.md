@@ -3,7 +3,7 @@
 Status: resolved
 Type: task
 Blocked by: None
-Execution: Done (merged in PR #187, 2026-10-18 UTC; status set to resolved in issue 74)
+Execution: Done (merged in PR #187, 2026-10-18 UTC; status set to resolved in issue 75)
 
 ## Scope and completion criteria
 

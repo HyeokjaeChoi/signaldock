@@ -1,4 +1,4 @@
-# 74. Stale status cleanup after the real-device run
+# 75. Stale status cleanup after the real-device run
 
 Status: claimed
 Type: task
