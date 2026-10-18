@@ -121,7 +121,7 @@ Before any non-local use, build every feature in the ADR-0028 table first.
 ## 8. Out of scope
 
 - Public internet operation, multi-tenant use, and account management (spec 1; [ADR-0028](../adr/0028-server-production-features-excluded.md) lists what the server leaves out for that reason).
-- Physical devices. The JUnit device tests ran locally on API 24 and API 37.2 (ADR-0011 limits) and run in CI on API 34 x86_64 ([ADR-0023](../adr/0023-ci-device-tests-and-size-budget.md)). The fault cases ran on API 37.2 only, and CI does not run them ([ADR-0029](../adr/0029-device-fault-tests-and-power-loss.md) limits).
+- Physical devices. The JUnit device tests ran locally on API 24 and API 37.2 (ADR-0011 limits) and run in CI on API 34 x86_64 ([ADR-0023](../adr/0023-ci-device-tests-and-size-budget.md)). The fault cases ran on API 37.2 only, and CI does not run them ([ADR-0029](../adr/0029-device-fault-tests-and-power-loss.md) limits). One physical device (Galaxy Z Flip7, Android 16) ran the instrumented tests once, without the phase cases ([issue 73](../../.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md)). Gap: `scripts/device-durability.sh`, the fault cases, and the performance measurement were not run on a physical device.
 - A hostile host app, root detection, and reverse engineering of the AAR.
 - Legal review of privacy law and data processing agreements.
 - Penetration testing, fuzzing, and a formal security review.

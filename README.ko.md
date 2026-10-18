@@ -8,7 +8,7 @@
 앱의 `track()` 호출에서 시작해 durable queue, 재시도, 서버 중복 제거, 독립 아티팩트 설치까지 이어지는 경로를 검토할 수 있습니다.
 
 > **상태: 2026-10-17**
-> 첫 릴리스 범위가 완료되었고, SDK v0.2.0이 릴리스되었습니다. v0.2.0은 opt-out(`setOptOut`), HTTPS 강제, client report를 추가합니다([CHANGELOG.md](CHANGELOG.md)). SDK, 서버, Android 데모 앱, Dashboard가 구현되어 있습니다. 전송 실패 E2E, 기기 내구성, 계약·DB 변경 검사, 서버 부하 측정, SDK 기기 측정은 스크립트와 기록된 결과가 있습니다([이슈 20~24](.scratch/signaldock/issues/)). [클린 클론에서 재현](#클린-클론에서-재현)에는 새 클론에서 실행한 명령과 검증하지 못한 항목이 정리되어 있습니다. 검증하지 못한 항목은 실기기와 서버 측정 matrix 전체(실행하지 않음, Q133)입니다.
+> 첫 릴리스 범위가 완료되었고, SDK v0.2.0이 릴리스되었습니다. v0.2.0은 opt-out(`setOptOut`), HTTPS 강제, client report를 추가합니다([CHANGELOG.md](CHANGELOG.md)). SDK, 서버, Android 데모 앱, Dashboard가 구현되어 있습니다. 전송 실패 E2E, 기기 내구성, 계약·DB 변경 검사, 서버 부하 측정, SDK 기기 측정은 스크립트와 기록된 결과가 있습니다([이슈 20~24](.scratch/signaldock/issues/)). [클린 클론에서 재현](#클린-클론에서-재현)에는 새 클론에서 실행한 명령과 검증하지 못한 항목이 정리되어 있습니다. 검증하지 못한 항목은 실기기 측정과 process 경계 스크립트(instrumented test는 실기기 한 대에서 한 번 실행했습니다, [issue 73](.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md))와 서버 측정 matrix 전체(실행하지 않음, Q133)입니다.
 
 설계 문서, ADR, 이슈 파일, `docs/reproduce.md`는 영어로만 제공합니다. 이 README는 해당 문서로 연결합니다.
 
