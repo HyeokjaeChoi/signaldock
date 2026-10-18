@@ -36,6 +36,7 @@ ADRs:
 - ADR-0034 (`docs/adr/0034-sdk-opt-out.md`), for `setOptOut`, `isOptedOut`, `clearQueue`, `TrackResult.OptedOut`, and `OptOutStore.kt` (issue 58)
 - ADR-0035 (`docs/adr/0035-sdk-https-enforcement.md`), for the `https` rule in `validateConfig` and `SignalDockConfig.allowInsecureEndpoint` (issue 60)
 - ADR-0036 (`docs/adr/0036-sdk-client-reports.md`), for `ClientReport.kt`, the `dropped_counts` table (Room schema 3), and the report step of `Sender` (issue 61)
+- ADR-0040 (`docs/adr/0040-sdk-baseline-profile.md`), for `sdk/profile-app`, `sdk/baseline-profile`, and `sdk/sdk-android/src/main/generated/baselineProfiles/baseline-prof.txt` (issue 70)
 
 Public API change: update the dump (`sdk/gradlew -p sdk :sdk-android:apiDump`), the integration guide, and `CHANGELOG.md` in the same PR.
 
@@ -55,6 +56,7 @@ Spec (`.scratch/signaldock/spec.md`):
 - Q159 (contract support policy, deprecation warning)
 - Q156 (opt-out and clearQueue)
 - Q164 (SDK client reports, dropped event counts)
+- Q168 (SDK Baseline Profile)
 
 ## `server/`
 

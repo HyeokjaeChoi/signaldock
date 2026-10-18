@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.dependency.guard)
+    alias(libs.plugins.androidx.baselineprofile)
 }
 
 android {
@@ -123,6 +124,9 @@ dependencies {
     testImplementation(libs.androidx.work.testing)
     testImplementation(libs.okhttp.mockwebserver)
 
+    // Baseline Profile (issue 70, ADR-0040). The generator module, not a runtime dependency.
+    baselineProfile(project(":baseline-profile"))
+
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.junit)
@@ -160,4 +164,16 @@ tasks.register<Copy>("apiDump") {
 dependencyGuard {
     configuration("releaseRuntimeClasspath")
     configuration("releaseCompileClasspath")
+}
+
+// Baseline Profile (issue 70, ADR-0040). The plugin writes src/main/generated/baselineProfiles/baseline-prof.txt
+// (committed). AGP packs it into the AAR, and the AGP of a host app merges it into the app profile.
+//   sdk/gradlew -p sdk :sdk-android:generateBaselineProfile   needs one booted emulator or device
+baselineProfile {
+    // SDK classes only. Room, WorkManager, OkHttp, and Retrofit bring their own profiles. The sample app
+    // is in the same package tree (local.signaldock.profileapp), so it is excluded.
+    filter {
+        include("local.signaldock.**")
+        exclude("local.signaldock.profileapp.**")
+    }
 }
