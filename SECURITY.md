@@ -12,6 +12,16 @@ SignalDock is an open-source project. The stack is for local use only. Read [Sco
 
 The project is before 1.0 and has one maintainer. There is no fixed response time and no SLA. See [docs/versioning.md](docs/versioning.md) for the support window.
 
+## Verify a release
+
+Each GitHub Release has a Maven ZIP and a `.sha256` file. Releases after ADR-0039 also have a signed build provenance attestation. To check that this repository's release workflow built a ZIP, run:
+
+```sh
+gh attestation verify signaldock-sdk-android-X.Y.Z-maven.zip --repo HyeokjaeChoi/signaldock
+```
+
+Use GitHub CLI 2.102.0 or newer (older versions have attestation check flaws, for example GHSA-wjmr-j3rp-mh2g). `v0.2.0` and earlier have no attestation. See [docs/releases/README.md](docs/releases/README.md#provenance-attestation).
+
 ## Report a vulnerability
 
 Do not open a public issue or pull request for a vulnerability.
