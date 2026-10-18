@@ -1,9 +1,9 @@
 # 73. Real-device run of the SDK instrumented tests
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: In an open PR (2026-10-18 UTC)
+Execution: Done (merged in PR #187, 2026-10-18 UTC; status set to resolved in issue 74)
 
 ## Scope and completion criteria
 
