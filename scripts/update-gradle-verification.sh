@@ -33,9 +33,11 @@ gw() { # gw <build dir> <gradle arguments>
 
 echo "=== sdk ==="
 # The SDK build, the tasks of the sdk-test, codeql and verify-contract jobs, and the Maven ZIP.
+# `build` runs `dependencyGuard`, which fails on a stale baseline. `-x :sdk-android:dependencyGuard` skips it, and
+# `dependencyGuardBaseline` below refreshes the baseline.
 # `build` covers :profile-app and :baseline-profile (Baseline Profile plugin variants, ADR-0040) except the
 # connected tasks. `generateBaselineProfile` and the benchmark run need an emulator and are not run here.
-gw "$ROOT/sdk" build :sdk-android:assembleDebugAndroidTest \
+gw "$ROOT/sdk" build -x :sdk-android:dependencyGuard :sdk-android:assembleDebugAndroidTest \
   :sdk-android:signaldockMavenZip :measure-app:assembleRelease :demo:app:assembleRelease \
   :sdk-android:apiCheck :sdk-android:dependencyGuardBaseline
 

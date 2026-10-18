@@ -3,7 +3,7 @@
 Status: resolved
 Type: task
 Blocked by: None
-Execution: Done (merged in PR #185, 2026-10-18 UTC)
+Execution: Done (merged in PR #185, 2026-10-18 UTC; follow-up fix in the PR that adds the `-x` line below)
 
 ## Scope and completion criteria
 
@@ -21,3 +21,4 @@ Completion criteria:
 ## Comments
 
 - 2026-10-18 UTC: PR #185. The script runs `dependencyGuardBaseline` in place of `dependencyGuard`. Verification in the PR: `bash -n` and `scripts/check-repo-rules.sh` passed; CI passed. Gap: the script itself was not run after a catalog change (criterion 3); no JDK or Android SDK in the agent environment.
+- 2026-10-18 UTC: Criterion 3 run on a Mac (okhttp 5.4.0 to 5.3.0, which changes the SDK release classpath). With PR #185 alone the script stopped in `:sdk-android:dependencyGuard`, because `build` also runs that task. Fix: `build -x :sdk-android:dependencyGuard`. After the fix the script finished end to end and updated the four metadata files and the baseline. The scratch change was discarded.
