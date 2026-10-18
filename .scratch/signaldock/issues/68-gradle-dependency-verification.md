@@ -1,9 +1,9 @@
 # 68. Gradle dependency verification
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: Branch `ci/gradle-dependency-verification`, PR pending
+Execution: Done (merged in PR #181, 2026-10-18 05:06:46 UTC)
 
 ## Scope and completion criteria
 
@@ -18,3 +18,7 @@ Spec Q166. The decisions are in ADR-0038. CI and docs change. No product code ch
 
 Verification:
 - `sdk/gradlew -p sdk build :sdk-android:assembleDebugAndroidTest --no-daemon`; `server/gradlew -p server test verifyJooq --no-daemon`; `scripts/verify-contract.sh`; `scripts/verify-consumer.sh`; `scripts/check-size-budget.sh`; `scripts/check-repo-rules.sh`.
+
+## Comments
+
+- 2026-10-18 UTC: PR #181 merged 05:06:46Z. Verification in the PR: Gradle builds with an empty Gradle home and verification enforced (`sdk`, `server`, `contract-check`), `scripts/verify-contract.sh`, `scripts/verify-consumer.sh`, `scripts/check-size-budget.sh`, `scripts/check-repo-rules.sh` passed; GitHub CI on 7fb3281: all 15 checks passed. Gaps: `generateBaselineProfile` and the benchmark run were not run by the script; checksums are trust on first use. Open Minor finding: issue 72.

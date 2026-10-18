@@ -1,9 +1,9 @@
 # 71. Demo data unit test fails the https rule
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: PR pending (branch fix/demo-data-test-https)
+Execution: Done (merged in PR #183, 2026-10-18 00:46:02 UTC)
 
 ## Scope and completion criteria
 
@@ -21,3 +21,4 @@ Verification:
 
 - 2026-10-17 UTC baseline (main, before the fix): `sdk/gradlew -p sdk :demo:core:data:testDebugUnitTest --no-daemon`: BUILD FAILED, 1 test failed.
 - 2026-10-17 UTC verification (branch, after the fix): the CI test command above: BUILD SUCCESSFUL. Test counts from the JUnit XML reports: data 1 (0 failures), shop 8 (0), diagnostics 5 (0), sdk-android 167 (0).
+- 2026-10-18 UTC: PR #183 merged 00:46:02Z. Verification in the PR: `:demo:core:data:testDebugUnitTest` failed on main and passed with the fix; the CI unit-test command gave BUILD SUCCESSFUL; `scripts/check-repo-rules.sh` exit 0; pre-push `verify-contract.sh` passed.
