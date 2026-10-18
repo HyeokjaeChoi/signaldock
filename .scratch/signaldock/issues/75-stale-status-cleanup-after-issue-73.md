@@ -1,9 +1,9 @@
 # 75. Stale status cleanup after the real-device run
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: In an open PR (2026-10-18 UTC)
+Execution: Done (PR #189, 2026-10-18 UTC)
 
 ## Scope and completion criteria
 
