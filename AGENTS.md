@@ -49,6 +49,7 @@ Before exploring code or designing the domain, read `docs/agents/domain.md`.
 ## Documentation upkeep
 
 At every release, and when docs may have drifted from the code, run the `update-internal-docs` skill (`.claude/skills/update-internal-docs/SKILL.md`).
+After a batch of merges, run the `signaldock-stale-cleanup` skill (`.claude/skills/signaldock-stale-cleanup/SKILL.md`). It extends `update-internal-docs`.
 
 ## Setup
 
