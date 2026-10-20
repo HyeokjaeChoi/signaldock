@@ -11,7 +11,7 @@ Run this after a batch of merges, or on request. It extends `update-internal-doc
 
 1. Sync: `git fetch origin main`, start a branch from `origin/main`. Read `docs/agents/issue-tracker.md` and `docs/agents/triage-labels.md`.
 2. Issue audit:
-   - Count `Status:` values in `.scratch/*/issues/*.md`. Every `claimed` issue: find its PR (`Execution:` line, `git log origin/main --grep`). If the PR merged, set `Status: resolved` and `Execution: Done (PR #N, date UTC)`.
+   - Count `Status:` values in `.scratch/*/issues/*.md`. Every `claimed` issue: find its PR (`Execution:` line, `git log origin/main --grep`). If the PR merged, set `Status: resolved` and `Execution: Done (PR number, date UTC)`.
    - Any issue whose `Execution:` starts with `Done` must be `resolved`.
    - A `Gap:` line that names an issue file with `Status: resolved`: update the status or evidence line.
 3. Doc audit: for each recent merged PR (`git log origin/main`), grep the docs for the claim it changed ("not started", "pending", "Gap:", "no physical device", test counts, version strings). Check every relative Markdown link with `test -e`.

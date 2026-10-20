@@ -3,7 +3,7 @@
 Status: resolved
 Type: task
 Blocked by: None
-Execution: Done (this PR, 2026-10-20 UTC)
+Execution: Done (PR #192, 2026-10-20 UTC)
 
 ## Scope and completion criteria
 
