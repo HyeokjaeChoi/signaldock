@@ -1,9 +1,9 @@
 # 74. Demo app installed on a real phone, with an on-screen E2E result
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: In an open PR (2026-10-18 UTC)
+Execution: Done (merged in PR #188, 2026-10-20 12:28:32 UTC)
 
 ## Scope and completion criteria
 
