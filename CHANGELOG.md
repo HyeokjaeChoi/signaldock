@@ -4,6 +4,10 @@ All notable changes to SignalDock are listed here. The format follows [Keep a Ch
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-21
+
+Third tagged release. It has no breaking change: the public API and the runtime dependency tree are the same as in 0.2.0. See the [release notes](docs/releases/v0.3.0.md).
+
 ### Added
 
 - Gradle dependency verification (Q166). Each of the four Gradle builds has `gradle/verification-metadata.xml` with SHA-256 checksums; a dependency or plugin file that is not listed, or that differs, fails the build. `scripts/update-gradle-verification.sh` rewrites the files after a dependency change. Renovate does not update them for this repo, so a Renovate Gradle PR needs that script run on its branch before CI passes. No product code or published POM changed ([ADR-0038](docs/adr/0038-gradle-dependency-verification.md)).
@@ -60,6 +64,7 @@ First tagged release. License: Apache-2.0. See the [release notes](docs/releases
 
 - Physical devices, the 216-run server pool-size matrix, release signing and Play distribution, a consumer on a Kotlin version other than the AGP 9.3.3 default (2.2.10) or on AGP 8.x, and public internet operation.
 
-[Unreleased]: https://github.com/HyeokjaeChoi/signaldock/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/HyeokjaeChoi/signaldock/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/HyeokjaeChoi/signaldock/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/HyeokjaeChoi/signaldock/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/HyeokjaeChoi/signaldock/releases/tag/v0.1.0

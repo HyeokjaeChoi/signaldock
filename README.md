@@ -7,8 +7,8 @@ An Android event SDK designed to save events on the device and confirm server re
 This monorepo contains the SDK, a local data processing server, and their design.
 Review the path from an app's `track()` call through a durable queue, retries, server deduplication, and independent artifact installation.
 
-> **Status: 2026-10-17**
-> The first release scope is done, and SDK v0.2.0 is released. It adds opt-out (`setOptOut`), HTTPS enforcement, and client reports ([CHANGELOG.md](CHANGELOG.md)). The SDK, the server, the Android demo app, and the Dashboard are implemented. Delivery failure E2E, device durability, contract and DB change checks, server load measurement, and SDK device measurement have scripts and recorded results ([issues 20 to 24](.scratch/signaldock/issues/)). [Reproduce from a clean clone](#reproduce-from-a-clean-clone) lists the commands that were run in a fresh clone, and what was not verified: physical-device measurement and the process-boundary script (the instrumented tests ran once on a physical device, [issue 73](.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md)), and the full server measurement matrix (not run, Q133).
+> **Status: 2026-10-21**
+> The first release scope is done, and SDK v0.3.0 is released. It adds a server collection kill switch, a Baseline Profile in the AAR, a build provenance attestation for the release ZIP, and Gradle dependency verification ([CHANGELOG.md](CHANGELOG.md)). The public API does not change from 0.2.0. The SDK, the server, the Android demo app, and the Dashboard are implemented. Delivery failure E2E, device durability, contract and DB change checks, server load measurement, and SDK device measurement have scripts and recorded results ([issues 20 to 24](.scratch/signaldock/issues/)). [Reproduce from a clean clone](#reproduce-from-a-clean-clone) lists the commands that were run in a fresh clone, and what was not verified: physical-device measurement and the process-boundary script (the instrumented tests ran once on a physical device, [issue 73](.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md)), and the full server measurement matrix (not run, Q133).
 
 ![The Dashboard with one stored event selected: the event list on the left, the event details and stored JSON on the right.](docs/images/dashboard.png)
 
@@ -76,7 +76,7 @@ The SDK counts the events it drops, by reason, and reports the counts to `POST /
 | CI and supply chain | GitHub Actions · CodeQL · Renovate · `dependency-guard` baseline · `binary-compatibility-validator` · Gradle wrapper validation · Gradle dependency verification · build provenance attestation |
 
 Exact versions are pinned in `gradle/libs.versions.toml`. [TOOLCHAIN.md](TOOLCHAIN.md) gives the reason for each pin and the build that verified it.
-The first coordinate is `local.signaldock:sdk-android:0.2.0` (local only, not Maven Central). Build the ZIP as described below.
+The first coordinate is `local.signaldock:sdk-android:0.3.0` (local only, not Maven Central). Build the ZIP as described below.
 
 ## Scope and verification
 
@@ -141,7 +141,7 @@ export ANDROID_HOME="$HOME/Library/Android/sdk"     # your Android SDK path
 scripts/verify-consumer.sh
 ```
 
-The script builds `signaldockMavenZip`, unzips it into a clean temporary folder, and builds `compatibility/consumer-android/` from that folder only, by the coordinate `local.signaldock:sdk-android:0.2.0`, as an R8 release. It checks the AAR Kotlin metadata version and prints the ZIP, folder, and APK paths. To keep the folder, set `SIGNALDOCK_REPO_DIR` to a new empty path first. The ZIP alone: `sdk/gradlew -p sdk :sdk-android:signaldockMavenZip --no-daemon` (output `sdk/sdk-android/build/distributions/signaldock-sdk-android-0.2.0-maven.zip`). See [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md).
+The script builds `signaldockMavenZip`, unzips it into a clean temporary folder, and builds `compatibility/consumer-android/` from that folder only, by the coordinate `local.signaldock:sdk-android:0.3.0`, as an R8 release. It checks the AAR Kotlin metadata version and prints the ZIP, folder, and APK paths. To keep the folder, set `SIGNALDOCK_REPO_DIR` to a new empty path first. The ZIP alone: `sdk/gradlew -p sdk :sdk-android:signaldockMavenZip --no-daemon` (output `sdk/sdk-android/build/distributions/signaldock-sdk-android-0.3.0-maven.zip`). See [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md).
 
 Now run the R8 release APK on an emulator and let it reach the server. The collection key is baked in at build time:
 
@@ -182,19 +182,20 @@ Warning: `--volumes` deletes the PostgreSQL data. You cannot undo it. Use it onl
 
 ## Add the SDK to an app
 
-The Maven repository ZIP and its `.sha256` file are release artifacts of the GitHub Release [`v0.2.0`](https://github.com/HyeokjaeChoi/signaldock/releases/tag/v0.2.0) ([release notes](docs/releases/v0.2.0.md), [changelog](CHANGELOG.md)). `scripts/release.sh 0.2.0` builds both into `dist/`. Verify the ZIP, then unzip it into a folder:
+The Maven repository ZIP and its `.sha256` file are release artifacts of the GitHub Release [`v0.3.0`](https://github.com/HyeokjaeChoi/signaldock/releases/tag/v0.3.0) ([release notes](docs/releases/v0.3.0.md), [changelog](CHANGELOG.md)). `scripts/release.sh 0.3.0` builds both into `dist/`. Verify the ZIP, then unzip it into a folder:
 
 ```sh
-shasum -a 256 -c signaldock-sdk-android-0.2.0-maven.zip.sha256   # run in the folder with both files
+shasum -a 256 -c signaldock-sdk-android-0.3.0-maven.zip.sha256   # run in the folder with both files
 ```
 
-Releases made after the attestation change (ADR-0039) also have a signed build provenance attestation. It shows that this repository's release workflow built the ZIP. Check it with the [GitHub CLI](https://cli.github.com/):
+Releases from `v0.3.0` on (ADR-0039) also have a signed build provenance attestation. It shows that this repository's release workflow built the ZIP. Check it with the [GitHub CLI](https://cli.github.com/):
 
 ```sh
-gh attestation verify signaldock-sdk-android-X.Y.Z-maven.zip --repo HyeokjaeChoi/signaldock
+gh attestation verify signaldock-sdk-android-X.Y.Z-maven.zip --repo HyeokjaeChoi/signaldock \
+  --signer-workflow HyeokjaeChoi/signaldock/.github/workflows/release.yml
 ```
 
-Use GitHub CLI 2.102.0 or newer (older versions have attestation check flaws). `v0.2.0` and earlier have no attestation (use the checksum only). Gap: the attestation is not produced until the next release tag, so this command has not run on a real release yet.
+Use GitHub CLI 2.102.0 or newer (older versions have attestation check flaws). `v0.2.0` and earlier have no attestation (use the checksum only). Gap: `v0.3.0` is the first release that the workflow attests, so this command had not run on a real release before that tag.
 
 Add the folder as a repository and depend on the coordinate:
 
@@ -211,10 +212,10 @@ dependencyResolutionManagement {
     }
 }
 // app/build.gradle.kts
-dependencies { implementation("local.signaldock:sdk-android:0.2.0") }
+dependencies { implementation("local.signaldock:sdk-android:0.3.0") }
 ```
 
-Requirements of the 0.2.0 AAR:
+Requirements of the 0.3.0 AAR:
 
 - `compileSdk` 36 or newer (`aarMetadata.minCompileSdk=36`, [ADR-0006](docs/adr/0006-sdk-delivery-decisions.md)), `minSdk` 24 or newer.
 - Kotlin 2.2 or newer and AGP 9.x. The SDK metadata is 2.2, so AGP 9's default built-in Kotlin works with no extra Kotlin plugin ([ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md), Q132).
@@ -224,7 +225,7 @@ Requirements of the 0.2.0 AAR:
 
 ### Supported versions
 
-| Item | 0.2.x |
+| Item | 0.3.x |
 | --- | --- |
 | Minimum Android API (`minSdk`) | 24 |
 | `compileSdk` of the host app | 36 or newer |

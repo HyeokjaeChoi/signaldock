@@ -99,7 +99,7 @@ class StorageTest {
     @Test
     fun `diagnostics reports queue, last ACK and next retry`() = runBlocking {
         val sdk = newSdk(nowMillis = 5_000)
-        assertEquals(Diagnostics("0.2.0", 0, 0, null, emptyList(), null, null, 0, null), sdk.diagnostics())
+        assertEquals(Diagnostics("0.3.0", 0, 0, null, emptyList(), null, null, 0, null), sdk.diagnostics())
         sdk.track("e")
         sdk.dao.saveRetryState(RetryStateEntity(failureCount = 3, nextAttemptAtMillis = 9_000, lastAckAtMillis = 7_000, lastAckAccepted = 2, lastAckDuplicate = 1, lastAckRejected = 4, lastErrorKind = "TIMEOUT", lastErrorHttpStatus = null, lastErrorAtMillis = 8_000))
         val d = sdk.diagnostics()

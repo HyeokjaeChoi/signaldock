@@ -1,9 +1,9 @@
 # 77. Pre-release docs refresh before SDK v0.3.0
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: In an open PR (2026-10-20 UTC)
+Execution: Done (merged in PR #195, 2026-10-21 15:47:59 UTC)
 
 ## Scope and completion criteria
 

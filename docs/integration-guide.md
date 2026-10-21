@@ -6,7 +6,7 @@ This guide tells an app developer how to add the SignalDock Android SDK to an ap
 It adds no new behavior. Each statement names the source it comes from: the [spec](../.scratch/signaldock/spec.md) ("spec 3" means section 3), the [architecture](../architecture.md), or an [ADR](adr/).
 The SDK public API has KDoc on every public declaration. It agrees with this guide.
 
-The SDK package is `local.signaldock`. The release version is `0.2.0`. The coordinate is `local.signaldock:sdk-android:0.2.0` (spec 8.C, Q126).
+The SDK package is `local.signaldock`. The release version is `0.3.0`. The coordinate is `local.signaldock:sdk-android:0.3.0` (spec 8.C, Q126).
 
 ## Contents
 
@@ -33,7 +33,7 @@ The SDK is a local Maven repository folder, packed as a ZIP. It is not on Maven 
    sdk/gradlew -p sdk :sdk-android:signaldockMavenZip
    ```
 
-   The output is `sdk/sdk-android/build/distributions/signaldock-sdk-android-0.2.0-maven.zip`.
+   The output is `sdk/sdk-android/build/distributions/signaldock-sdk-android-0.3.0-maven.zip`.
 2. Unzip it into a folder.
 3. Add the folder as a repository for the group `local.signaldock` only, and depend on the coordinate (ADR-0009 decision 3).
    The independent consumer app is the worked example: [`settings.gradle.kts`](../compatibility/consumer-android/settings.gradle.kts) and [`app/build.gradle.kts`](../compatibility/consumer-android/app/build.gradle.kts).
@@ -51,13 +51,13 @@ dependencyResolutionManagement {
     }
 }
 // app/build.gradle.kts
-dependencies { implementation("local.signaldock:sdk-android:0.2.0") }
+dependencies { implementation("local.signaldock:sdk-android:0.3.0") }
 ```
 
-Requirements of the 0.2.0 AAR:
+Requirements of the 0.3.0 AAR:
 
 - `compileSdk` 36 or newer and `minSdk` 24 or newer ([ADR-0006](adr/0006-sdk-delivery-decisions.md) decision 1; spec 2).
-- Kotlin 2.2 or newer and AGP 9.x. The SDK class metadata is 2.2, so the default built-in Kotlin of AGP 9 works (ADR-0009 decision 4, Q132). An app on AGP 8.x cannot use 0.2.0 (ADR-0009 decision 4).
+- Kotlin 2.2 or newer and AGP 9.x. The SDK class metadata is 2.2, so the default built-in Kotlin of AGP 9 works (ADR-0009 decision 4, Q132). An app on AGP 8.x cannot use 0.3.0 (ADR-0009 decision 4).
 - The app declares the `INTERNET` permission (the consumer app has it in its [manifest](../compatibility/consumer-android/app/src/main/AndroidManifest.xml); [README](../README.md) "Add the SDK to an app"). The SDK needs no R8 rules of its own (ADR-0009 decision 6).
 - Use an `https://` endpoint. The SDK does not change `http://` to `https://`. `initialize` rejects an `http://` endpoint with `InvalidConfiguration`, unless the config has `allowInsecureEndpoint = true` (default `false`, ADR-0035). Set it only for a local server on `http://`. The app must also allow cleartext for that host. The consumer app does this for `10.0.2.2`, `127.0.0.1`, and `localhost` only (ADR-0009 decision 5, Q134).
 
@@ -295,7 +295,7 @@ suspend fun queueSummary(sdk: SignalDock): String {
 
 | Field | Meaning | Source |
 | --- | --- | --- |
-| `sdkVersion` | The SDK release version (`0.2.0`). It is not the contract version | spec 3; spec 8 Q65 |
+| `sdkVersion` | The SDK release version (`0.3.0`). It is not the contract version | spec 3; spec 8 Q65 |
 | `queuedEvents`, `queuedBytes` | Events that wait in the queue, and their transport JSON size | spec 6 |
 | `oldestPendingEpochMillis` | Collection time of the oldest queued event. `null` if the queue is empty | spec 6; `Diagnostics` KDoc |
 | `recentRejections` | The last permanent rejections: event ID, code, time. No payload and no name | spec 4; ADR-0003 decision 7 |
@@ -359,7 +359,7 @@ The SDK counts the events it dropped, by reason, and sends the counts to the ser
 
 ## 9. Versions and the contract version
 
-- **SDK release version:** `0.2.0`. `Diagnostics.sdkVersion` returns it. Each event stores the version from the time of collection (spec 3 "Common information").
+- **SDK release version:** `0.3.0`. `Diagnostics.sdkVersion` returns it. Each event stores the version from the time of collection (spec 3 "Common information").
 - **Contract version:** `1`. The SDK sends it in the header `SignalDock-Contract-Version`. The contract version and the SDK release version are separate. An incompatible change raises the contract version. The first release implements only contract 1 (spec 8.B Q65, Q106; architecture "Contracts, generated sources, and JSON").
 - An event keeps the contract version from its collection. After an SDK update, the SDK sends old queued events under their original contract, in batches grouped by contract. Old contracts are not supported without end (spec 8.B Q66). After a new contract ships, the server plans to keep the previous one for at least 12 months and until its traffic is low, and to warn with `Deprecation` and `Sunset` headers. The server part is not built yet. The SDK already reads these headers (spec 8 Q159; [ADR-0030](adr/0030-sdk-contract-deprecation-warning.md)).
 - A server that does not support the contract version rejects the whole request. The SDK keeps the queue and checks again every 30 minutes. It does not downgrade by itself (spec 8.B Q67).
