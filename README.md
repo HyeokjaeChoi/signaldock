@@ -191,7 +191,8 @@ shasum -a 256 -c signaldock-sdk-android-0.3.0-maven.zip.sha256   # run in the fo
 Releases from `v0.3.0` on (ADR-0039) also have a signed build provenance attestation. It shows that this repository's release workflow built the ZIP. Check it with the [GitHub CLI](https://cli.github.com/):
 
 ```sh
-gh attestation verify signaldock-sdk-android-X.Y.Z-maven.zip --repo HyeokjaeChoi/signaldock
+gh attestation verify signaldock-sdk-android-X.Y.Z-maven.zip --repo HyeokjaeChoi/signaldock \
+  --signer-workflow HyeokjaeChoi/signaldock/.github/workflows/release.yml
 ```
 
 Use GitHub CLI 2.102.0 or newer (older versions have attestation check flaws). `v0.2.0` and earlier have no attestation (use the checksum only). Gap: `v0.3.0` is the first release that the workflow attests, so this command had not run on a real release before that tag.

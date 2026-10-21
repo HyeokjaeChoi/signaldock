@@ -193,7 +193,8 @@ shasum -a 256 -c signaldock-sdk-android-0.3.0-maven.zip.sha256   # 두 파일이
 `v0.3.0`부터의 릴리스(ADR-0039)에는 서명된 build provenance attestation도 있습니다. 이 저장소의 릴리스 workflow가 ZIP을 만들었다는 것을 보여 줍니다. [GitHub CLI](https://cli.github.com/)로 확인하세요.
 
 ```sh
-gh attestation verify signaldock-sdk-android-X.Y.Z-maven.zip --repo HyeokjaeChoi/signaldock
+gh attestation verify signaldock-sdk-android-X.Y.Z-maven.zip --repo HyeokjaeChoi/signaldock \
+  --signer-workflow HyeokjaeChoi/signaldock/.github/workflows/release.yml
 ```
 
 GitHub CLI 2.102.0 이상을 쓰세요(이전 버전에는 attestation 검증 결함이 있습니다). `v0.2.0` 이하에는 attestation이 없습니다(체크섬만 사용). Gap: `v0.3.0`이 workflow가 attestation을 만드는 첫 릴리스이므로, 이 명령은 그 tag 이전에는 실제 릴리스에서 실행하지 않았습니다.
