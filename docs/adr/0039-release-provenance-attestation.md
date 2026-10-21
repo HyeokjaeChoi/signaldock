@@ -34,3 +34,7 @@ The user approved this item on 2026-10-17 UTC (Q167). The release workflow now s
 - Gap: the workflow change was checked with a YAML parse and `actionlint` 1.7.12 only. No tag was pushed, so the attestation step and `gh attestation verify` have not run. The attestation is not produced until the next release tag. The first release after this change must run `gh attestation verify` on the new ZIP, and the result goes into the release record.
 - Gap: the verified digest is that of the ZIP in `publish`. A compromised `build` job could still hand over a bad ZIP, and `publish` would sign it. This matches the common GitHub pattern; the signed workflow identity and commit make the event auditable.
 - Gap: no SBOM attestation. No SLSA level is claimed.
+
+## Amendment (2026-10-21)
+
+The first run of the attestation step passed. Tag `v0.3.0` on `97abd80` ran release workflow run 39634744975 (`build` and `publish` succeeded). `gh attestation verify signaldock-sdk-android-0.3.0-maven.zip --repo HyeokjaeChoi/signaldock --signer-workflow HyeokjaeChoi/signaldock/.github/workflows/release.yml` (GitHub CLI 2.102.0) exited 0. The attested subject digest equals the `.sha256` file, the signer is `release.yml@refs/tags/v0.3.0`, and the source commit is `97abd80`. Record: [issue 78](../../.scratch/signaldock/issues/78-release-v0-3-0.md). This closes the first Gap above. The SBOM Gap stays.
