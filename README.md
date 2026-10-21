@@ -195,7 +195,7 @@ gh attestation verify signaldock-sdk-android-X.Y.Z-maven.zip --repo HyeokjaeChoi
   --signer-workflow HyeokjaeChoi/signaldock/.github/workflows/release.yml
 ```
 
-Use GitHub CLI 2.102.0 or newer (older versions have attestation check flaws). `v0.2.0` and earlier have no attestation (use the checksum only). Gap: `v0.3.0` is the first release that the workflow attests, so this command had not run on a real release before that tag.
+Use GitHub CLI 2.102.0 or newer (older versions have attestation check flaws). `v0.2.0` and earlier have no attestation (use the checksum only). `v0.3.0` is the first attested release. The command above passed on its ZIP on 2026-10-21 UTC ([issue 78](.scratch/signaldock/issues/78-release-v0-3-0.md)).
 
 Add the folder as a repository and depend on the coordinate:
 

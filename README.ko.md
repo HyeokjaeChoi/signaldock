@@ -197,7 +197,7 @@ gh attestation verify signaldock-sdk-android-X.Y.Z-maven.zip --repo HyeokjaeChoi
   --signer-workflow HyeokjaeChoi/signaldock/.github/workflows/release.yml
 ```
 
-GitHub CLI 2.102.0 이상을 쓰세요(이전 버전에는 attestation 검증 결함이 있습니다). `v0.2.0` 이하에는 attestation이 없습니다(체크섬만 사용). Gap: `v0.3.0`이 workflow가 attestation을 만드는 첫 릴리스이므로, 이 명령은 그 tag 이전에는 실제 릴리스에서 실행하지 않았습니다.
+GitHub CLI 2.102.0 이상을 쓰세요(이전 버전에는 attestation 검증 결함이 있습니다). `v0.2.0` 이하에는 attestation이 없습니다(체크섬만 사용). `v0.3.0`이 attestation이 있는 첫 릴리스입니다. 위 명령은 2026-10-21 UTC에 그 ZIP에서 통과했습니다([issue 78](.scratch/signaldock/issues/78-release-v0-3-0.md)).
 
 그 폴더를 repository로 추가하고 좌표에 의존하세요.
 

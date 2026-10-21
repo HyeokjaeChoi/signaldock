@@ -32,7 +32,7 @@ gh attestation verify signaldock-sdk-android-X.Y.Z-maven.zip --repo HyeokjaeChoi
   --signer-workflow HyeokjaeChoi/signaldock/.github/workflows/release.yml
 ```
 
-Use GitHub CLI 2.102.0 or newer. Versions 2.51.0 to 2.101.0 match `--signer-workflow` as a prefix (GHSA-wjmr-j3rp-mh2g), and older versions have other attestation check flaws (GHSA-mm27-mwq9-fr5g). Both commands must print `Verification succeeded!`. Record the result in the PR or issue of the release. `v0.2.0` and earlier have no attestation. `v0.3.0` is the first release with an attestation. Gap: the attestation step runs for the first time at the `v0.3.0` tag; that run is the test.
+Use GitHub CLI 2.102.0 or newer. Versions 2.51.0 to 2.101.0 match `--signer-workflow` as a prefix (GHSA-wjmr-j3rp-mh2g), and older versions have other attestation check flaws (GHSA-mm27-mwq9-fr5g). Both commands must exit 0. In a terminal they print `Verification succeeded!`; in a non-interactive shell they can print nothing, so check the exit code (add `--format json` to see the subject digest and the signer workflow, as in issue 78). Record the result in the PR or issue of the release. `v0.2.0` and earlier have no attestation. `v0.3.0` is the first release with an attestation. Its first run passed: release workflow run 39634744975 produced the attestation, and the stricter command passed on the released ZIP on 2026-10-21 UTC ([issue 78](../../.scratch/signaldock/issues/78-release-v0-3-0.md)).
 
 ## Dependency updates
 
