@@ -3,6 +3,9 @@
 # Runs from .githooks/pre-commit and .githooks/pre-push. Reads the git index,
 # so it checks what will be committed, not the working tree.
 set -euo pipefail
+# git grep output goes to stderr, which is a terminal in hooks, so git would
+# open an empty pager and the push would wait on "(END)".
+export GIT_PAGER=cat
 
 cd "$(git rev-parse --show-toplevel)"
 fail=0
