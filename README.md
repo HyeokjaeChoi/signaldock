@@ -176,7 +176,7 @@ Warning: `--volumes` deletes the PostgreSQL data. You cannot undo it. Use it onl
 - Local only. The stack binds to `127.0.0.1`, uses example-grade secrets, and has no TLS. It is not for the public internet.
 - Performance numbers are measurements of one Mac with Docker limits. They are not an SLA and not a pool-size choice ([ADR-0013](docs/adr/0013-server-load-measurement-harness.md)).
 - SDK device measurement ran on emulators only: a debug build on API 24 and API 37, and an R8 release build on API 37 ([ADR-0014](docs/adr/0014-sdk-device-measurement-harness.md), [ADR-0018](docs/adr/0018-sdk-release-r8-measurement.md)). No physical device was measured.
-- Cleartext HTTP works only for `10.0.2.2`, `127.0.0.1`, and `localhost` (physical device: `adb reverse`, see [docs/reproduce.md](docs/reproduce.md)). A LAN address over HTTP is not supported. The `adb reverse` route ran on an emulator and on one physical device ([issue 74](.scratch/signaldock/issues/74-phone-demo-install-record.md)).
+- Cleartext HTTP works only for `10.0.2.2`, `127.0.0.1`, and `localhost` (physical device: `adb reverse`, see [docs/reproduce.md](docs/reproduce.md)). A LAN address over HTTP is not supported. The `adb reverse` route ran on an emulator ([issue 25](.scratch/signaldock/issues/25-reproduction-readme-video.md)) and on one physical device ([issue 74](.scratch/signaldock/issues/74-phone-demo-install-record.md)).
 - The scripts accept emulators only. `scripts/device-measure.sh` needs macOS.
 - Deduplication lasts while the server row exists. The design does not claim exactly-once delivery.
 

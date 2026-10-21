@@ -178,7 +178,7 @@ docker compose down --volumes           # RESET: deletes the DB volume and ALL s
 - 로컬 전용입니다. 스택은 `127.0.0.1`에 bind하고, 예시 수준의 secret을 사용하며, TLS가 없습니다. 공개 인터넷용이 아닙니다.
 - 성능 수치는 Docker 제한이 있는 Mac 한 대에서 측정한 값입니다. SLA가 아니며 pool 크기를 정하는 근거도 아닙니다([ADR-0013](docs/adr/0013-server-load-measurement-harness.md)).
 - SDK 기기 측정은 에뮬레이터에서만 했습니다. API 24와 API 37은 debug 빌드, API 37은 R8 release 빌드입니다([ADR-0014](docs/adr/0014-sdk-device-measurement-harness.md), [ADR-0018](docs/adr/0018-sdk-release-r8-measurement.md)). 실제 기기에서는 측정하지 않았습니다.
-- cleartext HTTP는 `10.0.2.2`, `127.0.0.1`, `localhost`에서만 동작합니다(실기기: `adb reverse`, [docs/reproduce.md](docs/reproduce.md) 참고). HTTP로 LAN 주소를 쓰는 것은 지원하지 않습니다. `adb reverse` 경로는 에뮬레이터와 실기기 1대에서 실행했습니다([issue 74](.scratch/signaldock/issues/74-phone-demo-install-record.md)).
+- cleartext HTTP는 `10.0.2.2`, `127.0.0.1`, `localhost`에서만 동작합니다(실기기: `adb reverse`, [docs/reproduce.md](docs/reproduce.md) 참고). HTTP로 LAN 주소를 쓰는 것은 지원하지 않습니다. `adb reverse` 경로는 에뮬레이터([issue 25](.scratch/signaldock/issues/25-reproduction-readme-video.md))와 실기기 1대([issue 74](.scratch/signaldock/issues/74-phone-demo-install-record.md))에서 실행했습니다.
 - 스크립트는 에뮬레이터만 받습니다. `scripts/device-measure.sh`는 macOS가 필요합니다.
 - 중복 제거는 서버 row가 남아 있는 동안만 유지됩니다. 이 설계는 exactly-once 전달을 주장하지 않습니다.
 
