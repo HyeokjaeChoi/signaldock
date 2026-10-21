@@ -141,7 +141,7 @@ export ANDROID_HOME="$HOME/Library/Android/sdk"     # your Android SDK path
 scripts/verify-consumer.sh
 ```
 
-The script builds `signaldockMavenZip`, unzips it into a clean temporary folder, and builds `compatibility/consumer-android/` from that folder only, by the coordinate `local.signaldock:sdk-android:0.3.0`, as an R8 release. It checks the AAR Kotlin metadata version and prints the ZIP, folder, and APK paths. To keep the folder, set `SIGNALDOCK_REPO_DIR` to a new empty path first. The ZIP alone: `sdk/gradlew -p sdk :sdk-android:signaldockMavenZip --no-daemon` (output `sdk/sdk-android/build/distributions/signaldock-sdk-android-0.2.0-maven.zip`). See [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md).
+The script builds `signaldockMavenZip`, unzips it into a clean temporary folder, and builds `compatibility/consumer-android/` from that folder only, by the coordinate `local.signaldock:sdk-android:0.3.0`, as an R8 release. It checks the AAR Kotlin metadata version and prints the ZIP, folder, and APK paths. To keep the folder, set `SIGNALDOCK_REPO_DIR` to a new empty path first. The ZIP alone: `sdk/gradlew -p sdk :sdk-android:signaldockMavenZip --no-daemon` (output `sdk/sdk-android/build/distributions/signaldock-sdk-android-0.3.0-maven.zip`). See [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md).
 
 Now run the R8 release APK on an emulator and let it reach the server. The collection key is baked in at build time:
 

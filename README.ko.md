@@ -143,7 +143,7 @@ export ANDROID_HOME="$HOME/Library/Android/sdk"     # your Android SDK path
 scripts/verify-consumer.sh
 ```
 
-이 스크립트는 `signaldockMavenZip`을 빌드하고, 깨끗한 임시 폴더에 풀고, 그 폴더만 사용해 `compatibility/consumer-android/`를 좌표 `local.signaldock:sdk-android:0.3.0`으로 R8 release로 빌드합니다. AAR의 Kotlin metadata 버전을 확인하고 ZIP, 폴더, APK 경로를 출력합니다. 폴더를 남기려면 먼저 `SIGNALDOCK_REPO_DIR`을 새 빈 경로로 설정하세요. ZIP만 만들려면 `sdk/gradlew -p sdk :sdk-android:signaldockMavenZip --no-daemon`을 실행합니다(출력은 `sdk/sdk-android/build/distributions/signaldock-sdk-android-0.2.0-maven.zip`). [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md)를 참고하세요.
+이 스크립트는 `signaldockMavenZip`을 빌드하고, 깨끗한 임시 폴더에 풀고, 그 폴더만 사용해 `compatibility/consumer-android/`를 좌표 `local.signaldock:sdk-android:0.3.0`으로 R8 release로 빌드합니다. AAR의 Kotlin metadata 버전을 확인하고 ZIP, 폴더, APK 경로를 출력합니다. 폴더를 남기려면 먼저 `SIGNALDOCK_REPO_DIR`을 새 빈 경로로 설정하세요. ZIP만 만들려면 `sdk/gradlew -p sdk :sdk-android:signaldockMavenZip --no-daemon`을 실행합니다(출력은 `sdk/sdk-android/build/distributions/signaldock-sdk-android-0.3.0-maven.zip`). [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md)를 참고하세요.
 
 이제 R8 release APK를 에뮬레이터에서 실행해 서버에 연결합니다. collection key는 빌드 시점에 포함됩니다.
 
