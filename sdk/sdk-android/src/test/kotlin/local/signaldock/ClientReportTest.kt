@@ -124,7 +124,7 @@ class ClientReportTest {
         assertEquals("1", report.contractVersion)
         val root = Json.parseToJsonElement(String(report.body, Charsets.UTF_8)).jsonObject
         assertEquals(setOf("sdkVersion", "discardedEvents"), root.keys)
-        assertEquals("0.2.0", root["sdkVersion"]!!.jsonPrimitive.content)
+        assertEquals("0.3.0", root["sdkVersion"]!!.jsonPrimitive.content)
         assertEquals(mapOf("queue_full" to 3, "storage_error" to 1), reportEntries(report))
         // Nothing left to report: the next cycle sends no second report.
         sdk.track("e")

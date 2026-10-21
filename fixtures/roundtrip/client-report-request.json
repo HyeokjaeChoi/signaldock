@@ -1,1 +1,1 @@
-{"sdkVersion":"0.2.0","discardedEvents":[{"reason":"queue_full","count":3},{"reason":"storage_error","count":1},{"reason":"invalid_event","count":2},{"reason":"event_too_large","count":4},{"reason":"server_rejected","count":1000000}]}
+{"sdkVersion":"0.3.0","discardedEvents":[{"reason":"queue_full","count":3},{"reason":"storage_error","count":1},{"reason":"invalid_event","count":2},{"reason":"event_too_large","count":4},{"reason":"server_rejected","count":1000000}]}

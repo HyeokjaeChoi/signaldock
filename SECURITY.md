@@ -6,7 +6,8 @@ SignalDock is an open-source project. The stack is for local use only. Read [Sco
 
 | Version | Security fixes |
 | --- | --- |
-| 0.2.x | Best effort |
+| 0.3.x | Best effort |
+| 0.2.x | None (superseded by 0.3.x) |
 | 0.1.x | None (superseded by 0.2.x) |
 | Earlier than 0.1.0 | None (no release exists) |
 
