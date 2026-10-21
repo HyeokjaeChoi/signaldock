@@ -38,7 +38,7 @@ Lockfiles are committed. Verification runs `npm ci`.
 | SDK `aarMetadata.minCompileSdk` | 36 | Deliberate: the SDK is built and tested at compileSdk 36, so consumers must compile with API 36 or newer. Lowering it is unverified |
 | SDK Java/Kotlin bytecode target | 17 | Stays below the JDK 21 that runs the build; AGP desugaring covers minSdk 24 |
 
-Why AGP 9.3.3, Gradle 9.7.0, and JDK 21 (issue #11, replaces the earlier choice of
+Why AGP 9.3.3, Gradle 9.7.0 (the choice in issue #11; the current pin is 9.8.1, see the Gradle row), and JDK 21 (issue #11, replaces the earlier choice of
 AGP 8.13.2 / Gradle 8.14.5 / JDK 17): the project is greenfield, so the AGP 9
 migration cost does not apply. It brings built-in Kotlin (no
 `org.jetbrains.kotlin.android` plugin; the SDK uses `kotlin { compilerOptions {} }`),
