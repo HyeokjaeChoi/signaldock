@@ -1,6 +1,6 @@
 # Failure modes and effects analysis
 
-Status: written 2026-10-15, refreshed 2026-10-17 UTC against `main` at SDK `v0.2.0`. Earlier refresh: 2026-10-15 UTC (issue 51) after PRs #108 to #113 and #123. Later PR that changes this table: #161 (row 7). Format follows [Azure failure mode analysis](https://learn.microsoft.com/en-us/azure/well-architected/reliability/failure-mode-analysis).
+Status: written 2026-10-15, refreshed 2026-10-17 UTC against `main` at SDK `v0.2.0`. Earlier refresh: 2026-10-15 UTC (issue 51) after PRs #108 to #113 and #123. Later PRs that change this table: #161 (row 7, [ADR-0036](../adr/0036-sdk-client-reports.md)), #174 (row 4, [ADR-0037](../adr/0037-server-collection-kill-switch.md)). Format follows [Azure failure mode analysis](https://learn.microsoft.com/en-us/azure/well-architected/reliability/failure-mode-analysis).
 Severity and Likelihood are my ratings (High, Medium, Low) for this local project. They are not measured.
 "Gap" means that I found no mitigation or no test in the repo. I did not invent one.
 "Excluded on purpose" means that the user decided to leave the feature out for local-only operation ([ADR-0028](../adr/0028-server-production-features-excluded.md), spec Q157). The risk is real if the server leaves the local machine.

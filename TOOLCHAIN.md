@@ -32,13 +32,13 @@ Lockfiles are committed. Verification runs `npm ci`.
 | Node | 24.20.0 | Environment version at verification time |
 | jOOQ | 3.21.9 | Latest 3.21.x on Maven Central (https://repo1.maven.org/maven2/org/jooq/jooq/maven-metadata.xml). `cd server && ./gradlew test verifyJooq --no-daemon` passed on JDK 21 after `generateJooq` refreshed the tracked sources (generator output changes for jOOQ 3.21: 7 files, 15 insertions, 14 deletions) |
 | AGP | 9.3.3 | Latest 9.3.x on Google Maven (https://dl.google.com/dl/android/maven2/com/android/tools/build/gradle/maven-metadata.xml); requires Gradle 9.5.0+ (https://developer.android.com/build/releases/about-agp). `sdk/gradlew -p sdk :sdk-android:testDebugUnitTest :sdk-android:assembleRelease --no-daemon` passed (35 tests, 0 failures) |
-| Gradle | 9.7.0, all three wrappers, `distributionSha256Sum` pinned | Exists on services.gradle.org; SHA-256 from https://services.gradle.org/distributions/gradle-9.7.0-bin.zip.sha256. Wrappers regenerated with `./gradlew wrapper --gradle-version 9.7.0 --gradle-distribution-sha256-sum <sha>`; all verification commands ran on it |
+| Gradle | 9.8.1, all four wrappers (`sdk/`, `server/`, `contract-check/`, `compatibility/consumer-android/`), `distributionSha256Sum` pinned | Exists on services.gradle.org; SHA-256 from https://services.gradle.org/distributions/gradle-9.8.1-bin.zip.sha256 (identical in all four `gradle-wrapper.properties`). Bumped from 9.7.0 to 9.8.1 in PRs #117 to #120. Build-verified on 9.8.1: CI run 39615361733 on `main` @ `a12d05b` passed `sdk-test`, `server-test`, `verify-contract`, `consumer-r8`, and `device-test`. This is newer than the Gradle range that the Kotlin row cites (up to 9.7.0); the CI run is the evidence |
 | KSP / Room | 2.3.12 / 2.8.5 | Kotlin 2.4.21 + AGP 9.3.3 built-in Kotlin: same `sdk` command above (Room schema export and DAO generation ran) |
 | Robolectric | 4.17 at `sdk=36` | Same `sdk` command. Test JVM gets `--add-exports=java.base/jdk.internal.access=ALL-UNNAMED`; without it all 34 Robolectric tests fail on JDK 21 with "Failed to interact with raw FileDescriptor internals" |
 | SDK `aarMetadata.minCompileSdk` | 36 | Deliberate: the SDK is built and tested at compileSdk 36, so consumers must compile with API 36 or newer. Lowering it is unverified |
 | SDK Java/Kotlin bytecode target | 17 | Stays below the JDK 21 that runs the build; AGP desugaring covers minSdk 24 |
 
-Why AGP 9.3.3, Gradle 9.7.0, and JDK 21 (issue #11, replaces the earlier choice of
+Why AGP 9.3.3, Gradle 9.7.0 (the choice in issue #11; the current pin is 9.8.1, see the Gradle row), and JDK 21 (issue #11, replaces the earlier choice of
 AGP 8.13.2 / Gradle 8.14.5 / JDK 17): the project is greenfield, so the AGP 9
 migration cost does not apply. It brings built-in Kotlin (no
 `org.jetbrains.kotlin.android` plugin; the SDK uses `kotlin { compilerOptions {} }`),
@@ -66,11 +66,11 @@ Versions were read from `npm view <pkg> version` and Docker Hub tag listings on 
 | react / react-dom | 19.3.0 | Latest stable. `npm test`, `npm run build` |
 | recharts | 3.10.1 | Latest stable; accepts React 19. Renders in the built Dashboard (headless Chrome screenshot) |
 | vite / @vitejs/plugin-react | 8.3.4 / 6.1.2 | Latest stable. `npm run build`, dev proxy checked with `npm run dev` |
-| vitest / jsdom / @testing-library/react / @testing-library/dom | 5.0.3 / 30.1.2 / 16.3.3 / 10.4.2 | Latest stable (the last is the peer of testing-library/react). `npm test`: 19 tests |
+| vitest / jsdom / @testing-library/react / @testing-library/dom | 5.0.5 / 30.1.3 / 16.3.3 / 10.4.2 | Latest stable (the last is the peer of testing-library/react). `npm test`: 19 tests |
 | @types/react, @types/react-dom / @types/node | 19.3.0 / 24.19.2 | Latest stable for each major in use; Node types follow the Node 24 line. `npm run typecheck` with TypeScript 7.0.2 |
-| Node image | `node:24.20.0-alpine3.24` @ `sha256:e67514e5d0f6c46656005e1b693b2ec9d52e80b641307de684d4a015ba7a4eaf` | Same Node as the 24.20.0 record above (24.21.0 exists; staying on the verified minor). `docker compose build dashboard` |
-| nginx image | `nginx:1.30.5-alpine3.24` @ `sha256:0985e772fb9f729e6fa0980da05fca5d9c468e870eed43071545afa9d2e27d94` | Latest 1.30 (stable branch) patch. Serves the bundle and proxies `/v1/` with the key (compose run) |
-| JDK images | `eclipse-temurin:21.0.12.1_1-jdk-noble` @ `sha256:b468c3fc...2a87`, `...-jre-noble` @ `sha256:000fd431...408c` | Same Temurin build as the pinned JDK 21.0.12.1+1. `installDist` in the image, server started under the JRE image (full digests in the Dockerfile) |
+| Node image | `node:24.22.0-alpine3.24` @ `sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f` | Updated by Renovate PR #190 (`dashboard/Dockerfile`). `docker compose build dashboard` |
+| nginx image | `nginx:1.31.7-alpine3.24` @ `sha256:892bb2152464f0c5d8972593a5f5afaf8054552580b699d95f8ff4af08c2d33d` | Updated by Renovate PR #190. Serves the bundle and proxies `/v1/` with the key (compose run) |
+| JDK images | `eclipse-temurin:21.0.12.1_1-jdk-noble` @ `sha256:10721595...e964`, `...-jre-noble` @ `sha256:35501d3f...2c4c` | Same Temurin build as the pinned JDK 21.0.12.1+1. `installDist` in the image, server started under the JRE image (full digests in the Dockerfile) |
 | PostgreSQL image | `postgres:17.6-alpine` @ `sha256:ef257d85...ee94` | Same pin the server tests and jOOQ codegen use |
 
 Docker 29.4.0 and Compose v5.1.2 (OrbStack) ran `docker compose up -d --build`.

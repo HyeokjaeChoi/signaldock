@@ -1,7 +1,7 @@
 [versions]
 # Toolchain (verified by build in issue #1 unless noted)
 jdk = "21"
-gradle = "9.7.0"
+gradle = "9.8.1"
 agp = "9.3.3"
 kotlin = "2.4.21"
 kotlinx-serialization = "1.11.0"
