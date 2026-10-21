@@ -39,7 +39,7 @@ It needs `.env`, the running stack, and a booted emulator. It builds and install
 
 ```sh
 scripts/device-durability.sh emulator-5584 offline     # 1,000 events offline, process kill, restart, delivery
-scripts/device-durability.sh emulator-5584             # all cases (offline kill restart update clear reinstall restore airplane fulldisk workmanager)
+scripts/device-durability.sh emulator-5584             # all cases (offline kill restart update clear reinstall restore airplane fulldisk workmanager optout)
 ```
 
 The cases `airplane`, `fulldisk` and `workmanager` switch airplane mode, fill the data partition and lock the WorkManager database ([ADR-0029](adr/0029-device-fault-tests-and-power-loss.md)). `airplane` needs `python3` for the host ACK server. Use an emulator that you can wipe.
@@ -89,7 +89,7 @@ The harness needs `k6` and Python 3. A full pilot or overload run takes several 
 | Device | Address | Status |
 | --- | --- | --- |
 | Emulator | `http://10.0.2.2:8080` (host loopback, as the emulator sees it) | ran |
-| Physical device, USB (Q134) | `adb -s <device-serial> reverse tcp:8080 tcp:8080` (serial from `adb devices`; required when an emulator is also connected), then build the app with `-Psignaldock.endpoint=http://127.0.0.1:8080`. Remove the tunnel with `adb -s <device-serial> reverse --remove tcp:8080`. Use the server port from `.env` (`SIGNALDOCK_SERVER_PORT`) on both sides | the same steps ran on an emulator (see issue 25); not verified on a physical device: none attached |
+| Physical device, USB (Q134) | `adb -s <device-serial> reverse tcp:8080 tcp:8080` (serial from `adb devices`; required when an emulator is also connected), then build the app with `-Psignaldock.endpoint=http://127.0.0.1:8080`. Remove the tunnel with `adb -s <device-serial> reverse --remove tcp:8080`. Use the server port from `.env` (`SIGNALDOCK_SERVER_PORT`) on both sides | ran on a physical device ([issue 74](../.scratch/signaldock/issues/74-phone-demo-install-record.md): Samsung SM-F766N, Android 16, 2026-10-18); also ran on an emulator (issue 25) |
 | Physical device, LAN address | not supported over HTTP | Android cannot allow an address range for cleartext; see below |
 
 Both apps allow cleartext HTTP to `10.0.2.2`, `127.0.0.1`, and `localhost` only (network security config; the demo release build allows none). A LAN address over HTTP is refused: use `adb reverse`. Compose publishes the server port on the host's `127.0.0.1` only, so a LAN address would not reach it either. Opening the Dashboard from another machine is also not supported: it binds to `127.0.0.1`.
