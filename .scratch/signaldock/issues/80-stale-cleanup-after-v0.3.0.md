@@ -17,4 +17,4 @@ Checked, no drift: version strings (0.3.0) in README*, integration guides, archi
 Not changed on purpose: `architecture.md` "Decisions and tradeoffs" has no rows for ADR-0037 to ADR-0040 (design source, reported in issue 77); AGENTS.md; ADR text; released CHANGELOG sections; `docs/releases/v0.*.md`; the `TOOLCHAIN.md` "Build-verified in issue #6" section (dated historical rows).
 
 Verification:
-- `scripts/check-repo-rules.sh`; every relative Markdown link exists. `scripts/verify-contract.sh` skipped: Markdown-only change.
+- `scripts/check-repo-rules.sh`; every relative link in tracked Markdown files outside `.scratch/` exists. `scripts/verify-contract.sh` skipped: Markdown-only change.
