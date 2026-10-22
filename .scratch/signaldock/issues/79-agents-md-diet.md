@@ -1,9 +1,9 @@
 # 79. Restructure AGENTS.md into a short index with a rule-to-check table
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: In an open PR (2026-10-22 UTC)
+Execution: Done (PR #199, 2026-10-22 UTC)
 
 ## Scope and completion criteria
 
