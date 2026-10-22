@@ -47,7 +47,7 @@ When a mistake repeats, add a check here, not a sentence.
 ## Where things are
 
 - If `AGENTS.local.md` exists, read it. It holds this machine's personal setup and is not committed.
-- Before you edit files in an area, read the sections that `docs/design-index.md` lists for it.
+- Before you edit or review files in an area, read the sections that `docs/design-index.md` lists for it.
 - Before you explore code or design the domain, read `docs/agents/domain.md` (start with one domain context).
 - Before you create, read, or change the status of an issue (local Markdown files), read `docs/agents/issue-tracker.md` and `docs/agents/triage-labels.md`.
 - At every release, and when docs may have drifted from the code, run the `update-internal-docs` skill (`.claude/skills/update-internal-docs/SKILL.md`).
