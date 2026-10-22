@@ -66,7 +66,7 @@ Versions were read from `npm view <pkg> version` and Docker Hub tag listings on 
 | react / react-dom | 19.3.0 | Latest stable. `npm test`, `npm run build` |
 | recharts | 3.10.1 | Latest stable; accepts React 19. Renders in the built Dashboard (headless Chrome screenshot) |
 | vite / @vitejs/plugin-react | 8.3.4 / 6.1.2 | Latest stable. `npm run build`, dev proxy checked with `npm run dev` |
-| vitest / jsdom / @testing-library/react / @testing-library/dom | 5.0.5 / 30.1.3 / 16.3.3 / 10.4.2 | Latest stable (the last is the peer of testing-library/react). `npm test`: 19 tests |
+| vitest / jsdom / @testing-library/react / @testing-library/dom | 5.0.5 / 30.1.3 / 16.3.3 / 10.4.2 | Latest stable (the last is the peer of testing-library/react). `npm test`: 174 tests in 12 files |
 | @types/react, @types/react-dom / @types/node | 19.3.0 / 24.19.2 | Latest stable for each major in use; Node types follow the Node 24 line. `npm run typecheck` with TypeScript 7.0.2 |
 | Node image | `node:24.22.0-alpine3.24` @ `sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f` | Updated by Renovate PR #190 (`dashboard/Dockerfile`). `docker compose build dashboard` |
 | nginx image | `nginx:1.31.7-alpine3.24` @ `sha256:892bb2152464f0c5d8972593a5f5afaf8054552580b699d95f8ff4af08c2d33d` | Updated by Renovate PR #190. Serves the bundle and proxies `/v1/` with the key (compose run) |
