@@ -15,7 +15,7 @@ Execution: In an open PR (2026-10-22 UTC)
 4. References updated: `CONTRIBUTING.md`, `.claude/skills/update-internal-docs/SKILL.md`. Historical records (postmortems, research notes, issue files) stay.
 5. No new check: every rule that code can decide is already checked. No new ADR.
 
-Size: 71 lines, 4,251 bytes before; 54 lines, 4,403 bytes after (the table adds bytes and makes the enforced rules visible).
+Size: 71 lines, 4,251 bytes before; 54 lines, 4,707 bytes after (the table adds bytes and makes the enforced rules visible).
 
 Verification:
 - `scripts/check-repo-rules.sh`; every path named in `AGENTS.md` exists (`test -e`); `coderabbit review --base main --deep --agent`.

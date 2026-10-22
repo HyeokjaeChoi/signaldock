@@ -22,21 +22,21 @@ Code enforces these. Do not restate them in prose; read the check when it fails.
 |---|---|
 | Scripts and hooks that CI runs are executable (100755) | `scripts/check-repo-rules.sh` |
 | Every issue or PR reference with `#` in Markdown has a number | `scripts/check-repo-rules.sh` |
-| Issue `Status:` is a triage name, `claimed`, or `resolved`; an `Execution: Done` line names the merged PR and means `resolved` | `scripts/check-repo-rules.sh` |
+| Issue `Status:` is a triage name, `claimed`, or `resolved`; an `Execution: Done` line names a numbered PR and needs `Status: resolved` | `scripts/check-repo-rules.sh` |
 | No raw HTML sinks in `dashboard/src`, `perf/report/src`, `web-shared` | `scripts/check-repo-rules.sh` |
 | `README.md` and `README.ko.md` stay in step | `scripts/check-repo-rules.sh` |
-| Every top-level directory has a section in `docs/design-index.md` | `scripts/check-repo-rules.sh` |
+| Every top-level directory except `.claude`, `.scratch`, and `docs` has a section in `docs/design-index.md` | `scripts/check-repo-rules.sh` |
 | A released Room schema file is frozen (ADR-0025) | `scripts/check-repo-rules.sh` |
 | `SDK_VERSION` equals `sdkVersion` | `scripts/check-repo-rules.sh` |
 | Contract and generated code: codegen drift, `oasdiff` baseline, SDK public API dump, SDK dependency baseline, tracking plan codegen | `scripts/verify-contract.sh` (pre-push, CI `verify-contract`) |
-| PR description is 3,500 characters or less | `.github/workflows/pr-description.yml` |
+| PR description is 3,500 characters or less (author text only; Dependabot and Renovate PRs exempt) | `.github/workflows/pr-description.yml` |
 | Builds, tests, device tests, SDK size budget, Gradle wrapper checksums | `.github/workflows/repo-rules.yml` |
 
-When a mistake repeats, add a check here, not a sentence.
+When a mistake or the same kind of review finding repeats, add a check to `scripts/check-repo-rules.sh` or `scripts/verify-contract.sh` and a row here, not a sentence.
 
 ## Judgment rules
 
-1. Delegate research and implementation (product code, tests, build configuration) to a suitable low-cost model. Model names from the user are examples; if one fails, try another. The main agent defines the question, splits the work, tracks progress, and reviews the results.
+1. Delegate research and implementation (product code, tests, build configuration) to a suitable low-cost model. Model names from the user are examples, and a model choice needs no approval; if one fails, try another. The main agent defines the question, splits the work, tracks progress, reviews the results, and applies research findings to the design.
 2. Build what the design sources say. If you must make a new decision, record it in an ADR in the same PR and name it in the PR description. Implementers do not write review rules.
 3. One purpose per PR. Work outside it, such as new hooks, CI, or review setup, goes in a separate PR.
 4. A PR description states what changed, which design sections it follows, and the exact verification commands and results. Never label a step verified without a run.
@@ -49,6 +49,6 @@ When a mistake repeats, add a check here, not a sentence.
 - If `AGENTS.local.md` exists, read it. It holds this machine's personal setup and is not committed.
 - Before you edit or review files in an area, read the sections that `docs/design-index.md` lists for it.
 - Before you explore code or design the domain, read `docs/agents/domain.md` (start with one domain context).
-- Before you create, read, or change the status of an issue (local Markdown files), read `docs/agents/issue-tracker.md` and `docs/agents/triage-labels.md`.
+- Before you create or read an issue, or evaluate or change its status (local Markdown files), read `docs/agents/issue-tracker.md` and `docs/agents/triage-labels.md`.
 - At every release, and when docs may have drifted from the code, run the `update-internal-docs` skill (`.claude/skills/update-internal-docs/SKILL.md`).
 - After a batch of merges, run the `signaldock-stale-cleanup` skill (`.claude/skills/signaldock-stale-cleanup/SKILL.md`).
