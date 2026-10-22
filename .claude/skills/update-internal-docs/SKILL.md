@@ -5,7 +5,7 @@ description: Find docs that drifted from the code and fix them. Run at every rel
 
 # Update internal docs
 
-For descriptive docs (README, guides, toolchain, engineering docs), code, build files, scripts, workflows, `openapi/`, migrations, and fixtures are the source of truth: fix the doc. Design sources (`architecture.md`, ADRs, `.scratch/*/spec.md` Q decisions, `docs/design-index.md`; see `.coderabbit.yaml`) are different. In `architecture.md`, you can update status and evidence lines from the code. If the code disagrees with a design source, do not rewrite either one here. Report it as a possible implementation error and resolve it under AGENTS.md "Roles" (fix the code, or record a new decision in an ADR) before you change the docs.
+For descriptive docs (README, guides, toolchain, engineering docs), code, build files, scripts, workflows, `openapi/`, migrations, and fixtures are the source of truth: fix the doc. Design sources (`architecture.md`, ADRs, `.scratch/*/spec.md` Q decisions, `docs/design-index.md`; see `.coderabbit.yaml`) are different. In `architecture.md`, you can update status and evidence lines from the code. If the code disagrees with a design source, do not rewrite either one here. Report it as a possible implementation error and resolve it under AGENTS.md "Judgment rules" 2 (fix the code, or record a new decision in an ADR) before you change the docs.
 
 ## Scope: what to verify
 
@@ -37,11 +37,11 @@ Doc set: `README*`, `architecture.md`, `GLOSSARY.md`, `TOOLCHAIN.md`, `SECURITY.
 
 ## Procedure
 
-1. Fan out read-only audits by doc group, in parallel, with low-cost subagents (AGENTS.md "Research models"). Each returns lines of `file:line | stale claim | evidence in the source of truth | fix`.
+1. Fan out read-only audits by doc group, in parallel, with low-cost subagents (AGENTS.md "Judgment rules" 1). Each returns lines of `file:line | stale claim | evidence in the source of truth | fix`.
 2. Re-verify every finding yourself. Skip a finding the code contradicts. Apply minimal fixes in one docs PR, with its own issue file. Rules for engineering docs: every claim cites a file, ADR, spec Q, test, or result; gaps are marked `Gap:`; dates are UTC. Write English in ASD-STE100 style.
 3. Run `scripts/check-repo-rules.sh`. Run `scripts/verify-contract.sh` directly. The pre-push hook skips it when only Markdown, `docs/`, and `.scratch/` files changed. State in the PR any step that did not run.
 4. Run `coderabbit review --base main --deep --agent`. Fix the findings.
-5. Open the PR as AGENTS.md "Review workflow" says. List fixed and skipped items, with reasons. A docs-only PR may merge when the review is clean.
+5. Open the PR as AGENTS.md "Judgment rules" 3 to 7 say. List fixed and skipped items, with reasons. A docs-only PR may merge when the review is clean.
 
 ## Ideas for scripted checks (not built)
 
