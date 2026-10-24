@@ -1,9 +1,9 @@
 # 83. Replace CodeRabbit with a Claude Code review workflow
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: In progress (branch ci/claude-code-review)
+Execution: Done (PR #202, 2026-10-24 UTC)
 
 ## Scope and completion criteria
 
