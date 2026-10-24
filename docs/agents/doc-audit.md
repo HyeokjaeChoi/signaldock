@@ -1,6 +1,14 @@
 # Doc audit: SignalDock rules
 
-Check the Markdown docs against the code at every release and after a batch of merges. This file holds the repo facts for that check. Any audit tool or agent follows it; the general procedure (parallel read-only audit, re-verify each finding, one PR) is in AGENTS.md "Judgment rules".
+Check the Markdown docs against the code at every release and after a batch of merges. This file holds the repo facts for that check. Any audit tool or agent follows it.
+
+## Procedure
+
+1. Audit read-only, by doc group, in parallel with low-cost subagents (AGENTS.md "Judgment rules" 1). Each returns lines of `file:line | stale claim | evidence | fix`.
+2. Re-verify every finding yourself. Drop a finding the code contradicts. If you are not sure, change nothing and list it in the report.
+3. Fix with minimal edits in one docs PR with its own issue file (see "Issue files"). Prefer updating a status or evidence line over deleting it. Put design-source mismatches to the user first (see "Who decides").
+4. In engineering docs, every claim cites a file, ADR, spec Q, test, or result; gaps are marked `Gap:`; dates are UTC. Write English in ASD-STE100 style.
+5. Run "Verification", then open the PR as AGENTS.md "Judgment rules" 3 to 7 say. List fixed and kept items, with reasons.
 
 ## Who decides
 
@@ -18,8 +26,8 @@ Check the Markdown docs against the code at every release and after a batch of m
 | Public API signatures | `sdk/sdk-android/api/*.api` |
 | Config options and log strings | SDK and server source |
 | Room schema | `sdk/sdk-android/schemas/` |
-| CI job names, counts, and runs | `.github/workflows/`, `gh run view` (cite the run) |
-| Test counts | Count them (`grep -c`, test runner list mode) |
+| CI job names and runs | `.github/workflows/`, `gh run view` (cite the run) |
+| Test counts | Count them (`grep -c`, test runner list mode); cite a CI run only for device tests |
 | Feature lists and release notes | `CHANGELOG.md`, `git log <last-tag>..HEAD` |
 | "Planned", "pending", "not started", "not verified", "no physical device", `Gap:` lines | Merged work, issue files in `.scratch/*/issues/` (`Execution:` lines) |
 | Lists of controls (CI and supply-chain rows, threat-model mitigations) | `.github/workflows/`, every accepted ADR |
