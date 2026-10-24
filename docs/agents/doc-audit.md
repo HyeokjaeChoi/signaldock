@@ -13,7 +13,7 @@ Check the Markdown docs against the code at every release and after a batch of m
 ## Who decides
 
 - Descriptive docs (README, guides, `TOOLCHAIN.md`, `CONTRIBUTING.md`, engineering docs): the code, build files, scripts, workflows, `openapi/`, migrations, and fixtures are the source of truth. Fix the doc.
-- Design sources (`architecture.md`, ADRs, `.scratch/*/spec.md` Q decisions, `docs/design-index.md`; see `.coderabbit.yaml`): if the code disagrees, do not rewrite either one. Report it, and resolve it under AGENTS.md "Judgment rules" 2 (fix the code, or record a new decision in an ADR). Status, evidence, and date lines in `architecture.md` can follow the code.
+- Design sources (`architecture.md`, ADRs, `.scratch/*/spec.md` Q decisions, `docs/design-index.md`): if the code disagrees, do not rewrite either one. Report it, and resolve it under AGENTS.md "Judgment rules" 2 (fix the code, or record a new decision in an ADR). Status, evidence, and date lines in `architecture.md` can follow the code.
 
 ## What to verify
 
@@ -32,11 +32,11 @@ Check the Markdown docs against the code at every release and after a batch of m
 | "Planned", "pending", "not started", "not verified", "no physical device", `Gap:` lines | Merged work, issue files in `.scratch/*/issues/` (`Execution:` lines) |
 | Lists of controls (CI and supply-chain rows, threat-model mitigations) | `.github/workflows/`, every accepted ADR |
 | ADR lists in `docs/design-index.md` | `docs/adr/` |
-| `.coderabbit.yaml` `path_instructions` | Top-level directories, `docs/design-index.md` sections |
+| Review prompt in `.github/workflows/claude-review.yml` | `docs/design-index.md`, AGENTS.md |
 | English and Korean parity | `README.md` and `README.ko.md`; `docs/integration-guide.md` and `.ko.md` |
 | Refresh stamps (date, PR list) in `docs/engineering/` | `git log` since the stamp; dates in UTC |
 
-Doc set: `README*`, `architecture.md`, `GLOSSARY.md`, `TOOLCHAIN.md`, `SECURITY.md`, `CONTRIBUTING.md`, `AGENTS.md`, `CHANGELOG.md`, `docs/` (except the exclusions), the onepager (`.md` and `.html` agree), `.coderabbit.yaml`.
+Doc set: `README*`, `architecture.md`, `GLOSSARY.md`, `TOOLCHAIN.md`, `SECURITY.md`, `CONTRIBUTING.md`, `AGENTS.md`, `CHANGELOG.md`, `docs/` (except the exclusions), the onepager (`.md` and `.html` agree).
 
 ## Do not change
 
@@ -61,6 +61,5 @@ Doc set: `README*`, `architecture.md`, `GLOSSARY.md`, `TOOLCHAIN.md`, `SECURITY.
 - Fail when a relative link or path in a tracked Markdown file does not exist.
 - Compare the CI job names in docs with `.github/workflows/*.yml`.
 - Compare the ADR list in `docs/design-index.md` with `docs/adr/`.
-- Compare `.coderabbit.yaml` `path_instructions` with the top-level directories.
 - Compare version strings in docs with `sdkVersion` and `libs.versions.toml`.
 - Fail when a `Gap:` line names an issue file whose status is `resolved`.
