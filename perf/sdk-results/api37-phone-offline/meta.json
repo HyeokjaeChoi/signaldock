@@ -5,7 +5,7 @@
   "started_utc": "2026-10-24T13:44:22Z",
   "ended_utc": "2026-10-24T13:45:48Z",
   "avd": "SM-F766N (physical)",
-  "serial": "R3KL100KETB",
+  "serial": "physical (not recorded)",
   "physical_device": true,
   "build_type": "debug",
   "build": "debug androidTest APK: SDK library debug variant, debuggable, no R8/minify (ADR-0014)",

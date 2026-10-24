@@ -173,7 +173,7 @@ def r8_evidence(mapping, apk):
             "example": next((l for l in renamed if l.startswith("local.signaldock.SignalDock ")), None)}
 json.dump({
     "scenario": sc, "run_id": run_id, "completed_phases": ok == "1", "started_utc": t0, "ended_utc": t1,
-    "avd": avd, "serial": serial, **({"physical_device": True} if phys == "1" else {}),
+    "avd": avd, "serial": "physical (not recorded)" if phys == "1" else serial, **({"physical_device": True} if phys == "1" else {}),
     "build_type": build,
     "build": "debug androidTest APK: SDK library debug variant, debuggable, no R8/minify (ADR-0014)" if build == "debug" else
              "release measure app (sdk/measure-app): SDK as dependency, R8 minify and shrinkResources on, debug-signed release variant, not debuggable (ADR-0018)",

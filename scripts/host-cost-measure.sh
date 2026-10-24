@@ -226,8 +226,8 @@ d_tt = paired(rows, "total_time_ms"); d_pi = paired(rows, "pss_idle_kib"); d_pb 
 
 meta = {
     "issue": 36, "adr": "ADR-0020", "run_utc": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-    "avd": avd, "serial": serial, **({"physical_device": True} if phys == "1" else {}), "api": int(api), "android_release": prop("ro.build.version.release"), "model": prop("ro.product.model"),
-    "abi": prop("ro.product.cpu.abi"), "build_fingerprint": prop("ro.build.fingerprint"),
+    "avd": avd, "serial": "physical (not recorded)" if phys == "1" else serial, **({"physical_device": True} if phys == "1" else {}), "api": int(api), "android_release": prop("ro.build.version.release"), "model": prop("ro.product.model"),
+    "abi": prop("ro.product.cpu.abi"), "build_fingerprint": "not recorded (physical device)" if phys == "1" else prop("ro.build.fingerprint"),
     "host": {"model": sh("sysctl", "-n", "machdep.cpu.brand_string"), "cpus": sh("sysctl", "-n", "hw.ncpu"), "os": sh("sw_vers", "-productVersion"),
              "loadavg_at_summary": sh("sysctl", "-n", "vm.loadavg")},
     "sdk_version": version, "git_revision": sh("git", "rev-parse", "--short", "HEAD") + (" (dirty)" if sh("git", "status", "--porcelain", "--untracked-files=no") else ""),
