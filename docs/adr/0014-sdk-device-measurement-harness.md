@@ -34,3 +34,7 @@ Spec section 7 fixes the loads (synthetic events of about 1 KiB; normal 1 event/
 - Emulator latency depends on the host. The host was not idle (load average is recorded). Values are not comparable with a phone.
 - The proxy is Python on the host. Its cost is part of drain time, not of `track()` time.
 - Memory numbers include noise (decision 9).
+
+## Amendment (2026-10-24 UTC)
+
+A physical phone is an allowed device for the debug build when the owner sets `SIGNALDOCK_PHYSICAL_DEVICE=1`. The Limits line about phones still holds for emulator rows. Phone runs write `api<api>-phone-<scenario>`. Details: [ADR-0042](0042-measurement-on-a-physical-device.md).

@@ -38,3 +38,7 @@ The SDK brings 49 libraries on the runtime classpath (7 direct dependencies in t
 - One host, one run of the whole script. The spread of the 20 and 10 runs is in the CSV files. PSS is a sample of a moving value, so only differences of the order of the spread or more should be read.
 - Startup is `am start -W` to the first activity; it does not measure first frame drawn or the time until the SDK has sent its first event.
 - Resource shrinking, a host with its own Room or OkHttp versions (shared libraries would cost less), and a Compose app (a larger baseline) are not measured.
+
+## Amendment (2026-10-24 UTC)
+
+`host-cost-measure.sh` can run on a physical phone when the owner sets `SIGNALDOCK_PHYSICAL_DEVICE=1`. It writes `host-cost-phone-api<api>`, reads logcat from a start time instead of clearing it, and changes no device setting. The two consumer apps (R8 release, debug-signed) stay installed. Details: [ADR-0042](0042-measurement-on-a-physical-device.md).

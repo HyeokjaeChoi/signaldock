@@ -35,3 +35,7 @@ All six runs reconcile with no missing, not-tracked or duplicate server rows. `t
 - No physical device (issue 33, item 3): the agent cannot reach one. The README says so.
 - The release app is debug-signed and not Play-signed. R8 behavior is the same, but the artifact is not a store build.
 - R8 ran with the library's default rules and no SDK keep rule. If a later SDK change needs a keep rule that this path would not reveal (for example reflection used only by a feature the phases do not call), the consumer app of ADR-0010 is the check for it.
+
+## Amendment (2026-10-24 UTC)
+
+The release build stays emulator-only. `device-measure.sh` refuses `MEASURE_BUILD=release` on a physical phone, because it needs `adb root`. The item "No physical device" now applies to release runs only. A phone can run the debug build ([ADR-0042](0042-measurement-on-a-physical-device.md)).
