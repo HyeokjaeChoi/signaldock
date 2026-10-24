@@ -43,6 +43,11 @@ jobs:
             Look for bugs, security problems, broken contracts, and changes that disagree
             with an ADR, the spec, or architecture.md.
 
+            Report a defect only if you can name the input or sequence that fails. Do not report
+            what scripts/check-repo-rules.sh, scripts/verify-contract.sh, detekt, or shellcheck
+            already check. Do not suggest anything listed under "Rejected alternatives" in
+            docs/design-index.md. Skip style. If the diff gives no evidence, ask a question.
+
             Give each finding a severity: Critical, Major, Minor, or Nit. Cite the design
             source section or the code line that shows the problem.
             Use `mcp__github_inline_comment__create_inline_comment` (with `confirmed: true`)

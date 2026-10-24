@@ -1,5 +1,5 @@
-# CodeRabbit reads only about the first 3,800 characters of a PR description,
-# so longer descriptions make its pre-merge checks inconclusive (PR #9, #11, #12).
+# Reviewers read long PR descriptions badly: CodeRabbit read only about the first 3,800
+# characters, so its pre-merge checks were inconclusive (PR #9, #11, #12).
 # Put details in ADRs and issue files and link them.
 name: pr-description
 
