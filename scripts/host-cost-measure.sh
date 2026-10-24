@@ -11,11 +11,15 @@
 #     (logged by the consumer app)
 #   - PSS: `dumpsys meminfo` TOTAL PSS after startup plus an idle time, N runs per variant; and after a burst of track() calls
 # and writes perf/sdk-results/host-cost-api<api>/ (CSV files, meta.json, summary.md). Emulator numbers, not device numbers.
+# Physical phone (ADR-0042): set SIGNALDOCK_PHYSICAL_DEVICE=1. No device setting is changed. The result folder is
+# host-cost-phone-api<api>/. The script reads logcat from a start time and does not clear the log of the phone. Both consumer
+# apps (R8 release, debug-signed, ADR-0020) stay installed. Keep the phone awake, unlocked, and idle.
+# Environment: SIGNALDOCK_PHYSICAL_DEVICE,
 #
 # Needs: a booted emulator (for example `$ANDROID_HOME/emulator/emulator -avd signaldock-api37 -no-window -no-audio
 # -no-snapshot-save -port 5584 &`), macOS, JDK 21 (scripts/setup-toolchain.sh), ANDROID_HOME (platform android-36,
 # cmdline-tools with apkanalyzer), python3.
-# Environment: HOSTCOST_RUNS (startup and idle PSS runs per variant, default 20), HOSTCOST_BURST_RUNS (default 10),
+#   HOSTCOST_RUNS (startup and idle PSS runs per variant, default 20), HOSTCOST_BURST_RUNS (default 10),
 # HOSTCOST_BURST (track() calls per burst run, default 500), HOSTCOST_IDLE (seconds to wait before PSS, default 5).
 set -euo pipefail
 
@@ -23,7 +27,13 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 serial="${1:?usage: scripts/host-cost-measure.sh <adb-serial>}"
-case "$serial" in emulator-*) ;; *) echo "refusing $serial: emulators only" >&2; exit 1 ;; esac
+PHYS=0  # 1 on a personal phone (ADR-0042): opt-in only
+case "$serial" in
+  emulator-*) ;;
+  *) if [ "${SIGNALDOCK_PHYSICAL_DEVICE:-}" = 1 ]; then
+       PHYS=1; echo "notice: physical-device run on $serial (SIGNALDOCK_PHYSICAL_DEVICE=1); no device setting is changed"
+     else echo "refusing $serial: emulators only" >&2; exit 1; fi ;;
+esac
 
 export ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
 export JAVA_HOME="${JAVA_HOME:-$ROOT/.tools/jdk-21.0.12.1+1}"
@@ -75,18 +85,29 @@ ACT=local.signaldock.consumer.MainActivity
 for v in sdk nosdk; do adb install -r "$WORK/$v/app-release.apk" >/dev/null; done
 
 api="$(adb shell getprop ro.build.version.sdk | tr -d '\r')"
-avd="$(adb emu avd name 2>/dev/null | head -1 | tr -d '\r')"
-OUT="perf/sdk-results/host-cost-api$api"
+if [ "$PHYS" = 1 ]; then
+  avd="$(adb shell getprop ro.product.model | tr -d '\r') (physical)"
+  OUT="perf/sdk-results/host-cost-phone-api$api"
+else
+  avd="$(adb emu avd name 2>/dev/null | head -1 | tr -d '\r')"
+  OUT="perf/sdk-results/host-cost-api$api"
+fi
 mkdir -p "$WORK/out"
 echo "device: $serial  AVD $avd  $(adb shell getprop ro.product.model | tr -d '\r')  API $api"
 
 # pss <pkg>: TOTAL PSS in KiB from dumpsys meminfo.
 pss() { adb shell dumpsys meminfo "$1" | tr -d '\r' | sed -n 's/^ *TOTAL PSS: *\([0-9]*\).*/\1/p' | head -1; }
+# hclog: the host-cost log lines of the last launch. A phone is read from the launch time; its log is not cleared.
+hclog() {
+  if [ "$PHYS" = 1 ]; then adb logcat -d -T "$(cat "$WORK/logsince")" -s SignalDockHostCost:I
+  else adb logcat -d -s SignalDockHostCost:I; fi
+}
 # launch <pkg> [extra am args]: cold start; prints TotalTime in ms.
 launch() {
   local pkg="$1"; shift
   adb shell am force-stop "$pkg"; sleep 1
-  adb logcat -c
+  if [ "$PHYS" = 1 ]; then adb shell "date '+%m-%d %H:%M:%S.000'" | tr -d '\r' > "$WORK/logsince"  # launch runs in a subshell: keep the time in a file
+  else adb logcat -c; fi
   adb shell am start -W -n "$pkg/$ACT" "$@" | tr -d '\r' | sed -n 's/^TotalTime: *\([0-9]*\).*/\1/p'
 }
 
@@ -108,7 +129,7 @@ for i in $(seq "$RUNS"); do
     [ -n "$t" ] && [ -n "$p" ] || { echo "error: no TotalTime or PSS for $v run $i" >&2; exit 1; }
     echo "$v,$i,$t,$p" >> "$WORK/out/startup.csv"
     if [ "$v" = sdk ]; then
-      line="$(adb logcat -d -s SignalDockHostCost:I | tr -d '\r' | sed -n 's/.* init main_ns=\([0-9]*\) total_ns=\([0-9]*\) result=success.*/\1,\2/p' | head -1)"
+      line="$(hclog | tr -d '\r' | sed -n 's/.* init main_ns=\([0-9]*\) total_ns=\([0-9]*\) result=success.*/\1,\2/p' | head -1)"
       [ -n "$line" ] || { echo "error: no successful init log line in run $i" >&2; exit 1; }
       echo "$i,$line" >> "$WORK/out/init.csv"
     fi
@@ -125,7 +146,7 @@ for i in $(seq "$BURST_RUNS"); do
     launch "$pkg" --ei burst "$BURST" >/dev/null
     done_line=""
     for _ in $(seq 60); do
-      done_line="$(adb logcat -d -s SignalDockHostCost:I | grep -E 'burst_(done|failed)' || true)"
+      done_line="$(hclog | grep -E 'burst_(done|failed)' || true)"
       [ -n "$done_line" ] && break
       sleep 1
     done
@@ -140,9 +161,9 @@ for i in $(seq "$BURST_RUNS"); do
 done
 
 echo "=== 4. summary ==="
-python3 - "$WORK" "$OUT" "$api" "$avd" "$serial" "$VERSION" "$RUNS" "$BURST_RUNS" "$BURST" "$IDLE" "$WARMUP" "$APKANALYZER" <<'EOF'
+python3 - "$WORK" "$OUT" "$api" "$avd" "$serial" "$VERSION" "$RUNS" "$BURST_RUNS" "$BURST" "$IDLE" "$WARMUP" "$APKANALYZER" "$PHYS" <<'EOF'
 import csv, datetime, hashlib, json, math, os, re, shutil, statistics, subprocess, sys, xml.etree.ElementTree as ET, zipfile
-work, out, api, avd, serial, version, runs, burst_runs, burst, idle, warmup, apkanalyzer = sys.argv[1:]
+work, out, api, avd, serial, version, runs, burst_runs, burst, idle, warmup, apkanalyzer, phys = sys.argv[1:]
 adb = os.path.join(os.environ["ANDROID_HOME"], "platform-tools", "adb")
 def sh(*a): return subprocess.run(a, capture_output=True, text=True).stdout.strip()
 def prop(k): return sh(adb, "-s", serial, "shell", "getprop", k)
@@ -205,8 +226,8 @@ d_tt = paired(rows, "total_time_ms"); d_pi = paired(rows, "pss_idle_kib"); d_pb 
 
 meta = {
     "issue": 36, "adr": "ADR-0020", "run_utc": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-    "avd": avd, "serial": serial, "api": int(api), "android_release": prop("ro.build.version.release"), "model": prop("ro.product.model"),
-    "abi": prop("ro.product.cpu.abi"), "build_fingerprint": prop("ro.build.fingerprint"),
+    "avd": avd, "serial": "physical (not recorded)" if phys == "1" else serial, **({"physical_device": True} if phys == "1" else {}), "api": int(api), "android_release": prop("ro.build.version.release"), "model": prop("ro.product.model"),
+    "abi": prop("ro.product.cpu.abi"), "build_fingerprint": "not recorded (physical device)" if phys == "1" else prop("ro.build.fingerprint"),
     "host": {"model": sh("sysctl", "-n", "machdep.cpu.brand_string"), "cpus": sh("sysctl", "-n", "hw.ncpu"), "os": sh("sw_vers", "-productVersion"),
              "loadavg_at_summary": sh("sysctl", "-n", "vm.loadavg")},
     "sdk_version": version, "git_revision": sh("git", "rev-parse", "--short", "HEAD") + (" (dirty)" if sh("git", "status", "--porcelain", "--untracked-files=no") else ""),
@@ -222,9 +243,9 @@ def pctd(a, b): return f"{(a - b) / b * 100:.1f} %"
 def srow(name, s, unit): return f"| {name} | {f(s['nosdk']['p50'])} / {f(s['nosdk']['p95'])} / {f(s['nosdk']['max'])} | {f(s['sdk']['p50'])} / {f(s['sdk']['p95'])} / {f(s['sdk']['max'])} | {unit} |"
 md = f"""# SDK cost for a host app (issue 36)
 
-Measured on an emulator, not on a physical device: {avd} (API {api}, Android {meta['android_release']}, {meta['model']}, {meta['abi']}) on {meta['host']['model']}, one shared host (load average in `meta.json`). Numbers show the order of magnitude, not an SLA. Method and limits: ADR-0020.
+Measured on {"a physical device (a personal phone, ADR-0042)" if phys == "1" else "an emulator, not on a physical device"}: {avd} (API {api}, Android {meta['android_release']}, {meta['model']}, {meta['abi']}) on {meta['host']['model']}, one shared host (load average in `meta.json`). Numbers show the order of magnitude, not an SLA. Method and limits: ADR-0020.
 
-Both APKs are the independent consumer app (`compatibility/consumer-android`), R8 release, built from the Maven ZIP of `local.signaldock:sdk-android:{version}`. The baseline is built with `-Psignaldock.sdk=false`: no SDK dependency, no SDK call, and no coroutines library. Both ran interleaved on the same emulator. Run {meta['run_utc']}, git {meta['git_revision']}.
+Both APKs are the independent consumer app (`compatibility/consumer-android`), R8 release, built from the Maven ZIP of `local.signaldock:sdk-android:{version}`. The baseline is built with `-Psignaldock.sdk=false`: no SDK dependency, no SDK call, and no coroutines library. Both ran interleaved on the same {"phone" if phys == "1" else "emulator"}. Run {meta['run_utc']}, git {meta['git_revision']}.
 
 ## APK size (R8 release, R8 {N['r8']})
 

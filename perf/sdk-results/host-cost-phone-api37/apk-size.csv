@@ -1,0 +1,4 @@
+variant,apk_bytes,apk_download_bytes,dex_files,dex_bytes,dex_compressed_bytes
+nosdk,21606,17263,1,3012,1591
+sdk,645055,571991,1,986140,471083
+delta,623449,554728,0,983128,469492

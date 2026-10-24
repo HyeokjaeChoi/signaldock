@@ -15,14 +15,17 @@
 #       docker compose -p signaldock-sdkmeasure --env-file <file> up -d --build db server
 #     <file> holds SIGNALDOCK_COLLECTION_KEY, SIGNALDOCK_QUERY_KEY, SIGNALDOCK_DB_*, SIGNALDOCK_SERVER_PORT, SIGNALDOCK_DB_PORT.
 #     Point SIGNALDOCK_ENV_FILE at it. The default is .env, which uses the default stack and ports.
-#   - one booted emulator (emulators only), for example:
+#   - one booted emulator (emulators only unless SIGNALDOCK_PHYSICAL_DEVICE=1, see below), for example:
 #       $ANDROID_HOME/emulator/emulator -avd signaldock-api37 -no-window -no-audio -no-snapshot-save -port 5584 &
 #   - macOS host (it records sysctl and sw_vers facts), JDK 21 (scripts/setup-toolchain.sh), ANDROID_HOME, python3.
 # Release (R8) build, issue 33, ADR-0018: set MEASURE_BUILD=release. It runs the same phases (MeasureRunner) in the
 # sdk/measure-app release variant (R8 minify on, debug-signed, not debuggable) and writes
 # perf/sdk-results/api<api>-release-<scenario>/. It needs an emulator image where `adb root` works (google_apis, not
 # Google Play), because a non-debuggable app has no `run-as`. Default (unset or `debug`) is the debug androidTest APK.
-# Environment: MEASURE_BUILD, SIGNALDOCK_ENV_FILE, MEASURE_PROJECT (Compose project, default signaldock-sdkmeasure), MEASURE_PROXY_PORT (default 18091).
+# Physical phone (ADR-0042): set SIGNALDOCK_PHYSICAL_DEVICE=1 and pass the phone serial. Debug build only (release needs
+# `adb root`). The script uses `adb reverse` for the proxy port, removes it at the end, changes no device setting, and writes
+# perf/sdk-results/api<api>-phone-<scenario>/. The test packages stay installed.
+# Environment: SIGNALDOCK_PHYSICAL_DEVICE, MEASURE_BUILD, SIGNALDOCK_ENV_FILE, MEASURE_PROJECT (Compose project, default signaldock-sdkmeasure), MEASURE_PROXY_PORT (default 18091).
 set -euo pipefail
 
 [ "$(uname)" = Darwin ] || { echo "error: this script reads macOS host facts (sysctl, sw_vers); run it on macOS" >&2; exit 1; }
@@ -35,7 +38,13 @@ scenarios=("$@")
 for s in "${scenarios[@]}"; do
   case "$s" in normal|offline|burst) ;; *) echo "error: unknown scenario '$s'; known: normal offline burst" >&2; exit 2 ;; esac
 done
-case "$serial" in emulator-*) ;; *) echo "refusing $serial: emulators only" >&2; exit 1 ;; esac
+PHYS=0  # 1 on a personal phone (ADR-0042): opt-in only
+case "$serial" in
+  emulator-*) ;;
+  *) if [ "${SIGNALDOCK_PHYSICAL_DEVICE:-}" = 1 ]; then
+       PHYS=1; echo "notice: physical-device run on $serial (SIGNALDOCK_PHYSICAL_DEVICE=1); no device setting is changed"
+     else echo "refusing $serial: emulators only" >&2; exit 1; fi ;;
+esac
 
 export ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
 export JAVA_HOME="${JAVA_HOME:-$ROOT/.tools/jdk-21.0.12.1+1}"
@@ -59,6 +68,10 @@ case "$BUILD" in
     PREFIX="release-" ;;
   *) echo "error: MEASURE_BUILD must be debug or release" >&2; exit 2 ;;
 esac
+if [ "$PHYS" = 1 ]; then
+  [ "$BUILD" = debug ] || { echo "error: MEASURE_BUILD=release needs adb root; it is not allowed on a physical device (ADR-0042)" >&2; exit 2; }
+  PREFIX="phone-"
+fi
 
 [ -f "$ENV_FILE" ] || { echo "error: env file $ENV_FILE not found; see the header of this script" >&2; exit 1; }
 set -a; . "$ENV_FILE"; set +a
@@ -82,8 +95,12 @@ fi
 adb install -r -t "$APK" >/dev/null
 
 api="$(adb shell getprop ro.build.version.sdk | tr -d '\r')"
-avd="$(adb emu avd name 2>/dev/null | head -1 | tr -d '\r')"
+if [ "$PHYS" = 1 ]; then avd="$(adb shell getprop ro.product.model | tr -d '\r') (physical)"
+else avd="$(adb emu avd name 2>/dev/null | head -1 | tr -d '\r')"; fi
 echo "device: $serial  AVD $avd  $(adb shell getprop ro.product.model | tr -d '\r')  API $api  ($BUILD build)"
+
+# unreverse: remove the adb reverse of the proxy port (phone only; errors ignored).
+unreverse() { if [ "$PHYS" = 1 ]; then adb reverse --remove "tcp:$PROXY_PORT" >/dev/null 2>&1 || true; fi; }
 
 # phase <name> <endpoint> <runId>: one instrumentation run in a fresh process.
 phase() {
@@ -106,9 +123,13 @@ run_scenario() {
   adb shell pm clear "$PKG" >/dev/null
   python3 scripts/e2e/fault-proxy.py --listen "127.0.0.1:$PROXY_PORT" --upstream "127.0.0.1:$SERVER_PORT" --log "$dir/proxy.jsonl" &
   PROXY_PID=$!
-  trap 'kill "$PROXY_PID" 2>/dev/null || true' EXIT  # a failing command below must not leave the proxy running
+  trap 'kill "$PROXY_PID" 2>/dev/null || true; unreverse' EXIT  # a failing command below must not leave the proxy running
   for _ in $(seq 50); do curl -fs -o /dev/null "http://127.0.0.1:$PROXY_PORT/__fault/mode" && break; sleep 0.2; done
   local endpoint="http://10.0.2.2:$PROXY_PORT" load_before load_after started ended
+  if [ "$PHYS" = 1 ]; then
+    adb reverse "tcp:$PROXY_PORT" "tcp:$PROXY_PORT" >/dev/null
+    endpoint="http://127.0.0.1:$PROXY_PORT"
+  fi
   load_before="$(sysctl -n vm.loadavg)"
   started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   case "$sc" in
@@ -123,6 +144,7 @@ run_scenario() {
   load_after="$(sysctl -n vm.loadavg)"
   kill "$PROXY_PID" 2>/dev/null || true
   wait "$PROXY_PID" 2>/dev/null || true
+  unreverse
   trap - EXIT
   # Pull what exists even when a phase failed, so that the evidence survives the next `pm clear`.
   if [ "$BUILD" = release ]; then
@@ -135,9 +157,9 @@ run_scenario() {
     done
   fi
   psql_ids "$runId" > "$dir/db-ids.txt" || { echo "warning: could not read event IDs from the database; the run is invalid" >&2; rm -f "$dir/db-ids.txt"; }
-  python3 - "$dir" "$sc" "$runId" "$ok" "$started" "$ended" "$load_before" "$load_after" "$avd" "$serial" "$BUILD" "${MAPPING:-}" "$APK" <<'EOF'
+  python3 - "$dir" "$sc" "$runId" "$ok" "$started" "$ended" "$load_before" "$load_after" "$avd" "$serial" "$BUILD" "${MAPPING:-}" "$APK" "$PHYS" <<'EOF'
 import hashlib, json, re, subprocess, sys
-d, sc, run_id, ok, t0, t1, l0, l1, avd, serial, build, mapping, apk = sys.argv[1:]
+d, sc, run_id, ok, t0, t1, l0, l1, avd, serial, build, mapping, apk, phys = sys.argv[1:]
 def sh(*a): return subprocess.run(a, capture_output=True, text=True).stdout.strip()
 def sha(path): return hashlib.sha256(open(path, "rb").read()).hexdigest()
 def r8_evidence(mapping, apk):
@@ -151,13 +173,14 @@ def r8_evidence(mapping, apk):
             "example": next((l for l in renamed if l.startswith("local.signaldock.SignalDock ")), None)}
 json.dump({
     "scenario": sc, "run_id": run_id, "completed_phases": ok == "1", "started_utc": t0, "ended_utc": t1,
-    "avd": avd, "serial": serial,
+    "avd": avd, "serial": "physical (not recorded)" if phys == "1" else serial, **({"physical_device": True} if phys == "1" else {}),
     "build_type": build,
     "build": "debug androidTest APK: SDK library debug variant, debuggable, no R8/minify (ADR-0014)" if build == "debug" else
              "release measure app (sdk/measure-app): SDK as dependency, R8 minify and shrinkResources on, debug-signed release variant, not debuggable (ADR-0018)",
     **({"r8": r8_evidence(mapping, apk)} if build == "release" else {}),
     "server": {"stack": "Docker Compose, real Ktor server + PostgreSQL 17.6, default product settings, project separate from the default stack",
-               "path": "device -> 10.0.2.2 -> fault-proxy (pass mode) -> 127.0.0.1 -> server container"},
+               "path": ("device -> 127.0.0.1 (adb reverse) -> fault-proxy (pass mode) -> 127.0.0.1 -> server container" if phys == "1" else
+                        "device -> 10.0.2.2 -> fault-proxy (pass mode) -> 127.0.0.1 -> server container")},
     "host": {"model": sh("sysctl", "-n", "machdep.cpu.brand_string"), "cpus": sh("sysctl", "-n", "hw.ncpu"), "os": sh("sw_vers", "-productVersion"),
              "loadavg_before": l0, "loadavg_after": l1},
     "git_revision": sh("git", "rev-parse", "--short", "HEAD") + (" (dirty)" if sh("git", "status", "--porcelain", "--untracked-files=no") else ""),

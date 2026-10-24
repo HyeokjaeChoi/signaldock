@@ -10,7 +10,7 @@ Set `ANDROID_HOME` first (`export ANDROID_HOME="$HOME/Library/Android/sdk"`). St
 adb -s emulator-5584 wait-for-device
 ```
 
-Stop it at the end with `adb -s emulator-5584 emu kill`. AVD names: `signaldock-api24`, `signaldock-api37` ([TOOLCHAIN.md](../TOOLCHAIN.md)). The scripts refuse a serial that does not start with `emulator-`.
+Stop it at the end with `adb -s emulator-5584 emu kill`. AVD names: `signaldock-api24`, `signaldock-api37` ([TOOLCHAIN.md](../TOOLCHAIN.md)). The scripts refuse a serial that does not start with `emulator-`, unless you set `SIGNALDOCK_PHYSICAL_DEVICE=1` to run on your own phone (see [Physical phone](#physical-phone-opt-in)).
 
 ## Demo app (ran)
 
@@ -71,6 +71,22 @@ docker compose -p "$MEASURE_PROJECT" --env-file "$MEASURE_ENV" down      # keeps
 
 It writes `perf/sdk-results/api<api>-<scenario>/` and `perf/sdk-results/summary.md` (the committed results came from the owner's runs; a new run overwrites that folder in your clone, so use a scratch clone). The `normal` scenario ran for this guide. `offline` and `burst` did not.
 By default it uses a debug build of the SDK and the emulator, so the numbers are not release numbers and not an SLA. For the R8 release build (ADR-0018) set `MEASURE_BUILD=release`; it needs an emulator image where `adb root` works (`google_apis`, not Google Play) and writes `perf/sdk-results/api<api>-release-<scenario>/`.
+
+### Physical phone (opt-in)
+
+ADR-0042. Set `SIGNALDOCK_PHYSICAL_DEVICE=1` and pass the serial of the phone (`adb devices`). Use a debug build only: `MEASURE_BUILD=release` is refused because it needs `adb root`. The scripts change no device setting. They print a notice that this is a physical-device run.
+
+```sh
+SIGNALDOCK_PHYSICAL_DEVICE=1 MEASURE_PROJECT="$MEASURE_PROJECT" SIGNALDOCK_ENV_FILE="$MEASURE_ENV" \
+  scripts/device-measure.sh <phone-serial> normal
+SIGNALDOCK_PHYSICAL_DEVICE=1 scripts/host-cost-measure.sh <phone-serial>
+```
+
+- `device-measure.sh` runs `adb reverse` for the proxy port and uses `http://127.0.0.1:<port>` as the endpoint. It removes the reverse at the end.
+- Result folders: `perf/sdk-results/api<api>-phone-<scenario>/` and `perf/sdk-results/host-cost-phone-api<api>/`. The device name in the results is the model plus `(physical)`.
+- `scripts/device-durability.sh` stays emulator-only. It changes backup, airplane mode, and disk state.
+- The test packages (`local.signaldock.test` and its app, or the two consumer apps) stay installed. Remove them yourself if you want.
+- Keep the phone awake, unlocked, and on a charger. Other apps change the numbers.
 
 Server load (ADR-0013, [Q133](../.scratch/signaldock/spec.md)): two pilots and one overload run are committed in `perf/results/`, with `perf/report/` as the viewer. **Not verified here:** the pilot and overload runs did not run in the clean clone. `perf/` always uses the Compose project `signaldock-perf` and a fixed volume, and this machine already holds such a volume from the earlier runs; a new clone writes new random passwords that would not match the old database password in it (expected, not tried), and the volume must not be deleted. Only the command line was checked:
 

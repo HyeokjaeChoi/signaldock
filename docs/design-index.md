@@ -244,6 +244,7 @@ ADRs:
 - ADR-0038 (`docs/adr/0038-gradle-dependency-verification.md`), for `*/gradle/verification-metadata.xml` and `scripts/update-gradle-verification.sh` (issue 68)
 - ADR-0039 (`docs/adr/0039-release-provenance-attestation.md`), for the attestation step and job permissions of `publish` in `.github/workflows/release.yml`, and the attestation section of `docs/releases/README.md` (issue 69)
 - ADR-0041 (`docs/adr/0041-claude-code-pr-review.md`), for `.github/workflows/claude-review.yml` (issue 83)
+- ADR-0042 (`docs/adr/0042-measurement-on-a-physical-device.md`), for the `SIGNALDOCK_PHYSICAL_DEVICE` opt-in of `scripts/device-measure.sh` and `scripts/host-cost-measure.sh`
 
 Spec (`.scratch/signaldock/spec.md`):
 - Q149 (first release)
