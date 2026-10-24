@@ -32,4 +32,4 @@ The owner asked to run the device measurement scripts on a personal Android phon
 
 ## Gaps
 
-- Gap: no phone run was made when this ADR was written. The changes were checked with `bash -n` and a read of the code only.
+- Issue 85 ran both scripts on one phone (Galaxy Z Flip7, Android 17) on 2026-10-24 UTC. Gap: no other phone, no `adb reverse` failure case, and no phone with a restrictive USB install policy was tried.
