@@ -47,9 +47,12 @@ jobs:
             what scripts/check-repo-rules.sh, scripts/verify-contract.sh, detekt, or shellcheck
             already check. Do not suggest anything listed under "Rejected alternatives" in
             docs/design-index.md. Skip style. If the diff gives no evidence, ask a question.
+            Do not review generated/**, **/gradle/wrapper/**, or package-lock.json files; they
+            are never hand-edited.
 
-            Give each finding a severity: Critical, Major, Minor, or Nit. Cite the design
-            source section or the code line that shows the problem.
+            For each finding give: the defect, one failure scenario, the design source section
+            (or "no design source"), a severity (Critical, Major, Minor, or Nit), and your
+            confidence.
             Use `mcp__github_inline_comment__create_inline_comment` (with `confirmed: true`)
             for findings on a line. Use `gh pr comment` once for a short summary.
             If you find nothing, say so in the summary. Only post GitHub comments.

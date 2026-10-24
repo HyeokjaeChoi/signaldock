@@ -21,12 +21,14 @@ The user installed the Claude GitHub App on 2026-10-24 UTC, asked that Claude Co
 4. Permissions are set on the job only: `contents: read`, `pull-requests: write`, `id-token: write`. The workflow default is `permissions: {}`, as in `pr-description.yml`.
 5. The action is pinned by full commit SHA with a tag comment, like the other actions (`16f9f71ab9c490faf367f94dd294897edc25be33`, v1). Renovate proposes updates (ADR-0031).
 6. The model is Sonnet, for cost. Allowed tools are read-only file tools, `gh pr diff`, `gh pr view`, `gh pr comment`, and inline comments. It cannot push.
-7. The prompt carries the rules that `.coderabbit.yaml` held: review against the sections `docs/design-index.md` lists per area; report a defect only with a failing input or sequence; skip what the repo scripts and linters check; do not suggest a rejected alternative; give each finding a severity (Critical, Major, Minor, Nit) and a source.
+7. The prompt carries the rules that `.coderabbit.yaml` held: review against the sections `docs/design-index.md` lists per area; report a defect only with a failing input or sequence; skip what the repo scripts and linters check; do not suggest a rejected alternative; skip generated code, Gradle wrappers, and lockfiles; per finding give the defect, a failure scenario, the source, a severity (Critical, Major, Minor, Nit), and a confidence.
 8. CodeRabbit is removed: the app no longer has access to this repository (2026-10-24 UTC), and `.coderabbit.yaml` is deleted. Before a PR, an agent runs the local Claude Code `/code-review` skill instead of `coderabbit review`.
 
 ## Consequences
 
 - One reviewer instead of two. Cost: one Sonnet run per push on the owner's subscription quota.
 - Fork PRs get no automatic review; the owner reviews them by hand.
+- A PR that changes `claude-review.yml` is never reviewed by the job (the file differs from `main`). Such a PR needs the local `/code-review` and an owner review before merge.
+- A push cancels the running review of the older commit. Inline comments it already posted can stay on outdated lines.
 - CodeRabbit learnings are lost. They held no design facts (old AGENTS.md rule 5), so no design source changes.
 - Historical records that name CodeRabbit (CHANGELOG, postmortems, issue files, older ADRs) stay as they are.

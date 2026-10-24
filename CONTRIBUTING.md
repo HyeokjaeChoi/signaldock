@@ -40,7 +40,7 @@ A change of the SDK public API also updates the API dump, the integration guide 
 
 - One purpose for each pull request.
 - Fill in the pull request template: what changed, which design sections it follows, and the exact verification commands and results. Do not mark a step verified without a run. Keep the description under 3,500 characters.
-- Before you open a pull request, run the Claude Code `/code-review` skill on your branch and fix the findings (required, AGENTS.md "Commands"). The pull request review then confirms the work.
+- Before you open a pull request, review your own diff and fix what you find; if you use Claude Code, run its `/code-review` skill (AGENTS.md "Commands"). The pull request review then confirms the work.
 - A pull request is ready to merge when no Critical or Major finding is open and all checks pass. Record each open Minor or lower finding as a local issue (see [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md)), link it in the pull request, and do not hold the merge for it.
 - The `Co-Authored-By` commit trailer that maintainer agents use is not required for outside contributors.
 

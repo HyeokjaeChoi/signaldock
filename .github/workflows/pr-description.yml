@@ -18,9 +18,6 @@ jobs:
       - env:
           BODY: ${{ github.event.pull_request.body }}
         run: |
-          # CodeRabbit appends its own summary block; count only what the author wrote.
-          len=$(printf '%s' "$BODY" \
-            | sed '/<!-- This is an auto-generated comment: release notes by coderabbit.ai -->/,/<!-- end of auto-generated comment: release notes by coderabbit.ai -->/d' \
-            | LC_ALL=C.UTF-8 wc -m)
+          len=$(printf '%s' "$BODY" | LC_ALL=C.UTF-8 wc -m)
           echo "PR description: $len characters (limit 3500)"
           [ "$len" -le 3500 ] || { echo "::error::PR description has $len characters. Keep it at 3500 or less; move details to ADRs or issue files."; exit 1; }
