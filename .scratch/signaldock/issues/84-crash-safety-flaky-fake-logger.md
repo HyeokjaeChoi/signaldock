@@ -1,8 +1,9 @@
 # 84. Fix the intermittent `CrashSafetyTest` closed-database failure
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
+Execution: Done (PR #203, 2026-10-24 UTC)
 
 ## Scope and completion criteria
 
