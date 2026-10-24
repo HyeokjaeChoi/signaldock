@@ -15,4 +15,4 @@ The repo had two skills for the same job, `update-internal-docs` and `signaldock
 4. Historical records that name the old skills (CHANGELOG, release notes, `.scratch`) do not change.
 
 Verification:
-- `scripts/check-repo-rules.sh`; no tracked file outside history names the removed skills (`git grep`); `coderabbit review --base main --deep --agent`.
+- `scripts/check-repo-rules.sh`; no tracked file outside history names the removed skills (`git grep`); local `/code-review`; the Claude review job (ADR-0041).
