@@ -1,0 +1,107 @@
+{
+  "scenario": "offline",
+  "run_id": "r20261024134422offline",
+  "avd": "SM-F766N (physical)",
+  "build_type": "debug",
+  "meta": {
+    "scenario": "offline",
+    "run_id": "r20261024134422offline",
+    "completed_phases": true,
+    "started_utc": "2026-10-24T13:44:22Z",
+    "ended_utc": "2026-10-24T13:45:48Z",
+    "avd": "SM-F766N (physical)",
+    "serial": "R3KL100KETB",
+    "physical_device": true,
+    "build_type": "debug",
+    "build": "debug androidTest APK: SDK library debug variant, debuggable, no R8/minify (ADR-0014)",
+    "server": {
+      "stack": "Docker Compose, real Ktor server + PostgreSQL 17.6, default product settings, project separate from the default stack",
+      "path": "device -> 127.0.0.1 (adb reverse) -> fault-proxy (pass mode) -> 127.0.0.1 -> server container"
+    },
+    "host": {
+      "model": "Apple M2 Pro",
+      "cpus": "12",
+      "os": "26.6.2",
+      "loadavg_before": "{ 19.96 10.47 6.89 }",
+      "loadavg_after": "{ 11.12 10.43 7.26 }"
+    },
+    "git_revision": "049f7ed"
+  },
+  "device": "samsung SM-F766N",
+  "api": 37,
+  "release": "17",
+  "abi": "arm64-v8a",
+  "debuggable": true,
+  "injection": {
+    "target_rate_per_s": "back to back",
+    "planned": 1000,
+    "started": 1000,
+    "actual_rate_per_s": 96.1,
+    "span_s": 10.4,
+    "max_calls_in_flight": 1,
+    "start_lateness_ms": null,
+    "event_bytes": 1026
+  },
+  "track_ms": {
+    "p50": 9.64,
+    "p95": 16.48,
+    "max": 74.45,
+    "count": 1000
+  },
+  "errors": {
+    "track_not_ok": {},
+    "sdk_warnings": 0,
+    "last_delivery_error": "NETWORK"
+  },
+  "reconciliation": {
+    "tracked_ok": 1000,
+    "server_rows": 1000,
+    "missing_on_server": 0,
+    "not_tracked_on_server": 0,
+    "duplicate_server_rows": 0,
+    "batches_sent": 20,
+    "events_sent": 1000,
+    "event_ids_sent_more_than_once": 0,
+    "batches_not_200": 0,
+    "ack_status_counts": {
+      "accepted": 1000
+    }
+  },
+  "drain": {
+    "seconds": 69.72,
+    "queued_after": 0,
+    "queued_at_injection_end": 1000,
+    "persisted_retry_wait_at_start_s": 30.8,
+    "seconds_after_retry_wait": 38.96
+  },
+  "files_bytes": {
+    "after_store": {
+      "installation-id": 36,
+      "queue.db": 1433600,
+      "queue.db-shm": 32768,
+      "queue.db-wal": 432632
+    },
+    "after_drain": {
+      "installation-id": 36,
+      "queue.db": 266240,
+      "queue.db-shm": 32768,
+      "queue.db-wal": 486192
+    }
+  },
+  "memory_kb": {
+    "store_process": {
+      "pss_after_init_to_after_store": 4383,
+      "heap_after_init_to_after_store": -28
+    },
+    "drain_process": {
+      "pss_before_init_to_after_drain": 1356,
+      "heap_before_init_to_after_drain": 588
+    },
+    "pss_absolute": {
+      "store_after_store": 40056,
+      "drain_after_drain": 38207
+    }
+  },
+  "verdict": "pass",
+  "reasons": []
+}

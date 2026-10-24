@@ -1,0 +1,52 @@
+{
+  "issue": 36,
+  "adr": "ADR-0020",
+  "run_utc": "2026-10-24T13:54:25Z",
+  "avd": "SM-F766N (physical)",
+  "serial": "R3KL100KETB",
+  "physical_device": true,
+  "api": 37,
+  "android_release": "17",
+  "model": "SM-F766N",
+  "abi": "arm64-v8a",
+  "build_fingerprint": "samsung/b7sksx/b7s:17/CP2A.260605.016/F766NKSUCCZIH_OKRCCZIH:user/release-keys",
+  "host": {
+    "model": "Apple M2 Pro",
+    "cpus": "12",
+    "os": "26.6.2",
+    "loadavg_at_summary": "{ 6.54 6.46 6.58 }"
+  },
+  "sdk_version": "0.3.0",
+  "git_revision": "049f7ed (dirty)",
+  "parameters": {
+    "startup_runs_per_variant": 20,
+    "burst_runs_per_variant": 10,
+    "burst_track_calls": 500,
+    "idle_seconds_before_pss": 5,
+    "warmup_launches_per_variant_not_counted": 2
+  },
+  "variants": {
+    "sdk": {
+      "application_id": "local.signaldock.consumer",
+      "apk_bytes": 645055,
+      "apk_download_bytes": 571991,
+      "dex_files": 1,
+      "dex_bytes": 986140,
+      "dex_compressed_bytes": 471083,
+      "apk_sha256": "8c6dbc85a11949f5d2d4235a4f27a4a9398d22171913ecba8d761a4cbe677ea8",
+      "mapping_sha256": "973b3e71149493f8ea13dcc696c69f7dee1adb509f200806130e55e0018938a5",
+      "r8": "9.3.28"
+    },
+    "nosdk": {
+      "application_id": "local.signaldock.consumer.nosdk",
+      "apk_bytes": 21606,
+      "apk_download_bytes": 17263,
+      "dex_files": 1,
+      "dex_bytes": 3012,
+      "dex_compressed_bytes": 1591,
+      "apk_sha256": "cf8fba9176e7c2afe27c7c74111dc532480ad36fd8310255225d102439eb012f",
+      "mapping_sha256": "54b54c4e68ef7e3d399860409121d047e9a3ac23caa8f3d8a8e94f2954f870b1",
+      "r8": "9.3.28"
+    }
+  }
+}

@@ -1,6 +1,6 @@
 # SignalDock architecture onepager content
 
-Baseline: 2026-10-09, Q127. Updated for SDK 0.3.0: 2026-10-21 UTC. The product is implemented. No physical-device measurement or process-boundary script run (the instrumented tests ran once on a physical device, [issue 73](../../.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md)), and the 216-run server matrix was not run (Q133, ADR-0013).
+Baseline: 2026-10-09, Q127. Updated for SDK 0.3.0: 2026-10-21 UTC. The product is implemented. No process-boundary script run, no release (R8) or Baseline Profile run on a physical device (one phone ran the instrumented tests, the debug device measurement, and the host-app cost with SDK 0.3.0, [issue 85](../../.scratch/signaldock/issues/85-device-verification-v0.3.0.md); the instrumented tests also ran with 0.2.0 code, [issue 73](../../.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md)), and the 216-run server matrix was not run (Q133, ADR-0013).
 
 ## Summary
 
@@ -107,7 +107,7 @@ The server may commit even if the HTTP response is lost. Retry with the same ID 
 
 ### How was the design verified?
 
-Runs cover 1,000 offline events and process restart, ACK loss after commit, conflicts, partial rejections, ambiguous ACKs, concurrent senders, cancellation, capacity, backup exclusions, contract drift, migrations, and an independent R8 consumer app. The evidence is in issues 20 to 24, 33, 36, and 40. Gap: no physical-device measurement or process-boundary script run (the instrumented tests ran once on a physical device, [issue 73](../../.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md)), and the 216-run server matrix was not run (Q133, ADR-0013).
+Runs cover 1,000 offline events and process restart, ACK loss after commit, conflicts, partial rejections, ambiguous ACKs, concurrent senders, cancellation, capacity, backup exclusions, contract drift, migrations, and an independent R8 consumer app. The evidence is in issues 20 to 24, 33, 36, and 40. Gap: no process-boundary script run, no release (R8) or Baseline Profile run on a physical device (one phone ran the instrumented tests, the debug device measurement, and the host-app cost with SDK 0.3.0, [issue 85](../../.scratch/signaldock/issues/85-device-verification-v0.3.0.md); the instrumented tests also ran with 0.2.0 code, [issue 73](../../.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md)), and the 216-run server matrix was not run (Q133, ADR-0013).
 
 ## Deliverables and verification status
 
@@ -116,7 +116,7 @@ Runs cover 1,000 offline events and process restart, ACK loss after commit, conf
 - Functional evidence is recorded in issues 20 to 22. Each run records the environment, source revision or alternative source hash, and ID reconciliation.
 - Performance was measured on emulators and one Mac (issues 23, 24, 36). Android track p50/p95, queue drain, file size, and memory are separate from server HTTP latency. Direct HTTP load does not measure SDK performance.
 - Server baseline (not run, Q133): 24 conditions × pool sizes 2/4/8 × 3 repeats = 216 runs. Two pilots and one overload run replaced it. Each run has 1 minute of warmup and 5 minutes of measurement: at least 21 hours 36 minutes of automated runtime before setup and recovery. 100 events/s is the target input rate; ACK p95 ≤ 500 ms is the acceptance target. Neither is an SLA.
-- Open items: no physical-device measurement or process-boundary script run (the instrumented tests ran once on a physical device, [issue 73](../../.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md)). The 216-run matrix was not run. No deterministic test covers a cancel during `COMMIT` (issue 22).
+- Open items: no process-boundary script run, no release (R8) or Baseline Profile run on a physical device (one phone ran the instrumented tests, the debug device measurement, and the host-app cost with SDK 0.3.0, [issue 85](../../.scratch/signaldock/issues/85-device-verification-v0.3.0.md); the instrumented tests also ran with 0.2.0 code, [issue 73](../../.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md)). The 216-run matrix was not run. No deterministic test covers a cancel during `COMMIT` (issue 22).
 
 ## Local sources
 

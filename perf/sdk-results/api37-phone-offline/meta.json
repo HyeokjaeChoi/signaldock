@@ -1,0 +1,24 @@
+{
+  "scenario": "offline",
+  "run_id": "r20261024134422offline",
+  "completed_phases": true,
+  "started_utc": "2026-10-24T13:44:22Z",
+  "ended_utc": "2026-10-24T13:45:48Z",
+  "avd": "SM-F766N (physical)",
+  "serial": "R3KL100KETB",
+  "physical_device": true,
+  "build_type": "debug",
+  "build": "debug androidTest APK: SDK library debug variant, debuggable, no R8/minify (ADR-0014)",
+  "server": {
+    "stack": "Docker Compose, real Ktor server + PostgreSQL 17.6, default product settings, project separate from the default stack",
+    "path": "device -> 127.0.0.1 (adb reverse) -> fault-proxy (pass mode) -> 127.0.0.1 -> server container"
+  },
+  "host": {
+    "model": "Apple M2 Pro",
+    "cpus": "12",
+    "os": "26.6.2",
+    "loadavg_before": "{ 19.96 10.47 6.89 }",
+    "loadavg_after": "{ 11.12 10.43 7.26 }"
+  },
+  "git_revision": "049f7ed"
+}

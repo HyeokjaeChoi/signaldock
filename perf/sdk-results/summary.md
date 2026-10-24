@@ -1,6 +1,6 @@
 # SDK device measurement summary (issue 24)
 
-Measured in this environment (emulators, Compose server on one Mac). Not an SLA. A run that missed the target injection rate is `invalid`, never `pass` (spec section 7). One run per AVD, build type and scenario. Method and criteria: ADR-0014 (debug) and ADR-0018 (release, R8). Release rows: API 37 emulator, system image `google_apis_ps16k` (arm64-v8a, Google APIs without Google Play); each run section below names the device, Android release and API level.
+Measured in this environment (emulators, Compose server on one Mac; rows with `(physical)` in the AVD column ran on a personal phone, ADR-0042). Not an SLA. A run that missed the target injection rate is `invalid`, never `pass` (spec section 7). One run per AVD, build type and scenario. Method and criteria: ADR-0014 (debug) and ADR-0018 (release, R8). Release rows: API 37 emulator, system image `google_apis_ps16k` (arm64-v8a, Google APIs without Google Play); each run section below names the device, Android release and API level.
 
 | AVD | Build | Scenario | Verdict | Target / actual events/s | Max in flight | track() p50 / p95 / max ms | Not ok | Missing / dup rows | Drain s | queue.db + wal + shm bytes (after drain) | PSS delta KiB |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -10,6 +10,9 @@ Measured in this environment (emulators, Compose server on one Mac). Not an SLA.
 | signaldock-api37 | debug | burst | pass | 100 / 99.99 | 4 | 0.85 / 2.29 / 52.14 | 0 | 0 / 0 | 0.06 | 36864 + wal 502672 + shm 32768 | 2702 |
 | signaldock-api37 | debug | normal | pass | 1 / 1.0 | 1 | 1.58 / 2.23 / 20.52 | 0 | 0 / 0 | 2.02 | 36864 + wal 424392 + shm 32768 | 2008 |
 | signaldock-api37 | debug | offline | pass | back to back / 888.31 | 1 | 0.85 / 2.7 / 24.42 | 0 | 0 / 0 | 16.57 | 479232 + wal 523272 + shm 32768 | 3498 |
+| SM-F766N (physical) | debug | burst | pass | 100 / 100.03 | 8 | 9.02 / 18.02 / 93.16 | 0 | 0 / 0 | 0.15 | 69632 + wal 453232 + shm 32768 | 4195 |
+| SM-F766N (physical) | debug | normal | pass | 1 / 1.0 | 1 | 32.22 / 48.15 / 82.38 | 0 | 0 / 0 | 2.19 | 45056 + wal 432632 + shm 32768 | 3412 |
+| SM-F766N (physical) | debug | offline | pass | back to back / 96.1 | 1 | 9.64 / 16.48 / 74.45 | 0 | 0 / 0 | 69.72 | 266240 + wal 486192 + shm 32768 | 4383 |
 | signaldock-api37 | release | burst | pass | 100 / 99.99 | 1 | 0.41 / 0.95 / 4.86 | 0 | 0 / 0 | 0.07 | 36864 + wal 440872 + shm 32768 | 3369 |
 | signaldock-api37 | release | normal | pass | 1 / 1.0 | 1 | 0.77 / 0.95 / 4.13 | 0 | 0 / 0 | 1.47 | 36864 + wal 424392 + shm 32768 | 1470 |
 | signaldock-api37 | release | offline | pass | back to back / 2082.08 | 1 | 0.32 / 1.21 / 5.78 | 0 | 0 / 0 | 17.92 | 622592 + wal 506792 + shm 32768 | 2879 |
@@ -87,6 +90,42 @@ Offline row: track() numbers are the offline store phase (endpoint unreachable, 
 - Files (bytes): {'after_store': {'installation-id': 36, 'queue.db': 1445888, 'queue.db-shm': 32768, 'queue.db-wal': 449112}, 'after_drain': {'installation-id': 36, 'queue.db': 479232, 'queue.db-shm': 32768, 'queue.db-wal': 523272}}.
 - Memory (KiB): {'store_process': {'pss_after_init_to_after_store': 3498, 'heap_after_init_to_after_store': -112}, 'drain_process': {'pss_before_init_to_after_drain': 1238, 'heap_before_init_to_after_drain': 464}, 'pss_absolute': {'store_after_store': 42239, 'drain_after_drain': 40603}}.
 - Host: Apple M2 Pro, 12 CPUs, load average before { 6.90 6.00 6.29 }, after { 7.05 6.11 6.33 }. Run 2026-10-12T16:35:33Z to 2026-10-12T16:35:55Z, git 3e7d160 (dirty).
+
+### SM-F766N (physical) (API 37) - burst, debug build: **pass**
+
+- Device: samsung SM-F766N, Android 17 (API 37), arm64-v8a. Build: debug androidTest APK: SDK library debug variant, debuggable, no R8/minify (ADR-0014).
+- Injection: target 100 events/s, actual 100.03 events/s over 9.99 s (1000 of 1000 calls); max calls in flight 8; start lateness {'p95': 3.4, 'max': 14.9}; event size 1022 bytes.
+- track() completion (ms): p50 9.02, p95 18.02, max 93.16 (n=1000).
+- Errors: track() not ok 0; SDK WARN/ERROR lines 0; last delivery error None.
+- Reconciliation with server DB: tracked ok 1000, server rows 1000, missing 0, not tracked 0, duplicate rows 0; sent on the wire 1000 events in 89 batches, IDs sent more than once 0, batches not 200: 0, ACK statuses {'accepted': 1000}.
+- Queue drain: {'seconds': 0.15, 'queued_after': 0, 'queued_at_injection_end': 13}.
+- Files (bytes): {'at_injection_end': {'installation-id': 36, 'queue.db': 69632, 'queue.db-shm': 32768, 'queue.db-wal': 453232}, 'after_drain': {'installation-id': 36, 'queue.db': 69632, 'queue.db-shm': 32768, 'queue.db-wal': 453232}}.
+- Memory (KiB): {'pss_after_init_to_injection_end': 20923, 'pss_after_init_to_after_drain': 4195, 'heap_after_init_to_after_drain': 1036, 'pss_absolute': {'before_init': 36828, 'after_init': 36195, 'injection_end': 57118, 'after_drain': 40390}}.
+- Host: Apple M2 Pro, 12 CPUs, load average before { 11.12 10.43 7.26 }, after { 9.63 10.13 7.20 }. Run 2026-10-24T13:45:49Z to 2026-10-24T13:46:02Z, git 049f7ed.
+
+### SM-F766N (physical) (API 37) - normal, debug build: **pass**
+
+- Device: samsung SM-F766N, Android 17 (API 37), arm64-v8a. Build: debug androidTest APK: SDK library debug variant, debuggable, no R8/minify (ADR-0014).
+- Injection: target 1 events/s, actual 1.0 events/s over 59.0 s (60 of 60 calls); max calls in flight 1; start lateness {'p95': 4.9, 'max': 6.6}; event size 1024 bytes.
+- track() completion (ms): p50 32.22, p95 48.15, max 82.38 (n=60).
+- Errors: track() not ok 0; SDK WARN/ERROR lines 0; last delivery error None.
+- Reconciliation with server DB: tracked ok 60, server rows 60, missing 0, not tracked 0, duplicate rows 0; sent on the wire 60 events in 11 batches, IDs sent more than once 0, batches not 200: 0, ACK statuses {'accepted': 60}.
+- Queue drain: {'seconds': 2.19, 'queued_after': 0, 'queued_at_injection_end': 5}.
+- Files (bytes): {'at_injection_end': {'installation-id': 36, 'queue.db': 45056, 'queue.db-shm': 32768, 'queue.db-wal': 432632}, 'after_drain': {'installation-id': 36, 'queue.db': 45056, 'queue.db-shm': 32768, 'queue.db-wal': 432632}}.
+- Memory (KiB): {'pss_after_init_to_injection_end': 6940, 'pss_after_init_to_after_drain': 3412, 'heap_after_init_to_after_drain': 260, 'pss_absolute': {'before_init': 36653, 'after_init': 35525, 'injection_end': 42465, 'after_drain': 38937}}.
+- Host: Apple M2 Pro, 12 CPUs, load average before { 12.41 7.21 5.55 }, after { 19.96 10.47 6.89 }. Run 2026-10-24T13:43:17Z to 2026-10-24T13:44:20Z, git 049f7ed.
+
+### SM-F766N (physical) (API 37) - offline, debug build: **pass**
+
+- Device: samsung SM-F766N, Android 17 (API 37), arm64-v8a. Build: debug androidTest APK: SDK library debug variant, debuggable, no R8/minify (ADR-0014).
+- Injection: target back to back events/s, actual 96.1 events/s over 10.4 s (1000 of 1000 calls); max calls in flight 1; start lateness None; event size 1026 bytes.
+- track() completion (ms): p50 9.64, p95 16.48, max 74.45 (n=1000).
+- Errors: track() not ok 0; SDK WARN/ERROR lines 0; last delivery error NETWORK.
+- Reconciliation with server DB: tracked ok 1000, server rows 1000, missing 0, not tracked 0, duplicate rows 0; sent on the wire 1000 events in 20 batches, IDs sent more than once 0, batches not 200: 0, ACK statuses {'accepted': 1000}.
+- Queue drain: {'seconds': 69.72, 'queued_after': 0, 'queued_at_injection_end': 1000, 'persisted_retry_wait_at_start_s': 30.8, 'seconds_after_retry_wait': 38.96}.
+- Files (bytes): {'after_store': {'installation-id': 36, 'queue.db': 1433600, 'queue.db-shm': 32768, 'queue.db-wal': 432632}, 'after_drain': {'installation-id': 36, 'queue.db': 266240, 'queue.db-shm': 32768, 'queue.db-wal': 486192}}.
+- Memory (KiB): {'store_process': {'pss_after_init_to_after_store': 4383, 'heap_after_init_to_after_store': -28}, 'drain_process': {'pss_before_init_to_after_drain': 1356, 'heap_before_init_to_after_drain': 588}, 'pss_absolute': {'store_after_store': 40056, 'drain_after_drain': 38207}}.
+- Host: Apple M2 Pro, 12 CPUs, load average before { 19.96 10.47 6.89 }, after { 11.12 10.43 7.26 }. Run 2026-10-24T13:44:22Z to 2026-10-24T13:45:48Z, git 049f7ed.
 
 ### signaldock-api37 (API 37) - burst, release build: **pass**
 
