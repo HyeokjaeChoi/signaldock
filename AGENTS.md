@@ -50,5 +50,4 @@ When a mistake or the same kind of review finding repeats, add a check to `scrip
 - Before you edit or review files in an area, read the sections that `docs/design-index.md` lists for it.
 - Before you explore code or design the domain, read `docs/agents/domain.md` (start with one domain context).
 - Before you create or read an issue, or evaluate or change its status (local Markdown files), read `docs/agents/issue-tracker.md` and `docs/agents/triage-labels.md`.
-- At every release, and when docs may have drifted from the code, run the `update-internal-docs` skill (`.claude/skills/update-internal-docs/SKILL.md`).
-- After a batch of merges, run the `signaldock-stale-cleanup` skill (`.claude/skills/signaldock-stale-cleanup/SKILL.md`).
+- At every release and after a batch of merges, check the Markdown docs against the code. Before you do, read `docs/agents/doc-audit.md`.
