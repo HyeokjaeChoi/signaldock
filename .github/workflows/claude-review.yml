@@ -1,0 +1,61 @@
+# Claude Code reviews each PR against the design sources (ADR-0041).
+# Needs the repository secret CLAUDE_CODE_OAUTH_TOKEN (`claude setup-token`).
+name: claude-review
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+
+permissions: {}
+
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    # Fork PRs get no secrets; Dependabot and Renovate PRs only bump versions; drafts are not ready.
+    if: >-
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
+      github.event.pull_request.user.login != 'renovate[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 1
+
+      - uses: anthropics/claude-code-action@16f9f71ab9c490faf367f94dd294897edc25be33 # v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Review this pull request. The PR branch is checked out in the working directory.
+            Review against the design sources, not your own taste: read AGENTS.md, then the
+            sections that docs/design-index.md lists for each changed area.
+            Look for bugs, security problems, broken contracts, and changes that disagree
+            with an ADR, the spec, or architecture.md.
+
+            Report a defect only if you can name the input or sequence that fails. Do not report
+            what scripts/check-repo-rules.sh, scripts/verify-contract.sh, detekt, or shellcheck
+            already check. Do not suggest anything listed under "Rejected alternatives" in
+            docs/design-index.md. Skip style. If the diff gives no evidence, ask a question.
+            Do not review generated/**, **/gradle/wrapper/**, or package-lock.json files; they
+            are never hand-edited.
+
+            For each finding give: the defect, one failure scenario, the design source section
+            (or "no design source"), a severity (Critical, Major, Minor, or Nit), and your
+            confidence.
+            Use `mcp__github_inline_comment__create_inline_comment` (with `confirmed: true`)
+            for findings on a line. Use `gh pr comment` once for a short summary.
+            If you find nothing, say so in the summary. Only post GitHub comments.
+          claude_args: |
+            --model sonnet
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,Glob,Grep"
