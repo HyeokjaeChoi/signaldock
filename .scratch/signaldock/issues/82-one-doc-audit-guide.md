@@ -1,9 +1,9 @@
 # 82. Replace the two doc skills with one doc-audit guide
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: In progress (branch docs/one-doc-audit-guide)
+Execution: Done (PR #201, 2026-10-24 UTC)
 
 ## Scope and completion criteria
 
