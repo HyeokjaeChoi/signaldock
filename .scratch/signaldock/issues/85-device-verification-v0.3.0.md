@@ -1,9 +1,9 @@
 # 85. Device verification of SDK 0.3.0 on a physical phone
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: In progress (branch records/device-verification-v0.3.0)
+Execution: Done (PR #204, 2026-10-24 UTC)
 
 ## Scope and completion criteria
 
