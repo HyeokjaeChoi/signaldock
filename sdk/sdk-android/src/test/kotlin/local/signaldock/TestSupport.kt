@@ -29,7 +29,8 @@ internal val context: Context get() = ApplicationProvider.getApplicationContext(
 internal val testConfig = SignalDockConfig(endpoint = "http://localhost:8080", collectionKey = "test-key", allowInsecureEndpoint = true)
 
 internal class FakeLogger : Logger {
-    val warnings = mutableListOf<String>()
+    /** Thread-safe: SDK calls on many threads log at the same time (`CrashSafetyTest`). */
+    val warnings: MutableList<String> = CopyOnWriteArrayList()
     override fun debug(msg: String) {}
     override fun warn(msg: String) { warnings += msg }
     override fun error(msg: String) { warnings += msg }
