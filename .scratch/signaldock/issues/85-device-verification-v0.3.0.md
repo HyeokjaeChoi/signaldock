@@ -41,6 +41,10 @@ Emulator rows: `perf/sdk-results/api37-*/` (2026-10-12, commits `5b369f4`, `3e7d
 | Host cost: PSS delta after 500 `track()`, median KiB | 16532.5 | 27495.5 |
 | Host cost: APK delta bytes | +616829 | +623449 |
 
+### Test counts
+
+Gradle prints "Starting 33 tests" and, at the end, "Finished 49 tests". The XML report and the progress counter (`N/33`) have 33 test cases in all: 17 passed and 16 skipped. The log has 16 `SKIPPED` lines. So 49 is most likely 33 plus the 16 skipped counted a second time (inferred from the sums; Gradle's source was not read). Use the XML count. Issue 73 used 49 and wrote "33 ran and passed"; that was wrong, and issue 73 carries a correction (issue 86).
+
 ### Reading the numbers
 
 - `track()` is a suspend function: the caller waits for it in a coroutine (integration guide section 3). Its time is the wait for the durable commit to the queue. On the phone it is about 10 to 20 times the emulator time. The likely causes are flash write cost under `synchronous=FULL` and CPU idle states (the 1-per-second `normal` scenario is slower per call than `burst`). Gap: this was not measured further.
