@@ -40,7 +40,7 @@ When a mistake or the same kind of review finding repeats, add a check to `scrip
 2. Build what the design sources say. If you must make a new decision, record it in an ADR in the same PR and name it in the PR description. Implementers do not write review rules.
 3. One purpose per PR. Work outside it, such as new hooks, CI, or review setup, goes in a separate PR.
 4. A PR description states what changed, which design sections it follows, and the exact verification commands and results. Never label a step verified without a run.
-5. CodeRabbit reviews against the design sources with no session context (`.coderabbit.yaml`). Answer each finding in one way: fix the code; fix the design source in the same PR; add a check to `scripts/check-repo-rules.sh` or `scripts/verify-contract.sh`; or reject it and cite the design source section. Learnings only calibrate CodeRabbit; do not rely on them for design facts.
+5. CodeRabbit (`.coderabbit.yaml`) and Claude Code (`.github/workflows/claude-review.yml`, ADR-0041) review against the design sources with no session context. Answer each finding in one way: fix the code; fix the design source in the same PR; add a check to `scripts/check-repo-rules.sh` or `scripts/verify-contract.sh`; or reject it and cite the design source section. Learnings only calibrate CodeRabbit; do not rely on them for design facts.
 6. Collect all findings of one review round, fix them together, push once, then request one `@coderabbitai full review`.
 7. Merge when no Critical or Major finding is open and all checks pass. Record each open Minor or lower finding as a local issue, link it in the PR, and do not hold the merge for it.
 

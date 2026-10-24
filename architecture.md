@@ -224,6 +224,7 @@ Record the environment, source revision/hash, fixtures, actual request rate, err
 | Gradle dependency verification with SHA-256 checksums | Checksums are trust on first use; each Renovate Gradle PR needs `scripts/update-gradle-verification.sh` run by hand | [ADR-0038](docs/adr/0038-gradle-dependency-verification.md) |
 | Build provenance attestation for the release ZIP | Two more permissions and one more third-party action on the `publish` job; it proves the builder, not that the code is safe | [ADR-0039](docs/adr/0039-release-provenance-attestation.md) |
 | Baseline Profile shipped in the SDK AAR | Regenerate by hand on an emulator after hot-path changes; the gain is not proved on the emulator | [ADR-0040](docs/adr/0040-sdk-baseline-profile.md) |
+| Claude Code reviews each PR next to CodeRabbit | One Sonnet run per push on the owner's subscription; the job fails until the `CLAUDE_CODE_OAUTH_TOKEN` secret is set | [ADR-0041](docs/adr/0041-claude-code-pr-review.md) |
 | Server marks events against an optional tracking plan | The status is fixed at ingest; old rows and no-plan servers have none; no hot reload | [ADR-0022](docs/adr/0022-server-tracking-plan-status.md) |
 | Direct SQL and aggregation at query time | Measure query cost, indices, and DB waits | [Performance plan](.scratch/signaldock/performance-plan.md) |
 | SDK verification Dashboard | Prioritize receipt lists and details over analytics features | [Dashboard defaults](.scratch/signaldock/dashboard-verification-defaults.md) |
