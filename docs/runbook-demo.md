@@ -386,6 +386,8 @@ sudo fail2ban-client status signaldock-nginx-auth      # Currently banned: 1, wi
 sudo fail2ban-client set signaldock-nginx-auth unbanip <ip>
 ```
 
+To see bans: `sudo fail2ban-client status signaldock-nginx-auth` (banned IPs) and `sudo nft list ruleset | grep -A3 f2b` (the nftables set).
+
 Record the output in the PR description.
 
 **Trivy.** `demo-deploy` builds both images into the runner's local Docker store, scans them, and pushes only if both scans pass (`--ignore-unfixed --severity CRITICAL,HIGH --exit-code 1`, Trivy v0.76.1). Findings without a fix do not fail the job. If a scan fails because of a fixable finding: update the base image digest (Renovate does it too), merge, and push a new tag. Do not add a `.trivyignore` without a reason for each entry. The tag that failed pushed nothing, so its name is free to use again.
