@@ -29,7 +29,7 @@ The demo ([ADR-0043](0043-cloud-demo-hosting-and-deploy.md)) is on the public in
 - Read-only containers and `noexec` mounts can break the JVM or nginx at start. Ticket 03 must test this locally.
 - Detection is thin: no Falco, no audit trail ([ADR-0044](0044-cloud-demo-operation-replaces-adr-0028.md)).
 - Automatic OS upgrades can restart services. This is accepted.
-- `docker-compose.yml` for local use does not change.
+- Local `docker-compose.yml` changes only in the Dashboard image (`nginxinc/nginx-unprivileged`) and container port (80 to 8080, host port unchanged), because the unprivileged image cannot bind port 80.
 
 ## Rejected alternatives
 

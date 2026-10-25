@@ -34,7 +34,7 @@ Each decision goes into an ADR in PR 1 (section 5). ADR-0028 "Revisit when" is n
 | Path | Content |
 | --- | --- |
 | `infra/terraform/` | GCP VM (no `service_account` block), firewall, static IP, Cloudflare record, cloud-init |
-| `infra/compose.demo.yml` | Override: GHCR images by `DEMO_TAG`, D12 container settings. `docker-compose.yml` for local use does not change. |
+| `infra/compose.demo.yml` | Override: GHCR images by `DEMO_TAG`, D12 container settings. Local `docker-compose.yml` changes only in the Dashboard image (`nginxinc/nginx-unprivileged`) and container port (80 to 8080, host port unchanged), because the unprivileged image cannot bind port 80. |
 | `infra/nginx/` | Host nginx: TLS, D2 limits, D1 basic auth, D11 log format, `/deployed.txt` without auth |
 | `infra/vm/` | `deploy.sh` and its timer, the reset script and its timer, the `DOCKER-USER` unit, GoAccess timer, fail2ban jail |
 | `.github/workflows/demo-deploy.yml` | D9 image build and push, wait for `/deployed.txt` |
