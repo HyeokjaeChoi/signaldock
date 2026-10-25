@@ -11,6 +11,7 @@ provider "cloudflare" {}
 
 locals {
   vm_tag = "signaldock-demo"
+  fqdn   = "${var.record_name}.stack-line.dev"
 }
 
 # A dedicated network. The project's "default" network has default-allow-ssh and
@@ -89,7 +90,7 @@ resource "google_compute_instance" "demo" {
 # Proxy off: host nginx must see the client IP for the per-IP limits (ADR-0043 item 3).
 resource "cloudflare_dns_record" "demo" {
   zone_id = var.cloudflare_zone_id
-  name    = var.record_name
+  name    = local.fqdn
   type    = "A"
   content = google_compute_address.demo.address
   ttl     = 300

@@ -42,7 +42,9 @@ terraform -chdir=infra/terraform plan -var cloudflare_zone_id="$ZONE_ID"
 terraform -chdir=infra/terraform apply -var cloudflare_zone_id="$ZONE_ID"
 ```
 
-Read the plan: 7 resources (network, subnet, address, two firewall rules, instance, DNS record). The instance must have no `service_account` block, the record `proxied = false`, and port 22 only from `35.235.240.0/20`.
+Read the plan: 7 resources (network, subnet, address, two firewall rules, instance, DNS record). The instance must have no `service_account` block, the record `proxied = false`, and port 22 only from `35.235.240.0/20`. The DNS record name is the full name (`signaldock.stack-line.dev`).
+
+After apply, run the plan again: `terraform -chdir=infra/terraform plan -var cloudflare_zone_id="$ZONE_ID"` must show "No changes". Any diff on the DNS record means drift.
 
 State is local (`infra/terraform/terraform.tfstate`, git-ignored). Keep a copy outside the repo: without it `terraform destroy` cannot find the resources.
 

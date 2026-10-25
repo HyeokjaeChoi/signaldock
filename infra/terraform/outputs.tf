@@ -3,7 +3,7 @@ output "ip" {
 }
 
 output "url" {
-  value = "https://${var.record_name}.stack-line.dev"
+  value = "https://${local.fqdn}"
 }
 
 output "ssh" {
