@@ -10,11 +10,11 @@ The demo ([ADR-0043](0043-cloud-demo-hosting-and-deploy.md)) is on the public in
 
 - The threat model ([threat-model.md](../engineering/threat-model.md)) assumed a local stack. A public host adds scans, floods, and the cloud metadata server at `169.254.169.254`.
 - The VM has no service account (ADR-0043 item 2). The metadata block is an extra layer.
-- Gap: none of this is built or verified. Spec section 7 lists open facts: the `DOCKER-USER` rule must match compose bridges (no `-i docker0`) and needs IPv6 and reboot handling; the `nginx-unprivileged` user and port; the JVM with `noexec` on `/tmp`; compose `internal: true` and `pids_limit`.
+- Status: the container part (items 1, 2, 4) is in `infra/compose.demo.yml` and was verified locally in ticket 03: nginx-unprivileged runs as uid 101 on port 8080; the JVM starts with `noexec` `/tmp` and a read-only root; `internal: true` blocks the Dashboard from the DB; `pids_limit` applies. The `DOCKER-USER` rule (item 3) and the rest are still to build (tickets 04, 07). Spec section 7 lists the open facts for them: the rule must match compose bridges (no `-i docker0`) and needs IPv6 and reboot handling.
 
 ## Decision
 
-1. Containers run as non-root, with `cap_drop: ALL`, `no-new-privileges`, `read_only` with tmpfs, and memory, pids, and CPU limits (`infra/compose.demo.yml`, planned in ticket 03).
+1. Containers run as non-root, with `cap_drop: ALL`, `no-new-privileges`, `read_only` with tmpfs, and memory, pids, and CPU limits (`infra/compose.demo.yml`).
 2. PostgreSQL is on an `internal: true` network with the server only.
 3. A `DOCKER-USER` rule drops container traffic to `169.254.169.254`. A systemd unit keeps it.
 4. The JVM uses `-XX:MaxRAMPercentage`.
@@ -29,7 +29,7 @@ The demo ([ADR-0043](0043-cloud-demo-hosting-and-deploy.md)) is on the public in
 - Read-only containers and `noexec` mounts can break the JVM or nginx at start. Ticket 03 must test this locally.
 - Detection is thin: no Falco, no audit trail ([ADR-0044](0044-cloud-demo-operation-replaces-adr-0028.md)).
 - Automatic OS upgrades can restart services. This is accepted.
-- `docker-compose.yml` for local use does not change.
+- Local `docker-compose.yml` changes only in the Dashboard image (`nginxinc/nginx-unprivileged`) and container port (80 to 8080, host port unchanged), because the unprivileged image cannot bind port 80.
 
 ## Rejected alternatives
 

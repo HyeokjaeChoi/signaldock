@@ -1,6 +1,6 @@
 # 03. Container hardening for the demo stack
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: 01
 

@@ -11,8 +11,8 @@ COPY dashboard ./
 ARG VITE_SIGNALDOCK_TIME_ZONE=Asia/Seoul
 RUN npm run build
 
-FROM nginx:1.31.7-alpine3.24@sha256:892bb2152464f0c5d8972593a5f5afaf8054552580b699d95f8ff4af08c2d33d
-# The official image renders /etc/nginx/templates/*.template with the container
+FROM nginxinc/nginx-unprivileged:1.31.7-alpine3.24@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e
+# Runs as user nginx (101) and listens on 8080 (ADR-0045). Like the official image, it renders /etc/nginx/templates/*.template with the container
 # environment at start, so SIGNALDOCK_QUERY_KEY exists only in the running container.
 COPY dashboard/nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /repo/dashboard/dist /usr/share/nginx/html

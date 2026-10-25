@@ -287,9 +287,9 @@ Spec (`.scratch/signaldock/spec.md`):
 - 5. Server receipt and duplicate handling
 - Q128 to Q131 (keys), Q133 (load measurement scope), Q150 (bridges)
 
-## Cloud demo: infra/ (planned)
+## Cloud demo: `infra/` (in progress)
 
-The directory `infra/` does not exist yet. Tickets 03 to 05 of `.scratch/cloud-demo/issues/` create it: `infra/compose.demo.yml` (ticket 03), `infra/terraform/`, `infra/nginx/` (ticket 04), and `infra/vm/` (ticket 05). When the first file is committed, rename this heading to name the path in backticks; `scripts/check-repo-rules.sh` then requires a tracked file under it. The same tickets add `.github/workflows/demo-deploy.yml`, `scripts/demo-seed.py` (ticket 02), and `docs/runbook-demo.md`.
+`infra/compose.demo.yml` exists (ticket 03): the Compose override for the demo, run as `docker compose -f docker-compose.yml -f infra/compose.demo.yml`. Tickets 04 and 05 add `infra/terraform/`, `infra/nginx/`, and `infra/vm/`. The same tickets add `.github/workflows/demo-deploy.yml`, `scripts/demo-seed.py` (ticket 02), and `docs/runbook-demo.md`. The Dashboard image is `nginxinc/nginx-unprivileged` (user nginx, port 8080).
 
 ADRs:
 - ADR-0043 (`docs/adr/0043-cloud-demo-hosting-and-deploy.md`), for the VM, Terraform, DNS, tag deploy, cost, and teardown (D5 to D10)
