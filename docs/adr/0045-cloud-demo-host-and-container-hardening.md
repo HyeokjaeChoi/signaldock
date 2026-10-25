@@ -14,7 +14,7 @@ The demo ([ADR-0043](0043-cloud-demo-hosting-and-deploy.md)) is on the public in
 
 ## Decision
 
-1. Containers run as non-root, with `cap_drop: ALL`, `no-new-privileges`, `read_only` with tmpfs, and memory, pids, and CPU limits (`infra/compose.demo.yml`).
+1. Containers run as non-root, with `cap_drop: ALL`, `no-new-privileges`, `read_only` with tmpfs, and memory, pids, and CPU limits (`infra/compose.demo.yml`). The server has no CPU limit (see the amendment of 2026-10-25, CPU limit).
 2. PostgreSQL is on an `internal: true` network with the server only.
 3. A `DOCKER-USER` rule drops container traffic to `169.254.169.254`. A systemd unit keeps it.
 4. The JVM uses `-XX:MaxRAMPercentage`.
@@ -48,3 +48,7 @@ The demo ([ADR-0043](0043-cloud-demo-hosting-and-deploy.md)) is on the public in
 - **GoAccess report.** It runs every 10 minutes over 7 days of logs, with `--anonymize-ip`, no WebSocket, and no `--persist`. The VM clock must be UTC. `/reports` answers 301 without auth and leaks nothing.
 - **docker-bench-security (item 9)** is pinned to v1.6.1, commit `ba0b402ea56aafbb9a56f09cc13ee629160c58b6`.
 - **Uptime check (item 7)** is a Cloud Monitoring public check. No agent and no service account run on the VM.
+
+## Amendment 2026-10-25 (server CPU limit, owner decision)
+
+- **Item 1.** The `server` service has memory and pids limits but no CPU limit. The VM is an e2-medium with 2 shared vCPUs. With `cpus: 1.0` the cold JVM took over 500 ms for its first DB connection and the server exited. The server now may use both vCPUs. The memory limit (512m) still bounds it. `db` (`cpus: 1.0`) and `dashboard` (`cpus: 0.5`) keep their CPU limits. Flyway connect retries (PR 221) fix the start failure separately.

@@ -38,7 +38,7 @@ services:
       - /tmp:size=64m,noexec,nosuid  # JVM hsperfdata and temp files; no code runs from here
     mem_limit: 512m
     pids_limit: 256
-    cpus: 1.0
+    # No cpus: a 1.0 limit slowed the cold JVM so the first DB connection took over 500 ms (ADR-0045 amendment).
 
   dashboard:
     <<: *hardened
