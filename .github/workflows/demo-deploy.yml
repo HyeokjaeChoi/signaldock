@@ -2,7 +2,10 @@
 # A pushed tag demo-vX.Y.Z on main builds the server and Dashboard images and pushes them to GHCR with
 # GITHUB_TOKEN only. This workflow holds no cloud credential and does not deploy: the VM pulls the images
 # (infra/vm/signaldock-deploy.sh). The second job only waits until the VM reports the tag.
-# No OIDC token and no repository credentials are used. Trivy scan: ticket 07.
+# No OIDC token is requested, and no repository credentials are used.
+# Trivy (ADR-0045 item 6, ticket 07): both images are built into the local Docker store first and scanned.
+# The job fails on a CRITICAL or HIGH finding that has a fix. Only if both scans pass, the same two images
+# (the scanned ones, same digest) are pushed. A failed scan pushes nothing.
 name: demo-deploy
 
 on:
@@ -55,11 +58,12 @@ jobs:
             esac
           done
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      # load: true keeps the image in the local Docker store and pushes nothing.
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           file: server/Dockerfile
-          push: true
+          load: true
           tags: ${{ env.SERVER_IMAGE }}:${{ env.TAG }}
           # Links the package to this repository, so later pushes with GITHUB_TOKEN are allowed.
           labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
@@ -67,9 +71,31 @@ jobs:
         with:
           context: .
           file: dashboard/Dockerfile
-          push: true
+          load: true
           tags: ${{ env.DASHBOARD_IMAGE }}:${{ env.TAG }}
           labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+      # Fixable CRITICAL and HIGH findings fail the job. Findings without a fix are ignored.
+      # The Trivy version is pinned (the action's own default moves). Both scans run before any push.
+      - name: Trivy scan, server image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ env.SERVER_IMAGE }}:${{ env.TAG }}
+          version: v0.76.1
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+      - name: Trivy scan, Dashboard image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ env.DASHBOARD_IMAGE }}:${{ env.TAG }}
+          version: v0.76.1
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+      - name: Push images
+        run: |
+          docker push "$SERVER_IMAGE:$TAG"
+          docker push "$DASHBOARD_IMAGE:$TAG"
 
   # Waits for the VM timer (every 5 minutes) to pull the images. A failed deploy rolls back, so
   # deployed.txt keeps the old tag and this job times out.

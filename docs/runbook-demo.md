@@ -1,6 +1,6 @@
 # Runbook: cloud demo
 
-Sections 1 to 8: setup by the owner (spec section 4, steps 1 to 4). Sections 9 to 17 (ticket 05): VM scripts, tag ruleset, first tag, deploy, reset, failed deploy, rollback and Flyway, key rotation, teardown. The uptime check is added by ticket 07.
+Sections 1 to 8: setup by the owner (spec section 4, steps 1 to 4). Sections 9 to 17 (ticket 05): VM scripts, tag ruleset, first tag, deploy, reset, failed deploy, rollback and Flyway, key rotation, teardown. Sections 18 to 20 (ticket 07): report, fail2ban, Trivy, uptime check, docker-bench-security.
 
 Design: ADR-0043 (hosting), ADR-0044 (nginx, keys), ADR-0045 (hardening). Nothing here has run on a real VM yet. A command that has not run is marked "not run" in the PR description.
 
@@ -353,3 +353,79 @@ The free-trial credit ends 2027-01-16 (UTC). Do these in order.
 5. Delete the uptime check and its alert (ticket 07), and the budget alerts.
 6. Local: delete `infra/terraform/terraform.tfstate*` and your copy of it, `~/signaldock-demo-secrets` if it still exists, and `CLOUDFLARE_API_TOKEN` from any shell profile.
 7. Mark the cloud demo ADRs as ended in a docs PR if the owner wants (the ADRs say the demo ends on this date).
+
+## 18. Report, fail2ban, and Trivy (ticket 07)
+
+Files: `infra/vm/signaldock-report.{sh,service,timer}` (GoAccess), `infra/vm/fail2ban/` (filter and jail), the `/reports/` location in `infra/nginx/signaldock.conf`, and the Trivy steps in `.github/workflows/demo-deploy.yml`. A new VM gets all of it from cloud-init (`goaccess` and `fail2ban` packages, then `install.sh`).
+
+**A VM that already exists:** run `install.sh` (section 9; it installs the two packages if missing and restarts fail2ban), then update host nginx:
+
+```bash
+gcloud compute ssh signaldock-demo --zone asia-northeast3-a --tunnel-through-iap -- \
+  "sudo bash -c 'git -C /opt/signaldock/src fetch origin main && git -C /opt/signaldock/src show origin/main:infra/nginx/signaldock.conf > /etc/nginx/conf.d/signaldock.conf && nginx -t && systemctl reload nginx'"
+```
+
+**GoAccess report.** The timer runs every 10 minutes and writes `/var/www/signaldock-reports/index.html` atomically from the live log and the rotated logs (7 days). IPs are anonymized (`--anonymize-ip`: the last IPv4 octet and the last 80 bits of IPv6 become 0). There is no real-time mode and no WebSocket port. The script reads the time as `...T..:..:..+<offset>` and skips the offset, so the VM clock must be UTC. Check on the VM:
+
+```bash
+timedatectl | grep 'Time zone'                       # Etc/UTC
+sudo systemctl start signaldock-report && journalctl -u signaldock-report -n 20 --no-pager
+ls -l /var/www/signaldock-reports/index.html
+systemctl list-timers signaldock-report.timer
+```
+
+From your computer: `curl -s -o /dev/null -w '%{http_code}\n' https://signaldock.stack-line.dev/reports/` is 401; with `-u demo` it is 200. Open `https://signaldock.stack-line.dev/reports/` in a browser: the "Visitor Hostnames and IPs" panel shows addresses that end in `.0`. If the report is empty, the log format and `log_format signaldock` have drifted: compare the `--log-format` in `signaldock-report.sh` with `infra/nginx/signaldock.conf`.
+
+**fail2ban.** Jail `signaldock-nginx-auth`: 5 failed basic-auth logins within 10 minutes ban the IP for 1 hour on ports 80 and 443 (the Ubuntu default ban action, nftables). It reads the JSON access log. A line counts when the status is 401, a user name was sent (a bad password or user; a plain challenge has an empty user), and the route is not `/v1/events:batch` or `/v1/client-reports`. On those two routes basic auth is off, so a 401 comes from the server (a wrong collection key). **SDK callers with a wrong key are not banned on purpose:** the per-IP limit (429) already slows them, and a ban would hide a misconfigured SDK behind a timeout. The jail protects the Dashboard credential only (ADR-0045 item 8). Test, with a test IP that is not yours (use a second machine or a phone on mobile data; if you ban yourself, `sudo fail2ban-client unban <ip>`):
+
+```bash
+# from the test machine: 6 wrong passwords
+for i in 1 2 3 4 5 6; do curl -s -o /dev/null -w '%{http_code}\n' -u demo:wrong https://signaldock.stack-line.dev/; done
+# on the VM
+sudo fail2ban-client status signaldock-nginx-auth      # Currently banned: 1, with the test IP
+sudo fail2ban-client set signaldock-nginx-auth unbanip <ip>
+```
+
+Record the output in the PR description.
+
+**Trivy.** `demo-deploy` builds both images into the runner's local Docker store, scans them, and pushes only if both scans pass (`--ignore-unfixed --severity CRITICAL,HIGH --exit-code 1`, Trivy v0.76.1). Findings without a fix do not fail the job. If a scan fails because of a fixable finding: update the base image digest (Renovate does it too), merge, and push a new tag. Do not add a `.trivyignore` without a reason for each entry. The tag that failed pushed nothing, so its name is free to use again.
+
+## 19. Uptime check and email alert (owner only)
+
+A Cloud Monitoring uptime check calls `https://signaldock.stack-line.dev/ready` from outside. `/ready` is open in host nginx (GET only) and the server answers 200 when it is ready. Nothing is installed on the VM: no Ops Agent and no service account (the VM keeps none, ADR-0043 item 2). The check only needs the public URL and port 443 open to the internet, which it already is.
+
+Price: Google Cloud Observability lists uptime check executions at USD 0.30 per 1,000, with the first 1 million executions free (billing account level), page effective 2025-10-02: https://cloud.google.com/stackdriver/pricing. Whether the allowance is monthly is not stated in the search result I read; read the "Pricing for uptime-check execution" page and the billing report. At a 5-minute period from the default regions (about 6) a month is about 52,000 executions, well under 1 million. Alerting policies and email channels have no separate charge, as far as the pricing page shows (not verified for this project; check Billing, Reports after a week).
+
+Console, project `signaldock-demo`:
+
+1. Console, Monitoring, Uptime checks, Create uptime check.
+2. Protocol HTTPS, resource type URL, hostname `signaldock.stack-line.dev`, path `/ready`. Check frequency 5 minutes. Response validation: status code 2xx. Validate the TLS certificate: on. Regions: keep the default (at least 3). Name `signaldock-ready`.
+3. In the Alert step choose Create alert. Notification channel: Manage, Email, add your address, and select it. Condition: fail when the check fails for 5 minutes (default). Name `signaldock-ready down`.
+4. Create. Results take up to 5 minutes to show.
+
+The same with `gcloud` (not run; the alert policy is easier in the console):
+
+```bash
+gcloud config set project signaldock-demo
+gcloud services enable monitoring.googleapis.com
+gcloud monitoring uptime create signaldock-ready --resource-type=uptime-url \
+  --resource-labels=host=signaldock.stack-line.dev,project_id=signaldock-demo \
+  --protocol=https --path=/ready --period=5 --status-classes=2xx --validate-ssl=true
+```
+
+Verify: the check shows green in Monitoring, Uptime checks. Test the alert: on the VM `sudo systemctl stop nginx` (or `docker stop` the server container; the next deploy or reset restarts it), wait about 10 minutes for the email, then start it again and wait for the "recovered" email. Or use the policy page, "Send test notification" on the channel. Record both results in the PR description. Teardown (section 17, step 5) deletes the check, the policy, and the channel.
+
+## 20. docker-bench-security (owner only, once)
+
+Pinned: tag v1.6.1, commit `ba0b402ea56aafbb9a56f09cc13ee629160c58b6` (checked with `gh api repos/docker/docker-bench-security/git/ref/tags/v1.6.1` on 2026-10-25). The script reads the host and the Docker daemon and changes nothing. Run it after the stack is up (section 8), as root, on the VM:
+
+```bash
+d=$(mktemp -d) && cd "$d"
+git clone https://github.com/docker/docker-bench-security.git && cd docker-bench-security
+git checkout ba0b402ea56aafbb9a56f09cc13ee629160c58b6 && git rev-parse HEAD    # must print the same commit
+sudo sh docker-bench-security.sh -l "$d/bench.log"
+grep -E '^\[(WARN|FAIL)\]' "$d/bench.log" | sort | uniq -c | sort -rn | head -50
+tail -n 12 "$d/bench.log"                          # the score summary
+```
+
+Record: put the summary (checks, score, the list of WARN lines) in the PR description. For each WARN, either fix it if it is cheap (one setting, no new moving part), or write a local issue under `.scratch/cloud-demo/issues/` with the check number and the reason it stays open (for example "needs rootless Docker, rejected in ADR-0045"). Then copy the log to your computer and delete it on the VM (`rm -rf "$d"`). The log can hold container names and paths, so keep it out of git.

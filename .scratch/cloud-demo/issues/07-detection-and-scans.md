@@ -1,6 +1,6 @@
 # 07. Detection and scans
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: 04, 05
 
