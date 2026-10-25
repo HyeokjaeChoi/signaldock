@@ -19,4 +19,4 @@ Verification:
 - `actionlint` or the repo workflow checks, `shellcheck` on the scripts.
 - On the VM: tag `demo-v0.1.0` deploys; a tag with a failing `/ready` rolls back; a tag not on `main` is refused; the reset timer run leaves seeded data. Record the commands and results.
 
-Note: the on-VM verification items above are owner steps in `docs/runbook-demo.md` and are not run yet.
+Note: first cloud setup, 2026-10-25 UTC. Ran: `demo-v0.1.0` (run 40199532328) built, but the VM deploy failed (Flyway connection timeout on a cold JVM; no previous tag, so no rollback; tag in failed-tags; fixed in PR 221). `demo-v0.1.1` (run 40202103660) deployed: `/deployed.txt` = demo-v0.1.1, `/ready` 200. First reset: events=506 violations=28 batches=41 client_reports=6, accepted=506 duplicate_after_retry=0, "OK: reset and seeded (demo-v0.1.1)". Reboot: containers restarted, `/ready` 200. Not run: a broken tag that rolls back, and a tag not on `main` that is refused.
