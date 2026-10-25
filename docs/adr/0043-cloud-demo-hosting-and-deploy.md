@@ -56,3 +56,17 @@ On 2026-10-25 UTC the owner decided to run the server and the Dashboard on a pub
 - Terraform creates a dedicated VPC `signaldock-demo` (subnet `10.10.0.0/24`). The project's `default` network has `default-allow-ssh` and `default-allow-rdp` open to `0.0.0.0/0`; with it, "22 only from IAP" would be false.
 - SSH uses metadata keys through IAP, not OS Login, because the account is personal.
 - The first TLS certificate and each renewal use `certbot --standalone` with pre and post hooks that stop and start nginx. nginx cannot start the 443 server before the certificate exists. Cost: a few seconds of downtime about every 60 days.
+
+## Amendment 2026-10-25 (ticket 05)
+
+- Compose files and the tracking plan come from the checked-out tag (they must match the images). The deploy script itself does not: it runs from `/usr/local/sbin`. Trust: the tag must be an ancestor of `origin/main` (checked with the VM's git before any file of the tag is used), and only the owner can push tags.
+- A change in `infra/vm` reaches the VM only when the owner runs `install.sh` by hand from `origin/main`.
+- Images not pullable yet (CI still running, or packages not Public) is not a failed deploy: no change, retry on the next run. The deploy checks this with plain `docker pull` of the two app images, not `compose pull`: both services also have `build:`, and Compose can treat a missing image of such a service as "build from source".
+- Only the newest `demo-vX.Y.Z` is considered. Image cleanup keeps the current and the previous tag (rollback needs it).
+- `signaldock-disk-check.timer` runs hourly and resets early at 80 % disk use, with a 6 h guard after the last reset.
+- The seed key is read from `.env` with `grep` (the file is never sourced). The seed runs as `nobody`.
+- The reset waits on the shared lock (up to 15 min); the deploy skips when it is held.
+- Exit codes: 0 for deployed, nothing to do, skipped, or images not yet available; 1 for failed deploy, refused tag, or missing `.env`.
+- The deploy timer is `*:0/5`. The units start after `signaldock-docker-user.service`, so the metadata DROP rule exists before the stack starts.
+- The Dashboard (`127.0.0.1:5173`) is part of the health check, with the server `/ready`, in both deploy and reset. A tag with a broken Dashboard is marked failed and rolled back.
+- Flyway: an older image starts on a newer schema (tested with Flyway 13.10.0: a warning, state `Future`). After a rollback over a migration, the operator runs `signaldock-reset`.

@@ -1,6 +1,6 @@
 # 05. Tag deploy, daily reset, and runbook
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: 02, 03, 04
 

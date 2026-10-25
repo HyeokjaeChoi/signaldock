@@ -1,0 +1,12 @@
+# Daily DB reset and seed (ADR-0044 item 3). By hand: sudo systemctl start signaldock-reset
+[Unit]
+Description=SignalDock demo: reset the database and seed it
+After=docker.service signaldock-docker-user.service
+Requires=docker.service
+Wants=signaldock-docker-user.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/signaldock-reset.sh
+# lock wait (15 min) + down + up + /ready wait + seed
+TimeoutStartSec=40min

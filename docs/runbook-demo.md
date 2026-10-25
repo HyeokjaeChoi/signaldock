@@ -1,6 +1,6 @@
 # Runbook: cloud demo
 
-Part 1: setup by the owner (spec section 4, steps 1 to 4). Later parts (tag ruleset, GHCR packages, uptime check, key rotation, incidents, teardown) are added by ticket 05 and later.
+Sections 1 to 8: setup by the owner (spec section 4, steps 1 to 4). Sections 9 to 17 (ticket 05): VM scripts, tag ruleset, first tag, deploy, reset, failed deploy, rollback and Flyway, key rotation, teardown. The uptime check is added by ticket 07.
 
 Design: ADR-0043 (hosting), ADR-0044 (nginx, keys), ADR-0045 (hardening). Nothing here has run on a real VM yet. A command that has not run is marked "not run" in the PR description.
 
@@ -191,3 +191,165 @@ systemctl is-active signaldock-docker-user nginx docker
 ```
 
 Record the results in the PR description. A step you did not run is "not run".
+
+## 9. Deploy and reset scripts on the VM
+
+Files: `infra/vm/signaldock-deploy.{sh,service,timer}`, `signaldock-reset.{sh,service,timer}`, `signaldock-disk-check.{service,timer}`, and `install.sh`. The scripts run from `/usr/local/sbin`, never from the checked-out tag. The tag supplies only the Compose files and the tracking plan, because they must match its images. `install.sh` copies the scripts and units from `origin/main` and enables the three timers. It is idempotent.
+
+A new VM runs `install.sh` from cloud-init. **A VM that already exists** (created from an earlier `main`): cloud-init does not run again, so you run it by hand, once, and again whenever a PR changes `infra/vm/`:
+
+```bash
+gcloud compute ssh signaldock-demo --zone asia-northeast3-a --tunnel-through-iap -- \
+  "sudo bash -c 'git -C /opt/signaldock/src fetch origin main && git -C /opt/signaldock/src show origin/main:infra/vm/install.sh | bash'"
+systemctl list-timers 'signaldock-*'     # deploy every 5 min, reset 04:00 Asia/Seoul, disk check hourly
+```
+
+Do not re-apply Terraform for this. `cloud-init.yaml` is the instance's `user-data`; changing it makes `terraform plan` show a metadata change on the instance. By the Google provider docs, `metadata` updates in place and cloud-init does not run again, so the change does nothing on the VM. Read the plan: "update in-place" is fine, "must be replaced" is not (cancel; the VM would lose `.env` and the certificate). Not run here (no cloud access).
+
+## 10. Tag ruleset (owner only)
+
+Only the admin may create, move, or delete `demo-v*` tags. Without this, anyone with write access can deploy to the VM.
+
+GitHub, repository Settings, Rules, Rulesets, New ruleset, New tag ruleset:
+
+- Name `demo-tags`. Enforcement status: Active.
+- Bypass list: Repository admin, "Always". No other role or app.
+- Target tags: Include by pattern `demo-v*`.
+- Rules: Restrict creations, Restrict updates, Restrict deletions.
+
+Check (read only): `gh api repos/HyeokjaeChoi/signaldock/rulesets` lists `demo-tags` with `"target": "tag"` and `"enforcement": "active"`.
+
+The VM also refuses a tag that is not an ancestor of `origin/main`, so a bypass slip cannot deploy a side branch.
+
+## 11. First tag and public packages (owner only)
+
+Order matters. The VM needs the stack files on `main`, `.env`, htpasswd, and the certificate (sections 3 to 6) first.
+
+1. Check on `main`, then tag and push. Pick a version that is new; an image tag is never overwritten.
+
+   ```bash
+   git fetch origin && git tag demo-v0.1.0 origin/main && git push origin demo-v0.1.0
+   ```
+
+2. The workflow `demo-deploy` builds and pushes `ghcr.io/hyeokjaechoi/signaldock-server:demo-v0.1.0` and `signaldock-dashboard:demo-v0.1.0`. Its second job waits for `/deployed.txt`, so it fails until step 3 is done. Re-run only that job afterwards.
+3. Set both packages to **Public**. GitHub, your profile, Packages, `signaldock-server`, Package settings, Danger Zone, Change visibility, Public; then the same for `signaldock-dashboard`. **This cannot be undone.** It is safe because the images hold no secrets: `.dockerignore` excludes `.env` and `.env.*` (only `.env.example` is allowed in), and the Dashboard query key is read from the container environment at start, never at build (`dashboard/Dockerfile`). Until the packages are public, `docker pull` of the images on the VM is denied. The deploy logs a warning and tries again every 5 minutes; nothing is marked failed.
+4. If a later run fails with `permission_denied: write_package`: Package settings, Manage Actions access, add this repository with the Write role. The workflow sets the `org.opencontainers.image.source` label so the link is made on the first push; this is not verified.
+5. Wait at most 5 minutes, then check:
+
+   ```bash
+   curl -s https://signaldock.stack-line.dev/deployed.txt        # demo-v0.1.0
+   curl -s -o /dev/null -w '%{http_code}\n' https://signaldock.stack-line.dev/ready   # 200
+   ```
+
+   Then run section 8 on the VM, and a first `sudo systemctl start signaldock-reset` (section 13) so the Dashboard has data.
+
+## 12. Deploy by hand, and what a deploy does
+
+Normal path: push a tag (section 11). The timer runs `signaldock-deploy` every 5 minutes. To deploy now (for example after a fix, or to retry):
+
+```bash
+gcloud compute ssh signaldock-demo --zone asia-northeast3-a --tunnel-through-iap -- sudo systemctl start signaldock-deploy
+gcloud compute ssh signaldock-demo --zone asia-northeast3-a --tunnel-through-iap -- sudo journalctl -u signaldock-deploy -n 60 --no-pager
+```
+
+What it does, in order: take `/run/signaldock.lock` (shared with the reset; if busy it skips and the timer comes back); `git fetch --tags --force`; take the newest `demo-vX.Y.Z` by version order; stop if it equals `/opt/signaldock/current-tag` or is a line in `/opt/signaldock/failed-tags`; refuse (and list as failed) a tag that is not an ancestor of `origin/main`; check out the tag; `docker pull` of the server and Dashboard images (not `compose pull`: both services also have `build:`, and Compose can then treat a missing image as "build from source"); `up -d --no-build`; wait up to 180 s for `http://127.0.0.1:8080/ready` and the Dashboard at `http://127.0.0.1:5173/`; write `current-tag` and `/var/www/signaldock/deployed.txt` (tag only); remove dangling images and signaldock images that are neither the new nor the previous tag. It only reads `.env` through `--env-file`. A tag whose images cannot be pulled yet is not a failure (the CI build may still run); it retries on the next run.
+
+Only the newest tag is ever deployed. To go back to an older version, make a new tag on `main` that holds the older code (after a revert PR).
+
+A change to `infra/vm/` does not reach the VM with a tag: run `install.sh` (section 9).
+
+## 13. Reset (daily, by hand, and disk)
+
+The timer `signaldock-reset.timer` runs at 04:00 Asia/Seoul (`Persistent=true`: a VM that was off at that time resets at boot). It takes the same lock as the deploy and waits up to 15 minutes for a running deploy. It runs `docker compose down --volumes` (this deletes the DB volume, the only volume), `up -d --no-build` with the current tag (Flyway creates the schema), waits for `/ready`, and runs `scripts/demo-seed.py` as user `nobody` with the collection key from `.env` in its environment only. The key is never printed. The site returns 502 for about a minute.
+
+```bash
+sudo systemctl start signaldock-reset          # by hand
+sudo journalctl -u signaldock-reset -n 40 --no-pager
+systemctl list-timers 'signaldock-*'
+```
+
+Disk backstop: `signaldock-disk-check.timer` runs every hour and calls `signaldock-reset.sh --if-disk-above 80`. At 80 % of the 30 GB root disk (24 GB) it resets early. 80 % leaves 6 GB. At the highest rate one IP can reach (5 requests a second of 256 KB, about 1.3 MB a second) that is about 80 minutes, so an hourly check is just enough; and only a caller with the collection key stores anything (others get 401). The daily reset is the main control. If the last reset was less than 6 hours ago, the check does not reset again; it logs an error and fails, because the database is then not the cause. Look at `sudo docker system df`, `sudo du -xh /var/log --max-depth=1`, and `/var/log/nginx`.
+
+If the seed fails, the database is empty or partly seeded. Read the journal; `sudo systemctl start signaldock-reset` again starts from a clean volume.
+
+## 14. A failed deploy
+
+Signs: the workflow job `wait-deployed` fails after 15 minutes; `deployed.txt` shows the old tag; `systemctl status signaldock-deploy` shows `failed`.
+
+```bash
+sudo journalctl -u signaldock-deploy -n 100 --no-pager     # the reason, and the server log tail
+cat /opt/signaldock/failed-tags /opt/signaldock/current-tag
+sudo docker ps -a --format '{{.Names}} {{.Status}}'
+```
+
+What the script did: wrote the tag to `failed-tags`, then started the previous tag (`current-tag`) again. With no previous tag, the demo is down until a good tag deploys. If the log says the rollback failed too, the demo is down: read `docker compose ... logs`, fix by hand, or deploy a new good tag.
+
+To retry the same tag (the cause was outside the code, for example a full disk): remove its line and start the deploy.
+
+```bash
+sudo sed -i '/^demo-v0.2.0$/d' /opt/signaldock/failed-tags
+sudo systemctl start signaldock-deploy
+```
+
+To fix the code: merge the fix, and push a new tag with a higher version. A failed tag is never moved (the ruleset forbids it).
+
+Rollback test (owner, optional): push a normal new tag. Before the timer fires, stop the timer and run the deploy by hand with `SIGNALDOCK_TEST_FAIL_TAG` set to the new tag. The readiness wait then fails only for that tag, so the rollback to the old tag uses the normal checks. The script logs when the override is active.
+
+```bash
+sudo systemctl stop signaldock-deploy.timer
+sudo SIGNALDOCK_TEST_FAIL_TAG=demo-v0.2.0 /usr/local/sbin/signaldock-deploy.sh
+cat /opt/signaldock/failed-tags        # the new tag is listed
+curl -s https://signaldock.stack-line.dev/deployed.txt   # still the old tag
+# Retry for real: remove the tag from failed-tags, start the timer again.
+sudo sed -i '/^demo-v0.2.0$/d' /opt/signaldock/failed-tags
+sudo systemctl start signaldock-deploy.timer
+```
+
+## 15. Rollback and Flyway (spec section 7)
+
+The server runs `Flyway.configure().dataSource(dataSource).load().migrate()` with no other setting (`server/persistence/.../Database.kt`). Flyway 13.10.0 defaults apply: `validateOnMigrate` true and `ignoreMigrationPatterns` `*:future`.
+
+Checked on 2026-10-25 with the `flyway/flyway:13.10.0-alpine` image (the CLI, same defaults as the API) against PostgreSQL 17.6: apply V1 to V3, then run `migrate` and `validate` with only V1 and V2 on disk. Result: both succeed (exit 0). Flyway prints `WARNING: Schema "public" has a version (3) that is newer than the latest available migration (2) !` and `No migration necessary`; `info` shows V3 as `Future`. So an older image **starts** on a database that a newer image migrated. Flyway does not block it, and Flyway cannot undo a migration (the OSS edition has no undo).
+
+What this means for a rollback after a newer tag added a migration `V<n>`:
+
+- Whether the old code works on the new schema depends on the migration. An added table or nullable column: the old code ignores it and works. A drop, rename, type change, or new `NOT NULL` column without default: the old code can fail at run time, and `/ready` may still be 200 until it touches the table. The automatic rollback checks only `/ready`.
+- Operator action: **when the failed tag added a migration, reset instead of trusting the rollback.** The data is synthetic. After the rollback, run `sudo systemctl start signaldock-reset` (section 13): it deletes the volume, so the old image creates its own schema. The deploy log says this when it rolls back.
+- To know whether a tag added a migration: `git diff demo-v<old> demo-v<new> --stat -- server/persistence/src/main/resources/db/migration`.
+
+The Flyway check ran on the CLI image, not on the server image itself; the library default is the same. Not run: a rollback on the VM.
+
+## 16. Key rotation (owner only)
+
+One key of each kind (ADR-0044). Rotation is by hand and has downtime. The data is synthetic, so rotate by editing `.env` and resetting.
+
+```bash
+gcloud compute ssh signaldock-demo --zone asia-northeast3-a --tunnel-through-iap
+openssl rand -hex 32                                  # a new value; copy it from the terminal
+sudoedit /opt/signaldock/.env                         # replace SIGNALDOCK_COLLECTION_KEY and/or SIGNALDOCK_QUERY_KEY (and SIGNALDOCK_DB_PASSWORD with openssl rand -hex 24)
+sudo systemctl start signaldock-reset                 # recreates the stack with the new values and seeds with the new collection key
+```
+
+The two keys must differ (the server refuses to start otherwise). A new DB password only works with a new volume: PostgreSQL reads it at the first start, and the reset makes a new volume. Check afterwards: `curl -s -o /dev/null -w '%{http_code}\n' https://signaldock.stack-line.dev/ready` is 200 and the Dashboard shows data.
+
+Dashboard password (htpasswd): on your computer `printf 'demo:%s\n' "$(openssl passwd -apr1)" > htpasswd`, then copy it as in section 5 (`install -m 640 -o root -g www-data`), delete the local file, and run `sudo systemctl reload nginx`. No reset is needed.
+
+If a key leaked: rotate at once, then read the access log (`/var/log/nginx/signaldock.json`, kept 7 days) for the IPs that used it.
+
+## 17. Teardown on 2027-01-16
+
+The free-trial credit ends 2027-01-16 (UTC). Do these in order.
+
+1. Stop deploys: open a PR that deletes `.github/workflows/demo-deploy.yml` (or disables it), and merge it. Remove the README limitation that names the demo URL (ADR-0043 consequences), and keep the screenshots and the video.
+2. Delete the Cloudflare record and the cloud resources:
+
+   ```bash
+   terraform -chdir=infra/terraform destroy -var cloudflare_zone_id="$ZONE_ID"
+   ```
+
+   The plan must show 7 resources to destroy (the DNS record is one). Check in the GCP console that no instance, disk, or reserved address is left, and that billing shows no charge.
+3. GitHub: delete both GHCR packages (profile, Packages, each package, Package settings, Delete this package), delete the ruleset `demo-tags`, and delete the `demo-v*` tags (`git push origin --delete <tag>` after removing the ruleset).
+4. Cloudflare: delete the API token (My Profile, API Tokens), and confirm the record `signaldock.stack-line.dev` is gone.
+5. Delete the uptime check and its alert (ticket 07), and the budget alerts.
+6. Local: delete `infra/terraform/terraform.tfstate*` and your copy of it, `~/signaldock-demo-secrets` if it still exists, and `CLOUDFLARE_API_TOKEN` from any shell profile.
+7. Mark the cloud demo ADRs as ended in a docs PR if the owner wants (the ADRs say the demo ends on this date).
