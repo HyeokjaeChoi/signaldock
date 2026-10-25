@@ -15,7 +15,7 @@ status: accepted
 
 ## Decision
 
-1. **Dashboard access (D1).** The Dashboard is behind host nginx HTTP basic auth. There is no app login. The credentials go only to people who ask.
+1. **Dashboard access (D1).** The Dashboard is behind host nginx HTTP basic auth. There is no app login. The credentials go only to people who ask. Host nginx requires basic auth on every route except four: `POST /v1/events:batch` and `POST /v1/client-reports` (to the server; the collection key and per-IP limits apply), `GET /ready` (uptime check), and `GET /deployed.txt` (deploy check; it holds only the tag). All other paths, including every `GET /v1/*` query route and the GoAccess report, go through basic auth before the request reaches the Dashboard container. Host nginx never sends a `GET /v1/*` request to the server or the Dashboard without basic auth.
 2. **Abuse control (D2).** Host nginx sets per-IP `limit_req` and `limit_conn`, `limit_req_status 429`, `client_max_body_size`, and an `error_page` that adds `Retry-After` and a JSON body. The server 503 load shedding stays.
 3. **Reset (D3).** The demo database is reset every day at 04:00 Asia/Seoul and seeded again. A disk check is the backstop. The server has no TTL.
 4. **Demo data (D4).** `scripts/demo-seed.py` makes deterministic data (fixed RNG seed) from `tracking-plan/plan.json`, with timestamps relative to now (last 7 days, more recent events). It includes plan-violating events and client reports. It posts to `POST /v1/events:batch` on `127.0.0.1`, not through host nginx.
@@ -30,7 +30,7 @@ status: accepted
 | Access log with caller identity, audit trail | Host nginx JSON access log, 7 days, GoAccess report (item 5). | The log is not an audit trail. The IP is the only identity. After 7 days the record is gone. |
 | Minimum key length, lockout, rate limit on failed key attempts | Keys are 256-bit random values made with `openssl rand`, so guessing is impractical. The per-IP `limit_req` slows attempts (item 2). | The server has no length rule and no lockout on wrong collection or query keys (server 401). fail2ban does not watch these keys. One key of each kind. No zero-downtime rotation. No record of who read a key. |
 | Event TTL, retention job, delete function | Daily reset and seed at 04:00 Asia/Seoul, disk check as backstop (item 3). | The database grows until the next reset. Events from a day are lost at reset. There is still no delete function. |
-| Dashboard login | Host nginx basic auth (item 1). fail2ban bans IPs that fail basic auth (ADR-0045). | A shared credential. No per-user identity. Anyone with the credential reads all demo data. |
+| Dashboard login | Host nginx basic auth on all routes except the four in item 1. fail2ban bans IPs that fail basic auth (ADR-0045). | A shared credential. No per-user identity. Anyone with the credential reads all demo data. |
 
 ## Consequences
 

@@ -135,7 +135,7 @@ Gap: none of the controls below is built or verified. The section 4 rows for the
 | Threat | Planned control | Residual risk |
 | --- | --- | --- |
 | Request flood from the internet | Host nginx per-IP `limit_req` and `limit_conn`, `429` with `Retry-After`, body size cap (D2). The server 503 stays | Many IPs. One IP behind NAT shares a limit. No per-key limit |
-| Anyone reads the Dashboard | Host nginx basic auth (D1). Credentials go only to people who ask | A shared credential. No per-user identity |
+| Anyone reads the Dashboard | Host nginx basic auth (D1) on every route except `POST /v1/events:batch`, `POST /v1/client-reports`, `GET /ready`, `GET /deployed.txt`; no `GET /v1/*` without it. Credentials go only to people who ask | A shared credential. No per-user identity |
 | Disk fills, old data stays | Daily reset and seed at 04:00 Asia/Seoul, disk check (D3) | Growth until the next reset. No delete function |
 | Who called the server | Host nginx JSON access log, 7 days, GoAccess report behind basic auth (D11) | Access log, not an audit trail. The IP is the only identity |
 | Key guessing, key exposure | 256-bit random keys from `openssl rand` make guessing impractical. Per-IP `limit_req` slows attempts (D2). `/opt/signaldock/.env` mode 600, never in git, Terraform, or instance metadata (D11). fail2ban protects only the Dashboard basic-auth credential (D12) | Accepted: no lockout on wrong collection or query keys (server 401), one key of each kind, no zero-downtime rotation, no record of who read a key. The collection key is not published |
