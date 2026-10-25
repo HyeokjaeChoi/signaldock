@@ -1,8 +1,9 @@
 # 01. ADRs for the cloud demo and doc updates
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
+Execution: Done (PR #207, 2026-10-25 UTC)
 
 ## Scope and completion criteria
 

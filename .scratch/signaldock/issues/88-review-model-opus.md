@@ -15,6 +15,8 @@ On 2026-10-25 UTC the owner asked that the GitHub PR review job use `opus` inste
 Notes:
 - ADR-0041: a PR that changes `claude-review.yml` is not reviewed by the job. This PR needs the local `/code-review` and an owner review before merge.
 - `docs/agents/models.md` is in another open PR and is not edited here. Its review-job line must change to `opus` after both PRs merge.
+- PR 208 merged 2026-10-25 UTC. The first job run with opus is on the follow-up PR.
+- `docs/agents/models.md` now says opus (follow-up PR, the one that records this note).
 
 Verification:
 - `bash scripts/check-repo-rules.sh`: run on 2026-10-25 UTC. It printed no output and exited with `exit=0`.

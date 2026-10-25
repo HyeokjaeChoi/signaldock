@@ -1,8 +1,9 @@
 # 87. Record the model tier for each work step
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
+Execution: Done (PR #206, 2026-10-25 UTC)
 
 ## Scope and completion criteria
 

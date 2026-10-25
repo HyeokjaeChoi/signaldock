@@ -13,5 +13,5 @@
 - Conversational work (grilling, design interviews) cannot be delegated: a subagent returns once and cannot talk to the owner. Run the session itself on the top tier.
 - One-shot design analysis can go to a top-tier subagent while the session stays on a lower tier (Agent tool `model` parameter, or `model:` in `.claude/agents/*.md`).
 - Claude Code `opusplan` uses the top tier only in plan mode. It does not cover grilling or design in normal mode.
-- The GitHub review job `.github/workflows/claude-review.yml` uses `--model sonnet` (ADR-0041). This file does not change it.
+- The GitHub review job `.github/workflows/claude-review.yml` uses `--model opus` (ADR-0041 Amendment, 2026-10-25).
 - If the listed model fails or is not available, use the next higher tier. If a top-tier step (`opus`) fails or is not available, stop that step and report to the owner. Do not drop to a lower tier. Say so in the report.
