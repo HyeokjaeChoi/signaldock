@@ -79,7 +79,7 @@ services:
       # Read by nginx at start (templates/default.conf.template). Never a build argument.
       SIGNALDOCK_QUERY_KEY: ${SIGNALDOCK_QUERY_KEY:?set SIGNALDOCK_QUERY_KEY in .env}
     ports:
-      - "127.0.0.1:${SIGNALDOCK_DASHBOARD_PORT:-5173}:80"
+      - "127.0.0.1:${SIGNALDOCK_DASHBOARD_PORT:-5173}:8080"
     depends_on:
       - server
 

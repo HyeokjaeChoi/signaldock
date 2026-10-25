@@ -1,0 +1,56 @@
+# Demo hardening (ADR-0045, cloud-demo spec D12). An override, not a stand-alone file:
+#
+#   docker compose -f docker-compose.yml -f infra/compose.demo.yml up -d
+#
+# DEMO_TAG picks the GHCR images (default "local": `up --build` builds them from source and
+# tags them with these names). The deploy runs `pull` and then `up -d --no-build`.
+# Limits come from `docker stats` on a local run (ticket 03 PR); re-check on e2-medium.
+name: signaldock
+
+x-hardened: &hardened
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  read_only: true
+
+services:
+  db:
+    <<: *hardened
+    # Not the image default (root, then gosu): with every capability dropped gosu cannot switch user.
+    # 70 is `postgres` in the alpine image; the named volume takes its owner from the image.
+    user: "70:70"
+    networks: !override [db-net]
+    ports: !reset []  # an internal network cannot publish a port, and nothing outside needs the DB
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid
+      - /run/postgresql:size=1m,noexec,nosuid
+    mem_limit: 384m
+    pids_limit: 128
+    cpus: 1.0
+
+  server:
+    <<: *hardened
+    image: ghcr.io/hyeokjaechoi/signaldock-server:${DEMO_TAG:-local}
+    networks: [default, db-net]
+    environment:
+      # 75% of the 512m limit is heap; the rest is metaspace, threads, and buffers.
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid  # JVM hsperfdata and temp files; no code runs from here
+    mem_limit: 512m
+    pids_limit: 256
+    cpus: 1.0
+
+  dashboard:
+    <<: *hardened
+    image: ghcr.io/hyeokjaechoi/signaldock-dashboard:${DEMO_TAG:-local}
+    tmpfs:
+      # nginx-unprivileged (user nginx, 101) writes the rendered config, temp files, and the pid here.
+      - /etc/nginx/conf.d:size=1m,noexec,nosuid,uid=101
+      - /tmp:size=16m,noexec,nosuid,uid=101
+    mem_limit: 64m
+    pids_limit: 64
+    cpus: 0.5
+
+networks:
+  db-net:
+    internal: true

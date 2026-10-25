@@ -69,7 +69,7 @@ Versions were read from `npm view <pkg> version` and Docker Hub tag listings on 
 | vitest / jsdom / @testing-library/react / @testing-library/dom | 5.0.5 / 30.1.3 / 16.3.3 / 10.4.2 | Latest stable (the last is the peer of testing-library/react). `npm test`: 174 tests in 12 files |
 | @types/react, @types/react-dom / @types/node | 19.3.0 / 24.19.2 | Latest stable for each major in use; Node types follow the Node 24 line. `npm run typecheck` with TypeScript 7.0.2 |
 | Node image | `node:24.22.0-alpine3.24` @ `sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f` | Updated by Renovate PR #190 (`dashboard/Dockerfile`). `docker compose build dashboard` |
-| nginx image | `nginx:1.31.7-alpine3.24` @ `sha256:892bb2152464f0c5d8972593a5f5afaf8054552580b699d95f8ff4af08c2d33d` | Updated by Renovate PR #190. Serves the bundle and proxies `/v1/` with the key (compose run) |
+| nginx image | `nginxinc/nginx-unprivileged:1.31.7-alpine3.24` @ `sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e` | Updated by Renovate. Runs as user nginx on port 8080 (ADR-0045). Serves the bundle and proxies `/v1/` with the key (compose run) |
 | JDK images | `eclipse-temurin:21.0.12.1_1-jdk-noble` @ `sha256:10721595...e964`, `...-jre-noble` @ `sha256:35501d3f...2c4c` | Same Temurin build as the pinned JDK 21.0.12.1+1. `installDist` in the image, server started under the JRE image (full digests in the Dockerfile) |
 | PostgreSQL image | `postgres:17.6-alpine` @ `sha256:ef257d85...ee94` | Same pin the server tests and jOOQ codegen use |
 
