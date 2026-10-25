@@ -151,7 +151,9 @@ check_pins() {
     if ! echo "$ref" | grep -qE '^[^@[:space:]]+@[0-9a-f]{40}$'; then
       echo "error: $1 uses '$ref', which is not pinned by a 40-character commit SHA" >&2; fail=1
     fi
-  done < <(wf "$1" | sed -nE "s/^(.*[{,[:space:]])?[\"']?uses[\"']?[[:space:]]*:[[:space:]]*//p" | sed -E 's/[,}].*//')
+  # grep -o finds every uses key on a line (a one-line flow sequence can hold several).
+  done < <(wf "$1" | grep -oE "(^|[{,[:space:]])[\"']?uses[\"']?[[:space:]]*:[[:space:]]*[^,}]+" \
+    | sed -E "s/^.*uses[\"']?[[:space:]]*:[[:space:]]*//" || true)
 }
 for f in $(git ls-files -- 'action.yml' 'action.yaml' '*/action.yml' '*/action.yaml'); do
   check_pins "$f"
@@ -159,11 +161,12 @@ done
 for f in $(git ls-files -- '.github/workflows/*.yml' '.github/workflows/*.yaml'); do
   check_pins "$f"
   # No pull_request_target or workflow_run trigger: both run with secrets on code the repo does not control.
-  if wf "$f" | awk -v k="$ONK" '$0 ~ k {p=1} /^[^ ]/ && $0 !~ k {p=0} p' | grep -qE '(^|[^A-Za-z_])(pull_request_target|workflow_run)([^A-Za-z_]|$)'; then
+  if wf "$f" | awk -v k="$ONK" '$0 ~ k {p=1} /^[^ ]/ && $0 !~ k {p=0} p' | grep -E '(^|[^A-Za-z_])(pull_request_target|workflow_run)([^A-Za-z_]|$)' >/dev/null; then
     echo "error: $f triggers on pull_request_target or workflow_run" >&2; fail=1
   fi
   # A top-level permissions: key, so a new job never inherits the repository default token.
-  if ! wf "$f" | grep -q '^permissions:'; then
+  # grep without -q reads all input, so pipefail never sees a SIGPIPE from the writer.
+  if ! wf "$f" | grep '^permissions:' >/dev/null; then
     echo "error: $f has no top-level permissions: key" >&2; fail=1
   fi
 done
