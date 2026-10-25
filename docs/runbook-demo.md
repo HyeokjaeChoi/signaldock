@@ -232,7 +232,16 @@ Order matters. The VM needs the stack files on `main`, `.env`, htpasswd, and the
    ```
 
 2. The workflow `demo-deploy` builds and pushes `ghcr.io/hyeokjaechoi/signaldock-server:demo-v0.1.0` and `signaldock-dashboard:demo-v0.1.0`. Its second job waits for `/deployed.txt`, so it fails until step 3 is done. Re-run only that job afterwards.
-3. Set both packages to **Public**. GitHub, your profile, Packages, `signaldock-server`, Package settings, Danger Zone, Change visibility, Public; then the same for `signaldock-dashboard`. **This cannot be undone.** It is safe because the images hold no secrets: `.dockerignore` excludes `.env` and `.env.*` (only `.env.example` is allowed in), and the Dashboard query key is read from the container environment at start, never at build (`dashboard/Dockerfile`). Until the packages are public, `docker pull` of the images on the VM is denied. The deploy logs a warning and tries again every 5 minutes; nothing is marked failed.
+3. Check whether both packages are already public. Packages pushed with `GITHUB_TOKEN` from this public repository were public on the first push (checked on 2026-10-25 UTC). Do not change anything before you check. Ask for the manifest without a login; `200` means public:
+
+   ```bash
+   for i in server dashboard; do
+     t=$(curl -s "https://ghcr.io/token?scope=repository:hyeokjaechoi/signaldock-$i:pull" | python3 -c 'import sys,json;print(json.load(sys.stdin)["token"])')
+     curl -s -o /dev/null -w "$i %{http_code}\n" -H "Authorization: Bearer $t" -H 'Accept: application/vnd.oci.image.index.v1+json, application/vnd.oci.image.manifest.v1+json' "https://ghcr.io/v2/hyeokjaechoi/signaldock-$i/manifests/demo-v0.1.0"
+   done
+   ```
+
+   Only if a package is not public: GitHub, your profile, Packages, the package, Package settings, Danger Zone, Change visibility, Public. **This cannot be undone.** It is safe because the images hold no secrets: `.dockerignore` excludes `.env` and `.env.*` (only `.env.example` is allowed in), and the Dashboard query key is read from the container environment at start, never at build (`dashboard/Dockerfile`). While a package is private, `docker pull` of the images on the VM is denied. The deploy logs a warning and tries again every 5 minutes; nothing is marked failed.
 4. If a later run fails with `permission_denied: write_package`: Package settings, Manage Actions access, add this repository with the Write role. The workflow sets the `org.opencontainers.image.source` label so the link is made on the first push; this is not verified.
 5. Wait at most 5 minutes, then check:
 
