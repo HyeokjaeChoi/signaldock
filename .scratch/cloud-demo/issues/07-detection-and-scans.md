@@ -1,8 +1,10 @@
 # 07. Detection and scans
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: 04, 05
+Execution: Done (PR #219, 2026-10-25 UTC)
+Note: The VM and owner verification items (GoAccess report, fail2ban ban, a Trivy run on a real tag, uptime check and alert email, docker-bench-security) are owner steps in `docs/runbook-demo.md` sections 18-20 and are not run yet.
 
 ## Scope and completion criteria
 
