@@ -1,0 +1,56 @@
+#cloud-config
+# First-boot setup for the demo VM (ADR-0043, ADR-0045). Public information only:
+# no key, password, or token (instance metadata is readable by anything on the VM).
+# Output goes to /var/log/cloud-init-output.log. The script stops at the first error.
+# It does not issue the TLS certificate: DNS must point here first (docs/runbook-demo.md).
+
+package_update: true
+package_upgrade: true
+packages:
+  - ca-certificates
+  - curl
+  - git
+  - nginx
+  - certbot
+  - unattended-upgrades
+
+write_files:
+  - path: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+
+runcmd:
+  - - bash
+    - -euxc
+    - |
+      # Docker Engine and the Compose plugin from Docker's apt repository (infra/compose.demo.yml needs Compose 2.24+).
+      install -m 0755 -d /etc/apt/keyrings
+      curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+      chmod a+r /etc/apt/keyrings/docker.asc
+      . /etc/os-release
+      echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu ${UBUNTU_CODENAME} stable" \
+        > /etc/apt/sources.list.d/docker.list
+      apt-get update
+      apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+      docker compose version
+
+      # Public repo; a full clone, because the deploy checks tags against main.
+      mkdir -p /opt/signaldock
+      [ -d /opt/signaldock/src/.git ] || git clone https://github.com/HyeokjaeChoi/signaldock.git /opt/signaldock/src
+      src=/opt/signaldock/src
+
+      # DOCKER-USER rule (needs docker.service, so after the install above).
+      install -m 0644 "$src/infra/vm/signaldock-docker-user.service" /etc/systemd/system/
+      systemctl daemon-reload
+      systemctl enable --now signaldock-docker-user.service
+
+      # Host nginx. The Ubuntu package starts the default site on port 80: remove it and stop nginx.
+      # nginx cannot start before the certificate exists; the runbook starts it after certbot.
+      install -m 0644 "$src/infra/nginx/signaldock.conf" /etc/nginx/conf.d/signaldock.conf
+      install -m 0644 "$src/infra/nginx/logrotate-signaldock" /etc/logrotate.d/signaldock-nginx
+      rm -f /etc/nginx/sites-enabled/default
+      install -d -m 0755 /var/www/signaldock
+      systemctl stop nginx
+
+      systemctl enable --now unattended-upgrades

@@ -27,3 +27,8 @@ coverage/
 
 # Pinned toolchain binaries (documented in TOOLCHAIN.md; download, don't track)
 .tools/
+
+# Terraform: local state holds resource IDs and the IP; .terraform.lock.hcl is committed
+*.tfstate
+*.tfstate.*
+.terraform/

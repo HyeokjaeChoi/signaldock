@@ -289,7 +289,7 @@ Spec (`.scratch/signaldock/spec.md`):
 
 ## Cloud demo: `infra/` (in progress)
 
-`infra/compose.demo.yml` exists (ticket 03): the Compose override for the demo, run as `docker compose -f docker-compose.yml -f infra/compose.demo.yml`. Tickets 04 and 05 add `infra/terraform/`, `infra/nginx/`, and `infra/vm/`. The same tickets add `.github/workflows/demo-deploy.yml`, `scripts/demo-seed.py` (ticket 02), and `docs/runbook-demo.md`. The Dashboard image is `nginxinc/nginx-unprivileged` (user nginx, port 8080).
+`infra/compose.demo.yml` exists (ticket 03): the Compose override for the demo, run as `docker compose -f docker-compose.yml -f infra/compose.demo.yml`. Ticket 04 added `infra/terraform/` (VM, network, firewall, static IP, Cloudflare record, `cloud-init.yaml`; local state), `infra/nginx/` (`signaldock.conf` and `logrotate-signaldock`: TLS, limits, basic auth, JSON log), `infra/vm/signaldock-docker-user.service` (`DOCKER-USER` metadata block), and `docs/runbook-demo.md` (part 1: owner setup). Ticket 05 adds the deploy and reset scripts and timers to `infra/vm/`, `.github/workflows/demo-deploy.yml`, and more runbook parts; ticket 02 adds `scripts/demo-seed.py`. The Dashboard image is `nginxinc/nginx-unprivileged` (user nginx, port 8080). Host nginx sends `/` and `GET /v1/*` to the Dashboard (127.0.0.1:5173, which adds the query key) and the four open routes to the server (127.0.0.1:8080), so a new server route is behind basic auth until `infra/nginx/signaldock.conf` opens it.
 
 ADRs:
 - ADR-0043 (`docs/adr/0043-cloud-demo-hosting-and-deploy.md`), for the VM, Terraform, DNS, tag deploy, cost, and teardown (D5 to D10)

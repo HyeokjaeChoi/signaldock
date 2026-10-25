@@ -1,0 +1,27 @@
+# Drop container traffic to the GCE metadata server (ADR-0045 item 3, spec D12).
+#
+# DOCKER-USER sits in the FORWARD path, so it sees only traffic that containers send
+# through the host. Traffic from the host itself (guest agent, cloud-init) goes through
+# OUTPUT and is not touched. Matching on the destination alone covers every bridge
+# (docker0 and the br-* of compose networks) with no interface list to keep in step.
+# metadata.google.internal resolves to this same address.
+#
+# No ip6tables rule: Docker IPv6 is off (the default) and the subnet is IPv4 only.
+# Add one if "ipv6": true is ever set in /etc/docker/daemon.json.
+#
+# PartOf: a restart of docker.service restarts this unit, so the rule is applied again.
+# iptables -C first makes every run idempotent. A reboot starts the chain empty; this unit fills it.
+# Known gap: containers that restart with the daemon can run for a moment before the rule exists.
+[Unit]
+Description=Drop container traffic to the GCE metadata server
+After=docker.service
+Requires=docker.service
+PartOf=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh -c 'iptables -w -C DOCKER-USER -d 169.254.169.254 -j DROP 2>/dev/null || iptables -w -I DOCKER-USER 1 -d 169.254.169.254 -j DROP'
+
+[Install]
+WantedBy=multi-user.target
