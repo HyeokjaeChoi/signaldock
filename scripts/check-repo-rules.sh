@@ -198,7 +198,7 @@ if git cat-file -e ":$demo" 2>/dev/null; then
     echo "$msgs" | sed "s|^|error: $demo: |" >&2
     fail=1
   fi
-  if git show ":$demo" | grep -nE 'id-token|write-all|(^|[^A-Za-z0-9_-])secrets([^A-Za-z0-9_-]|$)' >&2; then
+  if git show ":$demo" | grep -niE 'id-token|write-all|(^|[^A-Za-z0-9_-])secrets([^A-Za-z0-9_-]|$)' >&2; then
     echo "error: $demo above must not use id-token, write-all, or the secrets context (the VM pulls images; GitHub holds no credentials)" >&2
     fail=1
   fi
