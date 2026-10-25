@@ -137,6 +137,64 @@ if git rev-parse --verify -q origin/main >/dev/null; then
   done
 fi
 
+# Workflow security (cloud-demo spec D9, ADR-0043 item 4). Reads the index. `wf` prints a workflow
+# without comments or blank lines, so a trigger or a pin named only in a comment does not count.
+wf() { git show ":$1" | sed -E 's/(^|[[:space:]])#.*//' | awk 'NF'; }
+for f in $(git ls-files -- '.github/workflows/*.yml'); do
+  # Every action is pinned by a 40-hex commit SHA; only local ./ actions are exempt (docker:// is not).
+  while IFS= read -r ref; do
+    ref="$(echo "$ref" | sed -E "s/^[\"']//; s/[\"'][[:space:]]*\$//; s/[[:space:]]+\$//")"
+    case "$ref" in ./*) continue ;; esac
+    if ! echo "$ref" | grep -qE '^[^@[:space:]]+@[0-9a-f]{40}$'; then
+      echo "error: $f uses '$ref', which is not pinned by a 40-character commit SHA" >&2; fail=1
+    fi
+  done < <(wf "$f" | sed -nE 's/^[[:space:]]*(-[[:space:]]+)?uses:[[:space:]]*//p')
+  # No pull_request_target or workflow_run trigger: both run with secrets on code the repo does not control.
+  if wf "$f" | awk '/^on:/{p=1} /^[^ ]/ && !/^on:/{p=0} p' | grep -qE '(^|[^A-Za-z_])(pull_request_target|workflow_run)([^A-Za-z_]|$)'; then
+    echo "error: $f triggers on pull_request_target or workflow_run" >&2; fail=1
+  fi
+  # A top-level permissions: key, so a new job never inherits the repository default token.
+  if ! wf "$f" | grep -q '^permissions:'; then
+    echo "error: $f has no top-level permissions: key" >&2; fail=1
+  fi
+done
+
+# demo-deploy.yml: only a push of demo-v* tags; no OIDC token and no secrets, even in comments (ADR-0043 item 4).
+# ponytail: skipped when the file is absent (teardown deletes it); a rename escapes this check.
+demo=.github/workflows/demo-deploy.yml
+if git cat-file -e ":$demo" 2>/dev/null; then
+  msgs="$(wf "$demo" | awk '
+    function items(s,   n, a, i, v) {
+      gsub(/[\[\]]/, "", s); n = split(s, a, ",")
+      for (i = 1; i <= n; i++) {
+        v = a[i]; sub(/^[ ]*-?[ ]*/, "", v); gsub(/["\047 ]/, "", v)
+        if (v != "" && v !~ /^demo-v/) print "tag pattern \047" v "\047 does not start with demo-v"
+      }
+    }
+    /^on:/ { if ($0 !~ /^on:[ ]*$/) print "on: must be a block with only push:"; p = 1; next }
+    /^[^ ]/ { p = 0 }
+    !p { next }
+    { match($0, /^ */); ind = RLENGTH; t = substr($0, ind + 1)
+      if (!i1) i1 = ind
+      if (ind == i1) { if (t != "push:") print "trigger other than push: " t; next }
+      if (!i2) i2 = ind
+      if (ind == i2) {
+        intags = (t ~ /^tags:/)
+        if (!intags) { print "push: has key other than tags: " t; next }
+        ntags++; v = t; sub(/^tags:[ ]*/, "", v); items(v); next }
+      if (intags) items(t)
+    }
+    END { if (!ntags) print "push: has no tags:" }')"
+  if [ -n "$msgs" ]; then
+    echo "$msgs" | sed "s|^|error: $demo: |" >&2
+    fail=1
+  fi
+  if git show ":$demo" | grep -nE 'id-token:|secrets\.' >&2; then
+    echo "error: $demo above must not use id-token: or secrets. (the VM pulls images; GitHub holds no credentials)" >&2
+    fail=1
+  fi
+fi
+
 # The wire constant SDK_VERSION must equal sdkVersion of the Maven publication (release.sh and the tag use sdkVersion).
 sdk_gradle_version="$(sed -n 's/^val sdkVersion = "\(.*\)"$/\1/p' sdk/sdk-android/build.gradle.kts)"
 sdk_const_version="$(sed -n 's/^internal const val SDK_VERSION = "\(.*\)"$/\1/p' sdk/sdk-android/src/main/kotlin/local/signaldock/internal/transport/Versions.kt)"

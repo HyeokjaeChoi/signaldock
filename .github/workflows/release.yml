@@ -7,13 +7,14 @@ on:
   push:
     tags: ['v*.*.*']
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
     env:
       TAG: ${{ github.ref_name }}
       GH_TOKEN: ${{ github.token }}
