@@ -252,7 +252,7 @@ gcloud compute ssh signaldock-demo --zone asia-northeast3-a --tunnel-through-iap
 gcloud compute ssh signaldock-demo --zone asia-northeast3-a --tunnel-through-iap -- sudo journalctl -u signaldock-deploy -n 60 --no-pager
 ```
 
-What it does, in order: take `/run/signaldock.lock` (shared with the reset; if busy it skips and the timer comes back); `git fetch --tags --force`; take the newest `demo-vX.Y.Z` by version order; stop if it equals `/opt/signaldock/current-tag` or is a line in `/opt/signaldock/failed-tags`; refuse (and list as failed) a tag that is not an ancestor of `origin/main`; check out the tag; `docker compose pull`; `up -d --no-build`; wait up to 180 s for `http://127.0.0.1:8080/ready`; write `current-tag` and `/var/www/signaldock/deployed.txt` (tag only); remove dangling images and signaldock images that are neither the new nor the previous tag. It only reads `.env` through `--env-file`. A tag whose images cannot be pulled yet is not a failure (the CI build may still run); it retries on the next run.
+What it does, in order: take `/run/signaldock.lock` (shared with the reset; if busy it skips and the timer comes back); `git fetch --tags --force`; take the newest `demo-vX.Y.Z` by version order; stop if it equals `/opt/signaldock/current-tag` or is a line in `/opt/signaldock/failed-tags`; refuse (and list as failed) a tag that is not an ancestor of `origin/main`; check out the tag; `docker compose pull`; `up -d --no-build`; wait up to 180 s for `http://127.0.0.1:8080/ready` and the Dashboard at `http://127.0.0.1:5173/`; write `current-tag` and `/var/www/signaldock/deployed.txt` (tag only); remove dangling images and signaldock images that are neither the new nor the previous tag. It only reads `.env` through `--env-file`. A tag whose images cannot be pulled yet is not a failure (the CI build may still run); it retries on the next run.
 
 Only the newest tag is ever deployed. To go back to an older version, make a new tag on `main` that holds the older code (after a revert PR).
 
@@ -293,7 +293,17 @@ sudo systemctl start signaldock-deploy
 
 To fix the code: merge the fix, and push a new tag with a higher version. A failed tag is never moved (the ruleset forbids it).
 
-Rollback test (owner, optional): merge a throwaway PR that sets `mem_limit: 16m` for `server` in `infra/compose.demo.yml`, tag it, and watch the rollback in the journal; then revert and tag again. Without a change like this no server image fails `/ready` on purpose.
+Rollback test (owner, optional): push a normal new tag. Before the timer fires, stop the timer and run the deploy by hand with a ready URL that never answers. The script reads `SIGNALDOCK_READY_URL` and `SIGNALDOCK_READY_WAIT` from its environment.
+
+```bash
+sudo systemctl stop signaldock-deploy.timer
+sudo SIGNALDOCK_READY_URL=http://127.0.0.1:9/ready SIGNALDOCK_READY_WAIT=20 /usr/local/sbin/signaldock-deploy.sh
+cat /opt/signaldock/failed-tags        # the new tag is listed
+curl -s https://signaldock.stack-line.dev/deployed.txt   # still the old tag
+# Retry for real: remove the tag from failed-tags, start the timer again.
+sudo sed -i '/^demo-v0.2.0$/d' /opt/signaldock/failed-tags
+sudo systemctl start signaldock-deploy.timer
+```
 
 ## 15. Rollback and Flyway (spec section 7)
 

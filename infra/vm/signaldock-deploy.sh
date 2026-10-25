@@ -4,7 +4,7 @@
 # files supply only the Compose files and the tracking plan (they must match the images).
 #
 # Order: lock, fetch tags, newest demo-vX.Y.Z, skip if current or failed, ancestor check against origin/main
-# (git binary on the VM), check out the tag, pull, up -d, wait for /ready, record. On failure: mark the tag
+# (git binary on the VM), check out the tag, pull, up -d, wait for /ready and the Dashboard, record. On failure: mark the tag
 # failed and bring the previous tag back. The .env file is only passed to Compose with --env-file.
 set -euo pipefail
 
@@ -13,6 +13,7 @@ BASE=${SIGNALDOCK_BASE:-/opt/signaldock}
 LOCK=${SIGNALDOCK_LOCK:-/run/signaldock.lock}
 WEBROOT=${SIGNALDOCK_WEBROOT:-/var/www/signaldock}
 READY_URL=${SIGNALDOCK_READY_URL:-http://127.0.0.1:8080/ready}
+DASHBOARD_URL=${SIGNALDOCK_DASHBOARD_URL:-http://127.0.0.1:5173/}
 READY_WAIT=${SIGNALDOCK_READY_WAIT:-180}
 SRC=$BASE/src
 ENVF=$BASE/.env
@@ -51,7 +52,8 @@ compose() {  # compose <tag> <args...>
 }
 wait_ready() {
   local deadline=$((SECONDS + READY_WAIT))
-  until curl -fsS -m 3 -o /dev/null "$READY_URL" 2>/dev/null; do
+  until curl -fsS -m 3 -o /dev/null "$READY_URL" 2>/dev/null \
+    && curl -fsS -m 3 -o /dev/null "$DASHBOARD_URL" 2>/dev/null; do
     [ "$SECONDS" -lt "$deadline" ] || return 1
     sleep 3
   done
@@ -86,7 +88,7 @@ if start "$newest"; then
   exit 0
 fi
 
-log "ERROR: $newest failed (not ready within ${READY_WAIT}s, or up failed); marking it failed"
+log "ERROR: $newest failed (server /ready or the Dashboard not ready within ${READY_WAIT}s, or up failed); marking it failed"
 echo "$newest" >> "$BASE/failed-tags"
 compose "$newest" logs --no-color --tail 40 server 2>&1 | sed 's/^/signaldock-deploy: server log: /' || true
 if [ -n "$current" ]; then

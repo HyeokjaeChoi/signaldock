@@ -1,8 +1,9 @@
 # Disk backstop for the daily reset (ADR-0044 item 3): reset early at 80 % of the 30 GB root disk.
 [Unit]
 Description=SignalDock demo: reset early when the root disk is nearly full
-After=docker.service
+After=docker.service signaldock-docker-user.service
 Requires=docker.service
+Wants=signaldock-docker-user.service
 
 [Service]
 Type=oneshot

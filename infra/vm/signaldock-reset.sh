@@ -10,6 +10,7 @@ set -euo pipefail
 BASE=${SIGNALDOCK_BASE:-/opt/signaldock}
 LOCK=${SIGNALDOCK_LOCK:-/run/signaldock.lock}
 READY_URL=${SIGNALDOCK_READY_URL:-http://127.0.0.1:8080/ready}
+DASHBOARD_URL=${SIGNALDOCK_DASHBOARD_URL:-http://127.0.0.1:5173/}
 READY_WAIT=${SIGNALDOCK_READY_WAIT:-180}
 LOCK_WAIT=${SIGNALDOCK_LOCK_WAIT:-900}
 DISK_PATH=${SIGNALDOCK_DISK_PATH:-/}
@@ -50,8 +51,9 @@ compose down --volumes --remove-orphans
 compose up -d --no-build
 
 deadline=$((SECONDS + READY_WAIT))
-until curl -fsS -m 3 -o /dev/null "$READY_URL" 2>/dev/null; do
-  [ "$SECONDS" -lt "$deadline" ] || { log "ERROR: /ready not 200 within ${READY_WAIT}s after the reset"; exit 1; }
+until curl -fsS -m 3 -o /dev/null "$READY_URL" 2>/dev/null \
+  && curl -fsS -m 3 -o /dev/null "$DASHBOARD_URL" 2>/dev/null; do
+  [ "$SECONDS" -lt "$deadline" ] || { log "ERROR: /ready or the Dashboard not 200 within ${READY_WAIT}s after the reset"; exit 1; }
   sleep 3
 done
 
