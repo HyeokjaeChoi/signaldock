@@ -50,3 +50,9 @@ On 2026-10-25 UTC the owner decided to run the server and the Dashboard on a pub
 
 - The demo lives past 2027-01-16 UTC, has more than one instance, or Kubernetes becomes a portfolio goal: managed containers (Cloud Run) or k3s with plain manifests.
 - A service account becomes necessary: one per workload, narrow roles, no key files. Calls to AWS or Azure use identity federation with the VM's ID token, not access keys.
+
+## Amendment 2026-10-25 (ticket 04)
+
+- Terraform creates a dedicated VPC `signaldock-demo` (subnet `10.10.0.0/24`). The project's `default` network has `default-allow-ssh` and `default-allow-rdp` open to `0.0.0.0/0`; with it, "22 only from IAP" would be false.
+- SSH uses metadata keys through IAP, not OS Login, because the account is personal.
+- The first TLS certificate and each renewal use `certbot --standalone` with pre and post hooks that stop and start nginx. nginx cannot start the 443 server before the certificate exists. Cost: a few seconds of downtime about every 60 days.

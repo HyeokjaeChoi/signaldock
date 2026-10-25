@@ -127,6 +127,13 @@ If issuance fails: check `dig +short signaldock.stack-line.dev`, that port 80 is
 
 ## 7. Verify (before the stack is running)
 
+From your computer, check the VM has no service account and the VPC has only two rules:
+
+```bash
+gcloud compute instances describe signaldock-demo --zone asia-northeast3-a --format='value(serviceAccounts)'   # must print nothing (spec D6, section 7)
+gcloud compute firewall-rules list --filter=network:signaldock-demo                                           # only the two rules
+```
+
 From your computer (replace `H` if you use another name):
 
 ```bash
