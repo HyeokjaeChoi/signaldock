@@ -130,7 +130,7 @@ Before any non-local use, build every feature in the ADR-0028 table first. The c
 ## 9. Cloud demo (planned, 2026-10-25 UTC)
 
 A public demo is planned at `https://signaldock.stack-line.dev` until 2027-01-16 UTC ([ADR-0043](../adr/0043-cloud-demo-hosting-and-deploy.md), [ADR-0044](../adr/0044-cloud-demo-operation-replaces-adr-0028.md), [ADR-0045](../adr/0045-cloud-demo-host-and-container-hardening.md); source `.scratch/cloud-demo/spec.md`). Readers see the Dashboard and do not send events. The data is synthetic.
-Gap: none of the controls below is built or verified. The rows 1 to 4 and 7 of section 4 and the residual risks 4, 5, 6, and 9 of section 7 stay true for the application. The host controls are the planned mitigation.
+Gap: none of the controls below is built or verified. The section 4 rows for the application (Ingest API, Key guessing, PostgreSQL, Query key in nginx) and the residual risks 4, 5, 6, and 9 of section 7 stay true for the application. The host controls are the planned mitigation. `POST /v1/events:batch` and `POST /v1/client-reports` stay reachable on the public URL through host nginx. They need the collection key, which is not published, and the per-IP limits apply (D2). D10 decides "view only": readers do not send events, but the route is not closed.
 
 | Threat | Planned control | Residual risk |
 | --- | --- | --- |
@@ -138,7 +138,7 @@ Gap: none of the controls below is built or verified. The rows 1 to 4 and 7 of s
 | Anyone reads the Dashboard | Host nginx basic auth (D1). Credentials go only to people who ask | A shared credential. No per-user identity |
 | Disk fills, old data stays | Daily reset and seed at 04:00 Asia/Seoul, disk check (D3) | Growth until the next reset. No delete function |
 | Who called the server | Host nginx JSON access log, 7 days, GoAccess report behind basic auth (D11) | Access log, not an audit trail. The IP is the only identity |
-| Key guessing, key exposure | Keys from `openssl rand`, `/opt/signaldock/.env` mode 600, never in git, Terraform, or instance metadata. fail2ban on basic-auth failures (D11, D12) | Accepted: one key of each kind, no zero-downtime rotation, no record of who read a key. The collection key is not published |
+| Key guessing, key exposure | 256-bit random keys from `openssl rand` make guessing impractical. Per-IP `limit_req` slows attempts (D2). `/opt/signaldock/.env` mode 600, never in git, Terraform, or instance metadata (D11). fail2ban protects only the Dashboard basic-auth credential (D12) | Accepted: no lockout on wrong collection or query keys (server 401), one key of each kind, no zero-downtime rotation, no record of who read a key. The collection key is not published |
 | Container escape, lateral movement | Non-root, `cap_drop: ALL`, `no-new-privileges`, read-only root, resource limits, PostgreSQL on an `internal` network (D12) | A kernel or Docker flaw. Rootless Docker is not used |
 | Cloud metadata server (`169.254.169.254`) | The VM has no service account (D6). A `DOCKER-USER` rule drops container traffic to it (D12) | Gap: rule not tested for IPv6, reboot, or compose bridges (spec section 7) |
 | Deploy abuse | Pull-based tag deploy: the VM pulls only a `demo-v*` tag on `main`. GitHub holds no cloud credentials. A tag ruleset limits tag changes to the admin (D9) | A compromised admin account or `main`. Public GHCR images |

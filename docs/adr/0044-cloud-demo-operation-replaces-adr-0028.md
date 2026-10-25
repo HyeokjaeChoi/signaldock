@@ -10,6 +10,7 @@ status: accepted
 
 - The demo has one owner and no real users. Readers do not send events.
 - The server code does not change. The controls sit at host nginx and on the VM, not in the application.
+- `POST /v1/events:batch` and `POST /v1/client-reports` stay reachable on the public URL through host nginx. They need the collection key, which is not published, and the per-IP limits apply (spec D2). D10 decides "view only": readers do not send events, but the route is not closed.
 - Gap: none of these controls is built or verified yet (tickets 02 to 07 of `.scratch/cloud-demo/issues/`). The facts in spec section 7 about `limit_req_status` and GoAccess options are not verified.
 
 ## Decision
@@ -27,9 +28,9 @@ status: accepted
 | --- | --- | --- |
 | Per-key or per-IP rate limit, `429`, connection limits | Host nginx per-IP `limit_req` and `limit_conn` with `429` and `Retry-After` (item 2). The server 503 stays. | No per-key limit. One IP behind NAT shares a limit. A client that skips the host (none is exposed) is not limited. |
 | Access log with caller identity, audit trail | Host nginx JSON access log, 7 days, GoAccess report (item 5). | The log is not an audit trail. The IP is the only identity. After 7 days the record is gone. |
-| Minimum key length, lockout, rate limit on failed key attempts | Keys made with `openssl rand`. The per-IP limit slows guessing. fail2ban on basic-auth failures (ADR-0045). | The server has no length rule and no lockout. One key of each kind. No zero-downtime rotation. No record of who read a key. |
+| Minimum key length, lockout, rate limit on failed key attempts | Keys are 256-bit random values made with `openssl rand`, so guessing is impractical. The per-IP `limit_req` slows attempts (item 2). | The server has no length rule and no lockout on wrong collection or query keys (server 401). fail2ban does not watch these keys. One key of each kind. No zero-downtime rotation. No record of who read a key. |
 | Event TTL, retention job, delete function | Daily reset and seed at 04:00 Asia/Seoul, disk check as backstop (item 3). | The database grows until the next reset. Events from a day are lost at reset. There is still no delete function. |
-| Dashboard login | Host nginx basic auth (item 1). | A shared credential. No per-user identity. Anyone with the credential reads all demo data. |
+| Dashboard login | Host nginx basic auth (item 1). fail2ban bans IPs that fail basic auth (ADR-0045). | A shared credential. No per-user identity. Anyone with the credential reads all demo data. |
 
 ## Consequences
 

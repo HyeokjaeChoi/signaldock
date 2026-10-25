@@ -246,7 +246,7 @@ ADRs:
 - ADR-0039 (`docs/adr/0039-release-provenance-attestation.md`), for the attestation step and job permissions of `publish` in `.github/workflows/release.yml`, and the attestation section of `docs/releases/README.md` (issue 69)
 - ADR-0041 (`docs/adr/0041-claude-code-pr-review.md`), for `.github/workflows/claude-review.yml` (issue 83)
 - ADR-0042 (`docs/adr/0042-measurement-on-a-physical-device.md`), for the `SIGNALDOCK_PHYSICAL_DEVICE` opt-in of `scripts/device-measure.sh` and `scripts/host-cost-measure.sh`
-- ADR-0043 (`docs/adr/0043-cloud-demo-hosting-and-deploy.md`), for the demo tag deploy workflow, `scripts/demo-seed.py`, and the VM deploy and reset scripts (cloud-demo tickets 02, 05, 06, and 07)
+- ADR-0043 (`docs/adr/0043-cloud-demo-hosting-and-deploy.md`), for `scripts/demo-seed.py` (cloud-demo ticket 02) and the checks in `scripts/check-repo-rules.sh` (ticket 06)
 
 Spec (`.scratch/signaldock/spec.md`):
 - Q149 (first release)

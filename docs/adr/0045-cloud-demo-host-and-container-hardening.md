@@ -21,7 +21,7 @@ The demo ([ADR-0043](0043-cloud-demo-hosting-and-deploy.md)) is on the public in
 5. The host uses `unattended-upgrades`.
 6. CI runs a Trivy image scan.
 7. An external uptime check sends email alerts.
-8. fail2ban watches basic-auth failures.
+8. fail2ban watches basic-auth failures. It protects the Dashboard credential, not the collection or query keys.
 9. One `docker-bench-security` run is recorded.
 
 ## Consequences

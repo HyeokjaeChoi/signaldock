@@ -12,7 +12,7 @@ On 2026-10-25 UTC the owner decided to run the server and the Dashboard on a pub
 - Live URL: `https://signaldock.stack-line.dev`, until the GCP free-trial credit ends on 2027-01-16 UTC. Readers see the Dashboard and the README. They do not send events.
 - [ADR-0028](0028-server-production-features-excluded.md) says to revisit it when a deployment is not local. This is such a deployment.
 - Out of scope: real users, high availability, Kubernetes, managed cloud services, push-based CI deploys.
-- Gap: nothing in this ADR is verified on a cloud host. Implementation is in tickets 03 to 07 of `.scratch/cloud-demo/issues/`.
+- Gap: nothing in this ADR is verified on a cloud host. Implementation is in tickets 02 to 07 of `.scratch/cloud-demo/issues/`.
 
 ## Decision
 
@@ -27,7 +27,7 @@ On 2026-10-25 UTC the owner decided to run the server and the Dashboard on a pub
 ## Consequences
 
 - One VM is one point of failure. This is accepted for a demo.
-- Public GHCR packages cannot go back to private without effort. The images hold no secrets because `.dockerignore` excludes `.env`.
+- Making the GHCR packages public cannot be undone (GitHub docs). The images hold no secrets because `.dockerignore` excludes `.env`.
 - A deploy needs a tag from the admin. A rollback after a newer Flyway migration is not verified (spec section 7).
 - The demo ends on 2027-01-16 UTC. The README limitation must be removed or changed at teardown.
 - Gap: the facts in spec section 7 are not verified: GCP prices (third-party source); that the free-trial credit covers Compute Engine; that no `service_account` block means no service account; Flyway rollback behavior; stack RAM on `e2-medium`.
