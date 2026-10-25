@@ -390,7 +390,7 @@ To see bans: `sudo fail2ban-client status signaldock-nginx-auth` (banned IPs) an
 
 Record the output in the PR description.
 
-**Trivy.** `demo-deploy` builds both images into the runner's local Docker store, scans them, and pushes only if both scans pass (`--ignore-unfixed --severity CRITICAL,HIGH --exit-code 1`, Trivy v0.76.1). Findings without a fix do not fail the job. If a scan fails because of a fixable finding: update the base image digest (Renovate does it too), merge, and push a new tag. Do not add a `.trivyignore` without a reason for each entry. The tag that failed pushed nothing, so its name is free to use again.
+**Trivy.** `demo-deploy` builds both images into the runner's local Docker store, scans them, and pushes only if both scans pass (`--ignore-unfixed --severity CRITICAL,HIGH --exit-code 1`, Trivy v0.76.1). Findings without a fix do not fail the job. If a scan fails because of a fixable finding: update the base image digest (Renovate does it too), merge, and push a new tag. Do not add a `.trivyignore` without a reason for each entry. The failed tag pushed no images, but the git tag stays (the ruleset in section 10 forbids moving or deleting it): push a new, higher tag. Until then the VM logs `WARNING: images for <tag> are not available yet` every 5 minutes (`journalctl -u signaldock-deploy`); that is expected and stops when the higher tag deploys.
 
 ## 19. Uptime check and email alert (owner only)
 
