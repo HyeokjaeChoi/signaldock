@@ -94,7 +94,11 @@ class Database(
     }
 
     fun migrate() {
-        Flyway.configure().dataSource(dataSource).load().migrate()
+        // Startup is not a request: the 500 ms request connection budget must not stop the server
+        // when a cold JVM needs longer for the first connection. Hikari keeps filling the pool
+        // (initializationFailTimeout = -1), so a retry gets it. Retries back off 1, 2, 4, 8, 16 s;
+        // a database that stays down still fails the start and Compose restarts it (ADR-0026).
+        Flyway.configure().dataSource(dataSource).connectRetries(5).load().migrate()
     }
 
     fun budget() = RequestBudget(limits)
