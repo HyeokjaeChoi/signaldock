@@ -19,7 +19,7 @@ for n in 7 6 5 4 3 2; do [ -f "$LOG.$n.gz" ] && files+=("$LOG.$n.gz"); done
 tmp=$(mktemp --suffix=.html "${OUT%.html}.XXXXXX")  # goaccess wants the .html extension
 trap 'rm -f "$tmp"' EXIT
 zcat -f "${files[@]}" | goaccess - \
-  --log-format='{"time":"%dT%t+%^","remote_addr":"%h","remote_user":"%e","method":"%m","uri":"%U","protocol":"%H","status":%s,"bytes":%b,"request_length":%^,"request_time":%T,"limit_req":"%^","host":"%v","referer":"%R","user_agent":"%u"}' \
+  --log-format='{"time":"%dT%t+%^","remote_addr":"%h","remote_user":"%e","method":"%m","uri":"%U","protocol":"%H","status":%s,"upstream_status":"%^","bytes":%b,"request_length":%^,"request_time":%T,"limit_req":"%^","host":"%v","referer":"%R","user_agent":"%u"}' \
   --date-format='%Y-%m-%d' --time-format='%T' \
   --anonymize-ip --no-progress --no-global-config \
   --html-report-title='SignalDock demo access log' \
