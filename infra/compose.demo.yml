@@ -43,6 +43,7 @@ services:
   dashboard:
     <<: *hardened
     image: ghcr.io/hyeokjaechoi/signaldock-dashboard:${DEMO_TAG:-local}
+    restart: unless-stopped
     tmpfs:
       # nginx-unprivileged (user nginx, 101) writes the rendered config, temp files, and the pid here.
       - /etc/nginx/conf.d:size=1m,noexec,nosuid,uid=101
