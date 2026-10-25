@@ -1,8 +1,9 @@
 # 06. Workflow security checks
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: 05
+Execution: Done (PR #216, 2026-10-25 UTC)
 
 ## Scope and completion criteria
 
