@@ -32,3 +32,7 @@ The user installed the Claude GitHub App on 2026-10-24 UTC, asked that Claude Co
 - A push cancels the running review of the older commit. Inline comments it already posted can stay on outdated lines.
 - CodeRabbit learnings are lost. They held no design facts (old AGENTS.md rule 5), so no design source changes.
 - Historical records that name CodeRabbit (CHANGELOG, postmortems, issue files, older ADRs) stay as they are.
+
+## Amendment (2026-10-25)
+
+The owner changed the review model to `opus` for review quality. Cost is one Opus run per push on the owner's subscription quota. Decision item 6 and the first Consequences bullet now read as Opus. The original text above is kept as written.
