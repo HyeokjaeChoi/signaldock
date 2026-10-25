@@ -1,8 +1,9 @@
 # 88. The PR review job uses the opus model
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
+Execution: Done (PR #208, 2026-10-25 UTC)
 
 ## Scope and completion criteria
 
@@ -21,4 +22,4 @@ Notes:
 Verification:
 - `bash scripts/check-repo-rules.sh`: run on 2026-10-25 UTC. It printed no output and exited with `exit=0`.
 - `grep -n "model" .github/workflows/claude-review.yml` shows `--model opus`.
-- After merge: on the next PR, the `claude-review` run log shows the `opus` model and the review posts. Record the run link here. Until then this item is not verified.
+- First review job run with opus: https://github.com/HyeokjaeChoi/signaldock/actions/runs/40160125406 on PR 209 (2026-10-25 UTC), conclusion success. The run log shows `--model opus` and the model `claude-opus-5-5`, and the review was posted.
