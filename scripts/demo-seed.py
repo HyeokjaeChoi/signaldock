@@ -4,21 +4,29 @@
 Run: SIGNALDOCK_COLLECTION_KEY=... python3 -I scripts/demo-seed.py [--base-url URL] [--now ISO] [--dry-run]
 
 The same --now and --seed give the same events. Event IDs come from the seed, so a second run
-with the same --now is stored as duplicates, not as new events. The data is synthetic.
+with the same --now sends duplicates. The server reports them as `duplicate`; the script then stops
+with exit 1. Reset the database before you seed again (cloud-demo D3). The data is synthetic.
+HTTP 429 and 503 are retried (Retry-After, at most 5 attempts). The SDK version comes from Versions.kt.
 """
 import argparse
 import json
 import os
 import random
+import re
 import sys
 import urllib.error
 import urllib.request
 import uuid
+from time import sleep
 from datetime import datetime, time, timedelta, timezone
 from pathlib import Path
 
 PLAN_PATH = Path(__file__).resolve().parent.parent / "tracking-plan" / "plan.json"
-SDK_VERSION = "0.3.0"
+VERSIONS_PATH = (Path(__file__).resolve().parent.parent
+                 / "sdk/sdk-android/src/main/kotlin/local/signaldock/internal/transport/Versions.kt")
+OLD_SDK_VERSION = "0.2.0"
+MAX_ATTEMPTS = 5
+MAX_RETRY_WAIT = 30
 SEOUL = timezone(timedelta(hours=9))  # Asia/Seoul has had no DST since 1988; avoids a tzdata dependency
 SESSIONS_PER_DAY = [60, 50, 40, 32, 26, 20, 16]  # index 0 = today (Seoul); recent days have more
 INSTALLATIONS = 40
@@ -29,6 +37,14 @@ MAX_BATCH_BYTES = 200_000  # server limit is 262144
 MAX_REPORT_BYTES = 4096
 REPORT_REASONS = ["queue_full", "storage_error", "invalid_event", "event_too_large", "server_rejected"]
 UNKNOWN_EVENT_NAME = "product_shared"  # not in the plan: planStatus unplanned_event
+
+
+def sdk_version(path=VERSIONS_PATH):
+    """The wire SDK_VERSION that scripts/check-repo-rules.sh compares with sdkVersion."""
+    m = re.search(r'^internal const val SDK_VERSION = "([^"]+)"$', Path(path).read_text(), re.M)
+    if not m:
+        raise SystemExit(f"error: SDK_VERSION not found in {path}")
+    return m.group(1)
 
 
 def load_plan(path=PLAN_PATH):
@@ -60,6 +76,7 @@ def _violate(rng, name, props, plan):
 def generate(now, seed, plan):
     """Return [(installation_id, event, violation_kind_or_None)] sorted by time. now must be timezone-aware."""
     rng = random.Random(seed)
+    version = sdk_version()
     installs = [_uuid4(rng) for _ in range(INSTALLATIONS)]
     today = now.astimezone(SEOUL).date()
     out = []
@@ -67,6 +84,8 @@ def generate(now, seed, plan):
         start = datetime.combine(today - timedelta(days=back), time.min, SEOUL)
         end = min(start + timedelta(days=1), now)
         span = (end - start).total_seconds()
+        if back == 0:  # today: only the part of the Seoul day that has passed
+            sessions = max(1, round(sessions * (end - start).total_seconds() / 86400))
         for _ in range(sessions):
             t = start + timedelta(seconds=rng.random() * span * 0.98)
             inst = rng.choice(installs)
@@ -89,7 +108,7 @@ def generate(now, seed, plan):
                     name, props, violation = _violate(rng, name, props, plan)
                 t = t.replace(microsecond=t.microsecond // 1000 * 1000)
                 out.append((inst, {"eventId": _uuid4(rng), "name": name, "occurredAt": _fmt(t), "properties": props,
-                                   "sdkVersion": SDK_VERSION, "contractVersion": "1"}, violation))
+                                   "sdkVersion": version, "contractVersion": "1"}, violation))
     out.sort(key=lambda x: (x[1]["occurredAt"], x[1]["eventId"]))
     return out
 
@@ -120,7 +139,7 @@ def client_reports(seed):
     """Client reports (ADR-0036). The wire has no timestamp: the server stamps receipt time."""
     rng = random.Random(seed + 1)
     reports = []
-    for version, n in ((SDK_VERSION, 4), ("0.2.0", 2)):
+    for version, n in ((sdk_version(), 4), (OLD_SDK_VERSION, 2)):
         for _ in range(n):
             reasons = rng.sample(REPORT_REASONS, rng.randint(1, 3))
             reports.append({"sdkVersion": version,
@@ -133,13 +152,19 @@ def post(base_url, path, key, body):
                                  method="POST", headers={"Authorization": f"Bearer {key}",
                                                          "SignalDock-Contract-Version": "1",
                                                          "Content-Type": "application/json"})
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            return resp.read()
-    except urllib.error.HTTPError as e:
-        raise SystemExit(f"error: POST {path} returned HTTP {e.code}: {e.read()[:300].decode(errors='replace')}")
-    except urllib.error.URLError as e:
-        raise SystemExit(f"error: POST {path} failed: {e.reason}")
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                return resp.read()
+        except urllib.error.HTTPError as e:
+            if e.code in (429, 503) and attempt < MAX_ATTEMPTS:
+                ra = e.headers.get("Retry-After", "")
+                sleep(min(int(ra) if ra.isdigit() else 2, MAX_RETRY_WAIT))
+                continue
+            raise SystemExit(f"error: POST {path} returned HTTP {e.code} after {attempt} attempt(s): "
+                             f"{e.read()[:300].decode(errors='replace')}")
+        except urllib.error.URLError as e:
+            raise SystemExit(f"error: POST {path} failed: {e.reason}")
 
 
 def main(argv=None):
@@ -161,14 +186,20 @@ def main(argv=None):
     key = os.environ.get("SIGNALDOCK_COLLECTION_KEY")
     if not key:
         raise SystemExit("error: set SIGNALDOCK_COLLECTION_KEY")
+    totals = {"accepted": 0, "duplicate": 0, "rejected": 0}
     for b in bs:
-        rejected = [r for r in json.loads(post(a.base_url, "/v1/events:batch", key, b))["results"]
-                    if r["status"] == "rejected"]
+        results = json.loads(post(a.base_url, "/v1/events:batch", key, b))["results"]
+        for r in results:
+            totals[r["status"]] = totals.get(r["status"], 0) + 1
+        rejected = [r for r in results if r["status"] == "rejected"]
         if rejected:
             raise SystemExit(f"error: server rejected events: {rejected[:3]}")
+        dup = sum(1 for r in results if r["status"] == "duplicate")
+        if dup:
+            raise SystemExit(f"error: {dup} events already stored; reset the database before seeding (cloud-demo D3)")
     for r in reports:
         post(a.base_url, "/v1/client-reports", key, r)
-    print("done")
+    print(f"done accepted={totals['accepted']} duplicate={totals['duplicate']}")
     return 0
 
 

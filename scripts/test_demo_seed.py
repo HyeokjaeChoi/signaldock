@@ -1,7 +1,11 @@
 """Tests for demo-seed.py. Run: python3 -I -m unittest discover -s scripts -p 'test_*.py'"""
 import importlib.util
 import json
+import os
+import threading
 import unittest
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from unittest import mock
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -79,6 +83,81 @@ class DemoSeedTest(unittest.TestCase):
             reasons = [d["reason"] for d in r["discardedEvents"]]
             self.assertEqual(len(reasons), len(set(reasons)))
             self.assertTrue(set(reasons) <= set(seed.REPORT_REASONS))
+
+    def test_today_scales_with_now(self):
+        def today_events(h):
+            now = datetime(2026, 10, 25, h, 0, tzinfo=timezone(timedelta(hours=9)))
+            return sum(1 for _, ev, _ in seed.generate(now, 1, PLAN) if ev["occurredAt"] >= "2026-10-24T15:00")
+        self.assertLess(today_events(6) * 2, today_events(18))
+
+    def test_sdk_version_read_from_repo(self):
+        v = seed.sdk_version()
+        self.assertRegex(v, r"^\d+\.\d+\.\d+")
+        self.assertIn(f'SDK_VERSION = "{v}"', seed.VERSIONS_PATH.read_text())
+        self.assertTrue(all(e["sdkVersion"] == v for _, e, _ in self.events))
+        with self.assertRaises(SystemExit):
+            seed.sdk_version(HERE / "demo-seed.py")
+
+
+class SendTest(unittest.TestCase):
+    """main() against a local fake server. responses: list of (status, headers, dup_index_or_None)."""
+
+    def run_main(self, responses):
+        calls = []
+
+        class H(BaseHTTPRequestHandler):
+            def do_POST(self):
+                body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+                calls.append(self.path)
+                code, headers, dup = responses.pop(0) if len(responses) > 1 else responses[0]
+                out = b"{}"
+                if self.path.endswith(":batch") and code == 200:
+                    out = json.dumps({"results": [{"index": i, "status": "duplicate" if i == dup else "accepted"}
+                                                  for i in range(len(body["events"]))]}).encode()
+                self.send_response(code)
+                for k, v in headers.items():
+                    self.send_header(k, v)
+                self.send_header("Content-Length", str(len(out)))
+                self.end_headers()
+                self.wfile.write(out)
+
+            def log_message(self, *a):
+                pass
+
+        srv = HTTPServer(("127.0.0.1", 0), H)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        try:
+            with mock.patch.dict(os.environ, {"SIGNALDOCK_COLLECTION_KEY": "k"}), \
+                    mock.patch.object(seed, "sleep") as slept, mock.patch("builtins.print"):
+                code = None
+                try:
+                    code = seed.main(["--base-url", f"http://127.0.0.1:{srv.server_port}", "--now", NOW.isoformat()])
+                except SystemExit as e:
+                    code = e.code
+        finally:
+            srv.shutdown()
+            srv.server_close()
+        return code, calls, slept
+
+    def test_all_accepted(self):
+        code, _, _ = self.run_main([(200, {}, None)])
+        self.assertEqual(code, 0)
+
+    def test_duplicate_stops(self):
+        code, _, _ = self.run_main([(200, {}, 0)])
+        self.assertIn("events already stored; reset the database before seeding (cloud-demo D3)", str(code))
+
+    def test_retry_503_then_ok(self):
+        code, calls, slept = self.run_main([(503, {"Retry-After": "0"}, None), (200, {}, None)])
+        self.assertEqual(code, 0)
+        slept.assert_called_with(0)
+        self.assertEqual(calls[0], calls[1])
+
+    def test_401_fails_without_retry(self):
+        code, calls, slept = self.run_main([(401, {}, None)])
+        self.assertIn("HTTP 401", str(code))
+        self.assertEqual(len(calls), 1)
+        slept.assert_not_called()
 
 
 if __name__ == "__main__":
