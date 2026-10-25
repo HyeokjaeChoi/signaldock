@@ -2,7 +2,7 @@
 # A pushed tag demo-vX.Y.Z on main builds the server and Dashboard images and pushes them to GHCR with
 # GITHUB_TOKEN only. This workflow holds no cloud credential and does not deploy: the VM pulls the images
 # (infra/vm/signaldock-deploy.sh). The second job only waits until the VM reports the tag.
-# No OIDC token and no repository secrets are used. Trivy scan: ticket 07.
+# No OIDC token and no repository credentials are used. Trivy scan: ticket 07.
 name: demo-deploy
 
 on:

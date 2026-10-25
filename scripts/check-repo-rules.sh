@@ -137,6 +137,76 @@ if git rev-parse --verify -q origin/main >/dev/null; then
   done
 fi
 
+# Workflow security (cloud-demo spec D9, ADR-0043 item 4). Reads the index. `wf` prints a workflow
+# without comments or blank lines, so a trigger or a pin named only in a comment does not count.
+wf() { git show ":$1" | sed -E 's/(^|[[:space:]])#.*//' | awk 'NF'; }
+# `on` may be quoted (YAML 1.1 reads a bare on as a boolean, so some files quote it).
+ONK='^("on"|\047on\047|on):'
+# Every action is pinned by a 40-hex commit SHA; only local ./ actions are exempt (docker:// is not).
+# `uses` is found as a block key, in a flow mapping ({ uses: x }), and as a quoted key.
+check_pins() {
+  while IFS= read -r ref; do
+    ref="$(echo "$ref" | sed -E "s/^[\"']//; s/[\"'][[:space:]]*\$//; s/[[:space:]]+\$//")"
+    case "$ref" in ./*) continue ;; esac
+    if ! echo "$ref" | grep -qE '^[^@[:space:]]+@[0-9a-f]{40}$'; then
+      echo "error: $1 uses '$ref', which is not pinned by a 40-character commit SHA" >&2; fail=1
+    fi
+  # grep -o finds every uses key on a line (a one-line flow sequence can hold several).
+  done < <(wf "$1" | grep -oE "(^|[{,[:space:]])[\"']?uses[\"']?[[:space:]]*:[[:space:]]*[^,}]+" \
+    | sed -E "s/^.*uses[\"']?[[:space:]]*:[[:space:]]*//" || true)
+}
+for f in $(git ls-files -- 'action.yml' 'action.yaml' '*/action.yml' '*/action.yaml'); do
+  check_pins "$f"
+done
+for f in $(git ls-files -- '.github/workflows/*.yml' '.github/workflows/*.yaml'); do
+  check_pins "$f"
+  # No pull_request_target or workflow_run trigger: both run with secrets on code the repo does not control.
+  if wf "$f" | awk -v k="$ONK" '$0 ~ k {p=1} /^[^ ]/ && $0 !~ k {p=0} p' | grep -E '(^|[^A-Za-z_])(pull_request_target|workflow_run)([^A-Za-z_]|$)' >/dev/null; then
+    echo "error: $f triggers on pull_request_target or workflow_run" >&2; fail=1
+  fi
+  # A top-level permissions: key, so a new job never inherits the repository default token.
+  # grep without -q reads all input, so pipefail never sees a SIGPIPE from the writer.
+  if ! wf "$f" | grep '^permissions:' >/dev/null; then
+    echo "error: $f has no top-level permissions: key" >&2; fail=1
+  fi
+done
+
+# demo-deploy.yml: only a push of demo-v* tags; no OIDC token, no write-all, and no secrets context, even in comments (ADR-0043 item 4).
+# ponytail: skipped when the file is absent (teardown deletes it); a rename escapes this check.
+demo=.github/workflows/demo-deploy.yml
+if git cat-file -e ":$demo" 2>/dev/null; then
+  msgs="$(wf "$demo" | awk -v k="$ONK" '
+    function items(s,   n, a, i, v) {
+      gsub(/[\[\]]/, "", s); n = split(s, a, ",")
+      for (i = 1; i <= n; i++) {
+        v = a[i]; sub(/^[ ]*-?[ ]*/, "", v); gsub(/["\047 ]/, "", v)
+        if (v != "" && v !~ /^demo-v/) print "tag pattern \047" v "\047 does not start with demo-v"
+      }
+    }
+    $0 ~ k { if ($0 !~ k "[ ]*$") print "on: must be a block with only push:"; p = 1; next }
+    /^[^ ]/ { p = 0 }
+    !p { next }
+    { match($0, /^ */); ind = RLENGTH; t = substr($0, ind + 1)
+      if (!i1) i1 = ind
+      if (ind == i1) { if (t != "push:") print "trigger other than push: " t; next }
+      if (!i2) i2 = ind
+      if (ind == i2) {
+        intags = (t ~ /^tags:/)
+        if (!intags) { print "push: has key other than tags: " t; next }
+        ntags++; v = t; sub(/^tags:[ ]*/, "", v); items(v); next }
+      if (intags) items(t)
+    }
+    END { if (!ntags) print "push: has no tags:" }')"
+  if [ -n "$msgs" ]; then
+    echo "$msgs" | sed "s|^|error: $demo: |" >&2
+    fail=1
+  fi
+  if git show ":$demo" | grep -niE 'id-token|write-all|(^|[^A-Za-z0-9_-])secrets([^A-Za-z0-9_-]|$)' >&2; then
+    echo "error: $demo above must not use id-token, write-all, or the secrets context (the VM pulls images; GitHub holds no credentials)" >&2
+    fail=1
+  fi
+fi
+
 # The wire constant SDK_VERSION must equal sdkVersion of the Maven publication (release.sh and the tag use sdkVersion).
 sdk_gradle_version="$(sed -n 's/^val sdkVersion = "\(.*\)"$/\1/p' sdk/sdk-android/build.gradle.kts)"
 sdk_const_version="$(sed -n 's/^internal const val SDK_VERSION = "\(.*\)"$/\1/p' sdk/sdk-android/src/main/kotlin/local/signaldock/internal/transport/Versions.kt)"
