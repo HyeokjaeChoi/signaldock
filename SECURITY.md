@@ -1,6 +1,6 @@
 # Security policy
 
-SignalDock is an open-source project. The stack is for local use only. Read [Scope](#scope) before you report.
+SignalDock is an open-source project. The stack is for local use. A public demo is planned until 2027-01-16 UTC (see [Scope](#scope)). Read [Scope](#scope) before you report.
 
 ## Supported versions
 
@@ -47,6 +47,7 @@ In scope:
 Out of scope (known non-goals):
 
 - Operation on the public internet. The stack is local only. It binds to `127.0.0.1`, uses example-grade secrets, and has no TLS ([README](README.md#limitations)).
+- The planned cloud demo at `https://signaldock.stack-line.dev` (until 2027-01-16 UTC; not yet deployed or verified). Readers see the Dashboard behind basic auth and do not send events. The data is synthetic. The accepted risks are in [ADR-0044](docs/adr/0044-cloud-demo-operation-replaces-adr-0028.md) and the [threat model](docs/engineering/threat-model.md) section 9. A flaw in the demo host setup (for example a bypass of the nginx limits or the basic auth) is welcome through private reporting. Shared keys, the lack of an audit trail, and the lack of a per-user login are known and accepted.
 - Extraction of the collection key from an app. The collection key is not a secret that cannot be extracted from the SDK. It checks access for local evaluation and does not replace user authentication (spec section 5, [spec](.scratch/signaldock/spec.md#5-server-receipt-and-duplicate-handling)). It is write-only: it cannot read events (spec Q128).
 - A native-web (WebView JavaScript) bridge and other bridges (spec Q150). They do not exist.
 - Findings that need physical access to a device with the app data, or that need an attacker who already controls the local machine.

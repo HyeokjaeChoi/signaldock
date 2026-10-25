@@ -42,3 +42,7 @@ The server does not have these features. Each one has an existing source.
 ## Revisit when
 
 Revisit this ADR when any deployment is not on the local machine (for example a shared host, a cloud VM, or a public URL).
+
+## Amendment (2026-10-25)
+
+A cloud demo on a public URL is a non-local deployment ([ADR-0043](0043-cloud-demo-hosting-and-deploy.md)). [ADR-0044](0044-cloud-demo-operation-replaces-adr-0028.md) says what covers each row of the Decision table on the demo and what risk stays. The server code does not change. For any other non-local deployment this ADR still stands.

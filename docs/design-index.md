@@ -76,7 +76,8 @@ ADRs:
 - ADR-0022 (`docs/adr/0022-server-tracking-plan-status.md`), for the plan status (`TrackingPlan.kt`, `TrackingPlanFile.kt`, `V2__add_plan_status.sql`, and the `planStatus` filter and counts) (issue 39)
 - ADR-0026 (`docs/adr/0026-server-readiness-and-restart.md`), for `/health`, `/ready`, and the Compose `server` health check and restart policy (issue 45)
 - ADR-0027 (`docs/adr/0027-request-400-contract-only.md`), for `RequestParsing.kt`, `SdkWireCorpusTest`, and what is a request-level 400 (issue 49)
-- ADR-0028 (`docs/adr/0028-server-production-features-excluded.md`), for the server features left out on purpose (rate limit, audit log, key policy, retention, Dashboard login) (issue 48)
+- ADR-0028 (`docs/adr/0028-server-production-features-excluded.md`), for the server features left out on purpose (rate limit, audit log, key policy, retention, Dashboard login) (issue 48); its Amendment (2026-10-25) points to ADR-0044 for the cloud demo
+- ADR-0044 (`docs/adr/0044-cloud-demo-operation-replaces-adr-0028.md`), for what covers each ADR-0028 row on the cloud demo (host nginx, not server code)
 - ADR-0036 (`docs/adr/0036-sdk-client-reports.md`), for `POST /v1/client-reports`, `GET /v1/client-report-counts`, and `V3__create_client_reports.sql` (issue 61)
 - ADR-0037 (`docs/adr/0037-server-collection-kill-switch.md`), for `CollectionControl.kt`, the block lists, and the shed switch (issue 67)
 
@@ -245,6 +246,7 @@ ADRs:
 - ADR-0039 (`docs/adr/0039-release-provenance-attestation.md`), for the attestation step and job permissions of `publish` in `.github/workflows/release.yml`, and the attestation section of `docs/releases/README.md` (issue 69)
 - ADR-0041 (`docs/adr/0041-claude-code-pr-review.md`), for `.github/workflows/claude-review.yml` (issue 83)
 - ADR-0042 (`docs/adr/0042-measurement-on-a-physical-device.md`), for the `SIGNALDOCK_PHYSICAL_DEVICE` opt-in of `scripts/device-measure.sh` and `scripts/host-cost-measure.sh`
+- ADR-0043 (`docs/adr/0043-cloud-demo-hosting-and-deploy.md`), for `scripts/demo-seed.py` (cloud-demo ticket 02) and the checks in `scripts/check-repo-rules.sh` (ticket 06)
 
 Spec (`.scratch/signaldock/spec.md`):
 - Q149 (first release)
@@ -285,6 +287,25 @@ Spec (`.scratch/signaldock/spec.md`):
 - 5. Server receipt and duplicate handling
 - Q128 to Q131 (keys), Q133 (load measurement scope), Q150 (bridges)
 
+## Cloud demo: infra/ (planned)
+
+The directory `infra/` does not exist yet. Tickets 03 to 05 of `.scratch/cloud-demo/issues/` create it: `infra/compose.demo.yml` (ticket 03), `infra/terraform/`, `infra/nginx/` (ticket 04), and `infra/vm/` (ticket 05). When the first file is committed, rename this heading to name the path in backticks; `scripts/check-repo-rules.sh` then requires a tracked file under it. The same tickets add `.github/workflows/demo-deploy.yml`, `scripts/demo-seed.py` (ticket 02), and `docs/runbook-demo.md`.
+
+ADRs:
+- ADR-0043 (`docs/adr/0043-cloud-demo-hosting-and-deploy.md`), for the VM, Terraform, DNS, tag deploy, cost, and teardown (D5 to D10)
+- ADR-0044 (`docs/adr/0044-cloud-demo-operation-replaces-adr-0028.md`), for host nginx limits, basic auth, the daily reset, the access log, and keys (D1 to D4, D11)
+- ADR-0045 (`docs/adr/0045-cloud-demo-host-and-container-hardening.md`), for container and host hardening (D12)
+- ADR-0028, as amended
+
+Spec (`.scratch/cloud-demo/spec.md`):
+- 2. Decisions (D1 to D12)
+- 3. Components
+- 4. Manual steps (owner only)
+- 6. Verification
+- 7. Facts to confirm during implementation (not verified)
+
+Also read `docs/engineering/threat-model.md` section 9. The local `docker-compose.yml` does not change for the demo.
+
 ## Rejected alternatives
 
 This section only points to where each decision is recorded.
@@ -297,3 +318,4 @@ Do not suggest these alternatives.
 - Aggregate tables or counters: architecture "DB time budgets and queries"; spec Q70.
 - iOS or Flutter SDKs, Maven Central, automatic events, identify: spec "1. Goal and scope".
 - Trimming or normalizing names and keys: spec Q64 and Q84.
+- Cloud demo (the full list with reasons is in each ADR's "Rejected alternatives"): managed containers, PaaS, Azure, k3s or Argo CD, `sslip.io`, Cloudflare proxy, GitHub OIDC or an SSH key for deploy, build on the VM, a paid account, app login, in-app 429, Caddy, server TTL, Secret Manager, sops + age, a hashed key table, OTel Collector or Cloud Logging or Loki, Falco, rootless Docker, userns-remap, cosign verify on the VM: ADR-0043, ADR-0044, ADR-0045.
