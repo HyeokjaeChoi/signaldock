@@ -28,7 +28,7 @@ Code enforces these. Do not restate them in prose; read the check when it fails.
 | Every top-level directory except `.claude`, `.scratch`, and `docs` has a section in `docs/design-index.md` | `scripts/check-repo-rules.sh` |
 | A released Room schema file is frozen (ADR-0025) | `scripts/check-repo-rules.sh` |
 | `SDK_VERSION` equals `sdkVersion` | `scripts/check-repo-rules.sh` |
-| Every `uses:` in `.github/workflows` and `.github/actions` is pinned by a 40-character SHA (local `./` actions excepted) | `scripts/check-repo-rules.sh` |
+| Every `uses:` in `.github/workflows` and every tracked `action.yml` or `action.yaml` is pinned by a 40-character SHA (local `./` actions excepted) | `scripts/check-repo-rules.sh` |
 | No workflow triggers on `pull_request_target` or `workflow_run` | `scripts/check-repo-rules.sh` |
 | Every workflow has a top-level `permissions:` key | `scripts/check-repo-rules.sh` |
 | `demo-deploy.yml` runs only on `push` of `demo-v*` tags | `scripts/check-repo-rules.sh` |

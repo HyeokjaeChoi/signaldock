@@ -153,7 +153,7 @@ check_pins() {
     fi
   done < <(wf "$1" | sed -nE "s/^(.*[{,[:space:]])?[\"']?uses[\"']?[[:space:]]*:[[:space:]]*//p" | sed -E 's/[,}].*//')
 }
-for f in $(git ls-files -- '.github/actions/*/action.yml' '.github/actions/*/action.yaml'); do
+for f in $(git ls-files -- 'action.yml' 'action.yaml' '*/action.yml' '*/action.yaml'); do
   check_pins "$f"
 done
 for f in $(git ls-files -- '.github/workflows/*.yml' '.github/workflows/*.yaml'); do
