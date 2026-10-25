@@ -3,9 +3,12 @@
 
 Run: SIGNALDOCK_COLLECTION_KEY=... python3 -I scripts/demo-seed.py [--base-url URL] [--now ISO] [--dry-run]
 
-The same --now and --seed give the same events. Event IDs come from the seed, so a second run
-with the same --now sends duplicates. The server reports them as `duplicate`; the script then stops
-with exit 1. Reset the database before you seed again (cloud-demo D3). The data is synthetic.
+The same --now and --seed give the same events. Before any other batch, the script sends one sentinel
+event whose content depends only on --seed and the Seoul date of --now. If the server answers `duplicate`
+or `rejected` for it, the database already holds a seed for that date: the script exits 1 and sends
+nothing else. This guards a rerun on the same Seoul day without a reset; the D3 reset script owns the
+reset (cloud-demo D3). After a retry a `duplicate` is valid (the first attempt may have been stored).
+The data is synthetic.
 HTTP 429 and 503 are retried (Retry-After, at most 5 attempts). The SDK version comes from Versions.kt.
 """
 import argparse
@@ -57,6 +60,16 @@ def _uuid4(rng):
 
 def _fmt(dt):
     return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.") + f"{dt.microsecond // 1000:03d}Z"
+
+
+def sentinel(now, seed):
+    """One fixed event per (seed, Seoul date): the rerun guard. Same shape as generate() items."""
+    day = now.astimezone(SEOUL).date()
+    rng = random.Random(f"{seed}-sentinel-{day}")
+    t = datetime.combine(day, time.min, SEOUL)
+    ev = {"eventId": _uuid4(rng), "name": "product_viewed", "occurredAt": _fmt(t),
+          "properties": {"product_id": "prd-001"}, "sdkVersion": sdk_version(), "contractVersion": "1"}
+    return ("00000000-0000-4000-8000-000000000001", ev, None)
 
 
 def _violate(rng, name, props, plan):
@@ -155,7 +168,7 @@ def post(base_url, path, key, body):
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
-                return resp.read()
+                return resp.read(), attempt > 1
         except urllib.error.HTTPError as e:
             if e.code in (429, 503) and attempt < MAX_ATTEMPTS:
                 ra = e.headers.get("Retry-After", "")
@@ -165,6 +178,7 @@ def post(base_url, path, key, body):
                              f"{e.read()[:300].decode(errors='replace')}")
         except urllib.error.URLError as e:
             raise SystemExit(f"error: POST {path} failed: {e.reason}")
+    raise SystemExit(f"error: POST {path} made no attempt")  # unreachable: MAX_ATTEMPTS >= 1
 
 
 def main(argv=None):
@@ -178,7 +192,9 @@ def main(argv=None):
     if now.tzinfo is None:
         raise SystemExit("error: --now needs a UTC offset, for example 2026-10-25T12:00:00+09:00")
     events = generate(now, a.seed, load_plan())
-    bs, reports = batches(events), client_reports(a.seed)
+    sent = sentinel(now, a.seed)
+    bs, reports = batches([sent]) + batches(events), client_reports(a.seed)
+    events = [sent] + events
     print(f"events={len(events)} violations={sum(1 for e in events if e[2])} batches={len(bs)} "
           f"client_reports={len(reports)}")
     if a.dry_run:
@@ -186,20 +202,25 @@ def main(argv=None):
     key = os.environ.get("SIGNALDOCK_COLLECTION_KEY")
     if not key:
         raise SystemExit("error: set SIGNALDOCK_COLLECTION_KEY")
-    totals = {"accepted": 0, "duplicate": 0, "rejected": 0}
-    for b in bs:
-        results = json.loads(post(a.base_url, "/v1/events:batch", key, b))["results"]
-        for r in results:
-            totals[r["status"]] = totals.get(r["status"], 0) + 1
+    totals = {"accepted": 0, "duplicate_after_retry": 0}
+    for n, b in enumerate(bs):
+        body, retried = post(a.base_url, "/v1/events:batch", key, b)
+        results = json.loads(body)["results"]
+        if n == 0 and any(r["status"] in ("duplicate", "rejected") for r in results) and not (
+                retried and all(r["status"] != "rejected" for r in results)):
+            raise SystemExit(f"error: the database already holds a seed for {now.astimezone(SEOUL).date()}; "
+                             "reset it before seeding (cloud-demo D3)")
         rejected = [r for r in results if r["status"] == "rejected"]
         if rejected:
             raise SystemExit(f"error: server rejected events: {rejected[:3]}")
         dup = sum(1 for r in results if r["status"] == "duplicate")
-        if dup:
+        if dup and not retried:
             raise SystemExit(f"error: {dup} events already stored; reset the database before seeding (cloud-demo D3)")
+        totals["duplicate_after_retry"] += dup
+        totals["accepted"] += sum(1 for r in results if r["status"] == "accepted")
     for r in reports:
         post(a.base_url, "/v1/client-reports", key, r)
-    print(f"done accepted={totals['accepted']} duplicate={totals['duplicate']}")
+    print(f"done accepted={totals['accepted']} duplicate_after_retry={totals['duplicate_after_retry']}")
     return 0
 
 

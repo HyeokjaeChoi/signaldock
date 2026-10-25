@@ -4,8 +4,8 @@ import json
 import os
 import threading
 import unittest
+import unittest.mock
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from unittest import mock
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -46,7 +46,8 @@ class DemoSeedTest(unittest.TestCase):
             kinds.add(violation)
         self.assertEqual(kinds, {None, "unknown_event", "missing_required", "wrong_type"})
         share = sum(1 for e in self.events if e[2]) / len(self.events)
-        self.assertTrue(0.02 < share < 0.12, share)
+        self.assertGreater(share, 0.02)
+        self.assertLess(share, 0.12)
 
     def test_seven_days_seoul_recent_heavier(self):
         seoul = timezone(timedelta(hours=9))
@@ -82,7 +83,7 @@ class DemoSeedTest(unittest.TestCase):
             self.assertLess(len(json.dumps(r).encode()), seed.MAX_REPORT_BYTES)
             reasons = [d["reason"] for d in r["discardedEvents"]]
             self.assertEqual(len(reasons), len(set(reasons)))
-            self.assertTrue(set(reasons) <= set(seed.REPORT_REASONS))
+            self.assertLessEqual(set(reasons), set(seed.REPORT_REASONS))
 
     def test_today_scales_with_now(self):
         def today_events(h):
@@ -100,7 +101,7 @@ class DemoSeedTest(unittest.TestCase):
 
 
 class SendTest(unittest.TestCase):
-    """main() against a local fake server. responses: list of (status, headers, dup_index_or_None)."""
+    """main() against a local fake server. responses: list of (status, headers, (index, status) or None)."""
 
     def run_main(self, responses):
         calls = []
@@ -112,7 +113,7 @@ class SendTest(unittest.TestCase):
                 code, headers, dup = responses.pop(0) if len(responses) > 1 else responses[0]
                 out = b"{}"
                 if self.path.endswith(":batch") and code == 200:
-                    out = json.dumps({"results": [{"index": i, "status": "duplicate" if i == dup else "accepted"}
+                    out = json.dumps({"results": [{"index": i, "status": dup[1] if dup and i == dup[0] else "accepted"}
                                                   for i in range(len(body["events"]))]}).encode()
                 self.send_response(code)
                 for k, v in headers.items():
@@ -127,8 +128,8 @@ class SendTest(unittest.TestCase):
         srv = HTTPServer(("127.0.0.1", 0), H)
         threading.Thread(target=srv.serve_forever, daemon=True).start()
         try:
-            with mock.patch.dict(os.environ, {"SIGNALDOCK_COLLECTION_KEY": "k"}), \
-                    mock.patch.object(seed, "sleep") as slept, mock.patch("builtins.print"):
+            with unittest.mock.patch.dict(os.environ, {"SIGNALDOCK_COLLECTION_KEY": "k"}), \
+                    unittest.mock.patch.object(seed, "sleep") as slept, unittest.mock.patch("builtins.print"):
                 code = None
                 try:
                     code = seed.main(["--base-url", f"http://127.0.0.1:{srv.server_port}", "--now", NOW.isoformat()])
@@ -143,9 +144,28 @@ class SendTest(unittest.TestCase):
         code, _, _ = self.run_main([(200, {}, None)])
         self.assertEqual(code, 0)
 
-    def test_duplicate_stops(self):
-        code, _, _ = self.run_main([(200, {}, 0)])
+    def test_sentinel_duplicate_stops_everything(self):
+        code, calls, _ = self.run_main([(200, {}, (0, "duplicate"))])
+        self.assertIn("already holds a seed for 2026-10-25; reset it before seeding (cloud-demo D3)", str(code))
+        self.assertEqual(len(calls), 1)
+
+    def test_sentinel_rejected_stops(self):
+        code, calls, _ = self.run_main([(200, {}, (0, "rejected"))])
+        self.assertIn("already holds a seed", str(code))
+        self.assertEqual(len(calls), 1)
+
+    def test_later_duplicate_stops(self):
+        code, _, _ = self.run_main([(200, {}, None), (200, {}, (0, "duplicate"))])
         self.assertIn("events already stored; reset the database before seeding (cloud-demo D3)", str(code))
+
+    def test_duplicate_after_retry_ok(self):
+        code, _, _ = self.run_main([(503, {"Retry-After": "0"}, None), (200, {}, (0, "duplicate")), (200, {}, None)])
+        self.assertEqual(code, 0)
+
+    def test_sentinel_deterministic(self):
+        self.assertEqual(seed.sentinel(NOW, 1), seed.sentinel(NOW, 1))
+        self.assertNotEqual(seed.sentinel(NOW, 1), seed.sentinel(NOW, 2))
+        self.assertEqual(seed.sentinel(NOW, 1)[1]["occurredAt"], "2026-10-24T15:00:00.000Z")
 
     def test_retry_503_then_ok(self):
         code, calls, slept = self.run_main([(503, {"Retry-After": "0"}, None), (200, {}, None)])
