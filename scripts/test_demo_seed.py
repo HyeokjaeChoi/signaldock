@@ -203,6 +203,21 @@ class SendTest(unittest.TestCase):
         slept.assert_called_with(0)
         self.assertEqual(calls[0], calls[1])
 
+    def batch_count(self):
+        return len(seed.batches([seed.sentinel(NOW, 20261025)]) + seed.batches(seed.generate(NOW, 20261025, seed.load_plan())))
+
+    def test_client_report_request_timeout_exits_without_retry(self):
+        code, calls, _ = self.run_main([(200, {}, None)] * self.batch_count()
+                                       + [(503, {"Retry-After": "0"}, {"code": "REQUEST_TIMEOUT"}), (200, {}, None)])
+        self.assertIn("client report outcome unknown after REQUEST_TIMEOUT; reset the database and seed again "
+                      "(cloud-demo D3)", str(code))
+        self.assertEqual(sum(c == "/v1/client-reports" for c in calls), 1)
+
+    def test_client_report_unavailable_503_retries(self):
+        code, _, _ = self.run_main([(200, {}, None)] * self.batch_count()
+                                   + [(503, {"Retry-After": "0"}, {"code": "TEMPORARILY_UNAVAILABLE"}), (200, {}, None)])
+        self.assertEqual(code, 0)
+
     def test_401_fails_without_retry(self):
         code, calls, slept = self.run_main([(401, {}, None)])
         self.assertIn("HTTP 401", str(code))

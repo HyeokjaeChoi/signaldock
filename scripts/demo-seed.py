@@ -9,7 +9,8 @@ or `rejected` with code CONFLICT for it, the database already holds a seed for t
 and sends nothing else. Any other rejected code fails with that code. This guards a rerun on the same Seoul day without a reset; the D3 reset script owns the
 reset (cloud-demo D3). A 503 TEMPORARILY_UNAVAILABLE or 429 stores nothing. Only REQUEST_TIMEOUT leaves an uncertain outcome, so
 a `duplicate` is valid only after an earlier attempt failed with REQUEST_TIMEOUT. The data is synthetic.
-HTTP 429 and 503 are retried (Retry-After, at most 5 attempts). The SDK version comes from Versions.kt.
+HTTP 429 and 503 are retried (Retry-After, at most 5 attempts), except a client report after 503 REQUEST_TIMEOUT:
+it has no ID, so the script exits 1. The SDK version comes from Versions.kt.
 """
 import argparse
 import json
@@ -173,9 +174,13 @@ def post(base_url, path, key, body):
         except urllib.error.HTTPError as e:
             if e.code in (429, 503) and attempt < MAX_ATTEMPTS:
                 try:
-                    uncertain = uncertain or json.loads(e.read()).get("code") == "REQUEST_TIMEOUT"
+                    timed_out = json.loads(e.read()).get("code") == "REQUEST_TIMEOUT"
                 except (ValueError, AttributeError):  # missing or non-JSON body: unknown, not uncertain
-                    pass
+                    timed_out = False
+                if timed_out and path == "/v1/client-reports":  # no report ID: a retry could store it twice (ADR-0036)
+                    raise SystemExit("error: client report outcome unknown after REQUEST_TIMEOUT; "
+                                     "reset the database and seed again (cloud-demo D3)")
+                uncertain = uncertain or timed_out
                 ra = e.headers.get("Retry-After", "")
                 sleep(min(int(ra) if ra.isdigit() else 2, MAX_RETRY_WAIT))
                 continue
