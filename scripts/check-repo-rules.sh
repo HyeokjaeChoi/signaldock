@@ -143,6 +143,7 @@ wf() { git show ":$1" | sed -E 's/(^|[[:space:]])#.*//' | awk 'NF'; }
 # `on` may be quoted (YAML 1.1 reads a bare on as a boolean, so some files quote it).
 ONK='^("on"|\047on\047|on):'
 # Every action is pinned by a 40-hex commit SHA; only local ./ actions are exempt (docker:// is not).
+# `uses` is found as a block key, in a flow mapping ({ uses: x }), and as a quoted key.
 check_pins() {
   while IFS= read -r ref; do
     ref="$(echo "$ref" | sed -E "s/^[\"']//; s/[\"'][[:space:]]*\$//; s/[[:space:]]+\$//")"
@@ -150,7 +151,7 @@ check_pins() {
     if ! echo "$ref" | grep -qE '^[^@[:space:]]+@[0-9a-f]{40}$'; then
       echo "error: $1 uses '$ref', which is not pinned by a 40-character commit SHA" >&2; fail=1
     fi
-  done < <(wf "$1" | sed -nE 's/^[[:space:]]*(-[[:space:]]+)?uses:[[:space:]]*//p')
+  done < <(wf "$1" | sed -nE "s/^(.*[{,[:space:]])?[\"']?uses[\"']?[[:space:]]*:[[:space:]]*//p" | sed -E 's/[,}].*//')
 }
 for f in $(git ls-files -- '.github/actions/*/action.yml' '.github/actions/*/action.yaml'); do
   check_pins "$f"
@@ -167,7 +168,7 @@ for f in $(git ls-files -- '.github/workflows/*.yml' '.github/workflows/*.yaml')
   fi
 done
 
-# demo-deploy.yml: only a push of demo-v* tags; no OIDC token and no secrets, even in comments (ADR-0043 item 4).
+# demo-deploy.yml: only a push of demo-v* tags; no OIDC token, no write-all, and no secrets context, even in comments (ADR-0043 item 4).
 # ponytail: skipped when the file is absent (teardown deletes it); a rename escapes this check.
 demo=.github/workflows/demo-deploy.yml
 if git cat-file -e ":$demo" 2>/dev/null; then
@@ -197,8 +198,8 @@ if git cat-file -e ":$demo" 2>/dev/null; then
     echo "$msgs" | sed "s|^|error: $demo: |" >&2
     fail=1
   fi
-  if git show ":$demo" | grep -nE 'id-token:|secrets\.' >&2; then
-    echo "error: $demo above must not use id-token: or secrets. (the VM pulls images; GitHub holds no credentials)" >&2
+  if git show ":$demo" | grep -nE 'id-token|write-all|(^|[^A-Za-z0-9_-])secrets([^A-Za-z0-9_-]|$)' >&2; then
+    echo "error: $demo above must not use id-token, write-all, or the secrets context (the VM pulls images; GitHub holds no credentials)" >&2
     fail=1
   fi
 fi
