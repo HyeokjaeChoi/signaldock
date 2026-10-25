@@ -1,8 +1,9 @@
 # 05. Tag deploy, daily reset, and runbook
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: 02, 03, 04
+Execution: Done (PR #214, 2026-10-25 UTC)
 
 ## Scope and completion criteria
 
@@ -17,3 +18,5 @@ Build spec decisions D9, D3, and D7.
 Verification:
 - `actionlint` or the repo workflow checks, `shellcheck` on the scripts.
 - On the VM: tag `demo-v0.1.0` deploys; a tag with a failing `/ready` rolls back; a tag not on `main` is refused; the reset timer run leaves seeded data. Record the commands and results.
+
+Note: the on-VM verification items above are owner steps in `docs/runbook-demo.md` and are not run yet.
