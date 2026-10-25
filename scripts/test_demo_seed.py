@@ -169,6 +169,10 @@ class SendTest(unittest.TestCase):
         code, _, _ = self.run_main([(200, {}, None), (200, {}, (0, "rejected", "INVALID_EVENT"))])
         self.assertIn("INVALID_EVENT", str(code))
 
+    def test_later_rejected_conflict_points_to_reset(self):
+        code, _, _ = self.run_main([(200, {}, None), (200, {}, (0, "rejected", "CONFLICT"))])
+        self.assertIn("reset the database before seeding (cloud-demo D3)", str(code))
+
     def test_later_duplicate_stops(self):
         code, _, _ = self.run_main([(200, {}, None), (200, {}, (0, "duplicate"))])
         self.assertIn("events already stored; reset the database before seeding (cloud-demo D3)", str(code))

@@ -220,7 +220,9 @@ def main(argv=None):
             if rejected:
                 raise SystemExit(f"error: sentinel rejected: {rejected[0].get('code')}")
         if rejected:
-            raise SystemExit(f"error: server rejected events: {[(r.get('index'), r.get('code')) for r in rejected[:3]]}")
+            hint = ("; reset the database before seeding (cloud-demo D3)"
+                    if any(r.get("code") == "CONFLICT" for r in rejected) else "")
+            raise SystemExit(f"error: server rejected events: {[(r.get('index'), r.get('code')) for r in rejected[:3]]}{hint}")
         dup = sum(1 for r in results if r["status"] == "duplicate")
         if dup and not retried:
             raise SystemExit(f"error: {dup} events already stored; reset the database before seeding (cloud-demo D3)")
