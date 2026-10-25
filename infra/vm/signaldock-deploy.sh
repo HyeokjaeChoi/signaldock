@@ -4,7 +4,7 @@
 # files supply only the Compose files and the tracking plan (they must match the images).
 #
 # Order: lock, fetch tags, newest demo-vX.Y.Z, skip if current or failed, ancestor check against origin/main
-# (git binary on the VM), check out the tag, pull, up -d, wait for /ready and the Dashboard, record. On failure: mark the tag
+# (git binary on the VM), check out the tag, docker pull the two app images, up -d, wait for /ready and the Dashboard, record. On failure: mark the tag
 # failed and bring the previous tag back. The .env file is only passed to Compose with --env-file.
 set -euo pipefail
 
@@ -69,7 +69,11 @@ start() {  # start <tag>: files from the tag, stack up, ready
 
 log "deploying $newest (current: ${current:-none})"
 checkout "$newest"
-if ! compose "$newest" pull --quiet; then
+# Plain docker pull, not compose pull: server and dashboard also have build: in docker-compose.yml, and compose
+# can treat a missing or denied image of a buildable service as "build from source" instead of an error.
+# postgres is pinned by digest; up -d pulls it when it is missing.
+if ! { docker pull --quiet "ghcr.io/hyeokjaechoi/signaldock-server:$newest" \
+  && docker pull --quiet "ghcr.io/hyeokjaechoi/signaldock-dashboard:$newest"; } >/dev/null; then
   # The tag can be fetched before CI has pushed the images, or the packages are not Public yet.
   # Nothing changed on the host, so this is not a failed deploy: the next run tries again.
   [ -z "$current" ] || checkout "$current"
