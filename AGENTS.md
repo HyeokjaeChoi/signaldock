@@ -36,7 +36,7 @@ When a mistake or the same kind of review finding repeats, add a check to `scrip
 
 ## Judgment rules
 
-1. Delegate research and implementation (product code, tests, build configuration) to a lower-tier model; design, grilling, and planning stay in the top-tier session. Follow the step-to-model table in `docs/agents/models.md` (set by the owner on 2026-10-25). If the listed model fails or is not available, use the next higher tier and say so in the report. The main agent defines the question, splits the work, tracks progress, reviews the results, and applies research findings to the design.
+1. Delegate research and implementation (product code, tests, build configuration, docs) to a lower-tier model; design, grilling, and planning stay in the top-tier session. Follow the step-to-model table in `docs/agents/models.md` (set by the owner on 2026-10-25). If the listed model fails or is not available, use the next higher tier and say so in the report. The main agent defines the question, splits the work, tracks progress, reviews the results, and applies research findings to the design.
 2. Build what the design sources say. If you must make a new decision, record it in an ADR in the same PR and name it in the PR description. Implementers do not write review rules.
 3. One purpose per PR. Work outside it, such as new hooks, CI, or review setup, goes in a separate PR.
 4. A PR description states what changed, which design sections it follows, and the exact verification commands and results. Never label a step verified without a run.

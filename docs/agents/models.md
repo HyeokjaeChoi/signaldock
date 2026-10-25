@@ -6,7 +6,7 @@
 |---|---|---|---|
 | Design, grilling, planning | top | the session itself | Conversational work. Do not delegate. |
 | Implementation: product code, tests, build configuration, docs edits | mid | `sonnet` | Delegate to a subagent. |
-| Local `/code-review` before a PR | top | `opus` | Only this step uses `opus` during implementation. |
+| Local `/code-review` before a PR | top | `opus` | Only this step uses `opus` during implementation. The session model sets the model: run it in a session on `opus` (`/model`), or delegate it to a subagent with the Agent tool `model: opus` parameter. |
 | Open the PR: description and `gh pr create` | mid | `sonnet` | |
 | Research and lookups | low | `haiku` | Read-only. |
 
