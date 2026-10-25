@@ -3,10 +3,14 @@
 
 Run: SIGNALDOCK_COLLECTION_KEY=... python3 -I scripts/demo-seed.py [--base-url URL] [--now ISO] [--dry-run]
 
-The same --now and --seed give the same events. Before any other batch, the script sends one sentinel
-event whose content depends only on --seed and the Seoul date of --now. If the server answers `duplicate`
-or `rejected` with code CONFLICT for it, the database already holds a seed for that date: the script exits 1
-and sends nothing else. Any other rejected code fails with that code. This guards a rerun on the same Seoul day without a reset; the D3 reset script owns the
+The same --now and --seed give the same events. Event IDs depend only on --seed, not on the date (on purpose:
+date-based IDs would let a rerun on a later day without a reset store a second full data set silently).
+Before any other batch, the script sends one sentinel event whose content depends only on --seed and the
+Seoul date of --now. If the server answers `duplicate` or `rejected` with code CONFLICT for it, the database
+already holds a seed for that date: the script exits 1 and sends nothing else. Any other rejected code fails
+with that code. This stops a rerun on the same Seoul day before anything is sent. On a later day without a
+reset, the sentinel is new, but the reused event IDs give CONFLICT on the first data batch: the script exits 1
+and points to the D3 reset. A partial batch can remain; the D3 reset removes it. The D3 reset script owns the
 reset (cloud-demo D3). A 503 TEMPORARILY_UNAVAILABLE or 429 stores nothing. Only REQUEST_TIMEOUT leaves an uncertain outcome, so
 a `duplicate` is valid only after an earlier attempt failed with REQUEST_TIMEOUT. The data is synthetic.
 HTTP 429 and 503 are retried (Retry-After, at most 5 attempts), except a client report after 503 REQUEST_TIMEOUT:
