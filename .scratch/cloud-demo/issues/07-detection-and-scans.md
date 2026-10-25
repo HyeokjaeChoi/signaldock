@@ -4,7 +4,7 @@ Status: resolved
 Type: task
 Blocked by: 04, 05
 Execution: Done (PR #219, 2026-10-25 UTC)
-Note: first cloud setup, 2026-10-25 UTC. Ran: uptime check `signaldock-ready` (HTTPS /ready, 5 min, TLS validation, 2xx, 6 global locations, all passing) and alert policy `signaldock-ready down` (fails 5 min) with an email channel to the owner; docker-bench-security v1.6.1 (Checks 117, Score 22; findings in issue 14). Not run: alert test email, GoAccess report, fail2ban ban test, Trivy run on a real tag.
+Note: first cloud setup, 2026-10-25 UTC. Ran: uptime check `signaldock-ready` (HTTPS /ready, 5 min, TLS validation, 2xx, 6 global locations, all passing) and alert policy `signaldock-ready down` (fails 5 min) with an email channel to the owner; docker-bench-security v1.6.1 (Checks 117, Score 22; findings in issue 14). Not run: alert test email, GoAccess report, fail2ban ban test. Trivy on a real tag: not recorded in this setup.
 
 ## Scope and completion criteria
 
