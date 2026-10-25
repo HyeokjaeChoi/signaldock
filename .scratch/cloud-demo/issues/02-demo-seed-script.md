@@ -1,6 +1,6 @@
 # 02. Demo seed script
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: 01
 

@@ -18,6 +18,7 @@ jobs:
         with:
           persist-credentials: false
       - run: scripts/check-repo-rules.sh
+      - run: python3 -I -m unittest discover -s scripts -p 'test_*.py'  # scripts/test_demo_seed.py
 
   verify-contract:
     runs-on: ubuntu-latest
