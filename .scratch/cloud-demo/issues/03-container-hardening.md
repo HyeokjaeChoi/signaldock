@@ -1,8 +1,9 @@
 # 03. Container hardening for the demo stack
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: 01
+Execution: Done (PR #211, 2026-10-25 UTC)
 
 ## Scope and completion criteria
 

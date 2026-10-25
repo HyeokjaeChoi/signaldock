@@ -1,8 +1,9 @@
 # 02. Demo seed script
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: 01
+Execution: Done (PR #210, 2026-10-25 UTC)
 
 ## Scope and completion criteria
 

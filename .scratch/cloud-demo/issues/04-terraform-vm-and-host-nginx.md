@@ -1,8 +1,9 @@
 # 04. Terraform, VM setup, and host nginx
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: 01, 03
+Execution: Done (PR #212, 2026-10-25 UTC)
 
 ## Scope and completion criteria
 
@@ -20,3 +21,5 @@ Verification:
 - `terraform fmt -check`, `terraform validate`, and `terraform plan` output (plan shows no service account).
 - `nginx -t` on the config (in a container is fine).
 - After the owner applies: from a container, `curl -m 3 -H 'Metadata-Flavor: Google' http://169.254.169.254/` times out; `docker ps` shows no `0.0.0.0:` ports; over-limit requests get 429 with `Retry-After`; the Dashboard asks for basic auth; `GET /v1/events` (and any other query route) without basic auth gets 401 from host nginx; the four routes without basic auth work; the rules survive a reboot.
+
+Note: the after-apply cloud checks above are owner steps (runbook `docs/runbook-demo.md`) and are not run yet.
