@@ -101,7 +101,8 @@ class DemoSeedTest(unittest.TestCase):
 
 
 class SendTest(unittest.TestCase):
-    """main() against a local fake server. responses: list of (status, headers, (index, status) or None)."""
+    """main() against a local fake server. responses: list of (status, headers, (index, status[, code]) or None
+    for 200; a dict for a non-200 JSON body)."""
 
     def run_main(self, responses):
         calls = []
@@ -112,9 +113,13 @@ class SendTest(unittest.TestCase):
                 calls.append(self.path)
                 code, headers, dup = responses.pop(0) if len(responses) > 1 else responses[0]
                 out = b"{}"
-                if self.path.endswith(":batch") and code == 200:
-                    out = json.dumps({"results": [{"index": i, "status": dup[1] if dup and i == dup[0] else "accepted"}
-                                                  for i in range(len(body["events"]))]}).encode()
+                if isinstance(dup, dict):
+                    out = json.dumps(dup).encode()
+                elif self.path.endswith(":batch") and code == 200:
+                    out = json.dumps({"results": [
+                        {"index": i, "status": dup[1], **({"code": dup[2]} if len(dup) > 2 else {})}
+                        if dup and i == dup[0] else {"index": i, "status": "accepted"}
+                        for i in range(len(body["events"]))]}).encode()
                 self.send_response(code)
                 for k, v in headers.items():
                     self.send_header(k, v)
@@ -149,17 +154,38 @@ class SendTest(unittest.TestCase):
         self.assertIn("already holds a seed for 2026-10-25; reset it before seeding (cloud-demo D3)", str(code))
         self.assertEqual(len(calls), 1)
 
-    def test_sentinel_rejected_stops(self):
-        code, calls, _ = self.run_main([(200, {}, (0, "rejected"))])
+    def test_sentinel_rejected_conflict_is_already_seeded(self):
+        code, calls, _ = self.run_main([(200, {}, (0, "rejected", "CONFLICT"))])
         self.assertIn("already holds a seed", str(code))
         self.assertEqual(len(calls), 1)
+
+    def test_sentinel_rejected_other_code_fails_with_code(self):
+        code, calls, _ = self.run_main([(200, {}, (0, "rejected", "COLLECTION_BLOCKED"))])
+        self.assertIn("sentinel rejected: COLLECTION_BLOCKED", str(code))
+        self.assertNotIn("already holds", str(code))
+        self.assertEqual(len(calls), 1)
+
+    def test_later_rejected_prints_code(self):
+        code, _, _ = self.run_main([(200, {}, None), (200, {}, (0, "rejected", "INVALID_EVENT"))])
+        self.assertIn("INVALID_EVENT", str(code))
 
     def test_later_duplicate_stops(self):
         code, _, _ = self.run_main([(200, {}, None), (200, {}, (0, "duplicate"))])
         self.assertIn("events already stored; reset the database before seeding (cloud-demo D3)", str(code))
 
-    def test_duplicate_after_retry_ok(self):
-        code, _, _ = self.run_main([(503, {"Retry-After": "0"}, None), (200, {}, (0, "duplicate")), (200, {}, None)])
+    def test_sentinel_duplicate_after_unavailable_503_stops(self):
+        code, calls, _ = self.run_main([(503, {"Retry-After": "0"}, {"code": "TEMPORARILY_UNAVAILABLE"}),
+                                        (200, {}, (0, "duplicate"))])
+        self.assertIn("already holds a seed", str(code))
+        self.assertEqual(len(calls), 2)
+
+    def test_duplicate_after_503_without_json_body_stops(self):
+        code, _, _ = self.run_main([(503, {"Retry-After": "0"}, None), (200, {}, (0, "duplicate"))])
+        self.assertIn("already holds a seed", str(code))
+
+    def test_duplicate_after_request_timeout_ok(self):
+        code, _, _ = self.run_main([(200, {}, None), (503, {"Retry-After": "0"}, {"code": "REQUEST_TIMEOUT"}),
+                                    (200, {}, (0, "duplicate")), (200, {}, None)])
         self.assertEqual(code, 0)
 
     def test_sentinel_deterministic(self):

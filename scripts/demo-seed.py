@@ -5,10 +5,10 @@ Run: SIGNALDOCK_COLLECTION_KEY=... python3 -I scripts/demo-seed.py [--base-url U
 
 The same --now and --seed give the same events. Before any other batch, the script sends one sentinel
 event whose content depends only on --seed and the Seoul date of --now. If the server answers `duplicate`
-or `rejected` for it, the database already holds a seed for that date: the script exits 1 and sends
-nothing else. This guards a rerun on the same Seoul day without a reset; the D3 reset script owns the
-reset (cloud-demo D3). After a retry a `duplicate` is valid (the first attempt may have been stored).
-The data is synthetic.
+or `rejected` with code CONFLICT for it, the database already holds a seed for that date: the script exits 1
+and sends nothing else. Any other rejected code fails with that code. This guards a rerun on the same Seoul day without a reset; the D3 reset script owns the
+reset (cloud-demo D3). A 503 TEMPORARILY_UNAVAILABLE or 429 stores nothing. Only REQUEST_TIMEOUT leaves an uncertain outcome, so
+a `duplicate` is valid only after an earlier attempt failed with REQUEST_TIMEOUT. The data is synthetic.
 HTTP 429 and 503 are retried (Retry-After, at most 5 attempts). The SDK version comes from Versions.kt.
 """
 import argparse
@@ -165,12 +165,17 @@ def post(base_url, path, key, body):
                                  method="POST", headers={"Authorization": f"Bearer {key}",
                                                          "SignalDock-Contract-Version": "1",
                                                          "Content-Type": "application/json"})
+    uncertain = False  # an earlier attempt failed with REQUEST_TIMEOUT: it may have been stored
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
-                return resp.read(), attempt > 1
+                return resp.read(), uncertain
         except urllib.error.HTTPError as e:
             if e.code in (429, 503) and attempt < MAX_ATTEMPTS:
+                try:
+                    uncertain = uncertain or json.loads(e.read()).get("code") == "REQUEST_TIMEOUT"
+                except (ValueError, AttributeError):  # missing or non-JSON body: unknown, not uncertain
+                    pass
                 ra = e.headers.get("Retry-After", "")
                 sleep(min(int(ra) if ra.isdigit() else 2, MAX_RETRY_WAIT))
                 continue
@@ -206,13 +211,16 @@ def main(argv=None):
     for n, b in enumerate(bs):
         body, retried = post(a.base_url, "/v1/events:batch", key, b)
         results = json.loads(body)["results"]
-        if n == 0 and any(r["status"] in ("duplicate", "rejected") for r in results) and not (
-                retried and all(r["status"] != "rejected" for r in results)):
-            raise SystemExit(f"error: the database already holds a seed for {now.astimezone(SEOUL).date()}; "
-                             "reset it before seeding (cloud-demo D3)")
         rejected = [r for r in results if r["status"] == "rejected"]
+        if n == 0:
+            if any(r.get("code") == "CONFLICT" for r in rejected) or (
+                    not retried and any(r["status"] == "duplicate" for r in results)):
+                raise SystemExit(f"error: the database already holds a seed for {now.astimezone(SEOUL).date()}; "
+                                 "reset it before seeding (cloud-demo D3)")
+            if rejected:
+                raise SystemExit(f"error: sentinel rejected: {rejected[0].get('code')}")
         if rejected:
-            raise SystemExit(f"error: server rejected events: {rejected[:3]}")
+            raise SystemExit(f"error: server rejected events: {[(r.get('index'), r.get('code')) for r in rejected[:3]]}")
         dup = sum(1 for r in results if r["status"] == "duplicate")
         if dup and not retried:
             raise SystemExit(f"error: {dup} events already stored; reset the database before seeding (cloud-demo D3)")
