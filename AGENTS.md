@@ -36,7 +36,7 @@ When a mistake or the same kind of review finding repeats, add a check to `scrip
 
 ## Judgment rules
 
-1. Delegate research and implementation (product code, tests, build configuration) to a suitable low-cost model. Model names from the user are examples, and a model choice needs no approval; if one fails, try another. The main agent defines the question, splits the work, tracks progress, reviews the results, and applies research findings to the design.
+1. Delegate research and implementation (product code, tests, build configuration) to a lower-tier model; design, grilling, and planning stay in the top-tier session. Tier-to-model mapping: `docs/agents/models.md`. Model names from the user are examples, and a model choice needs no approval; if one fails, try another. The main agent defines the question, splits the work, tracks progress, reviews the results, and applies research findings to the design.
 2. Build what the design sources say. If you must make a new decision, record it in an ADR in the same PR and name it in the PR description. Implementers do not write review rules.
 3. One purpose per PR. Work outside it, such as new hooks, CI, or review setup, goes in a separate PR.
 4. A PR description states what changed, which design sections it follows, and the exact verification commands and results. Never label a step verified without a run.
@@ -47,6 +47,7 @@ When a mistake or the same kind of review finding repeats, add a check to `scrip
 ## Where things are
 
 - If `AGENTS.local.md` exists, read it. It holds this machine's personal setup and is not committed.
+- Before you delegate work to a model, read `docs/agents/models.md`.
 - Before you edit or review files in an area, read the sections that `docs/design-index.md` lists for it.
 - Before you explore code or design the domain, read `docs/agents/domain.md` (start with one domain context).
 - Before you create or read an issue, or evaluate or change its status (local Markdown files), read `docs/agents/issue-tracker.md` and `docs/agents/triage-labels.md`.
