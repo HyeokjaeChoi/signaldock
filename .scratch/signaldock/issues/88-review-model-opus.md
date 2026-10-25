@@ -17,4 +17,6 @@ Notes:
 - `docs/agents/models.md` is in another open PR and is not edited here. Its review-job line must change to `opus` after both PRs merge.
 
 Verification:
-- `bash scripts/check-repo-rules.sh`; `grep -n "model" .github/workflows/claude-review.yml` shows `--model opus`.
+- `bash scripts/check-repo-rules.sh`: run on 2026-10-25 UTC. It printed no output and exited with `exit=0`.
+- `grep -n "model" .github/workflows/claude-review.yml` shows `--model opus`.
+- After merge: on the next PR, the `claude-review` run log shows the `opus` model and the review posts. Record the run link here. Until then this item is not verified.
