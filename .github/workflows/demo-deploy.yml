@@ -2,7 +2,10 @@
 # A pushed tag demo-vX.Y.Z on main builds the server and Dashboard images and pushes them to GHCR with
 # GITHUB_TOKEN only. This workflow holds no cloud credential and does not deploy: the VM pulls the images
 # (infra/vm/signaldock-deploy.sh). The second job only waits until the VM reports the tag.
-# No OIDC token and no repository credentials are used. Trivy scan: ticket 07.
+# No OIDC token is requested, and no repository credentials are used.
+# Trivy (ADR-0045 item 6, ticket 07): both images are built into the local Docker store first and scanned.
+# The job fails on a CRITICAL or HIGH finding that has a fix. Only if both scans pass, the same two images
+# (the scanned ones, same digest) are pushed. A failed scan pushes nothing.
 name: demo-deploy
 
 on:
@@ -54,12 +57,20 @@ jobs:
               *) echo "error: cannot tell if $image:$TAG exists: $out" >&2; exit 1 ;;
             esac
           done
+      # Builds and Trivy run downloaded code. They get no registry credential: log out here, log in again before the push.
+      - name: Log out of ghcr.io
+        run: |
+          docker logout ghcr.io
+          if grep -q 'ghcr.io' "$HOME/.docker/config.json" 2>/dev/null; then
+            echo "error: ghcr.io credential is still in ~/.docker/config.json" >&2; exit 1
+          fi
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      # load: true keeps the image in the local Docker store and pushes nothing.
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           file: server/Dockerfile
-          push: true
+          load: true
           tags: ${{ env.SERVER_IMAGE }}:${{ env.TAG }}
           # Links the package to this repository, so later pushes with GITHUB_TOKEN are allowed.
           labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
@@ -67,9 +78,31 @@ jobs:
         with:
           context: .
           file: dashboard/Dockerfile
-          push: true
+          load: true
           tags: ${{ env.DASHBOARD_IMAGE }}:${{ env.TAG }}
           labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+      # Fixable CRITICAL and HIGH findings fail the job. Findings without a fix are ignored.
+      # Trivy runs from the official image, pinned by index digest (v0.76.1). The trivy-action is not used:
+      # it passes github.token to its installer. These steps get no token and no registry credential.
+      # Both scans run before any push.
+      - name: Trivy scan, server image
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c \
+            image --ignore-unfixed --severity CRITICAL,HIGH --exit-code 1 --no-progress "$SERVER_IMAGE:$TAG"
+      - name: Trivy scan, Dashboard image
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c \
+            image --ignore-unfixed --severity CRITICAL,HIGH --exit-code 1 --no-progress "$DASHBOARD_IMAGE:$TAG"
+      - name: Log in to ghcr.io for the push
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Push images
+        run: |
+          docker push "$SERVER_IMAGE:$TAG"
+          docker push "$DASHBOARD_IMAGE:$TAG"
 
   # Waits for the VM timer (every 5 minutes) to pull the images. A failed deploy rolls back, so
   # deployed.txt keeps the old tag and this job times out.

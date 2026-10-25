@@ -107,6 +107,7 @@ Docker 29.4.0 and Compose v5.1.2 (OrbStack) ran `docker compose up -d --build`.
 | Compose BOM | 2026.09.00 | Demo app build (issue 16, ADR-0006 decision 1) |
 | Ktor | 3.6.0 | Server tests and the Docker server image (issues 02 and 15) |
 | Flyway | 13.10.0 | Server migrations and `SchemaUpgradeTest` (issues 02 and 22, ADR-0012) |
+| Trivy | `aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c` (multi-arch index digest) | CI image scan in `.github/workflows/demo-deploy.yml` (ADR-0045 item 6). Official Docker Hub image, run with `docker run`; no token, no registry credential. Renovate does not read this `docker run` line, so the digest is updated by hand |
 | compileSdk 36 / targetSdk 36 / minSdk 24 | minSdk 24 per spec agreement | The SDK builds at compileSdk 36 (issue 03). The demo app uses compileSdk 37 (`demo-compileSdk`, issue 16); it needs platform `android-37` |
 
 ## Evidence locations

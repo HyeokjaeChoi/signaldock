@@ -13,6 +13,8 @@ packages:
   - nginx
   - certbot
   - unattended-upgrades
+  - goaccess
+  - fail2ban
 
 write_files:
   - path: /etc/apt/apt.conf.d/20auto-upgrades
@@ -45,7 +47,7 @@ runcmd:
       systemctl daemon-reload
       systemctl enable --now signaldock-docker-user.service
 
-      # Deploy and reset scripts and timers (ticket 05). Idempotent; the owner runs it by hand on a VM
+      # Deploy, reset and report scripts and timers (ticket 05), GoAccess report and fail2ban jail (ticket 07). Idempotent; the owner runs it by hand on a VM
       # that was created before it existed (cloud-init does not run again; docs/runbook-demo.md).
       bash "$src/infra/vm/install.sh"
 

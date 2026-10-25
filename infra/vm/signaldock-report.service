@@ -1,0 +1,16 @@
+# GoAccess static report from the nginx JSON log (ADR-0044 item 5). nginx serves it at /reports/ behind basic auth.
+[Unit]
+Description=SignalDock demo: GoAccess report from the nginx access log
+
+[Service]
+Type=oneshot
+User=www-data
+SupplementaryGroups=adm
+ExecStart=/usr/local/sbin/signaldock-report.sh
+TimeoutStartSec=5min
+Nice=10
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/www/signaldock-reports
