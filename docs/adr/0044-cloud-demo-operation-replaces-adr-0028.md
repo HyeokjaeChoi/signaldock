@@ -10,7 +10,7 @@ status: accepted
 
 - The demo has one owner and no real users. Readers do not send events.
 - The server code does not change. The controls sit at host nginx and on the VM, not in the application.
-- `POST /v1/events:batch` and `POST /v1/client-reports` stay reachable on the public URL through host nginx. They need the collection key, which is not published, and the per-IP limits apply (spec D2). D10 decides "view only": readers do not send events, but the route is not closed.
+- `POST /v1/events:batch` and `POST /v1/client-reports` stay reachable on the public URL through host nginx. They need the collection key, which is not published, and the per-IP limits apply (spec D2). The demo is view only (spec section 1, D11): readers do not send events, but the route is not closed.
 - Gap: none of these controls is built or verified yet (tickets 02 to 07 of `.scratch/cloud-demo/issues/`). The facts in spec section 7 about `limit_req_status` and GoAccess options are not verified.
 
 ## Decision
@@ -36,7 +36,7 @@ status: accepted
 
 - The application stays as in ADR-0028 for all five rows. A deployment without host nginx in front (or one that needs per-key limits) is not covered.
 - The demo data is synthetic. Do not put real data in it.
-- Tickets 03 to 07 must not claim a control works until the check in spec section 6 ran.
+- Tickets 02 to 07 must not claim a control works until the check in spec section 6 ran.
 
 ## Rejected alternatives
 

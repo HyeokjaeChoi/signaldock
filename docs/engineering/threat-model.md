@@ -130,7 +130,7 @@ Before any non-local use, build every feature in the ADR-0028 table first. The c
 ## 9. Cloud demo (planned, 2026-10-25 UTC)
 
 A public demo is planned at `https://signaldock.stack-line.dev` until 2027-01-16 UTC ([ADR-0043](../adr/0043-cloud-demo-hosting-and-deploy.md), [ADR-0044](../adr/0044-cloud-demo-operation-replaces-adr-0028.md), [ADR-0045](../adr/0045-cloud-demo-host-and-container-hardening.md); source `.scratch/cloud-demo/spec.md`). Readers see the Dashboard and do not send events. The data is synthetic.
-Gap: none of the controls below is built or verified. The section 4 rows for the application (Ingest API, Key guessing, PostgreSQL, Query key in nginx) and the residual risks 4, 5, 6, and 9 of section 7 stay true for the application. The host controls are the planned mitigation. `POST /v1/events:batch` and `POST /v1/client-reports` stay reachable on the public URL through host nginx. They need the collection key, which is not published, and the per-IP limits apply (D2). D10 decides "view only": readers do not send events, but the route is not closed.
+Gap: none of the controls below is built or verified. The section 4 rows for the application (Ingest API, Key guessing, PostgreSQL, Query key in nginx) and the residual risks 4, 5, 6, and 9 of section 7 stay true for the application. The host controls are the planned mitigation. `POST /v1/events:batch` and `POST /v1/client-reports` stay reachable on the public URL through host nginx. They need the collection key, which is not published, and the per-IP limits apply (D2). The demo is view only (spec section 1, D11): readers do not send events, but the route is not closed.
 
 | Threat | Planned control | Residual risk |
 | --- | --- | --- |
