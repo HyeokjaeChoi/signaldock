@@ -45,6 +45,10 @@ runcmd:
       systemctl daemon-reload
       systemctl enable --now signaldock-docker-user.service
 
+      # Deploy and reset scripts and timers (ticket 05). Idempotent; the owner runs it by hand on a VM
+      # that was created before it existed (cloud-init does not run again; docs/runbook-demo.md).
+      bash "$src/infra/vm/install.sh"
+
       # Host nginx. The Ubuntu package starts the default site on port 80: remove it and stop nginx.
       # nginx cannot start before the certificate exists; the runbook starts it after certbot.
       install -m 0644 "$src/infra/nginx/signaldock.conf" /etc/nginx/conf.d/signaldock.conf

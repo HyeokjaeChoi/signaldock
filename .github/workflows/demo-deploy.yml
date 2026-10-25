@@ -1,0 +1,99 @@
+# Cloud demo tag deploy (ADR-0043 item 4, cloud-demo spec D9, ticket 05).
+# A pushed tag demo-vX.Y.Z on main builds the server and Dashboard images and pushes them to GHCR with
+# GITHUB_TOKEN only. This workflow holds no cloud credential and does not deploy: the VM pulls the images
+# (infra/vm/signaldock-deploy.sh). The second job only waits until the VM reports the tag.
+# No OIDC token and no repository secrets are used. Trivy scan: ticket 07.
+name: demo-deploy
+
+on:
+  push:
+    tags: ['demo-v*.*.*']
+
+permissions: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    env:
+      TAG: ${{ github.ref_name }}
+      # Lowercase on purpose: GHCR rejects upper case. Same names as infra/compose.demo.yml.
+      SERVER_IMAGE: ghcr.io/hyeokjaechoi/signaldock-server
+      DASHBOARD_IMAGE: ghcr.io/hyeokjaechoi/signaldock-dashboard
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify tag
+        run: |
+          if ! [[ "$TAG" =~ ^demo-v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "error: tag '$TAG' is not demo-vMAJOR.MINOR.PATCH" >&2; exit 1
+          fi
+          # Only commits that are on main (same check as release.yml).
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main \
+            || { echo "error: $TAG is not on main" >&2; exit 1; }
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Refuse to overwrite an image tag
+        run: |
+          for image in "$SERVER_IMAGE" "$DASHBOARD_IMAGE"; do
+            if out=$(docker manifest inspect "$image:$TAG" 2>&1); then
+              echo "error: $image:$TAG already exists; images are never overwritten. Use a new tag." >&2; exit 1
+            fi
+            # Absent: "manifest unknown", or "denied" when the package does not exist yet (first push).
+            # Anything else (network, server error) fails the job rather than risk an overwrite.
+            case "$out" in
+              *"manifest unknown"*|*"name unknown"*|*"not found"*|*denied*) echo "ok: $image:$TAG is new" ;;
+              *) echo "error: cannot tell if $image:$TAG exists: $out" >&2; exit 1 ;;
+            esac
+          done
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: server/Dockerfile
+          push: true
+          tags: ${{ env.SERVER_IMAGE }}:${{ env.TAG }}
+          # Links the package to this repository, so later pushes with GITHUB_TOKEN are allowed.
+          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: dashboard/Dockerfile
+          push: true
+          tags: ${{ env.DASHBOARD_IMAGE }}:${{ env.TAG }}
+          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
+  # Waits for the VM timer (every 5 minutes) to pull the images. A failed deploy rolls back, so
+  # deployed.txt keeps the old tag and this job times out.
+  wait-deployed:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions: {}
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+      - name: Wait for /deployed.txt
+        run: |
+          got=
+          for _ in $(seq 90); do
+            got=$(curl -fsS --max-time 10 https://signaldock.stack-line.dev/deployed.txt 2>/dev/null | tr -d '[:space:]' || true)
+            [ "$got" = "$TAG" ] && { echo "deployed: $TAG"; exit 0; }
+            echo "waiting: deployed.txt shows '${got:-<none>}', want '$TAG'"
+            sleep 10
+          done
+          {
+            echo "error: after 15 minutes https://signaldock.stack-line.dev/deployed.txt shows '${got:-<none>}', not '$TAG'."
+            echo "The images are pushed. The VM did not deploy them. On the VM check:"
+            echo "  journalctl -u signaldock-deploy -n 100; cat /opt/signaldock/failed-tags"
+            echo "Also check both GHCR packages are Public. See docs/runbook-demo.md."
+          } >&2
+          exit 1

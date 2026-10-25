@@ -1,0 +1,12 @@
+# Tag deploy (ADR-0043 item 4). Started by signaldock-deploy.timer; start it by hand for a manual deploy.
+[Unit]
+Description=SignalDock demo: deploy the newest demo-v tag
+After=docker.service network-online.target
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/signaldock-deploy.sh
+# pull + up + /ready wait + rollback
+TimeoutStartSec=20min
