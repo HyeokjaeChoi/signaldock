@@ -84,7 +84,7 @@ jobs:
       - name: Wait for /deployed.txt
         run: |
           got=
-          for _ in $(seq 90); do
+          while [ "$SECONDS" -lt 900 ]; do
             got=$(curl -fsS --max-time 10 https://signaldock.stack-line.dev/deployed.txt 2>/dev/null | tr -d '[:space:]' || true)
             [ "$got" = "$TAG" ] && { echo "deployed: $TAG"; exit 0; }
             echo "waiting: deployed.txt shows '${got:-<none>}', want '$TAG'"

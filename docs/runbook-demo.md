@@ -293,11 +293,11 @@ sudo systemctl start signaldock-deploy
 
 To fix the code: merge the fix, and push a new tag with a higher version. A failed tag is never moved (the ruleset forbids it).
 
-Rollback test (owner, optional): push a normal new tag. Before the timer fires, stop the timer and run the deploy by hand with a ready URL that never answers. The script reads `SIGNALDOCK_READY_URL` and `SIGNALDOCK_READY_WAIT` from its environment.
+Rollback test (owner, optional): push a normal new tag. Before the timer fires, stop the timer and run the deploy by hand with `SIGNALDOCK_TEST_FAIL_TAG` set to the new tag. The readiness wait then fails only for that tag, so the rollback to the old tag uses the normal checks. The script logs when the override is active.
 
 ```bash
 sudo systemctl stop signaldock-deploy.timer
-sudo SIGNALDOCK_READY_URL=http://127.0.0.1:9/ready SIGNALDOCK_READY_WAIT=20 /usr/local/sbin/signaldock-deploy.sh
+sudo SIGNALDOCK_TEST_FAIL_TAG=demo-v0.2.0 /usr/local/sbin/signaldock-deploy.sh
 cat /opt/signaldock/failed-tags        # the new tag is listed
 curl -s https://signaldock.stack-line.dev/deployed.txt   # still the old tag
 # Retry for real: remove the tag from failed-tags, start the timer again.

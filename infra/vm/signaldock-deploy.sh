@@ -15,6 +15,7 @@ WEBROOT=${SIGNALDOCK_WEBROOT:-/var/www/signaldock}
 READY_URL=${SIGNALDOCK_READY_URL:-http://127.0.0.1:8080/ready}
 DASHBOARD_URL=${SIGNALDOCK_DASHBOARD_URL:-http://127.0.0.1:5173/}
 READY_WAIT=${SIGNALDOCK_READY_WAIT:-180}
+TEST_FAIL_TAG=${SIGNALDOCK_TEST_FAIL_TAG:-}  # test only: the readiness wait fails for this one tag
 SRC=$BASE/src
 ENVF=$BASE/.env
 TAG_RE='^demo-v[0-9]+\.[0-9]+\.[0-9]+$'
@@ -50,7 +51,11 @@ checkout() { git -c advice.detachedHead=false checkout --force --detach "refs/ta
 compose() {  # compose <tag> <args...>
   DEMO_TAG=$1 docker compose -f docker-compose.yml -f infra/compose.demo.yml --env-file "$ENVF" "${@:2}"
 }
-wait_ready() {
+wait_ready() {  # wait_ready <tag>
+  if [ -n "$TEST_FAIL_TAG" ] && [ "$1" = "$TEST_FAIL_TAG" ]; then
+    log "TEST OVERRIDE active: SIGNALDOCK_TEST_FAIL_TAG=$TEST_FAIL_TAG; treating $1 as not ready"
+    return 1
+  fi
   local deadline=$((SECONDS + READY_WAIT))
   until curl -fsS -m 3 -o /dev/null "$READY_URL" 2>/dev/null \
     && curl -fsS -m 3 -o /dev/null "$DASHBOARD_URL" 2>/dev/null; do
@@ -59,7 +64,7 @@ wait_ready() {
   done
 }
 start() {  # start <tag>: files from the tag, stack up, ready
-  checkout "$1" && compose "$1" up -d --no-build --remove-orphans && wait_ready
+  checkout "$1" && compose "$1" up -d --no-build --remove-orphans && wait_ready "$1"
 }
 
 log "deploying $newest (current: ${current:-none})"
