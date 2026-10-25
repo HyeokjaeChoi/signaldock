@@ -14,3 +14,4 @@
 - One-shot design analysis can go to a top-tier subagent while the session stays on a lower tier (Agent tool `model` parameter, or `model:` in `.claude/agents/*.md`).
 - Claude Code `opusplan` uses the top tier only in plan mode. It does not cover grilling or design in normal mode.
 - The GitHub review job `.github/workflows/claude-review.yml` uses `--model sonnet` (ADR-0041). This file does not change it.
+- If the listed model fails or is not available, use the next higher tier. Say so in the report.

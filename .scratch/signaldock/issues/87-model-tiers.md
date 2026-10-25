@@ -13,4 +13,4 @@ AGENTS.md said "a suitable low-cost model". It did not say which model does whic
 3. The GitHub review job keeps `--model sonnet` (ADR-0041). This issue does not change it.
 
 Verification:
-- `bash scripts/check-repo-rules.sh`
+- `bash scripts/check-repo-rules.sh`: exit 0 (2026-10-25 UTC)
