@@ -231,7 +231,7 @@ Order matters. The VM needs the stack files on `main`, `.env`, htpasswd, and the
    git fetch origin && git tag demo-v0.1.0 origin/main && git push origin demo-v0.1.0
    ```
 
-2. The workflow `demo-deploy` builds and pushes `ghcr.io/hyeokjaechoi/signaldock-server:demo-v0.1.0` and `signaldock-dashboard:demo-v0.1.0`. Its second job waits for `/deployed.txt`, so it fails until step 3 is done. Re-run only that job afterwards.
+2. The workflow `demo-deploy` builds and pushes `ghcr.io/hyeokjaechoi/signaldock-server:demo-v0.1.0` and `signaldock-dashboard:demo-v0.1.0`. Its second job waits for `/deployed.txt`, so it fails if the VM has not deployed the tag within its wait (for example the packages are not public, or the deploy failed). After you fix the cause, re-run only that job.
 3. Check whether both packages are already public. Packages pushed with `GITHUB_TOKEN` from this public repository were public on the first push (checked on 2026-10-25 UTC). Do not change anything before you check. Ask for the manifest without a login; `200` means public:
 
    ```bash
