@@ -1,8 +1,9 @@
 # 19. Docker hardening: roll out on the VM and re-run docker-bench
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
+Execution: Done (PR #236, 2026-10-27 UTC)
 
 ## Scope and completion criteria
 

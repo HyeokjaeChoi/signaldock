@@ -212,7 +212,7 @@ gcloud compute ssh signaldock-demo --zone asia-northeast3-a --tunnel-through-iap
 systemctl list-timers 'signaldock-*'     # deploy every 5 min, reset 04:00 Asia/Seoul, disk check hourly, report every 10 min
 ```
 
-A change to `/etc/docker/daemon.json` needs a Docker restart. `install.sh` restarts Docker only when no container runs. Otherwise it prints a NOTICE and keeps the marker `/etc/docker/daemon.json.pending`. When a short stop is fine, restart under the deploy/reset lock, so no deploy or reset runs at the same time:
+A change to `/etc/docker/daemon.json` needs a Docker restart. `install.sh` restarts Docker only when no container runs. Otherwise it prints a NOTICE and keeps the marker `/etc/docker/daemon.json.pending`. The first restart that turns on `live-restore` stops the containers for a short time (later restarts keep them running). When that is fine, restart under the deploy/reset lock, so no deploy or reset runs at the same time:
 
 ```bash
 sudo flock -w 600 /run/signaldock.lock sh -c 'systemctl restart docker && rm -f /etc/docker/daemon.json.pending'
