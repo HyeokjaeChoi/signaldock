@@ -19,6 +19,14 @@
 스크린샷은 테스트 이벤트 120개를 넣은 Dashboard와, `perf/results/`에 기록된 실행을 보여 주는 벤치마크 보고서입니다.
 데모 `track()`부터 Dashboard 수신까지 보여 주는 짧은 영상: [25-demo-track-to-dashboard.mp4](.scratch/signaldock/evidence/25-demo-track-to-dashboard.mp4).
 
+아래 스크린샷 세 장은 2026-10-26 UTC에 라이브 클라우드 데모에서 찍었으며, 시드 데이터(`scripts/demo-seed.py`)를 보여 줍니다.
+
+![라이브 데모 Dashboard 개요: 핵심 수치(오늘 수신 이벤트 501개, 계획 위반 28건), 필터, 이벤트 목록.](docs/images/demo-overview.png)
+
+![Plan status 필터를 Invalid properties로 설정한 라이브 데모 Dashboard: product_viewed 이벤트 하나를 선택했고, 상세에 product_id가 숫자 12345로, 옆에 저장된 JSON이 보입니다.](docs/images/demo-plan-violations.png)
+
+![라이브 데모 Dashboard: 이름별·시간별 이벤트 수와, SDK 클라이언트 보고를 버전과 사유별로 보여 주는 Dropped events 패널(총 81건).](docs/images/demo-dropped-events.png)
+
 ## 여기서 시작
 
 1. [Architecture](architecture.md): 컴포넌트 책임, 저장소 소유권, 복구 경계.
@@ -93,7 +101,7 @@ iOS / Flutter, React Native / Flutter / Unity 또는 WebView(native-web) bridge(
 - SDK: debug 빌드로 API 24와 API 37 에뮬레이터에서 normal, offline, burst를 실행했고, API 37 에뮬레이터에서 R8 release 빌드(debug 서명)로 한 번 더 실행했습니다. 결과는 [`perf/sdk-results/summary.md`](perf/sdk-results/summary.md)에 있습니다([ADR-0014](docs/adr/0014-sdk-device-measurement-harness.md), [ADR-0018](docs/adr/0018-sdk-release-r8-measurement.md), [issue 24](.scratch/signaldock/issues/24-sdk-device-measurement.md), [issue 33](.scratch/signaldock/issues/33-sdk-crash-safety-and-release-build.md)).
 - 호스트 앱이 치르는 SDK 비용: API 37 에뮬레이터에서 SDK가 있는 R8 consumer 앱과 없는 앱을 비교했습니다. APK는 616,829 bytes(dex는 966,108 bytes) 커지고, 콜드 스타트 `TotalTime` p50은 SDK 없음 235 ms, 있음 238 ms이며, `initialize()`는 메인 스레드를 p50 0.26 ms, p95 3.0 ms 사용하고, 5초 유휴 후 PSS는 4.0 MiB 더 큽니다([`perf/sdk-results/host-cost-api37/summary.md`](perf/sdk-results/host-cost-api37/summary.md), [ADR-0020](docs/adr/0020-sdk-host-app-cost.md), [issue 36](.scratch/signaldock/issues/36-sdk-host-app-cost.md)).
 - SDK Baseline Profile: API 37 에뮬레이터에서 Macrobenchmark로 측정했습니다(행마다 콜드 스타트 20회, 지표는 샘플 앱의 `initialize()`, `track()` 20회, `diagnostics()`). 두 번의 실행에서 p50은 컴파일 없음 495 ms와 749 ms, 프로필 적용 358 ms와 351 ms로 각각 28 %와 53 % 낮았고, 세 번째 실행은 413 ms와 410 ms로 차이가 없었습니다. SDK 규칙을 뺀 대조군은 387 ms여서 SDK 규칙만의 효과는 에뮬레이터 잡음 안에 있고, 같은 모드도 실행마다 50 % 달라집니다. Baseline Profile은 실제 기기에서 측정하지 않았습니다([`perf/sdk-results/baseline-profile-api37/`](perf/sdk-results/baseline-profile-api37/), [ADR-0040](docs/adr/0040-sdk-baseline-profile.md), [issue 70](.scratch/signaldock/issues/70-sdk-baseline-profile.md)).
-- CI: `repo-rules` 워크플로에는 `check`, `verify-contract`, `sdk-test`, `consumer-r8`, `server-test`, `device-test`, `size-budget`, `gradle-wrapper` job이 있습니다. 다른 워크플로는 `pr-description`(`length` job), `codeql`, `release`입니다. `device-test` job은 API 34 `google_apis` x86_64 에뮬레이터에서 계측 SDK 테스트를 실행합니다. 33개가 시작되고, 16개는 스스로 건너뛰며(phase 클래스는 `-e phase`가 필요합니다), 17개가 실행됩니다(PR #173의 `repo-rules` run 39032066203 job 로그, 2026-10-17 UTC). 또한 SDK가 R8 consumer APK를 700,000 bytes보다 더 키우면 빌드를 실패시키는 크기 게이트가 있습니다(`size-budget` job). `scripts/device-durability.sh`의 프로세스 경계 케이스와 측정은 로컬에서만 실행합니다([ADR-0023](docs/adr/0023-ci-device-tests-and-size-budget.md), [issue 40](.scratch/signaldock/issues/40-ci-device-tests-and-size-budget.md)).
+- CI: `repo-rules` 워크플로에는 `check`, `verify-contract`, `sdk-test`, `consumer-r8`, `server-test`, `device-test`, `size-budget`, `gradle-wrapper` job이 있습니다. 다른 워크플로는 `pr-description`(`length` job), `codeql`, `release`(`build`, `publish` job), `claude-review`(`review` job, [ADR-0041](docs/adr/0041-claude-code-pr-review.md)), `demo-deploy`(`build`, `wait-deployed` job. `demo-v*` 태그에서만 실행, [ADR-0043](docs/adr/0043-cloud-demo-hosting-and-deploy.md))입니다. `device-test` job은 API 34 `google_apis` x86_64 에뮬레이터에서 계측 SDK 테스트를 실행합니다. 33개가 시작되고, 16개는 스스로 건너뛰며(phase 클래스는 `-e phase`가 필요합니다), 17개가 실행됩니다(PR #173의 `repo-rules` run 39032066203 job 로그, 2026-10-17 UTC). 또한 SDK가 R8 consumer APK를 700,000 bytes보다 더 키우면 빌드를 실패시키는 크기 게이트가 있습니다(`size-budget` job). `scripts/device-durability.sh`의 프로세스 경계 케이스와 측정은 로컬에서만 실행합니다([ADR-0023](docs/adr/0023-ci-device-tests-and-size-budget.md), [issue 40](.scratch/signaldock/issues/40-ci-device-tests-and-size-budget.md)).
 - [성능 계획](.scratch/signaldock/performance-plan.md)에는 처음의 목표와 조건이 있습니다.
 
 스택 실행, 중지, 초기화 방법과 Maven ZIP 빌드, consumer 앱 실행 방법은 아래에 있습니다.
@@ -175,8 +183,8 @@ docker compose down --volumes           # RESET: deletes the DB volume and ALL s
 
 ### 한계
 
-- 로컬 전용입니다. 스택은 `127.0.0.1`에 bind하고, 예시 수준의 secret을 사용하며, TLS가 없습니다. 공개 인터넷용이 아닙니다.
-- 라이브 데모 계획: 2027-01-16 UTC까지 `https://signaldock.stack-line.dev`에 클라우드 데모를 둘 계획입니다. 아직 배포하거나 검증하지 않았습니다. 방문자는 basic auth 뒤의 Dashboard를 볼 수 있고, 이벤트는 보낼 수 없습니다. 데이터는 합성 데이터이며 데이터베이스는 매일 초기화합니다. 통제와 수용한 위험은 [ADR-0043](docs/adr/0043-cloud-demo-hosting-and-deploy.md), [ADR-0044](docs/adr/0044-cloud-demo-operation-replaces-adr-0028.md), [ADR-0045](docs/adr/0045-cloud-demo-host-and-container-hardening.md)에 있습니다. 종료일 이후에는 이 README에 스크린샷과 짧은 영상을 남깁니다.
+- 로컬 전용입니다. 로컬 Compose 스택은 `127.0.0.1`에 bind하고, 예시 수준의 secret을 사용하며, TLS가 없습니다. 공개 인터넷용이 아닙니다. 클라우드 데모(다음 항목)만 예외이며, 호스트 nginx, TLS, basic auth로 실행합니다([ADR-0043](docs/adr/0043-cloud-demo-hosting-and-deploy.md), [ADR-0044](docs/adr/0044-cloud-demo-operation-replaces-adr-0028.md)).
+- 라이브 데모: 클라우드 데모를 2026-10-25 UTC에 배포했습니다(태그 `demo-v0.1.1`). 주소는 `https://signaldock.stack-line.dev`이며 2027-01-16 UTC까지 운영합니다. Dashboard는 basic auth 뒤에 있고, 방문자는 이벤트를 보낼 수 없습니다. 데이터는 합성 데이터이며 데이터베이스는 매일 04:00 Asia/Seoul에 초기화합니다. 사용하지 않을 때는 소유자가 VM을 멈추므로 주소가 응답하지 않을 수 있습니다. 구축 방법과 실행한 검증은 [docs/runbook-demo.md](docs/runbook-demo.md)에 있습니다. 통제와 수용한 위험은 [ADR-0043](docs/adr/0043-cloud-demo-hosting-and-deploy.md), [ADR-0044](docs/adr/0044-cloud-demo-operation-replaces-adr-0028.md), [ADR-0045](docs/adr/0045-cloud-demo-host-and-container-hardening.md)에 있습니다. 종료일 이후에는 이 README에 스크린샷과 짧은 영상을 남깁니다. 스크린샷은 이 README에 있고, 영상은 아직 만들지 않았습니다([issue 17](.scratch/cloud-demo/issues/17-readme-demo-video.md)).
 - 성능 수치는 Docker 제한이 있는 Mac 한 대에서 측정한 값입니다. SLA가 아니며 pool 크기를 정하는 근거도 아닙니다([ADR-0013](docs/adr/0013-server-load-measurement-harness.md)).
 - SDK 기기 측정은 에뮬레이터에서만 했습니다. API 24와 API 37은 debug 빌드, API 37은 R8 release 빌드입니다([ADR-0014](docs/adr/0014-sdk-device-measurement-harness.md), [ADR-0018](docs/adr/0018-sdk-release-r8-measurement.md)). 실기기 한 대(Galaxy Z Flip7, Android 17)에서는 SDK 0.3.0으로 debug 시나리오와 호스트 앱 비용을 측정했습니다([`perf/sdk-results/api37-phone-*`](perf/sdk-results/), [`host-cost-phone-api37/`](perf/sdk-results/host-cost-phone-api37/), [ADR-0042](docs/adr/0042-measurement-on-a-physical-device.md), [issue 85](.scratch/signaldock/issues/85-device-verification-v0.3.0.md)). release 빌드, Baseline Profile, `scripts/device-durability.sh`는 실기기에서 실행하지 않았습니다.
 - cleartext HTTP는 `10.0.2.2`, `127.0.0.1`, `localhost`에서만 동작합니다(실기기: `adb reverse`, [docs/reproduce.md](docs/reproduce.md) 참고). HTTP로 LAN 주소를 쓰는 것은 지원하지 않습니다. `adb reverse` 경로는 에뮬레이터([issue 25](.scratch/signaldock/issues/25-reproduction-readme-video.md))와 실기기 1대([issue 74](.scratch/signaldock/issues/74-phone-demo-install-record.md))에서 실행했습니다.
