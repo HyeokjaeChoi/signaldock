@@ -2,7 +2,7 @@
 
 Sections 1 to 8: setup by the owner (spec section 4, steps 1 to 4). Sections 9 to 17 (ticket 05): VM scripts, tag ruleset, first tag, deploy, reset, failed deploy, rollback and Flyway, key rotation, teardown. Sections 18 to 20 (ticket 07): report, fail2ban, Trivy, uptime check, docker-bench-security.
 
-Design: ADR-0043 (hosting), ADR-0044 (nginx, keys), ADR-0045 (hardening). Nothing here has run on a real VM yet. A command that has not run is marked "not run" in the PR description.
+Design: ADR-0043 (hosting), ADR-0044 (nginx, keys), ADR-0045 (hardening). The first setup ran on 2026-10-25 UTC (tag `demo-v0.1.1` deployed). Results and not-run steps are in [issue 05](../.scratch/cloud-demo/issues/05-tag-deploy-and-daily-reset.md), [issue 07](../.scratch/cloud-demo/issues/07-detection-and-scans.md), and [issue 14](../.scratch/cloud-demo/issues/14-docker-bench-findings.md). A command that has not run is still marked "not run".
 
 Agents do not handle tokens or keys. You run these steps.
 
@@ -202,14 +202,14 @@ Record the results in the PR description. A step you did not run is "not run".
 
 ## 9. Deploy and reset scripts on the VM
 
-Files: `infra/vm/signaldock-deploy.{sh,service,timer}`, `signaldock-reset.{sh,service,timer}`, `signaldock-disk-check.{service,timer}`, and `install.sh`. The scripts run from `/usr/local/sbin`, never from the checked-out tag. The tag supplies only the Compose files and the tracking plan, because they must match its images. `install.sh` copies the scripts and units from `origin/main` and enables the three timers. It is idempotent.
+Files: `infra/vm/signaldock-deploy.{sh,service,timer}`, `signaldock-reset.{sh,service,timer}`, `signaldock-disk-check.{service,timer}`, and `install.sh`. The scripts run from `/usr/local/sbin`, never from the checked-out tag. The tag supplies only the Compose files and the tracking plan, because they must match its images. `install.sh` copies the scripts and units from `origin/main` and enables the four timers (deploy, reset, disk-check, report). It is idempotent.
 
 A new VM runs `install.sh` from cloud-init. **A VM that already exists** (created from an earlier `main`): cloud-init does not run again, so you run it by hand, once, and again whenever a PR changes `infra/vm/`:
 
 ```bash
 gcloud compute ssh signaldock-demo --zone asia-northeast3-a --tunnel-through-iap -- \
   "sudo bash -c 'git -C /opt/signaldock/src fetch origin main && git -C /opt/signaldock/src show origin/main:infra/vm/install.sh | bash'"
-systemctl list-timers 'signaldock-*'     # deploy every 5 min, reset 04:00 Asia/Seoul, disk check hourly
+systemctl list-timers 'signaldock-*'     # deploy every 5 min, reset 04:00 Asia/Seoul, disk check hourly, report every 10 min
 ```
 
 Do not re-apply Terraform for this. `cloud-init.yaml` is the instance's `user-data`; changing it makes `terraform plan` show a metadata change on the instance. By the Google provider docs, `metadata` updates in place and cloud-init does not run again, so the change does nothing on the VM. Read the plan: "update in-place" is fine, "must be replaced" is not (cancel; the VM would lose `.env` and the certificate). Not run here (no cloud access).
@@ -271,7 +271,7 @@ gcloud compute ssh signaldock-demo --zone asia-northeast3-a --tunnel-through-iap
 gcloud compute ssh signaldock-demo --zone asia-northeast3-a --tunnel-through-iap -- sudo journalctl -u signaldock-deploy -n 60 --no-pager
 ```
 
-What it does, in order: take `/run/signaldock.lock` (shared with the reset; if busy it skips and the timer comes back); `git fetch --tags --force`; take the newest `demo-vX.Y.Z` by version order; stop if it equals `/opt/signaldock/current-tag` or is a line in `/opt/signaldock/failed-tags`; refuse (and list as failed) a tag that is not an ancestor of `origin/main`; check out the tag; `docker pull` of the server and Dashboard images (not `compose pull`: both services also have `build:`, and Compose can then treat a missing image as "build from source"); `up -d --no-build`; wait up to 180 s for `http://127.0.0.1:8080/ready` and the Dashboard at `http://127.0.0.1:5173/`; write `current-tag` and `/var/www/signaldock/deployed.txt` (tag only); remove dangling images and signaldock images that are neither the new nor the previous tag. It only reads `.env` through `--env-file`. A tag whose images cannot be pulled yet is not a failure (the CI build may still run); it retries on the next run.
+What it does, in order: take `/run/signaldock.lock` (shared with the reset; if busy it skips and the timer comes back); `git fetch --tags --force --prune origin`; take the newest `demo-vX.Y.Z` by version order; stop if it equals `/opt/signaldock/current-tag` or is a line in `/opt/signaldock/failed-tags`; refuse (and list as failed) a tag that is not an ancestor of `origin/main`; check out the tag; `docker pull` of the server and Dashboard images (not `compose pull`: both services also have `build:`, and Compose can then treat a missing image as "build from source"); `up -d --no-build`; wait up to 180 s for `http://127.0.0.1:8080/ready` and the Dashboard at `http://127.0.0.1:5173/`; write `current-tag` and `/var/www/signaldock/deployed.txt` (tag only); remove dangling images and signaldock images that are neither the new nor the previous tag. It only reads `.env` through `--env-file`. A tag whose images cannot be pulled yet is not a failure (the CI build may still run); it retries on the next run.
 
 Only the newest tag is ever deployed. To go back to an older version, make a new tag on `main` that holds the older code (after a revert PR).
 
@@ -435,6 +435,8 @@ gcloud monitoring uptime create signaldock-ready --resource-type=uptime-url \
 ```
 
 Verify: the check shows green in Monitoring, Uptime checks. Test the alert: on the VM `sudo systemctl stop nginx` (or `docker stop` the server container; the next deploy or reset restarts it), wait about 10 minutes for the email, then start it again and wait for the "recovered" email. Or use the policy page, "Send test notification" on the channel. Record both results in the PR description. Teardown (section 17, step 5) deletes the check, the policy, and the channel.
+
+The owner disabled the alert policy `signaldock-ready down` because the VM is stopped when not in use, and the alert would fire on every stop (the uptime check stays). Enable the policy again while the VM runs all the time.
 
 ## 20. docker-bench-security (owner only, once)
 

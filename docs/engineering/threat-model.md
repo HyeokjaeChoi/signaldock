@@ -1,6 +1,6 @@
 # Threat model
 
-Status: written 2026-10-15, refreshed 2026-10-18 UTC against `main` at SDK `v0.2.0`. Earlier refresh: 2026-10-15 UTC (issue 51) after PRs #104 to #106, #108, and #111. Later PRs that change this model: #144 to #148, #158 to #161, #168, #173, #174 (DoS row, [ADR-0037](../adr/0037-server-collection-kill-switch.md)), #180 (supply chain row, [ADR-0039](../adr/0039-release-provenance-attestation.md)), #181 (supply chain row, [ADR-0038](../adr/0038-gradle-dependency-verification.md)), #189, and the v0.3.0 attestation result in the supply chain row (2026-10-21 UTC, [issue 78](../../.scratch/signaldock/issues/78-release-v0-3-0.md)). Method: the [OWASP threat modeling process](https://owasp.org/www-community/Threat_Modeling_Process) (scope, data flow, threats, mitigations, review) with STRIDE per element. Mobile controls are grouped by the [OWASP MASVS](https://mas.owasp.org/MASVS/) categories.
+Status: written 2026-10-15, refreshed 2026-10-18 UTC against `main` at SDK `v0.2.0`. Earlier refresh: 2026-10-15 UTC (issue 51) after PRs #104 to #106, #108, and #111. Later PRs that change this model: #144 to #148, #158 to #161, #168, #173, #174 (DoS row, [ADR-0037](../adr/0037-server-collection-kill-switch.md)), #180 (supply chain row, [ADR-0039](../adr/0039-release-provenance-attestation.md)), #181 (supply chain row, [ADR-0038](../adr/0038-gradle-dependency-verification.md)), #189, #204 (threat model), #207 (section 9), #234 (issue 16; section 9 status), and the v0.3.0 attestation result in the supply chain row (2026-10-21 UTC, [issue 78](../../.scratch/signaldock/issues/78-release-v0-3-0.md)). Method: the [OWASP threat modeling process](https://owasp.org/www-community/Threat_Modeling_Process) (scope, data flow, threats, mitigations, review) with STRIDE per element. Mobile controls are grouped by the [OWASP MASVS](https://mas.owasp.org/MASVS/) categories.
 Every mitigation cites a file. "Gap" means I found no mitigation in the repo. "Excluded on purpose" means the user decided to leave the feature out because the server runs only on the local machine ([ADR-0028](../adr/0028-server-production-features-excluded.md), spec Q157). The risk stays real if the server is exposed. Ratings are mine, not measured.
 This is a design-level model of a local evaluation project. It is not a penetration test and no external review was done.
 
@@ -9,7 +9,7 @@ Short paths: `SDK tests` = `sdk/sdk-android/src/test/kotlin/local/signaldock/`; 
 ## 1. Scope and assets
 
 In scope: the Android SDK (`sdk/sdk-android`), the ingest and query server (`server/`) with its two ingest routes (`POST /v1/events:batch` and `POST /v1/client-reports`) and its query routes (including `GET /v1/client-report-counts`), PostgreSQL, the Dashboard with its nginx proxy (`dashboard/`), and the Compose setup (`docker-compose.yml`).
-Spec 1 sets the deployment: one local project, synthetic data, no login, no public internet. One planned exception: a cloud demo on a public URL until 2027-01-16 UTC. Section 9 covers it; the rest of this model is for the local stack.
+Spec 1 sets the deployment: one local project, synthetic data, no login, no public internet. One exception: the cloud demo deployed on 2026-10-25 UTC, on a public URL until 2027-01-16 UTC. Section 9 covers it; the rest of this model is for the local stack.
 
 | Asset | Where | Why it matters |
 | --- | --- | --- |
@@ -127,12 +127,12 @@ Before any non-local use, build every feature in the ADR-0028 table first. The c
 - Penetration testing, fuzzing, and a formal security review.
 - iOS, Flutter, and bridges (Q150).
 
-## 9. Cloud demo (planned, 2026-10-25 UTC)
+## 9. Cloud demo (deployed 2026-10-25 UTC)
 
-A public demo is planned at `https://signaldock.stack-line.dev` until 2027-01-16 UTC ([ADR-0043](../adr/0043-cloud-demo-hosting-and-deploy.md), [ADR-0044](../adr/0044-cloud-demo-operation-replaces-adr-0028.md), [ADR-0045](../adr/0045-cloud-demo-host-and-container-hardening.md); source `.scratch/cloud-demo/spec.md`). Readers see the Dashboard and do not send events. The data is synthetic.
-Gap: none of the controls below is built or verified. The section 4 rows for the application (Ingest API, Key guessing, PostgreSQL, Query key in nginx) and the residual risks 4, 5, 6, and 9 of section 7 stay true for the application. The host controls are the planned mitigation. `POST /v1/events:batch` and `POST /v1/client-reports` stay reachable on the public URL through host nginx. They need the collection key, which is not published, and the per-IP limits apply (D2). The demo is view only (spec section 1, D11): readers do not send events, but the route is not closed.
+A public demo is deployed at `https://signaldock.stack-line.dev` until 2027-01-16 UTC ([ADR-0043](../adr/0043-cloud-demo-hosting-and-deploy.md), [ADR-0044](../adr/0044-cloud-demo-operation-replaces-adr-0028.md), [ADR-0045](../adr/0045-cloud-demo-host-and-container-hardening.md); source `.scratch/cloud-demo/spec.md`). Readers see the Dashboard and do not send events. The data is synthetic.
+Ran on 2026-10-25 UTC (tag `demo-v0.1.1`, run 40202103660): deploy, `/ready` 200, first reset and seed, reboot recovery ([issue 05](../../.scratch/cloud-demo/issues/05-tag-deploy-and-daily-reset.md)); the uptime check, one `docker-bench-security` run, and Trivy in CI ([issue 07](../../.scratch/cloud-demo/issues/07-detection-and-scans.md), [issue 14](../../.scratch/cloud-demo/issues/14-docker-bench-findings.md)). Gap: not run are the rollback of a broken tag, the refusal of a tag not on `main`, the alert test email, the GoAccess report, and the fail2ban ban test (issues 05 and 07). The owner disabled the alert policy `signaldock-ready down` because the VM is stopped when not in use (the uptime check stays). The section 4 rows for the application (Ingest API, Key guessing, PostgreSQL, Query key in nginx) and the residual risks 4, 5, 6, and 9 of section 7 stay true for the application. The host controls are the mitigation. `POST /v1/events:batch` and `POST /v1/client-reports` stay reachable on the public URL through host nginx. They need the collection key, which is not published, and the per-IP limits apply (D2). The demo is view only (spec section 1, D11): readers do not send events, but the route is not closed.
 
-| Threat | Planned control | Residual risk |
+| Threat | Control | Residual risk |
 | --- | --- | --- |
 | Request flood from the internet | Host nginx per-IP `limit_req` and `limit_conn`, `429` with `Retry-After`, body size cap (D2). The server 503 stays | Many IPs. One IP behind NAT shares a limit. No per-key limit |
 | Anyone reads the Dashboard | Host nginx basic auth (D1) on every route except `POST /v1/events:batch`, `POST /v1/client-reports`, `GET /ready`, `GET /deployed.txt`; no `GET /v1/*` without it. Credentials go only to people who ask | A shared credential. No per-user identity |
@@ -143,4 +143,4 @@ Gap: none of the controls below is built or verified. The section 4 rows for the
 | Cloud metadata server (`169.254.169.254`) | The VM has no service account (D6). A `DOCKER-USER` rule drops container traffic to it (D12) | Gap: rule not tested for IPv6, reboot, or compose bridges (spec section 7) |
 | Deploy abuse | Pull-based tag deploy: the VM pulls only a `demo-v*` tag on `main`. GitHub holds no cloud credentials. A tag ruleset limits tag changes to the admin (D9) | A compromised admin account or `main`. Public GHCR images |
 | Image and OS vulnerabilities | Trivy scan in CI, `unattended-upgrades`, one `docker-bench-security` run (D12) | Scan results are a point in time. Updates can restart services |
-| Outage unseen | External uptime check with email alerts (D12) | Alerts go to one inbox |
+| Outage unseen | External uptime check with email alerts (D12) | Alerts go to one inbox. The owner disabled the alert policy `signaldock-ready down` while the VM is stopped when not in use, so no email is sent now (runbook section 19) |

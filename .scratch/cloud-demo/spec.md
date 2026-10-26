@@ -1,6 +1,6 @@
 # SignalDock cloud demo spec
 
-Status: design agreed on 2026-10-25 (grilling, decisions D1 to D12). Tickets 01-07 are merged (PRs 207, 210-212, 214, 216, 219); the cloud steps are not run yet. Nothing in this file is verified on a cloud host yet.
+Status: design agreed on 2026-10-25 (grilling, decisions D1 to D12). Tickets 01-07 are merged (PRs 207, 210-212, 214, 216, 219). The cloud steps ran on 2026-10-25 UTC: `demo-v0.1.0` failed on a Flyway connect timeout (fixed in PR 221), and `demo-v0.1.1` deployed. Follow-ups from the first run are issues 08 and later in `.scratch/cloud-demo/issues/`. PRs 228 to 231 fixed issues 08 to 13 and 15. PR 232 changed the code for issue 14; the VM rollout, the reboot, and the docker-bench re-run are not run yet.
 
 ## 1. Goal and scope
 

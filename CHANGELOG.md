@@ -4,6 +4,17 @@ All notable changes to SignalDock are listed here. The format follows [Keep a Ch
 
 ## [Unreleased]
 
+### Added
+
+- Cloud demo infrastructure: `infra/` (Terraform, host nginx, Compose override, VM scripts), the `demo-deploy` workflow, and `scripts/demo-seed.py` ([ADR-0043](docs/adr/0043-cloud-demo-hosting-and-deploy.md) to [ADR-0045](docs/adr/0045-cloud-demo-host-and-container-hardening.md), PRs #207 to #219 and #232 (Docker daemon hardening, Dashboard healthcheck)). The demo was deployed on 2026-10-25 UTC (tag `demo-v0.1.1`). No SDK change.
+
+### Fixed
+
+- The Dashboard image upgrades `brotli-libs` for CVE-2026-111497 (PR #217).
+- The server retries the Flyway connect at start, 5 retries (PR #221).
+- `scripts/demo-seed.py` treats any 503 as uncertain, and a later-day rerun stops at the sentinel (PR #229).
+- The reset checks the 6 h guard again after it takes the lock (PR #230).
+
 ## [0.3.0] - 2026-10-21
 
 Third tagged release. It has no breaking change: the public API and the runtime dependency tree are the same as in 0.2.0. See the [release notes](docs/releases/v0.3.0.md).
