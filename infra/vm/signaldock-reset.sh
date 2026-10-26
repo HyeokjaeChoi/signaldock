@@ -19,13 +19,15 @@ SRC=$BASE/src
 ENVF=$BASE/.env
 
 log() { echo "signaldock-reset: $*"; }
+disk_used() { df --output=pcent "$DISK_PATH" | tail -n 1 | tr -dc '0-9'; }
+since_reset() { echo $(($(date +%s) - $(cat "$BASE/last-reset" 2>/dev/null || echo 0))); }
+limit=
 
 if [ "${1:-}" = "--if-disk-above" ]; then
   limit=${2:?usage: signaldock-reset.sh [--if-disk-above PERCENT]}
-  used=$(df --output=pcent "$DISK_PATH" | tail -n 1 | tr -dc '0-9')
+  used=$(disk_used)
   [ "$used" -ge "$limit" ] || exit 0
-  last=$(cat "$BASE/last-reset" 2>/dev/null || echo 0)
-  if [ $(($(date +%s) - last)) -lt "$MIN_GAP" ]; then
+  if [ "$(since_reset)" -lt "$MIN_GAP" ]; then
     log "ERROR: $DISK_PATH is ${used}% full but the last reset was less than $((MIN_GAP / 3600)) h ago; the DB is not the cause. Check docker system df and /var/log (runbook)"
     exit 1
   fi
@@ -37,6 +39,12 @@ fi
 # Same lock as the deploy. Wait for a running deploy instead of skipping: the reset is the daily job.
 exec 9>"$LOCK"
 flock -w "$LOCK_WAIT" 9 || { log "ERROR: lock busy for ${LOCK_WAIT}s; reset not run"; exit 1; }
+
+# A reset that held the lock first (the 04:00 daily reset) makes this early reset useless: check again.
+if [ -n "$limit" ] && { [ "$(disk_used)" -lt "$limit" ] || [ "$(since_reset)" -lt "$MIN_GAP" ]; }; then
+  log "a reset ran while waiting for the lock; early reset not needed"
+  exit 0
+fi
 
 [ -r "$ENVF" ] || { log "ERROR: $ENVF is missing"; exit 1; }
 tag=$(cat "$BASE/current-tag" 2>/dev/null || true)

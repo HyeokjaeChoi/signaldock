@@ -1,6 +1,6 @@
 # 10. Reset: re-check the 6 h guard after taking the lock
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: None
 
