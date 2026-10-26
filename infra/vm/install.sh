@@ -25,11 +25,11 @@ units=(signaldock-deploy.service signaldock-deploy.timer signaldock-reset.servic
        signaldock-disk-check.service signaldock-disk-check.timer signaldock-report.service signaldock-report.timer)
 for u in "${units[@]}"; do install -m 0644 "$d/$u" /etc/systemd/system/; done
 systemctl daemon-reload
-systemctl enable --now signaldock-deploy.timer signaldock-reset.timer signaldock-disk-check.timer signaldock-report.timer
 
 # Docker daemon hardening (ADR-0045 amendment, issue 14). This repo owns /etc/docker/daemon.json: the file is replaced, not merged.
 # A change needs a daemon restart, and the first restart still stops containers (live-restore is not active yet). So the restart
-# is automatic only when no container runs (new VM). Otherwise it is left to the owner (docs/runbook-demo.md section 9).
+# is automatic only when no container runs. This block runs before the deploy timer is enabled, so on a new VM no container runs
+# yet and the restart is always automatic. On a running demo the owner restarts (ADR-0045 amendment 2026-10-26).
 # The restart also re-applies the DOCKER-USER rule (PartOf in signaldock-docker-user.service).
 install -d -m 0755 /etc/docker
 if ! cmp -s "$d/docker-daemon.json" /etc/docker/daemon.json; then
@@ -37,9 +37,11 @@ if ! cmp -s "$d/docker-daemon.json" /etc/docker/daemon.json; then
   if [ -z "$(docker ps -q)" ]; then
     systemctl restart docker
   else
-    echo "NOTICE: /etc/docker/daemon.json changed and containers run. Run 'sudo systemctl restart docker' when a short stop is fine (docs/runbook-demo.md section 9)."
+    echo "NOTICE: /etc/docker/daemon.json changed and containers run. Run 'sudo systemctl restart docker' when a short stop is fine (ADR-0045 amendment 2026-10-26)."
   fi
 fi
+
+systemctl enable --now signaldock-deploy.timer signaldock-reset.timer signaldock-disk-check.timer signaldock-report.timer
 
 # fail2ban jail on the nginx JSON log. The jail does not start if the log file is missing, and nginx has not
 # run yet on a new VM, so make the file first (same owner and mode as logrotate-signaldock; nginx appends to it).

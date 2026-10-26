@@ -204,8 +204,6 @@ gcloud compute ssh signaldock-demo --zone asia-northeast3-a --tunnel-through-iap
 systemctl list-timers 'signaldock-*'     # deploy every 5 min, reset 04:00 Asia/Seoul, disk check hourly
 ```
 
-`install.sh` also writes `/etc/docker/daemon.json` from `infra/vm/docker-daemon.json` (`live-restore`, `no-new-privileges`, `icc: false`; the file is owned by this repo and is replaced). A change needs `sudo systemctl restart docker`. `install.sh` does that itself only when no container runs. On a running demo it prints a NOTICE: restart when a short stop is fine. This first restart still stops the containers (`live-restore` is not active yet) and `restart: unless-stopped` starts them again; later restarts keep them running. After it, do the section 8 checks.
-
 Do not re-apply Terraform for this. `cloud-init.yaml` is the instance's `user-data`; changing it makes `terraform plan` show a metadata change on the instance. By the Google provider docs, `metadata` updates in place and cloud-init does not run again, so the change does nothing on the VM. Read the plan: "update in-place" is fine, "must be replaced" is not (cancel; the VM would lose `.env` and the certificate). Not run here (no cloud access).
 
 ## 10. Tag ruleset (owner only)
@@ -440,7 +438,5 @@ sudo sh docker-bench-security.sh -l "$d/bench.log"
 grep -E '^\[(WARN|FAIL)\]' "$d/bench.log" | sort | uniq -c | sort -rn | head -50
 tail -n 12 "$d/bench.log"                          # the score summary
 ```
-
-After the daemon settings of issue 14 (section 9), run it again and record the new score.
 
 Record: put the summary (checks, score, the list of WARN lines) in the PR description. For each WARN, either fix it if it is cheap (one setting, no new moving part), or write a local issue under `.scratch/cloud-demo/issues/` with the check number and the reason it stays open (for example "needs rootless Docker, rejected in ADR-0045"). Then copy the log to your computer and delete it on the VM (`rm -rf "$d"`). The log can hold container names and paths, so keep it out of git.
