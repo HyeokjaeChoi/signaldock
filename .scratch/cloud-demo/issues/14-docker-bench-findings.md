@@ -1,8 +1,9 @@
 # 14. docker-bench-security findings (first cloud run)
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
+Execution: Done (PR #232, 2026-10-26 UTC)
 
 ## Scope and completion criteria
 
@@ -41,3 +42,5 @@ Completion: for each item, change it and run the section 8 checks and a reboot, 
 | 1.1.1 separate partition | One 30 GB disk. | Spec D5 gives the single disk; no design source decides on a separate `/var/lib/docker` partition |
 
 Verification: re-run docker-bench-security after the changes in (a); record the new score.
+
+The VM rollout and the docker-bench re-run are tracked in issue 19.

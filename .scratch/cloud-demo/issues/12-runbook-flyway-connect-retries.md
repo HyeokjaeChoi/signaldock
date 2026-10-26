@@ -1,8 +1,9 @@
 # 12. Runbook section 15: name the Flyway connect retries
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
+Execution: Done (PR #231, 2026-10-26 UTC)
 
 ## Scope and completion criteria
 
