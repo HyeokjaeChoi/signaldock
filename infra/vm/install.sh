@@ -34,11 +34,11 @@ systemctl daemon-reload
 install -d -m 0755 /etc/docker
 if ! cmp -s "$d/docker-daemon.json" /etc/docker/daemon.json; then
   install -m 0644 "$d/docker-daemon.json" /etc/docker/daemon.json
-  if [ -z "$(docker ps -q)" ]; then
-    systemctl restart docker
-  else
-    echo "NOTICE: /etc/docker/daemon.json changed and containers run. Run 'sudo systemctl restart docker' when a short stop is fine (ADR-0045 amendment 2026-10-26)."
-  fi
+  if [ -z "$(docker ps -q)" ]; then systemctl restart docker; fi
+fi
+# Also on later runs: the file is installed, but the running daemon may not have it yet.
+if [ -n "$(docker ps -q)" ] && [ "$(docker info --format '{{.LiveRestoreEnabled}}')" != true ]; then
+  echo "NOTICE: the running Docker daemon lacks the settings in /etc/docker/daemon.json. Run 'sudo systemctl restart docker' when a short stop is fine (ADR-0045 amendment 2026-10-26)."
 fi
 
 systemctl enable --now signaldock-deploy.timer signaldock-reset.timer signaldock-disk-check.timer signaldock-report.timer
