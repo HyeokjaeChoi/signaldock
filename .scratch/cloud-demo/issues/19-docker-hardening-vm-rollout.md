@@ -1,6 +1,6 @@
 # 19. Docker hardening: roll out on the VM and re-run docker-bench
 
-Status: ready-for-agent
+Status: ready-for-human
 Type: task
 Blocked by: None
 
