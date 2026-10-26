@@ -32,19 +32,25 @@ systemctl daemon-reload
 # the owner, because that restart stops the containers (ADR-0045 amendment 2026-10-26).
 # The check and the restart run under the deploy/reset lock (same file as signaldock-deploy.sh): "no container runs" is also true
 # between the reset's compose down and up. If the lock stays busy for 10 minutes, do not restart; print the NOTICE.
+# A marker file keeps a skipped restart pending, so a later run restarts (or warns) again.
 # The restart also re-applies the DOCKER-USER rule (PartOf in signaldock-docker-user.service).
 notice="NOTICE: the running Docker daemon may lack the settings in /etc/docker/daemon.json. Run 'sudo systemctl restart docker' when a short stop is fine (ADR-0045 amendment 2026-10-26)."
 install -d -m 0755 /etc/docker
-changed=0
+pending=/etc/docker/daemon.json.pending  # marker: file installed, restart not done yet; removed after the restart
 if ! cmp -s "$d/docker-daemon.json" /etc/docker/daemon.json; then
   install -m 0644 "$d/docker-daemon.json" /etc/docker/daemon.json
-  changed=1
+  touch "$pending"
 fi
 exec 9>"${SIGNALDOCK_LOCK:-/run/signaldock.lock}"
 if flock -w 600 9; then
   running=$(docker ps -q)
   live=$(docker info --format '{{.LiveRestoreEnabled}}')
-  if [ "$changed" = 1 ] && { [ -z "$running" ] || [ "$live" = true ]; }; then systemctl restart docker; elif [ -n "$running" ] && [ "$live" != true ]; then echo "$notice"; fi
+  if [ -e "$pending" ] && { [ -z "$running" ] || [ "$live" = true ]; }; then
+    systemctl restart docker
+    rm -f "$pending"
+  elif [ -e "$pending" ] || { [ -n "$running" ] && [ "$live" != true ]; }; then
+    echo "$notice"
+  fi
   flock -u 9
 else
   echo "$notice (the deploy/reset lock was busy)"
