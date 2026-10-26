@@ -48,3 +48,12 @@ The demo ([ADR-0043](0043-cloud-demo-hosting-and-deploy.md)) is on the public in
 - **GoAccess report.** It runs every 10 minutes over 7 days of logs, with `--anonymize-ip`, no WebSocket, and no `--persist`. The VM clock must be UTC. `/reports` answers 301 without auth and leaks nothing.
 - **docker-bench-security (item 9)** is pinned to v1.6.1, commit `ba0b402ea56aafbb9a56f09cc13ee629160c58b6`.
 - **Uptime check (item 7)** is a Cloud Monitoring public check. No agent and no service account run on the VM.
+
+## Amendment 2026-10-26 (issue 14)
+
+Source: first docker-bench-security run (v1.6.1, score 22). The owner decided on 2026-10-26.
+
+- **Applied.** `/etc/docker/daemon.json` (source `infra/vm/docker-daemon.json`, installed by `install.sh`) sets `live-restore: true` (2.15), `no-new-privileges: true` (2.14), and `icc: false` (2.2). The file is owned by this repo. A change needs a daemon restart. `install.sh` restarts Docker only when no container runs; on a running demo the owner restarts it. That first restart still stops the containers because `live-restore` is not active yet. `icc: false` affects only the default `docker0` bridge; the Compose networks are user-defined and keep container-to-container traffic. The Dashboard has a `healthcheck` (busybox `wget` to `127.0.0.1:8080`) in `infra/compose.demo.yml` (4.6, 5.27).
+- **Not applied: restart policy `on-failure:5` (5.15).** A container stopped by a daemon shutdown is not restarted at boot with `on-failure`. The owner often stops and starts the VM, so `unless-stopped` stays.
+- **Not applied: `userland-proxy: false` (2.16).** Host nginx reaches the containers only through `127.0.0.1` published ports. Without docker-proxy, Docker needs `route_localnet=1` and loopback DNAT, which interacts with the `DOCKER-USER` rule and the fail2ban nftables ban. The gain is one warning and three small processes; the risk is the whole demo. To change it: add `"userland-proxy": false` to `infra/vm/docker-daemon.json`, restart Docker, and run the runbook section 8 checks, `/ready` through host nginx, and a reboot.
+- **Accepted** (2.9, 2.12, 2.13, 4.5, 1.1.x auditd, 1.1.1): reasons in table (b) of `.scratch/cloud-demo/issues/14-docker-bench-findings.md`.
