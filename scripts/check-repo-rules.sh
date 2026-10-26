@@ -145,6 +145,10 @@ ONK='^("on"|\047on\047|on):'
 # Every action is pinned by a 40-hex commit SHA; only local ./ actions are exempt (docker:// is not).
 # `uses` is found as a block key, in a flow mapping ({ uses: x }), and as a quoted key.
 check_pins() {
+  # A uses key with no value on its line (the value on the next line) passes the loop below unchecked.
+  if wf "$1" | grep -E "(^|[{,[:space:]])[\"']?uses[\"']?[[:space:]]*:[[:space:]]*(\$|[,}])" >/dev/null; then
+    echo "error: $1 has a uses key with no value on its line; write the value on the same line" >&2; fail=1
+  fi
   while IFS= read -r ref; do
     ref="$(echo "$ref" | sed -E "s/^[\"']//; s/[\"'][[:space:]]*\$//; s/[[:space:]]+\$//")"
     case "$ref" in ./*) continue ;; esac

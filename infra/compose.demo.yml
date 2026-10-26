@@ -48,6 +48,13 @@ services:
       # nginx-unprivileged (user nginx, 101) writes the rendered config, temp files, and the pid here.
       - /etc/nginx/conf.d:size=1m,noexec,nosuid,uid=101
       - /tmp:size=16m,noexec,nosuid,uid=101
+    # Image has busybox wget, no curl. 127.0.0.1, not localhost: nginx listens on IPv4 only.
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
     mem_limit: 64m
     pids_limit: 64
     cpus: 0.5

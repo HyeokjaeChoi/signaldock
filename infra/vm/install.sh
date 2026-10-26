@@ -25,6 +25,37 @@ units=(signaldock-deploy.service signaldock-deploy.timer signaldock-reset.servic
        signaldock-disk-check.service signaldock-disk-check.timer signaldock-report.service signaldock-report.timer)
 for u in "${units[@]}"; do install -m 0644 "$d/$u" /etc/systemd/system/; done
 systemctl daemon-reload
+
+# Docker daemon hardening (ADR-0045 amendment, issue 14). This repo owns /etc/docker/daemon.json: the file is replaced, not merged.
+# A change needs a daemon restart. The restart is automatic when no container runs (a new VM: this block is before the deploy
+# timer) or when live-restore is already active (containers keep running). Only the first rollout on a running demo is left to
+# the owner, because that restart stops the containers (ADR-0045 amendment 2026-10-26).
+# The check and the restart run under the deploy/reset lock (same file as signaldock-deploy.sh): "no container runs" is also true
+# between the reset's compose down and up. If the lock stays busy for 10 minutes, do not restart; print the NOTICE.
+# A marker file keeps a skipped restart pending, so a later run restarts (or warns) again.
+# The restart also re-applies the DOCKER-USER rule (PartOf in signaldock-docker-user.service).
+notice="NOTICE: the running Docker daemon may lack the settings in /etc/docker/daemon.json. Run 'sudo systemctl restart docker' when a short stop is fine (ADR-0045 amendment 2026-10-26)."
+install -d -m 0755 /etc/docker
+pending=/etc/docker/daemon.json.pending  # marker: file installed, restart not done yet; removed after the restart
+if ! cmp -s "$d/docker-daemon.json" /etc/docker/daemon.json; then
+  install -m 0644 "$d/docker-daemon.json" /etc/docker/daemon.json
+  touch "$pending"
+fi
+exec 9>"${SIGNALDOCK_LOCK:-/run/signaldock.lock}"
+if flock -w 600 9; then
+  running=$(docker ps -q)
+  live=$(docker info --format '{{.LiveRestoreEnabled}}')
+  if [ -e "$pending" ] && { [ -z "$running" ] || [ "$live" = true ]; }; then
+    systemctl restart docker
+    rm -f "$pending"
+  elif [ -e "$pending" ] || { [ -n "$running" ] && [ "$live" != true ]; }; then
+    echo "$notice"
+  fi
+  flock -u 9
+else
+  echo "$notice (the deploy/reset lock was busy)"
+fi
+
 systemctl enable --now signaldock-deploy.timer signaldock-reset.timer signaldock-disk-check.timer signaldock-report.timer
 
 # fail2ban jail on the nginx JSON log. The jail does not start if the log file is missing, and nginx has not

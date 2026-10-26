@@ -1,6 +1,6 @@
 # 13. Runbook section 7: firewall check lists rules of other networks
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: None
 

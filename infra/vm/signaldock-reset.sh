@@ -19,16 +19,24 @@ SRC=$BASE/src
 ENVF=$BASE/.env
 
 log() { echo "signaldock-reset: $*"; }
+disk_used() { df --output=pcent "$DISK_PATH" | tail -n 1 | tr -dc '0-9'; }
+since_reset() { echo $(($(date +%s) - $(cat "$BASE/last-reset" 2>/dev/null || echo 0))); }
+limit=
 
-if [ "${1:-}" = "--if-disk-above" ]; then
-  limit=${2:?usage: signaldock-reset.sh [--if-disk-above PERCENT]}
-  used=$(df --output=pcent "$DISK_PATH" | tail -n 1 | tr -dc '0-9')
-  [ "$used" -ge "$limit" ] || exit 0
-  last=$(cat "$BASE/last-reset" 2>/dev/null || echo 0)
-  if [ $(($(date +%s) - last)) -lt "$MIN_GAP" ]; then
+# --if-disk-above gate: disk below the limit is a no-op; disk above it right after a reset is an error.
+# $1 (optional) is logged on the no-op path.
+disk_gate() {
+  used=$(disk_used)
+  [ "$used" -ge "$limit" ] || { [ -z "${1:-}" ] || log "$1"; exit 0; }
+  if [ "$(since_reset)" -lt "$MIN_GAP" ]; then
     log "ERROR: $DISK_PATH is ${used}% full but the last reset was less than $((MIN_GAP / 3600)) h ago; the DB is not the cause. Check docker system df and /var/log (runbook)"
     exit 1
   fi
+}
+
+if [ "${1:-}" = "--if-disk-above" ]; then
+  limit=${2:?usage: signaldock-reset.sh [--if-disk-above PERCENT]}
+  disk_gate
   log "$DISK_PATH is ${used}% full (limit ${limit}%); resetting early"
 elif [ $# -gt 0 ]; then
   echo "usage: signaldock-reset.sh [--if-disk-above PERCENT]" >&2; exit 2
@@ -37,6 +45,9 @@ fi
 # Same lock as the deploy. Wait for a running deploy instead of skipping: the reset is the daily job.
 exec 9>"$LOCK"
 flock -w "$LOCK_WAIT" 9 || { log "ERROR: lock busy for ${LOCK_WAIT}s; reset not run"; exit 1; }
+
+# A reset that held the lock first (the 04:00 daily reset) can make this early reset useless: check again.
+[ -z "$limit" ] || disk_gate "a reset ran while waiting for the lock; early reset not needed"
 
 [ -r "$ENVF" ] || { log "ERROR: $ENVF is missing"; exit 1; }
 tag=$(cat "$BASE/current-tag" 2>/dev/null || true)

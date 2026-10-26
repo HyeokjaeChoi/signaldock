@@ -1,6 +1,6 @@
 # 14. docker-bench-security findings (first cloud run)
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: None
 
