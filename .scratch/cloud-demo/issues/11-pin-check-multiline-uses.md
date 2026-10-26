@@ -1,6 +1,6 @@
 # 11. Pin check: reject a `uses` key whose value is on the next line
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: None
 
