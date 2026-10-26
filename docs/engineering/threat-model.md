@@ -9,7 +9,7 @@ Short paths: `SDK tests` = `sdk/sdk-android/src/test/kotlin/local/signaldock/`; 
 ## 1. Scope and assets
 
 In scope: the Android SDK (`sdk/sdk-android`), the ingest and query server (`server/`) with its two ingest routes (`POST /v1/events:batch` and `POST /v1/client-reports`) and its query routes (including `GET /v1/client-report-counts`), PostgreSQL, the Dashboard with its nginx proxy (`dashboard/`), and the Compose setup (`docker-compose.yml`).
-Spec 1 sets the deployment: one local project, synthetic data, no login, no public internet. One planned exception: a cloud demo on a public URL until 2027-01-16 UTC. Section 9 covers it; the rest of this model is for the local stack.
+Spec 1 sets the deployment: one local project, synthetic data, no login, no public internet. One exception: the cloud demo deployed on 2026-10-25 UTC, on a public URL until 2027-01-16 UTC. Section 9 covers it; the rest of this model is for the local stack.
 
 | Asset | Where | Why it matters |
 | --- | --- | --- |
@@ -143,4 +143,4 @@ Ran on 2026-10-25 UTC (tag `demo-v0.1.1`, run 40202103660): deploy, `/ready` 200
 | Cloud metadata server (`169.254.169.254`) | The VM has no service account (D6). A `DOCKER-USER` rule drops container traffic to it (D12) | Gap: rule not tested for IPv6, reboot, or compose bridges (spec section 7) |
 | Deploy abuse | Pull-based tag deploy: the VM pulls only a `demo-v*` tag on `main`. GitHub holds no cloud credentials. A tag ruleset limits tag changes to the admin (D9) | A compromised admin account or `main`. Public GHCR images |
 | Image and OS vulnerabilities | Trivy scan in CI, `unattended-upgrades`, one `docker-bench-security` run (D12) | Scan results are a point in time. Updates can restart services |
-| Outage unseen | External uptime check with email alerts (D12) | Alerts go to one inbox |
+| Outage unseen | External uptime check with email alerts (D12) | Alerts go to one inbox. The owner disabled the alert policy `signaldock-ready down` while the VM is stopped when not in use, so no email is sent now (runbook section 19) |
