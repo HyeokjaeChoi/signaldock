@@ -27,16 +27,16 @@ for u in "${units[@]}"; do install -m 0644 "$d/$u" /etc/systemd/system/; done
 systemctl daemon-reload
 
 # Docker daemon hardening (ADR-0045 amendment, issue 14). This repo owns /etc/docker/daemon.json: the file is replaced, not merged.
-# A change needs a daemon restart, and the first restart still stops containers (live-restore is not active yet). So the restart
-# is automatic only when no container runs. This block runs before the deploy timer is enabled, so on a new VM no container runs
-# yet and the restart is always automatic. On a running demo the owner restarts (ADR-0045 amendment 2026-10-26).
+# A change needs a daemon restart. The restart is automatic when no container runs (a new VM: this block is before the deploy
+# timer) or when live-restore is already active (containers keep running). Only the first rollout on a running demo is left to
+# the owner, because that restart stops the containers (ADR-0045 amendment 2026-10-26).
 # The restart also re-applies the DOCKER-USER rule (PartOf in signaldock-docker-user.service).
 install -d -m 0755 /etc/docker
 if ! cmp -s "$d/docker-daemon.json" /etc/docker/daemon.json; then
   install -m 0644 "$d/docker-daemon.json" /etc/docker/daemon.json
-  if [ -z "$(docker ps -q)" ]; then systemctl restart docker; fi
+  if [ -z "$(docker ps -q)" ] || [ "$(docker info --format '{{.LiveRestoreEnabled}}')" = true ]; then systemctl restart docker; fi
 fi
-# Also on later runs: the file is installed, but the running daemon may not have it yet.
+# On every run: containers run and the daemon has no live-restore yet.
 if [ -n "$(docker ps -q)" ] && [ "$(docker info --format '{{.LiveRestoreEnabled}}')" != true ]; then
   echo "NOTICE: the running Docker daemon lacks the settings in /etc/docker/daemon.json. Run 'sudo systemctl restart docker' when a short stop is fine (ADR-0045 amendment 2026-10-26)."
 fi
