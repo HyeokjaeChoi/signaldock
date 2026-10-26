@@ -1,8 +1,9 @@
 # 18. Pin check: a `run: |` line that ends in `uses:` fails the empty-`uses` guard
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
+Execution: Done (PR #235, 2026-10-27 UTC)
 
 ## Scope and completion criteria
 
