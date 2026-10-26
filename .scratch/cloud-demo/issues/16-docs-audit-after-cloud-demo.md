@@ -1,6 +1,7 @@
 # 16. Docs audit after the cloud demo (PRs 207 to 223)
 
 Status: resolved
+Execution: Done (PR #234, 2026-10-26 UTC)
 Type: task
 Blocked by: None
 
