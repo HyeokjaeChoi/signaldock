@@ -176,12 +176,11 @@ def post(base_url, path, key, body):
             with urllib.request.urlopen(req, timeout=30) as resp:
                 return resp.read(), uncertain
         except urllib.error.HTTPError as e:
+            if e.code == 503 and path == "/v1/client-reports":  # no report ID: a retry could store it twice (ADR-0036)
+                raise SystemExit("error: client report outcome unknown after HTTP 503; "
+                                 "reset the database and seed again (cloud-demo D3)")
             if e.code in (429, 503) and attempt < MAX_ATTEMPTS:
-                if e.code == 503:
-                    if path == "/v1/client-reports":  # no report ID: a retry could store it twice (ADR-0036)
-                        raise SystemExit("error: client report outcome unknown after HTTP 503; "
-                                         "reset the database and seed again (cloud-demo D3)")
-                    uncertain = True
+                uncertain = uncertain or e.code == 503
                 ra = e.headers.get("Retry-After", "")
                 sleep(min(int(ra) if ra.isdigit() else 2, MAX_RETRY_WAIT))
                 continue

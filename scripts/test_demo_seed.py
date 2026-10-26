@@ -234,6 +234,12 @@ class SendTest(unittest.TestCase):
         self.assertIn("client report outcome unknown after HTTP 503", str(code))
         self.assertEqual(sum(c == "/v1/client-reports" for c in calls), 1)
 
+    def test_client_report_503_on_last_attempt_gives_reset_message(self):
+        code, _, _ = self.run_main([(200, {}, None)] * self.batch_count()
+                                   + [(429, {"Retry-After": "0"}, None)] * (seed.MAX_ATTEMPTS - 1)
+                                   + [(503, {"Retry-After": "0"}, None)])
+        self.assertIn("client report outcome unknown after HTTP 503", str(code))
+
     def test_client_report_429_retries(self):
         code, _, _ = self.run_main([(200, {}, None)] * self.batch_count()
                                    + [(429, {"Retry-After": "0"}, None), (200, {}, None)])
