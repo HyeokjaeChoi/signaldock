@@ -2,7 +2,7 @@
 # Toolchain (verified by build in issue #1 unless noted)
 jdk = "21"
 gradle = "9.8.1"
-agp = "9.3.3"
+agp = "9.4.1"
 kotlin = "2.4.21"
 kotlinx-serialization = "1.11.0"
 openapi-generator = "7.26.0"
@@ -39,8 +39,8 @@ compose-bom = "2026.09.00"
 # Demo app only (issue 16, ADR-0006 decision 1). The demo keeps targetSdk 36 (Play requirement, no API 37 deadline).
 # Versions below: latest stable on Google Maven, 2026-10-12.
 demo-compileSdk = "37"
-androidx-activity = "1.12.4"
-androidx-lifecycle = "2.10.0"
+androidx-activity = "1.13.0"
+androidx-lifecycle = "2.11.0"
 androidx-navigation = "2.10.2"
 coroutines = "1.11.0"
 # SDK JVM tests (no emulator)
