@@ -133,7 +133,7 @@ From your computer, check the VM has no service account and the VPC has only two
 
 ```bash
 gcloud compute instances describe signaldock-demo --zone asia-northeast3-a --format='value(serviceAccounts)'   # must print nothing (spec D6, section 7)
-gcloud compute firewall-rules list --filter=network:signaldock-demo                                           # only the two rules
+gcloud compute firewall-rules list --filter='network.basename()=signaldock-demo' --format='table(name,network.basename())'   # only the two rules
 ```
 
 From your computer (replace `H` if you use another name):
@@ -232,16 +232,18 @@ Order matters. The VM needs the stack files on `main`, `.env`, htpasswd, and the
    ```
 
 2. The workflow `demo-deploy` builds and pushes `ghcr.io/hyeokjaechoi/signaldock-server:demo-v0.1.0` and `signaldock-dashboard:demo-v0.1.0`. Its second job waits for `/deployed.txt`, so it fails if the VM has not deployed the tag within its wait (for example the packages are not public, or the deploy failed). After you fix the cause, re-run only that job.
-3. Check whether both packages are already public. Packages pushed with `GITHUB_TOKEN` from this public repository were public on the first push (checked on 2026-10-25 UTC). Do not change anything before you check. Ask for the manifest without a login; `200` means public:
+3. Check whether both packages are already public. Packages pushed with `GITHUB_TOKEN` from this public repository were public on the first push (checked on 2026-10-25 UTC). Do not change anything before you check. Ask for the manifest without a login; `200` means public. `Accept` lists the OCI and the Docker schema2 media types, so a package with either kind of manifest answers:
 
    ```bash
    for i in server dashboard; do
      t=$(curl -s "https://ghcr.io/token?scope=repository:hyeokjaechoi/signaldock-$i:pull" | python3 -c 'import sys,json;print(json.load(sys.stdin)["token"])')
-     curl -s -o /dev/null -w "$i %{http_code}\n" -H "Authorization: Bearer $t" -H 'Accept: application/vnd.oci.image.index.v1+json, application/vnd.oci.image.manifest.v1+json' "https://ghcr.io/v2/hyeokjaechoi/signaldock-$i/manifests/demo-v0.1.0"
+     curl -s -o /dev/null -w "$i %{http_code}\n" -H "Authorization: Bearer $t" -H 'Accept: application/vnd.oci.image.index.v1+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json' "https://ghcr.io/v2/hyeokjaechoi/signaldock-$i/manifests/demo-v0.1.0"
    done
    ```
 
-   Only if a package is not public: GitHub, your profile, Packages, the package, Package settings, Danger Zone, Change visibility, Public. **This cannot be undone.** It is safe because the images hold no secrets: `.dockerignore` excludes `.env` and `.env.*` (only `.env.example` is allowed in), and the Dashboard query key is read from the container environment at start, never at build (`dashboard/Dockerfile`). While a package is private, `docker pull` of the images on the VM is denied. The deploy logs a warning and tries again every 5 minutes; nothing is marked failed.
+   `401` or `403` means the package is private. Any other result (for example `404`) does not tell you the visibility: check the package name, the tag `demo-v0.1.0`, and that step 2 pushed it. Do not change the visibility because of it.
+
+   Only if a package is `401` or `403` (private): GitHub, your profile, Packages, the package, Package settings, Danger Zone, Change visibility, Public. **This cannot be undone.** It is safe because the images hold no secrets: `.dockerignore` excludes `.env` and `.env.*` (only `.env.example` is allowed in), and the Dashboard query key is read from the container environment at start, never at build (`dashboard/Dockerfile`). While a package is private, `docker pull` of the images on the VM is denied. The deploy logs a warning and tries again every 5 minutes; nothing is marked failed.
 4. If a later run fails with `permission_denied: write_package`: Package settings, Manage Actions access, add this repository with the Write role. The workflow sets the `org.opencontainers.image.source` label so the link is made on the first push; this is not verified.
 5. Wait at most 5 minutes, then check:
 
@@ -316,7 +318,7 @@ sudo systemctl start signaldock-deploy.timer
 
 ## 15. Rollback and Flyway (spec section 7)
 
-The server runs `Flyway.configure().dataSource(dataSource).load().migrate()` with no other setting (`server/persistence/.../Database.kt`). Flyway 13.10.0 defaults apply: `validateOnMigrate` true and `ignoreMigrationPatterns` `*:future`.
+The server runs `Flyway.configure().dataSource(dataSource).connectRetries(5).load().migrate()` (`server/persistence/.../Database.kt`). `connectRetries(5)` makes Flyway try the first connection again up to 5 times, with a back-off of 1, 2, 4, 8, and 16 s. A database that stays down still fails the start after about 31 s, and Compose restarts the server (ADR-0026). No other Flyway setting is changed. Flyway 13.10.0 defaults apply: `validateOnMigrate` true and `ignoreMigrationPatterns` `*:future`.
 
 Checked on 2026-10-25 with the `flyway/flyway:13.10.0-alpine` image (the CLI, same defaults as the API) against PostgreSQL 17.6: apply V1 to V3, then run `migrate` and `validate` with only V1 and V2 on disk. Result: both succeed (exit 0). Flyway prints `WARNING: Schema "public" has a version (3) that is newer than the latest available migration (2) !` and `No migration necessary`; `info` shows V3 as `Future`. So an older image **starts** on a database that a newer image migrated. Flyway does not block it, and Flyway cannot undo a migration (the OSS edition has no undo).
 
