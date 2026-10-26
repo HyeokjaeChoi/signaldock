@@ -1,8 +1,9 @@
 # 13. Runbook section 7: firewall check lists rules of other networks
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
+Execution: Done (PR #231, 2026-10-26 UTC)
 
 ## Scope and completion criteria
 

@@ -1,8 +1,9 @@
 # 08. Seed: treat 503 TEMPORARILY_UNAVAILABLE as an uncertain outcome
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
+Execution: Done (PR #229, 2026-10-26 UTC)
 
 ## Scope and completion criteria
 

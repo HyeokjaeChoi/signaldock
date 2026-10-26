@@ -1,8 +1,9 @@
 # 09. Seed: stop a later-day rerun before it sends many batches
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
+Execution: Done (PR #229, 2026-10-26 UTC)
 
 ## Scope and completion criteria
 

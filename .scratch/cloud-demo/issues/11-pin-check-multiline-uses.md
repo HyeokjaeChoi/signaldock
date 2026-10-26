@@ -1,8 +1,9 @@
 # 11. Pin check: reject a `uses` key whose value is on the next line
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
+Execution: Done (PR #228, 2026-10-26 UTC)
 
 ## Scope and completion criteria
 

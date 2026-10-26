@@ -1,8 +1,9 @@
 # 10. Reset: re-check the 6 h guard after taking the lock
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
+Execution: Done (PR #230, 2026-10-26 UTC)
 
 ## Scope and completion criteria
 
