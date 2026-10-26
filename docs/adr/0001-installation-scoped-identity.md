@@ -22,3 +22,7 @@ The SDK generates and stores the installation ID during first initialization. It
 - [Android UUID.randomUUID(): UUIDv4 generation](https://developer.android.com/reference/java/util/UUID#randomUUID())
 - [Android Auto Backup: default backup scope and restoration](https://developer.android.com/identity/data/autobackup)
 - [Android getNoBackupFilesDir](https://developer.android.com/reference/android/content/Context#getNoBackupFilesDir())
+
+## Amendment (2026-10-27)
+
+The iOS SDK keeps this decision. It stores the installation ID in a file that is excluded from backup, so a reinstall gets a new ID. [ADR-0047](0047-ios-sdk.md) decision D6 records the iOS form and its known limit.

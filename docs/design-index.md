@@ -37,6 +37,8 @@ ADRs:
 - ADR-0035 (`docs/adr/0035-sdk-https-enforcement.md`), for the `https` rule in `validateConfig` and `SignalDockConfig.allowInsecureEndpoint` (issue 60)
 - ADR-0036 (`docs/adr/0036-sdk-client-reports.md`), for `ClientReport.kt`, the `dropped_counts` table (Room schema 3), and the report step of `Sender` (issue 61)
 - ADR-0040 (`docs/adr/0040-sdk-baseline-profile.md`), for `sdk/profile-app`, `sdk/baseline-profile`, and `sdk/sdk-android/src/main/generated/baselineProfiles/baseline-prof.txt` (issue 70)
+- ADR-0046 (`docs/adr/0046-sdk-platform-field.md`), for the `sdkPlatform` field that Android SDK 0.4.0 sends
+- ADR-0047 (`docs/adr/0047-ios-sdk.md`), for the iOS SDK; the Android SDK is its parity reference
 
 Public API change: update the dump (`sdk/gradlew -p sdk :sdk-android:apiDump`), the integration guide, and `CHANGELOG.md` in the same PR.
 
@@ -80,6 +82,7 @@ ADRs:
 - ADR-0044 (`docs/adr/0044-cloud-demo-operation-replaces-adr-0028.md`), for what covers each ADR-0028 row on the cloud demo (host nginx, not server code)
 - ADR-0036 (`docs/adr/0036-sdk-client-reports.md`), for `POST /v1/client-reports`, `GET /v1/client-report-counts`, and `V3__create_client_reports.sql` (issue 61)
 - ADR-0037 (`docs/adr/0037-server-collection-kill-switch.md`), for `CollectionControl.kt`, the block lists, and the shed switch (issue 67)
+- ADR-0046 (`docs/adr/0046-sdk-platform-field.md`), for `V4`, the default `android`, the `platform:version` kill switch, the `sdkPlatform` filters, and the client report grouping
 
 Spec (`.scratch/signaldock/spec.md`):
 - 2. Agreed stack and boundaries
@@ -107,6 +110,7 @@ ADRs:
 - ADR-0022 (`docs/adr/0022-server-tracking-plan-status.md`), for the additive `planStatus` change and the baseline update (issue 39)
 - ADR-0027 (`docs/adr/0027-request-400-contract-only.md`), for `fixtures/sdk-wire/`, the SDK output corpus (issue 49)
 - ADR-0036 (`docs/adr/0036-sdk-client-reports.md`), for the additive client report endpoints (issue 61)
+- ADR-0046 (`docs/adr/0046-sdk-platform-field.md`), for the additive `sdkPlatform` field, the filter parameter, and the baseline update
 
 Spec (`.scratch/signaldock/spec.md`):
 - 7. Completion criteria and verification plan (contract rows)
@@ -172,6 +176,7 @@ ADRs:
 - ADR-0016 (`docs/adr/0016-telemetry-style-ui.md`), for the layout, the KPI cards, the theme, and the shared tokens (issue 28)
 - ADR-0022 (`docs/adr/0022-server-tracking-plan-status.md`), for the plan status badge, filter, and violations card (issue 39)
 - ADR-0036 (`docs/adr/0036-sdk-client-reports.md`), for the "Dropped events" card (issue 61)
+- ADR-0046 (`docs/adr/0046-sdk-platform-field.md`), for the platform display and the platform filter
 
 Spec (`.scratch/signaldock/spec.md`):
 - 6. User screens and distribution, Dashboard
