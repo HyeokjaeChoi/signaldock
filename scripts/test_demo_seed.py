@@ -104,7 +104,7 @@ class SendTest(unittest.TestCase):
     """main() against a local fake server. responses: list of (status, headers, (index, status[, code]) or None
     for 200; a dict for a non-200 JSON body)."""
 
-    def run_main(self, responses):
+    def run_main(self, responses, now=NOW):
         calls = []
 
         class H(BaseHTTPRequestHandler):
@@ -137,7 +137,7 @@ class SendTest(unittest.TestCase):
                     unittest.mock.patch.object(seed, "sleep") as slept, unittest.mock.patch("builtins.print"):
                 code = None
                 try:
-                    code = seed.main(["--base-url", f"http://127.0.0.1:{srv.server_port}", "--now", NOW.isoformat()])
+                    code = seed.main(["--base-url", f"http://127.0.0.1:{srv.server_port}", "--now", now.isoformat()])
                 except SystemExit as e:
                     code = e.code
         finally:
@@ -151,7 +151,7 @@ class SendTest(unittest.TestCase):
 
     def test_sentinel_duplicate_stops_everything(self):
         code, calls, _ = self.run_main([(200, {}, (0, "duplicate"))])
-        self.assertIn("already holds a seed for 2026-10-25; reset it before seeding (cloud-demo D3)", str(code))
+        self.assertIn("already holds a seed (for 2026-10-25 or an earlier date); reset it before seeding (cloud-demo D3)", str(code))
         self.assertEqual(len(calls), 1)
 
     def test_sentinel_rejected_conflict_is_already_seeded(self):
@@ -177,15 +177,30 @@ class SendTest(unittest.TestCase):
         code, _, _ = self.run_main([(200, {}, None), (200, {}, (0, "duplicate"))])
         self.assertIn("events already stored; reset the database before seeding (cloud-demo D3)", str(code))
 
-    def test_sentinel_duplicate_after_unavailable_503_stops(self):
+    def test_sentinel_duplicate_after_unavailable_503_is_a_retry(self):
         code, calls, _ = self.run_main([(503, {"Retry-After": "0"}, {"code": "TEMPORARILY_UNAVAILABLE"}),
-                                        (200, {}, (0, "duplicate"))])
+                                        (200, {}, (0, "duplicate")), (200, {}, None)])
+        self.assertEqual(code, 0)
+        self.assertEqual(calls[0], calls[1])
+
+    def test_later_duplicate_after_503_without_json_body_ok(self):
+        code, _, _ = self.run_main([(200, {}, None), (503, {"Retry-After": "0"}, None),
+                                    (200, {}, (0, "duplicate")), (200, {}, None)])
+        self.assertEqual(code, 0)
+
+    def test_sentinel_conflict_after_503_still_means_seeded(self):
+        code, calls, _ = self.run_main([(503, {"Retry-After": "0"}, None), (200, {}, (0, "rejected", "CONFLICT"))])
         self.assertIn("already holds a seed", str(code))
         self.assertEqual(len(calls), 2)
 
-    def test_duplicate_after_503_without_json_body_stops(self):
-        code, _, _ = self.run_main([(503, {"Retry-After": "0"}, None), (200, {}, (0, "duplicate"))])
-        self.assertIn("already holds a seed", str(code))
+    def test_later_day_rerun_stops_at_sentinel(self):
+        later = NOW + timedelta(days=1)
+        a, b = seed.sentinel(NOW, 1), seed.sentinel(later, 1)
+        self.assertEqual(a[1]["eventId"], b[1]["eventId"])
+        self.assertNotEqual(a[1]["occurredAt"], b[1]["occurredAt"])
+        code, calls, _ = self.run_main([(200, {}, (0, "rejected", "CONFLICT"))], later)
+        self.assertIn("already holds a seed (for 2026-10-26 or an earlier date)", str(code))
+        self.assertEqual(len(calls), 1)
 
     def test_duplicate_after_request_timeout_ok(self):
         code, _, _ = self.run_main([(200, {}, None), (503, {"Retry-After": "0"}, {"code": "REQUEST_TIMEOUT"}),
@@ -209,13 +224,25 @@ class SendTest(unittest.TestCase):
     def test_client_report_request_timeout_exits_without_retry(self):
         code, calls, _ = self.run_main([(200, {}, None)] * self.batch_count()
                                        + [(503, {"Retry-After": "0"}, {"code": "REQUEST_TIMEOUT"}), (200, {}, None)])
-        self.assertIn("client report outcome unknown after REQUEST_TIMEOUT; reset the database and seed again "
+        self.assertIn("client report outcome unknown after HTTP 503; reset the database and seed again "
                       "(cloud-demo D3)", str(code))
         self.assertEqual(sum(c == "/v1/client-reports" for c in calls), 1)
 
-    def test_client_report_unavailable_503_retries(self):
+    def test_client_report_unavailable_503_exits_without_retry(self):
+        code, calls, _ = self.run_main([(200, {}, None)] * self.batch_count()
+                                       + [(503, {"Retry-After": "0"}, {"code": "TEMPORARILY_UNAVAILABLE"}), (200, {}, None)])
+        self.assertIn("client report outcome unknown after HTTP 503", str(code))
+        self.assertEqual(sum(c == "/v1/client-reports" for c in calls), 1)
+
+    def test_client_report_503_on_last_attempt_gives_reset_message(self):
         code, _, _ = self.run_main([(200, {}, None)] * self.batch_count()
-                                   + [(503, {"Retry-After": "0"}, {"code": "TEMPORARILY_UNAVAILABLE"}), (200, {}, None)])
+                                   + [(429, {"Retry-After": "0"}, None)] * (seed.MAX_ATTEMPTS - 1)
+                                   + [(503, {"Retry-After": "0"}, None)])
+        self.assertIn("client report outcome unknown after HTTP 503", str(code))
+
+    def test_client_report_429_retries(self):
+        code, _, _ = self.run_main([(200, {}, None)] * self.batch_count()
+                                   + [(429, {"Retry-After": "0"}, None), (200, {}, None)])
         self.assertEqual(code, 0)
 
     def test_401_fails_without_retry(self):

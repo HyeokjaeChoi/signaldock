@@ -1,6 +1,6 @@
 # 09. Seed: stop a later-day rerun before it sends many batches
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: None
 
