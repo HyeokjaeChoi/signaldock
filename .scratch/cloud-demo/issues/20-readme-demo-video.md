@@ -1,4 +1,4 @@
-# 17. Short video of the live demo for the README
+# 20. Short video of the live demo for the README
 
 Status: ready-for-human
 Type: task
