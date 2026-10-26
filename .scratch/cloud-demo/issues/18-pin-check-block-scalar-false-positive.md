@@ -1,6 +1,6 @@
 # 18. Pin check: a `run: |` line that ends in `uses:` fails the empty-`uses` guard
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: None
 

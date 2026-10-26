@@ -1,6 +1,6 @@
 # 17. Pin check: reject a YAML explicit `?` key named `uses`
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: None
 

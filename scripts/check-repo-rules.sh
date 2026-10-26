@@ -144,9 +144,16 @@ wf() { git show ":$1" | sed -E 's/(^|[[:space:]])#.*//' | awk 'NF'; }
 ONK='^("on"|\047on\047|on):'
 # Every action is pinned by a 40-hex commit SHA; only local ./ actions are exempt (docker:// is not).
 # `uses` is found as a block key, in a flow mapping ({ uses: x }), and as a quoted key.
+# wfb: wf without block-scalar bodies (`run: |`, `>-`), whose lines are shell text, not YAML keys (issue 18).
+wfb() { wf "$1" | awk 'BEGIN { blk = -1 } { match($0, /^ */); if (blk >= 0 && RLENGTH > blk) next; blk = -1
+  if ($0 ~ /[:-][ ]+[|>][-+0-9]*[ ]*$/) blk = RLENGTH; print }'; }
 check_pins() {
+  # An explicit key (`? uses` then `: x@v4`) hides the value from the loop below (issue 17); reject any explicit key.
+  if wfb "$1" | grep -E '(^|-)[[:space:]]*\?([[:space:]]|$)' >/dev/null; then
+    echo "error: $1 has a YAML explicit key (?); write plain keys, for example uses: <action>@<sha> on one line" >&2; fail=1
+  fi
   # A uses key with no value on its line (the value on the next line) passes the loop below unchecked.
-  if wf "$1" | grep -E "(^|[{,[:space:]])[\"']?uses[\"']?[[:space:]]*:[[:space:]]*(\$|[,}])" >/dev/null; then
+  if wfb "$1" | grep -E "(^|[{,[:space:]])[\"']?uses[\"']?[[:space:]]*:[[:space:]]*(\$|[,}])" >/dev/null; then
     echo "error: $1 has a uses key with no value on its line; write the value on the same line" >&2; fail=1
   fi
   while IFS= read -r ref; do
@@ -156,7 +163,7 @@ check_pins() {
       echo "error: $1 uses '$ref', which is not pinned by a 40-character commit SHA" >&2; fail=1
     fi
   # grep -o finds every uses key on a line (a one-line flow sequence can hold several).
-  done < <(wf "$1" | grep -oE "(^|[{,[:space:]])[\"']?uses[\"']?[[:space:]]*:[[:space:]]*[^,}]+" \
+  done < <(wfb "$1" | grep -oE "(^|[{,[:space:]])[\"']?uses[\"']?[[:space:]]*:[[:space:]]*[^,}]+" \
     | sed -E "s/^.*uses[\"']?[[:space:]]*:[[:space:]]*//" || true)
 }
 for f in $(git ls-files -- 'action.yml' 'action.yaml' '*/action.yml' '*/action.yaml'); do
