@@ -5,16 +5,15 @@ Run: SIGNALDOCK_COLLECTION_KEY=... python3 -I scripts/demo-seed.py [--base-url U
 
 The same --now and --seed give the same events. Event IDs depend only on --seed, not on the date (on purpose:
 date-based IDs would let a rerun on a later day without a reset store a second full data set silently).
-Before any other batch, the script sends one sentinel event whose content depends only on --seed and the
-Seoul date of --now. If the server answers `duplicate` or `rejected` with code CONFLICT for it, the database
-already holds a seed for that date: the script exits 1 and sends nothing else. Any other rejected code fails
-with that code. This stops a rerun on the same Seoul day before anything is sent. On a later day without a
-reset, the sentinel is new, but the reused event IDs give CONFLICT on the first data batch: the script exits 1
-and points to the D3 reset. A partial batch can remain; the D3 reset removes it. The D3 reset script owns the
-reset (cloud-demo D3). A 503 TEMPORARILY_UNAVAILABLE or 429 stores nothing. Only REQUEST_TIMEOUT leaves an uncertain outcome, so
-a `duplicate` is valid only after an earlier attempt failed with REQUEST_TIMEOUT. The data is synthetic.
-HTTP 429 and 503 are retried (Retry-After, at most 5 attempts), except a client report after 503 REQUEST_TIMEOUT:
-it has no ID, so the script exits 1. The SDK version comes from Versions.kt.
+Before any other batch, the script sends one sentinel event. Its ID depends only on --seed; its content depends
+on --seed and the Seoul date of --now. If the server answers `duplicate` or `rejected` with code CONFLICT for it,
+the database already holds a seed: the script exits 1 and sends nothing else. A rerun on the same Seoul day gives
+`duplicate`; a rerun on a later day gives CONFLICT (same ID, other content). The D3 reset script owns the reset
+(cloud-demo D3). Any other rejected code fails with that code. A 429 stores nothing. A 503 can follow a commit
+that may have succeeded (REQUEST_TIMEOUT, or TEMPORARILY_UNAVAILABLE with COMMIT_OUTCOME_UNCERTAIN, ADR-0036
+item 7), so a `duplicate` is valid only after an earlier attempt failed with 503. HTTP 429 and 503 are retried
+(Retry-After, at most 5 attempts), except a client report after any 503: it has no ID, so the script exits 1.
+The data is synthetic. The SDK version comes from Versions.kt.
 """
 import argparse
 import json
@@ -68,9 +67,10 @@ def _fmt(dt):
 
 
 def sentinel(now, seed):
-    """One fixed event per (seed, Seoul date): the rerun guard. Same shape as generate() items."""
+    """One fixed event per seed (ID) and Seoul date (content): the rerun guard. Same shape as generate() items.
+    The ID ignores the date, so a later-day rerun gets CONFLICT on this first batch, not on a later one."""
     day = now.astimezone(SEOUL).date()
-    rng = random.Random(f"{seed}-sentinel-{day}")
+    rng = random.Random(f"{seed}-sentinel")
     t = datetime.combine(day, time.min, SEOUL)
     ev = {"eventId": _uuid4(rng), "name": "product_viewed", "occurredAt": _fmt(t),
           "properties": {"product_id": "prd-001"}, "sdkVersion": sdk_version(), "contractVersion": "1"}
@@ -170,21 +170,18 @@ def post(base_url, path, key, body):
                                  method="POST", headers={"Authorization": f"Bearer {key}",
                                                          "SignalDock-Contract-Version": "1",
                                                          "Content-Type": "application/json"})
-    uncertain = False  # an earlier attempt failed with REQUEST_TIMEOUT: it may have been stored
+    uncertain = False  # an earlier attempt failed with 503: it may have been stored
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
                 return resp.read(), uncertain
         except urllib.error.HTTPError as e:
             if e.code in (429, 503) and attempt < MAX_ATTEMPTS:
-                try:
-                    timed_out = json.loads(e.read()).get("code") == "REQUEST_TIMEOUT"
-                except (ValueError, AttributeError):  # missing or non-JSON body: unknown, not uncertain
-                    timed_out = False
-                if timed_out and path == "/v1/client-reports":  # no report ID: a retry could store it twice (ADR-0036)
-                    raise SystemExit("error: client report outcome unknown after REQUEST_TIMEOUT; "
-                                     "reset the database and seed again (cloud-demo D3)")
-                uncertain = uncertain or timed_out
+                if e.code == 503:
+                    if path == "/v1/client-reports":  # no report ID: a retry could store it twice (ADR-0036)
+                        raise SystemExit("error: client report outcome unknown after HTTP 503; "
+                                         "reset the database and seed again (cloud-demo D3)")
+                    uncertain = True
                 ra = e.headers.get("Retry-After", "")
                 sleep(min(int(ra) if ra.isdigit() else 2, MAX_RETRY_WAIT))
                 continue
@@ -224,8 +221,8 @@ def main(argv=None):
         if n == 0:
             if any(r.get("code") == "CONFLICT" for r in rejected) or (
                     not retried and any(r["status"] == "duplicate" for r in results)):
-                raise SystemExit(f"error: the database already holds a seed for {now.astimezone(SEOUL).date()}; "
-                                 "reset it before seeding (cloud-demo D3)")
+                raise SystemExit(f"error: the database already holds a seed (for {now.astimezone(SEOUL).date()} "
+                                 "or an earlier date); reset it before seeding (cloud-demo D3)")
             if rejected:
                 raise SystemExit(f"error: sentinel rejected: {rejected[0].get('code')}")
         if rejected:

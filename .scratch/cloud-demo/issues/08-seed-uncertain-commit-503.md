@@ -1,6 +1,6 @@
 # 08. Seed: treat 503 TEMPORARILY_UNAVAILABLE as an uncertain outcome
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: None
 
