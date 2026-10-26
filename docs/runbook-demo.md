@@ -136,6 +136,14 @@ gcloud compute instances describe signaldock-demo --zone asia-northeast3-a --for
 gcloud compute firewall-rules list --filter='network.basename()=signaldock-demo' --format='table(name,network.basename())'   # only the two rules
 ```
 
+The project also has the GCP `default` network. Its rules `default-allow-ssh` (22) and `default-allow-rdp` (3389) are open to the internet. No VM uses it. Owner only: check that no instance uses it, then delete its four `default-allow-*` rules and the network:
+
+```bash
+gcloud compute instances list --project signaldock-demo --format='table(name,networkInterfaces[].network.basename())'   # every row must show signaldock-demo, none default
+gcloud compute firewall-rules delete default-allow-icmp default-allow-internal default-allow-rdp default-allow-ssh --project signaldock-demo
+gcloud compute networks delete default --project signaldock-demo
+```
+
 From your computer (replace `H` if you use another name):
 
 ```bash
