@@ -85,7 +85,7 @@ Rejected: two apps like Android (iOS has no R8 step that needs a separate releas
 5. `xcodebuild analyze`.
 6. CodeQL adds Swift.
 7. Public API check: a `.swiftinterface` from a check-only build, committed in `sdk-ios/api/` and diffed.
-8. New checks in `scripts/check-repo-rules.sh`: no external `.package(` in `sdk-ios/Package.swift`; no `privacy: .public` in `sdk-ios`; required-reason API use matches the privacy manifest; the iOS version constant matches the `ios-v` tag line; released SQL migrations are frozen.
+8. New checks in `scripts/check-repo-rules.sh`: no external `.package(` in `sdk-ios/Package.swift`; no `privacy: .public` in `sdk-ios`; required-reason API use matches the privacy manifest; released SQL migrations are frozen. The iOS version has one source, a constant in `sdk-ios`; the iOS release workflow checks it against the `ios-v` tag.
 9. Consumer app Debug and Release build.
 10. Size budget (D15).
 
