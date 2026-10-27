@@ -212,6 +212,14 @@ gcloud compute ssh signaldock-demo --zone asia-northeast3-a --tunnel-through-iap
 systemctl list-timers 'signaldock-*'     # deploy every 5 min, reset 04:00 Asia/Seoul, disk check hourly, report every 10 min
 ```
 
+A change to `/etc/docker/daemon.json` needs a Docker restart. `install.sh` restarts Docker by itself only when no container runs or `live-restore` is already active (a restart then keeps the containers running, and a later `daemon.json` change needs no manual step). Otherwise it prints a NOTICE and keeps the marker `/etc/docker/daemon.json.pending`. The first restart that turns on `live-restore` stops the containers for a short time. When that is fine, restart under the deploy/reset lock, so no deploy or reset runs at the same time:
+
+```bash
+sudo flock -w 600 /run/signaldock.lock sh -c 'systemctl restart docker && rm -f /etc/docker/daemon.json.pending'
+```
+
+Then run the section 8 checks. (Run on 2026-10-26 UTC: see [issue 19](../.scratch/cloud-demo/issues/19-docker-hardening-vm-rollout.md).)
+
 Do not re-apply Terraform for this. `cloud-init.yaml` is the instance's `user-data`; changing it makes `terraform plan` show a metadata change on the instance. By the Google provider docs, `metadata` updates in place and cloud-init does not run again, so the change does nothing on the VM. Read the plan: "update in-place" is fine, "must be replaced" is not (cancel; the VM would lose `.env` and the certificate). Not run here (no cloud access).
 
 ## 10. Tag ruleset (owner only)
@@ -450,5 +458,7 @@ sudo sh docker-bench-security.sh -l "$d/bench.log"
 grep -E '^\[(WARN|FAIL)\]' "$d/bench.log" | sort | uniq -c | sort -rn | head -50
 tail -n 12 "$d/bench.log"                          # the score summary
 ```
+
+Re-run docker-bench after every `daemon.json` change (section 9) and record the new score. The re-run on 2026-10-26 UTC (after live-restore and no-new-privileges) scored 25 in 117 checks (22 before). Details are in [issue 19](../.scratch/cloud-demo/issues/19-docker-hardening-vm-rollout.md).
 
 Record: put the summary (checks, score, the list of WARN lines) in the PR description. For each WARN, either fix it if it is cheap (one setting, no new moving part), or write a local issue under `.scratch/cloud-demo/issues/` with the check number and the reason it stays open (for example "needs rootless Docker, rejected in ADR-0045"). Then copy the log to your computer and delete it on the VM (`rm -rf "$d"`). The log can hold container names and paths, so keep it out of git.
