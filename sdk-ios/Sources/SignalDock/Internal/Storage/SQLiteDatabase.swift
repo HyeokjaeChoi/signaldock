@@ -44,18 +44,23 @@ internal final class SQLiteDatabase {
 
   /// Opens or creates the database. The open flag gives the database, `-wal`, `-shm`, and `-journal` files
   /// the class `completeUntilFirstUserAuthentication`, also when SQLite creates them later (ADR-0047 amendment).
+  internal static let openFlags: Int32 =
+    SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_NOMUTEX
+    | SQLITE_OPEN_FILEPROTECTION_COMPLETEUNTILFIRSTUSERAUTHENTICATION
+
+  /// How long a statement waits for a lock held by another connection: the Android framework SQLite default.
+  internal static let busyTimeoutMillis: Int32 = 2_500
+
   internal init(path: String) throws {
-    let flags =
-      SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_NOMUTEX
-      | SQLITE_OPEN_FILEPROTECTION_COMPLETEUNTILFIRSTUSERAUTHENTICATION
     var opened: OpaquePointer?
-    let result = sqlite3_open_v2(path, &opened, flags, nil)
+    let result = sqlite3_open_v2(path, &opened, Self.openFlags, nil)
     guard result == SQLITE_OK, let opened else {
       let code = opened.map { sqlite3_extended_errcode($0) } ?? result
       sqlite3_close_v2(opened)
       throw StorageError(.sqlite, code)
     }
     sqlite3_extended_result_codes(opened, 1)
+    sqlite3_busy_timeout(opened, Self.busyTimeoutMillis)
     handle = opened
   }
 
@@ -127,7 +132,10 @@ internal final class SQLiteDatabase {
       try executeScript("COMMIT")
       return result
     } catch {
-      try? executeScript("ROLLBACK")  // after a failed COMMIT the transaction may still be open
+      // After a failed COMMIT the transaction may still be open. If it is still open after the ROLLBACK, the
+      // connection is unusable: close it, so later calls throw `closed` and do not run inside a stuck transaction.
+      try? executeScript("ROLLBACK")
+      if let handle, sqlite3_get_autocommit(handle) == 0 { close() }
       throw error
     }
   }

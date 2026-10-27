@@ -22,6 +22,9 @@ internal struct RandomUuidV4: IdGenerator {
 internal struct InstallationIdStore: Sendable {
   internal static let fileName = "installation-id"
 
+  /// The file class is set when the file is made (ADR-0047 amendment).
+  internal static let writeOptions: Data.WritingOptions = [.completeFileProtectionUntilFirstUserAuthentication]
+
   private static let lock = NSLock()
 
   private let directory: URL
@@ -58,7 +61,7 @@ internal struct InstallationIdStore: Sendable {
   private func write(_ id: String, to file: URL) throws {
     let temp = directory.appendingPathComponent(Self.fileName + ".tmp")
     do {
-      try Data(id.utf8).write(to: temp, options: [.completeFileProtectionUntilFirstUserAuthentication])
+      try Data(id.utf8).write(to: temp, options: Self.writeOptions)
       let handle = try FileHandle(forWritingTo: temp)
       defer { try? handle.close() }
       try handle.synchronize()

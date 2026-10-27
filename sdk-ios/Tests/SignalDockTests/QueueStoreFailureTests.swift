@@ -87,7 +87,7 @@ import Testing
 
   // MARK: Data Protection class
 
-  /// On the Simulator the system reports this class for every file, whatever the app sets (checked on iOS 27.0:
+  /// DEVICE-ONLY checks (the three tests below). On the Simulator the system reports this class for every file, whatever the app sets (checked on iOS 27.0:
   /// a file set to `complete` still reads back `completeUntilFirstUserAuthentication`). These tests pass there
   /// without proving that the open flag worked; they check the class on a device or a runtime that stores it.
   private func protectionClass(_ name: String) throws -> URLFileProtection? {

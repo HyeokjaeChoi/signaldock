@@ -180,4 +180,15 @@ Facts checked on the Simulator:
 | `signaldock/` directory class inherited | Not verifiable. The SDK does not set a class on the directory. |
 | `isExcludedFromBackup` on the installation ID file | Reads back `true` after the SDK sets it. |
 
-Not covered by ticket 07: the opt-out marker file (ADR-0034), the public API, and the sender. The SDK sets `isExcludedFromBackup` only on the installation ID file, as D6 says; the database and the opt-out marker are not excluded.
+Not covered by ticket 07: the opt-out marker file (ADR-0034), the public API, and the sender. The backup exclusion is set on the whole `signaldock/` directory (see the next Amendment).
+
+## Amendment (2026-10-28, ticket 07 review, D6)
+
+D6 named only the installation ID file for `isExcludedFromBackup`. Android keeps every SDK file in `noBackupFilesDir`. The owner decided on 2026-10-28:
+
+- The SDK sets `isExcludedFromBackup = true` on the whole `signaldock/` directory, so the installation ID, the queue database, its side files, and later files (for example the opt-out marker) stay out of backups, as on Android (ADR-0001).
+- The flag stays on the installation ID file too, because D6 names the file and the flag on the directory is one more thing that a restore could differ on. The directory flag is the rule; the file flag is a second guard.
+- The known limit of D6 stays: Apple does not guarantee that an excluded item never appears on a restored device.
+- The tests check that the directory and the file read back `true`. Not verified: that a real backup and restore leaves the directory out (the Simulator cannot do a restore).
+
+Also from the review: the connection waits up to 2.5 s for a lock (`sqlite3_busy_timeout`, the Android framework default); a transaction that cannot roll back closes the connection; the WAL pragma must answer `wal`.

@@ -7,6 +7,11 @@ internal enum StorageDirectory {
     let directory = base.appendingPathComponent("signaldock", isDirectory: true)
     do {
       try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+      // The whole directory is excluded from backup, like `noBackupFilesDir` on Android (ADR-0047 D6 amendment).
+      var values = URLResourceValues()
+      values.isExcludedFromBackup = true
+      var mutable = directory
+      try mutable.setResourceValues(values)
     } catch {
       throw StorageError(.file, InstallationIdStore.errnoOf(error))
     }

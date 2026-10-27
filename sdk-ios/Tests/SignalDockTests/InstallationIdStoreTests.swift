@@ -90,8 +90,8 @@ import Testing
     #expect(values.isExcludedFromBackup == true)
   }
 
-  /// On the Simulator the system reports this class for every file, whatever the app sets, so this test
-  /// passes there without proving that the SDK set it. It checks the class on a device or a runtime that stores it.
+  /// DEVICE-ONLY check. On the Simulator the system reports this class for every file, whatever the app sets, so
+  /// this test passes there without proving that the SDK set it. It checks the class on a device.
   @Test func fileHasTheFirstUserAuthenticationClass() throws {
     _ = try InstallationIdStore(directory: dir.url).getOrCreate(logger: RecordingLogger())
     let values = try dir.file(InstallationIdStore.fileName).resourceValues(forKeys: [.fileProtectionKey])
@@ -103,6 +103,8 @@ import Testing
     let second = try StorageDirectory.prepare(in: dir.url)
     #expect(first == second)
     #expect(first.lastPathComponent == "signaldock")
+    let values = try first.resourceValues(forKeys: [.isExcludedFromBackupKey])
+    #expect(values.isExcludedFromBackup == true)  // the whole directory (owner decision 2026-10-28)
     var isDirectory: ObjCBool = false
     #expect(FileManager.default.fileExists(atPath: first.path, isDirectory: &isDirectory) && isDirectory.boolValue)
   }

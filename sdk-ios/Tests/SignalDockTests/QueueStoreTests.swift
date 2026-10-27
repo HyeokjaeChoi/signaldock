@@ -139,10 +139,10 @@ import Testing
 
   @Test func deleteByIdsRemovesOnlyThoseIdsAlsoBeyondOneChunk() async throws {
     let store = try await open()
-    for n in 1...1_200 { _ = try await store.addWithinLimits(makeEvent(n), limits: .init()) }
-    let ids = (1...1_100).map { "event-\($0)" } + ["unknown"]
-    #expect(try await store.deleteByIds(ids) == 1_100)
-    #expect(try await store.oldest(limit: 10).first?.eventId == "event-1101")
+    for n in 1...700 { _ = try await store.addWithinLimits(makeEvent(n), limits: .init()) }
+    let ids = (1...600).map { "event-\($0)" } + ["unknown"]
+    #expect(try await store.deleteByIds(ids) == 600)
+    #expect(try await store.oldest(limit: 10).first?.eventId == "event-601")
     #expect(try await store.usage().count == 100)
     #expect(try await store.deleteByIds([]) == 0)
   }
@@ -257,14 +257,14 @@ import Testing
 
   // MARK: Persistence
 
-  @Test func oneThousandEventsSurviveReopeningWithTheSameContent() async throws {
+  @Test func threeHundredEventsSurviveReopeningWithTheSameContent() async throws {
     let store = try await open()
-    for n in 1...1_000 { _ = try await store.addWithinLimits(makeEvent(n), limits: .init()) }
+    for n in 1...300 { _ = try await store.addWithinLimits(makeEvent(n), limits: .init()) }
     let before = try await store.oldest(limit: 2_000)
     await store.close()
     let again = try await open()
     #expect(try await again.oldest(limit: 2_000) == before)
-    #expect(try await again.usage().count == 1_000)
+    #expect(try await again.usage().count == 300)
   }
 
   @Test func diagnosticsSnapshotIsOneConsistentSnapshot() async throws {

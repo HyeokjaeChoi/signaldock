@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 
 /// The queue on SQLite (ADR-0003, ADR-0047 D7, D9). Same tables, limits, and transaction boundaries as the
 /// Android `QueueDao`.
@@ -31,7 +32,8 @@ internal actor QueueStore {
     let opened = try SQLiteDatabase(path: path)
     do {
       // WAL like the Android Room queue. `-wal` and `-shm` get the file class from the open flag.
-      _ = try opened.query("PRAGMA journal_mode = WAL") { _ in () }
+      let mode = try opened.query("PRAGMA journal_mode = WAL") { $0.text(0) }
+      guard mode.first?.lowercased() == "wal" else { throw StorageError(.sqlite, SQLITE_ERROR) }
       try Migrator.migrate(opened, directory: migrations)
     } catch {
       opened.close()  // a failed attempt keeps the files and releases the connection
