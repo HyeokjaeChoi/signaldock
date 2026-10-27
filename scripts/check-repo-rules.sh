@@ -145,24 +145,19 @@ ONK='^("on"|\047on\047|on):'
 # Every action is pinned by a 40-hex commit SHA; only local ./ actions are exempt (docker:// is not).
 # `uses` is found as a block key, in a flow mapping ({ uses: x }), and as a quoted key.
 # wfb: wf without block-scalar bodies (`run: |`, `>-`), whose lines are shell text, not YAML keys (issue 18).
-# A header counts only in block context: a quote or flow bracket still open from an earlier kept line may hold
-# a `k: |` text that is not a header, and skipping then could hide a real `uses` key (fails closed: skipping stops).
-# ponytail: quote and bracket state is counted per character, so an apostrophe in a plain scalar also stops skipping.
+# YAML quote and flow state is not tracked, so a `k: |` text inside a multi-line quoted or flow scalar can start a
+# false skip. Fail-closed rule instead: a skipped line stays visible when `uses` starts a token on it (after the line
+# start, a dash, a comma, or a bracket), so no real key hides; `echo uses:` has a word before it and is skipped.
 wfb() { wf "$1" | awk 'BEGIN { blk = -1 } {
-  match($0, /^ */); if (blk >= 0 && RLENGTH > blk) next; blk = -1
+  match($0, /^ */)
+  if (blk >= 0 && RLENGTH > blk) { if ($0 ~ /(^|[,{[])[ ]*(- +)*["\047]?uses["\047]?[ ]*:/) print; next }
+  blk = -1
   K = "(\"[^\"]*\"|\047[^\047]*\047|[^ #{[\"\047,][^:]*)"
   # Header: `key: |`, `- key: |` or `- |`, with an optional anchor or tag. A bare `|` line is a plain-scalar continuation.
-  if (!open && $0 ~ ("^ *((- +)+(" K ":[ ]+)?|" K ":[ ]+)([&!][^ ]*[ ]+)*[|>][-+0-9]*[ ]*$")) {
+  if ($0 ~ ("^ *((- +)+(" K ":[ ]+)?|" K ":[ ]+)([&!][^ ]*[ ]+)*[|>][-+0-9]*[ ]*$")) {
     k = $0; sub(/^ *(- +)*/, "", k); blk = length($0) - length(k)   # column of the key, so sibling keys stay visible
     if (k ~ /^([&!][^ ]*[ ]+)*[|>]/) { p = substr($0, 1, blk); sub(/ +$/, "", p); blk = length(p) - 1 }   # `- |`: column of the dash
   }
-  # Backslash escapes and whole quoted strings are removed first, so \" and brackets inside text do not skew the counts.
-  # A single quote counts only at a token edge, so an apostrophe inside a word does not.
-  t = $0; gsub(/\\./, "", t)
-  u = t; gsub(/"[^"]*"/, "", u); br += gsub(/[[{]/, "", u) - gsub(/[]}]/, "", u); if (br < 0) br = 0
-  dq += gsub(/"/, "", t)
-  sq += gsub(/(^|[ [{,:])\047/, "", t) + gsub(/\047($|[ ,\]}:])/, "", t)
-  open = (dq % 2) || (sq % 2) || br > 0
   print }'; }
 check_pins() {
   local body; body="$(wfb "$1")"
