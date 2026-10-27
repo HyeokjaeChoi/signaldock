@@ -112,6 +112,8 @@ Rejected: a physical iPhone now (it needs the owner device, an Apple Developer a
 - Decision: CI uses `macos-26`. The package builds at deployment target iOS 15 (`Package.swift`). Tests and the sanitizer runs execute on the oldest installed runtime, which `scripts/verify-ios.sh` selects (iOS 26.2 on that image; iOS 27.0 on the local Mac of 2026-10-28). The script prints a note when the chosen runtime is not iOS 15.
 - Gap: no test runs on an iOS 15 runtime, so the iOS 15 form of the executor (D9) and iOS 15 behavior are not run-tested. A local iOS 15 runtime or a physical device (D15) would close it. The README (ticket 18) states this.
 - UBSan: `-enableUndefinedBehaviorSanitizer` is on in the ASan run. It instruments C-family code only, and the package has no C target. It starts to matter if one is added.
+- Analyze: `xcodebuild analyze` runs the Clang static analyzer, which checks C-family code only. For this Swift-only package the analyze step is a build, like the UBSan note. It starts to matter with a C target.
+- Xcode: the `ios-test`, `ios-sanitize`, and CodeQL Swift jobs run `sudo xcode-select -s /Applications/Xcode_26.6.app`, the default Xcode of the `macos-26` image above, so a change of the runner default does not change the toolchain silently. Change the version in the three jobs together.
 
 ## Known limits
 

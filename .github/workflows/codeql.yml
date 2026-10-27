@@ -68,6 +68,9 @@ jobs:
           sdk/gradlew -p sdk :sdk-android:assembleRelease :demo:app:assembleDebug "${OPTS[@]}"
           server/gradlew -p server classes "${OPTS[@]}"
           contract-check/gradlew -p contract-check classes "${OPTS[@]}"
+      - name: Select Xcode (swift)
+        if: matrix.language == 'swift'
+        run: sudo xcode-select -s /Applications/Xcode_26.6.app # ADR-0047: the default of macos-26
       # A fresh -derivedDataPath: a cached build would skip compilation, and then CodeQL sees no source.
       - name: Build (swift)
         if: matrix.language == 'swift'

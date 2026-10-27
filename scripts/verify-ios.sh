@@ -1,5 +1,6 @@
 #!/bin/bash
-# iOS SDK gates (ADR-0047 D13). Usage: scripts/verify-ios.sh [all|lint|tsan|asan|analyze]
+# iOS SDK gates (ADR-0047 D13). Usage: scripts/verify-ios.sh [all|lint|tsan|asan|analyze|available]
+# `available` exits 0 only with full Xcode and an iOS Simulator runtime (a Command Line Tools shim of xcodebuild is not enough).
 # CI sets IOS_WERROR=1 (warnings as errors in CI only). The tests run on the oldest iOS Simulator runtime
 # that is installed, because the GitHub runner has no iOS 15 runtime (spec section 5; ADR-0047 "iOS 15 Simulator fallback").
 set -euo pipefail
@@ -57,6 +58,7 @@ case "${1:-all}" in
   tsan) echo "=== iOS: Simulator tests, Thread Sanitizer ==="; run_tests -enableThreadSanitizer YES ;;
   asan) echo "=== iOS: Simulator tests, ASan + UBSan ==="; run_tests -enableAddressSanitizer YES -enableUndefinedBehaviorSanitizer YES ;;
   analyze) run_analyze ;;
-  all) run_lint; "$0" tsan; run_analyze ;;
-  *) echo "usage: $0 [all|lint|tsan|asan|analyze]" >&2; exit 2 ;;
+  all) run_lint; "$0" tsan; "$0" asan; run_analyze ;;
+  available) xcodebuild -version > /dev/null 2>&1 && [[ "$(xcrun simctl list runtimes 2> /dev/null)" == *$'\n'"iOS "* ]] ;;
+  *) echo "usage: $0 [all|lint|tsan|asan|analyze|available]" >&2; exit 2 ;;
 esac

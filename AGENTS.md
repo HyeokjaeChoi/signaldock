@@ -11,7 +11,7 @@ When writing English, follow the simple, clear language principles of ASD-STE100
 
 ## Commands
 
-- Once per clone: `git config core.hooksPath .githooks`. Pre-commit runs `scripts/check-repo-rules.sh`. Pre-push also runs `scripts/verify-contract.sh` when code changed; it needs `ANDROID_HOME`, `ANDROID_SDK_ROOT`, or `sdk.dir` in `sdk/local.properties` (ADR-0019).
+- Once per clone: `git config core.hooksPath .githooks`. Pre-commit runs `scripts/check-repo-rules.sh`. Pre-push also runs `scripts/verify-contract.sh` when code changed; it needs `ANDROID_HOME`, `ANDROID_SDK_ROOT`, or `sdk.dir` in `sdk/local.properties` (ADR-0019). On macOS it also runs the iOS gates when full Xcode with an iOS Simulator runtime exists, else it skips them.
 - Before you open a PR: run the Claude Code `/code-review` skill on your branch, and fix its findings.
 
 ## Enforced rules
