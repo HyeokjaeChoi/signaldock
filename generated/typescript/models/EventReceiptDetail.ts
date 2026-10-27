@@ -70,7 +70,7 @@ export interface EventReceiptDetail {
      */
     sdkVersion: string;
     /**
-     * 
+     * Stored platform; `android` for events sent without it.
      */
     sdkPlatform: SdkPlatform;
     /**

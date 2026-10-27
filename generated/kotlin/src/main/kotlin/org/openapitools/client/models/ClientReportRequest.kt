@@ -35,7 +35,7 @@ import kotlinx.serialization.Contextual
  *
  * @param sdkVersion SDK release version that counted the drops.
  * @param discardedEvents One entry per reason. A reason appears at most once.
- * @param sdkPlatform Platform of the SDK. Optional on the wire; a missing value means `android` (ADR-0046 D3). Every new SDK must send it. 
+ * @param sdkPlatform Platform of the SDK. Optional on the wire; a missing value means `android` (ADR-0046 D3). Only Android SDK 0.1.0 to 0.3.0 omit it; every newer SDK must send it. 
  */
 @Serializable
 
@@ -49,7 +49,7 @@ internal data class ClientReportRequest (
     @SerialName(value = "discardedEvents")
     val discardedEvents: kotlin.collections.List<DiscardedEventCount>,
 
-    /* Platform of the SDK. Optional on the wire; a missing value means `android` (ADR-0046 D3). Every new SDK must send it.  */
+    /* Platform of the SDK. Optional on the wire; a missing value means `android` (ADR-0046 D3). Only Android SDK 0.1.0 to 0.3.0 omit it; every newer SDK must send it.  */
     @Contextual @SerialName(value = "sdkPlatform")
     val sdkPlatform: SdkPlatform? = null
 

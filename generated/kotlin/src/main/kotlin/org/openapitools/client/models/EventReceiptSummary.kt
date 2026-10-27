@@ -39,7 +39,7 @@ import kotlinx.serialization.Contextual
  * @param occurredAt Client time as stored. UTC RFC 3339 with milliseconds.
  * @param receivedAt Server receipt time. UTC RFC 3339 with milliseconds.
  * @param sdkVersion SDK release version at collection time.
- * @param sdkPlatform 
+ * @param sdkPlatform Stored platform; `android` for events sent without it.
  * @param planStatus 
  */
 @Serializable
@@ -67,6 +67,7 @@ internal data class EventReceiptSummary (
     @SerialName(value = "sdkVersion")
     val sdkVersion: kotlin.String,
 
+    /* Stored platform; `android` for events sent without it. */
     @Contextual @SerialName(value = "sdkPlatform")
     val sdkPlatform: SdkPlatform,
 

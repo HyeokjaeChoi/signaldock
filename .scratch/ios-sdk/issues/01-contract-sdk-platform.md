@@ -21,3 +21,20 @@ Verification:
 - `server` build and test task, Dashboard `tsc`, test and build (commands and counts in the PR).
 - `scripts/verify-contract.sh` (real exit code, oasdiff output in the PR).
 - `bash scripts/check-repo-rules.sh`.
+
+## Contract baseline update (ADR-0002 amendment)
+
+`fixtures/contract/contract-v1.baseline.yaml` was updated on purpose in the same change as `openapi/contract-v1.yaml`. Base: the baseline from `origin/main`. Revision: the new contract. oasdiff v1.33.0.
+
+`oasdiff breaking <main baseline> openapi/contract-v1.yaml` (exit 0):
+
+```
+No breaking changes to report, but the specs are different.
+Run 'oasdiff diff' to see structural differences.
+```
+
+`oasdiff changelog <main baseline> openapi/contract-v1.yaml` (exit 0): 10 changes, 0 error, 0 warning, 10 info.
+
+- `new-optional-request-parameter`: `sdkPlatform` on `GET /v1/events`, `/v1/event-counts/by-name`, `by-time`, `by-plan-status`, and `/v1/client-report-counts` (5 items).
+- `response-required-property-added`: `sdkPlatform` on `GET /v1/events` items, `GET /v1/events/{eventId}`, and `GET /v1/client-report-counts` items (3 items).
+- `new-optional-request-property`: `sdkPlatform` on `POST /v1/events:batch` events and on `POST /v1/client-reports` (2 items).

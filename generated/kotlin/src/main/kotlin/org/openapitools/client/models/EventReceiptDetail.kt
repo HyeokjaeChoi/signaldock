@@ -40,7 +40,7 @@ import kotlinx.serialization.Contextual
  * @param occurredAt Client time as stored. UTC RFC 3339 with milliseconds.
  * @param receivedAt Server receipt time. UTC RFC 3339 with milliseconds.
  * @param sdkVersion 
- * @param sdkPlatform 
+ * @param sdkPlatform Stored platform; `android` for events sent without it.
  * @param properties Stored properties. Values passed through JSONB, so this is not the original HTTP payload and key order is not preserved. 
  * @param planStatus 
  */
@@ -68,6 +68,7 @@ internal data class EventReceiptDetail (
     @SerialName(value = "sdkVersion")
     val sdkVersion: kotlin.String,
 
+    /* Stored platform; `android` for events sent without it. */
     @Contextual @SerialName(value = "sdkPlatform")
     val sdkPlatform: SdkPlatform,
 

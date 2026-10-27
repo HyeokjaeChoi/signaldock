@@ -39,7 +39,7 @@ export interface ClientReportRequest {
      */
     sdkVersion: string;
     /**
-     * Platform of the SDK. Optional on the wire; a missing value means `android` (ADR-0046 D3). Every new SDK must send it.
+     * Platform of the SDK. Optional on the wire; a missing value means `android` (ADR-0046 D3). Only Android SDK 0.1.0 to 0.3.0 omit it; every newer SDK must send it.
      * 
      */
     sdkPlatform?: SdkPlatform;

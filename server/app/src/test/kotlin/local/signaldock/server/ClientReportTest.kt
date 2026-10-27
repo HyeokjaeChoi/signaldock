@@ -21,6 +21,7 @@ import local.signaldock.server.jooq.tables.Events.EVENTS
 import org.openapitools.client.models.ClientReportCounts
 import org.openapitools.client.models.DiscardReason
 import org.openapitools.client.models.ErrorResponse
+import org.openapitools.client.models.SdkPlatform
 import org.testcontainers.postgresql.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 import java.io.File
@@ -317,6 +318,7 @@ class ClientReportTest {
         assertTrue(response.headers[HttpHeaders.ContentType]?.startsWith("application/json") == true)
         val body = json.decodeFromString<ClientReportCounts>(response.bodyAsText())
         assertEquals(false, body.truncated)
+        assertTrue(body.items.all { it.sdkPlatform == SdkPlatform.ANDROID }) // ticket 02 stores the platform
         // Largest first; the tie at 5 goes by SDK version, then reason.
         assertEquals(
             listOf(
