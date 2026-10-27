@@ -38,6 +38,10 @@ _Avoid_: aggregation completed
 A host app setting that stops event collection in the SDK. While it is on, `track()` stores nothing and returns `OptedOut`. A `track()` call that started before `setOptOut(true)` returned can still store its event ([ADR-0034](docs/adr/0034-sdk-opt-out.md) decision 8). Events that are already queued stay and are still sent, unless the host clears the queue.
 _Avoid_: pause, disable delivery
 
+**SDK platform**:
+The mobile platform of the SDK that collected an event: `android` or `ios`. Events from older Android SDKs that do not send it count as `android`.
+_Avoid_: OS, device type, client type
+
 **Client report**:
 A small report in which the SDK tells the server how many events it dropped, counted by reason. It is separate from event batches. The counts are approximate, and the Dashboard shows them as dropped events.
 _Avoid_: event delivery, crash report

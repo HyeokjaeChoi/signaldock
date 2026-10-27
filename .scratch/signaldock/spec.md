@@ -15,6 +15,7 @@ SignalDock is an open-source release from Stackline. It shows SDK API design, de
 - JSON for both SDK and server. Generate Kotlin and TypeScript models from the OpenAPI contract.
 - Deliver one entry point for server/DB/Dashboard startup, an SDK Maven folder-repository ZIP, an independent consumer app, reproduction instructions, and a short verification video.
 - The first scope excludes iOS/Flutter SDKs, React Native/Flutter/Unity bridges, a native-web (WebView JavaScript) bridge (Q150), automatic events, user identify, campaign/push, funnel analysis, multiple projects/account management, public internet operation, and Maven Central publication.
+- Note (2026-10-27): the "iOS SDK" exclusion above is replaced by `.scratch/ios-sdk/spec.md` (ADR-0046, ADR-0047). The other exclusions in this item stay.
 
 Personal notes (discovery conversation and résumé review) stay local. Exclude them from repository uploads (`.gitignore`: `.scratch/*/discovery.md`).
 

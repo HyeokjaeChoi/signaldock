@@ -43,3 +43,7 @@ The first and third patterns need an SDK change. The second needs none. Option A
 
 Compose smoke test (2026-10-17 UTC, separate project `-p sdkill` on ports 18080, 15173, and 15432; the record is in the issue 67 file): with `SIGNALDOCK_BLOCKED_EVENTS=noisy_event`, a batch of one blocked and one allowed event got `rejected` with `COLLECTION_BLOCKED` and `accepted`, and the database held only the allowed row. With `SIGNALDOCK_INGEST_SHED=true` and `SIGNALDOCK_INGEST_SHED_RETRY_AFTER_SECONDS=120`, both ingest routes answered 503 with `Retry-After: 120`, and the start log had `collection control: shed=true`. Gap: the `SIGNALDOCK_BLOCKED_SDK_VERSIONS` variable was not run through Compose (the server test covers it).
 Gap: no SDK test against a server with a block. The SDK side of a per-item rejection and of a 503 is already tested (ADR-0036, ADR-0006).
+
+## Amendment (2026-10-27)
+
+[ADR-0046](0046-sdk-platform-field.md) changes how decision 1 matches the SDK version. The server then blocks by the pair (platform, version). Each item of `SIGNALDOCK_BLOCKED_SDK_VERSIONS` is `platform:version`, and an item with no prefix means `android`. The text of decision 1 above is the state before that change.

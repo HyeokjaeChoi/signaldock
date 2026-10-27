@@ -53,3 +53,7 @@ Case 5 of `scripts/e2e-delivery.sh` closes the "no end-to-end run" Gap for one r
 - Run: emulator-5556 (faults37, API 37), `E2E_SKIP_BUILD=1 scripts/e2e-delivery.sh 3 5 1`: PASS for cases 1, 3, and 5 (details in the issue 65 file).
 - Gap: the other four reasons are not caused on a device. The Dashboard card is not rendered in a browser; the case reads the same endpoint.
 - Not run in CI (needs an emulator and Docker, as ADR-0010 item 3).
+
+## Amendment (2026-10-27)
+
+[ADR-0046](0046-sdk-platform-field.md) adds `sdkPlatform` to the client report body (optional; a missing value is stored as `android`), to the count items of `GET /v1/client-report-counts` (required), and an optional `sdkPlatform` filter on that endpoint. Counts then group by platform, SDK version, and reason, and the 100-row limit of decision 9 orders by count, then platform, SDK version, and reason. The text of decision 9 above is the state before that change.
