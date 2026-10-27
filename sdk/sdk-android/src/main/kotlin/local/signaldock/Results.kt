@@ -225,7 +225,7 @@ public data class DeliveryErrorDiagnostic(
  * Read-only snapshot of the device queue. It says nothing about server state. [storageAvailable] is
  * false when the queue could not be read; the other fields are then empty and mean nothing.
  *
- * @property sdkVersion the SDK release version, for example `0.3.0`. It is not the contract version.
+ * @property sdkVersion the SDK release version, for example `0.4.0`. It is not the contract version.
  * @property queuedEvents how many events wait in the queue.
  * @property queuedBytes the total transport JSON bytes of the queued events.
  * @property oldestPendingEpochMillis when the oldest queued event was collected, or `null` if the queue is empty.

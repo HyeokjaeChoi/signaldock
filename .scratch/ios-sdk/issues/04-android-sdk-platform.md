@@ -1,6 +1,6 @@
 # 04. Android SDK 0.4.0 sends `sdkPlatform`
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: 01, 02
 
