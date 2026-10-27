@@ -18,7 +18,7 @@ public enum class DiscardReason(public val wire: String) {
 public data class DiscardedCount(val reason: DiscardReason, val count: Int)
 
 /** A valid SDK health report: one entry per reason. */
-public data class ClientReport(val sdkVersion: String, val entries: List<DiscardedCount>)
+public data class ClientReport(val sdkVersion: String, val sdkPlatform: SdkPlatform, val entries: List<DiscardedCount>)
 
 /** One entry as it came from the wire. `countLiteral` is the JSON number text, not yet checked. */
 public data class RawDiscardedCount(val reason: String, val countLiteral: String)
@@ -32,15 +32,17 @@ private val INTEGER_LITERAL = Regex("-?(0|[1-9][0-9]*)")
  * Checks a client report as a whole. Any failure is `INVALID_REPORT` and nothing is stored. This is
  * a request-level rejection: there is no queue behind it that a bad report could block (ADR-0027).
  */
-public fun validateClientReport(sdkVersion: String, raw: List<RawDiscardedCount>): ClientReport {
+public fun validateClientReport(sdkVersion: String, raw: List<RawDiscardedCount>, sdkPlatform: String? = null): ClientReport {
     if (!validText(sdkVersion)) throw RequestFailure("INVALID_REPORT")
+    // A missing platform is `android`; an unknown value fails like an invalid `sdkVersion` (ADR-0046).
+    val platform = if (sdkPlatform == null) SdkPlatform.ANDROID else SdkPlatform.fromWire(sdkPlatform) ?: throw RequestFailure("INVALID_REPORT")
     if (raw.size !in 1..MAX_REPORT_ENTRIES) throw RequestFailure("INVALID_REPORT")
     val entries = raw.map { entry ->
         val reason = DiscardReason.fromWire(entry.reason) ?: throw RequestFailure("INVALID_REPORT")
         DiscardedCount(reason, parseCount(entry.countLiteral))
     }
     if (entries.map { it.reason }.toSet().size != entries.size) throw RequestFailure("INVALID_REPORT")
-    return ClientReport(sdkVersion, entries)
+    return ClientReport(sdkVersion, platform, entries)
 }
 
 /** Only an integer literal counts: `3.0`, `1e3`, and `-1` are rejected. The length check avoids overflow. */

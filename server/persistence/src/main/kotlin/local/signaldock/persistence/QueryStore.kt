@@ -3,9 +3,11 @@ package local.signaldock.persistence
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import local.signaldock.ingestion.PlanStatus
+import local.signaldock.ingestion.SdkPlatform
 import local.signaldock.ingestion.DiscardReason
 import local.signaldock.query.Bucket
 import local.signaldock.query.ClientReportCount
+import local.signaldock.query.ClientReportCountQuery
 import local.signaldock.query.ClientReportCounts
 import local.signaldock.query.MAX_CLIENT_REPORT_COUNTS
 import local.signaldock.query.CountQuery
@@ -49,7 +51,7 @@ public class QueryStore(private val database: Database) {
                 where = where.and(if (ascending) position.gt(last) else position.lt(last))
             }
             val rows = query {
-                select(EVENTS.EVENT_ID, EVENTS.INSTALLATION_ID, EVENTS.NAME, EVENTS.OCCURRED_AT, EVENTS.RECEIVED_AT, EVENTS.SDK_VERSION, EVENTS.PLAN_STATUS)
+                select(EVENTS.EVENT_ID, EVENTS.INSTALLATION_ID, EVENTS.NAME, EVENTS.OCCURRED_AT, EVENTS.RECEIVED_AT, EVENTS.SDK_VERSION, EVENTS.SDK_PLATFORM, EVENTS.PLAN_STATUS)
                     .from(EVENTS)
                     .where(where)
                     .orderBy(
@@ -108,19 +110,21 @@ public class QueryStore(private val database: Database) {
         }
 
     /** Dropped events by SDK version and reason (ADR-0036): rows are summed at query time, largest first. */
-    public suspend fun countClientReports(period: Period, budget: RequestBudget = database.budget()): ClientReportCounts =
+    public suspend fun countClientReports(q: ClientReportCountQuery, budget: RequestBudget = database.budget()): ClientReportCounts =
         database.transaction(budget) {
+            val period = q.period
             readOnly()
             val total = DSL.sum(CLIENT_REPORTS.COUNT)
             val rows = query {
-                select(CLIENT_REPORTS.SDK_VERSION, CLIENT_REPORTS.REASON, total)
+                select(CLIENT_REPORTS.SDK_PLATFORM, CLIENT_REPORTS.SDK_VERSION, CLIENT_REPORTS.REASON, total)
                     .from(CLIENT_REPORTS)
                     .where(CLIENT_REPORTS.RECEIVED_AT.ge(period.from.atOffset(ZoneOffset.UTC)))
                     .and(CLIENT_REPORTS.RECEIVED_AT.lt(period.to.atOffset(ZoneOffset.UTC)))
-                    .groupBy(CLIENT_REPORTS.SDK_VERSION, CLIENT_REPORTS.REASON)
-                    .orderBy(total.desc(), CLIENT_REPORTS.SDK_VERSION.asc(), CLIENT_REPORTS.REASON.asc())
+                    .and(q.sdkPlatform?.let { CLIENT_REPORTS.SDK_PLATFORM.eq(it.wire) } ?: DSL.noCondition())
+                    .groupBy(CLIENT_REPORTS.SDK_PLATFORM, CLIENT_REPORTS.SDK_VERSION, CLIENT_REPORTS.REASON)
+                    .orderBy(total.desc(), CLIENT_REPORTS.SDK_PLATFORM.asc(), CLIENT_REPORTS.SDK_VERSION.asc(), CLIENT_REPORTS.REASON.asc())
                     .limit(MAX_CLIENT_REPORT_COUNTS + 1)
-                    .fetch { ClientReportCount(it.value1()!!, DiscardReason.fromWire(it.value2()!!)!!, it.value3()!!.toLong()) }
+                    .fetch { ClientReportCount(SdkPlatform.fromWire(it.value1()!!)!!, it.value2()!!, DiscardReason.fromWire(it.value3()!!)!!, it.value4()!!.toLong()) }
             }
             ClientReportCounts(rows.take(MAX_CLIENT_REPORT_COUNTS), rows.size > MAX_CLIENT_REPORT_COUNTS)
         }
@@ -165,11 +169,12 @@ private fun condition(period: Period, filter: EventFilter): Condition {
     filter.installationId?.let { where = where.and(EVENTS.INSTALLATION_ID.eq(it)) }
     filter.eventId?.let { where = where.and(EVENTS.EVENT_ID.eq(it)) }
     filter.planStatus?.let { where = where.and(EVENTS.PLAN_STATUS.eq(it.wire)) }
+    filter.sdkPlatform?.let { where = where.and(EVENTS.SDK_PLATFORM.eq(it.wire)) }
     return where
 }
 
 private fun Record.toSummary() = ReceiptSummary(
     get(EVENTS.EVENT_ID)!!, get(EVENTS.INSTALLATION_ID)!!, get(EVENTS.NAME)!!,
-    get(EVENTS.OCCURRED_AT)!!.toInstant(), get(EVENTS.RECEIVED_AT)!!.toInstant(), get(EVENTS.SDK_VERSION)!!,
+    get(EVENTS.OCCURRED_AT)!!.toInstant(), get(EVENTS.RECEIVED_AT)!!.toInstant(), get(EVENTS.SDK_VERSION)!!, SdkPlatform.fromWire(get(EVENTS.SDK_PLATFORM)!!)!!,
     get(EVENTS.PLAN_STATUS)?.let(PlanStatus::fromWire), // the CHECK constraint allows only known values
 )

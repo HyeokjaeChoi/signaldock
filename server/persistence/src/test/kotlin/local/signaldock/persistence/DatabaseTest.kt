@@ -66,8 +66,8 @@ class DatabaseTest {
             database.transaction {
                 query {
                     insertInto(EVENTS, EVENTS.EVENT_ID, EVENTS.INSTALLATION_ID, EVENTS.NAME, EVENTS.OCCURRED_AT,
-                        EVENTS.SDK_VERSION, EVENTS.PROPERTIES)
-                        .values(id, id, "timeout", java.time.OffsetDateTime.now(), "0.1.0", org.jooq.JSONB.valueOf("{}"))
+                        EVENTS.SDK_VERSION, EVENTS.SDK_PLATFORM, EVENTS.PROPERTIES)
+                        .values(id, id, "timeout", java.time.OffsetDateTime.now(), "0.1.0", "android", org.jooq.JSONB.valueOf("{}"))
                         .execute()
                     fetch("select pg_sleep(2)")
                 }
@@ -123,8 +123,8 @@ class DatabaseTest {
             database.transaction {
                 query {
                     insertInto(EVENTS, EVENTS.EVENT_ID, EVENTS.INSTALLATION_ID, EVENTS.NAME, EVENTS.OCCURRED_AT,
-                        EVENTS.SDK_VERSION, EVENTS.PROPERTIES)
-                        .values(id, id, "budget", java.time.OffsetDateTime.now(), "0.1.0", org.jooq.JSONB.valueOf("{}"))
+                        EVENTS.SDK_VERSION, EVENTS.SDK_PLATFORM, EVENTS.PROPERTIES)
+                        .values(id, id, "budget", java.time.OffsetDateTime.now(), "0.1.0", "android", org.jooq.JSONB.valueOf("{}"))
                         .execute()
                 }
                 query { fetch("select pg_sleep(0.9)") }   // under the 1000 ms statement limit
@@ -147,8 +147,8 @@ class DatabaseTest {
             database.transaction {
                 query {
                     insertInto(EVENTS, EVENTS.EVENT_ID, EVENTS.INSTALLATION_ID, EVENTS.NAME, EVENTS.OCCURRED_AT,
-                        EVENTS.SDK_VERSION, EVENTS.PROPERTIES)
-                        .values(id, id, "cancel", java.time.OffsetDateTime.now(), "0.1.0", org.jooq.JSONB.valueOf("{}"))
+                        EVENTS.SDK_VERSION, EVENTS.SDK_PLATFORM, EVENTS.PROPERTIES)
+                        .values(id, id, "cancel", java.time.OffsetDateTime.now(), "0.1.0", "android", org.jooq.JSONB.valueOf("{}"))
                         .execute()
                 }
                 query { fetch("select pg_sleep(4)") }
@@ -173,8 +173,8 @@ class DatabaseTest {
             database.transaction {
                 query {
                     insertInto(EVENTS, EVENTS.EVENT_ID, EVENTS.INSTALLATION_ID, EVENTS.NAME, EVENTS.OCCURRED_AT,
-                        EVENTS.SDK_VERSION, EVENTS.PROPERTIES)
-                        .values(id, id, "precommit", java.time.OffsetDateTime.now(), "0.1.0", org.jooq.JSONB.valueOf("{}"))
+                        EVENTS.SDK_VERSION, EVENTS.SDK_PLATFORM, EVENTS.PROPERTIES)
+                        .values(id, id, "precommit", java.time.OffsetDateTime.now(), "0.1.0", "android", org.jooq.JSONB.valueOf("{}"))
                         .execute()
                 }
                 job.cancel() // runs the transaction's abort hook on this worker thread, before commit

@@ -19,6 +19,18 @@ class ClientReportTest {
     }
 
     @Test
+    fun `a missing platform is android, both values are kept, and another value fails like an invalid sdkVersion`() {
+        val entries = listOf(entry())
+        assertEquals(SdkPlatform.ANDROID, validateClientReport("0.1.0", entries).sdkPlatform)
+        assertEquals(SdkPlatform.ANDROID, validateClientReport("0.1.0", entries, "android").sdkPlatform)
+        assertEquals(SdkPlatform.IOS, validateClientReport("0.1.0", entries, "ios").sdkPlatform)
+        for (bad in listOf("iOS", "Android", "", "ios ", "unknown")) {
+            val error = assertFailsWith<RequestFailure>(bad) { validateClientReport("0.1.0", entries, bad) }
+            assertEquals("INVALID_REPORT", error.code, bad)
+        }
+    }
+
+    @Test
     fun `count boundaries`() {
         assertEquals(1, validateClientReport("v", listOf(entry(count = "1"))).entries.single().count)
         assertEquals(1_000_000, validateClientReport("v", listOf(entry(count = "1000000"))).entries.single().count)

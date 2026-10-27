@@ -70,7 +70,7 @@ class QueryRoutesTest {
 
     private fun id(n: Int) = UUID.fromString("00000000-0000-4000-8000-%012d".format(n))
 
-    private fun insert(n: Int, receivedAt: String, name: String = "product_viewed", properties: String = "{}") = runBlocking {
+    private fun insert(n: Int, receivedAt: String, name: String = "product_viewed", properties: String = "{}", sdkPlatform: String = "android") = runBlocking {
         database.transaction {
             query {
                 insertInto(EVENTS)
@@ -79,6 +79,7 @@ class QueryRoutesTest {
                     .set(EVENTS.NAME, name)
                     .set(EVENTS.OCCURRED_AT, Instant.parse("2026-10-12T00:00:00.250Z").atOffset(ZoneOffset.UTC))
                     .set(EVENTS.SDK_VERSION, "0.1.0")
+                    .set(EVENTS.SDK_PLATFORM, sdkPlatform)
                     .set(EVENTS.PROPERTIES, JSONB.valueOf(properties))
                     .set(EVENTS.RECEIVED_AT, Instant.parse(receivedAt).atOffset(ZoneOffset.UTC))
                     .execute()
@@ -210,7 +211,7 @@ class QueryRoutesTest {
         assertEquals("2026-10-12T01:00:00.500Z", page.items[0].receivedAt)
         assertEquals("2026-10-12T00:00:00.250Z", page.items[0].occurredAt)
         assertEquals("0.1.0", page.items[0].sdkVersion)
-        assertEquals(SdkPlatform.ANDROID, page.items[0].sdkPlatform) // ticket 02 stores the platform
+        assertEquals(SdkPlatform.ANDROID, page.items[0].sdkPlatform)
         assertEquals(installation.toString(), page.items[0].installationId)
         // Lists carry no properties.
         assertTrue(json.parseToJsonElement(firstText).jsonObject["items"]!!.jsonArray.all { "properties" !in it.jsonObject })

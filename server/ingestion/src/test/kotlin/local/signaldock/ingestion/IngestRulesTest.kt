@@ -32,6 +32,26 @@ class IngestRulesTest {
     }
 
     @Test
+    fun `a missing platform is android, both values are kept, and any other value is a per-item rejection`() {
+        assertEquals(SdkPlatform.ANDROID, validate().event?.sdkPlatform)
+        assertEquals(SdkPlatform.ANDROID, validate(sdkPlatform = "android").event?.sdkPlatform)
+        assertEquals(SdkPlatform.IOS, validate(sdkPlatform = "ios").event?.sdkPlatform)
+        for (bad in listOf("iOS", "IOS", "Android", "ios ", "", "unknown")) {
+            val item = validate(sdkPlatform = bad)
+            assertNull(item.event, bad)
+            assertEquals("INVALID_EVENT", item.rejectionCode, bad)
+            assertEquals(eventId, item.eventId, bad) // the SDK still gets the event ID back to delete the event
+        }
+    }
+
+    @Test
+    fun `the same event ID with another platform is not the same content`() {
+        val android = event(emptyMap())
+        assertTrue(sameContent(android, android.copy()))
+        assertFalse(sameContent(android, android.copy(sdkPlatform = SdkPlatform.IOS)))
+    }
+
+    @Test
     fun `contract version and size rules fail the whole request`() {
         assertEquals("CONTRACT_VERSION_MISSING", assertFailsWith<RequestFailure> { checkItemContractVersion(null, "1") }.code)
         assertEquals("CONTRACT_VERSION_UNSUPPORTED", assertFailsWith<RequestFailure> { checkItemContractVersion("2", "1") }.code)
@@ -84,12 +104,13 @@ class IngestRulesTest {
         id: String = eventId,
         name: String = "product_viewed",
         properties: Map<String, PropertyValue> = mapOf("n" to PropertyValue.Number("1")),
+        sdkPlatform: String? = null,
     ) = validateEvent(
         0,
-        EventCandidate(id, false, EventFields(name, "2026-10-09T21:30:00.123Z", "0.1.0", properties)),
+        EventCandidate(id, false, EventFields(name, "2026-10-09T21:30:00.123Z", "0.1.0", sdkPlatform, properties)),
         installation,
     )
 
     private fun event(properties: Map<String, PropertyValue>) =
-        StoredEvent(UUID.fromString(eventId), installation, "n", java.time.Instant.EPOCH, "0.1.0", properties)
+        StoredEvent(UUID.fromString(eventId), installation, "n", java.time.Instant.EPOCH, "0.1.0", SdkPlatform.ANDROID, properties)
 }

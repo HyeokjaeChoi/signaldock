@@ -1,6 +1,6 @@
 # 02. Server: store, default, kill switch, filters
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: 01
 

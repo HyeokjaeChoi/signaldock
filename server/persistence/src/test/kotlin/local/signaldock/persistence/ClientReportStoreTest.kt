@@ -4,6 +4,8 @@ import kotlinx.coroutines.runBlocking
 import local.signaldock.ingestion.ClientReport
 import local.signaldock.ingestion.DiscardReason
 import local.signaldock.ingestion.DiscardedCount
+import local.signaldock.ingestion.SdkPlatform
+import local.signaldock.query.ClientReportCountQuery
 import local.signaldock.query.ClientReportCount
 import local.signaldock.query.MAX_CLIENT_REPORT_COUNTS
 import local.signaldock.query.Period
@@ -36,12 +38,12 @@ class ClientReportStoreTest {
         database.close()
     }
 
-    private fun insert(receivedAt: String, sdkVersion: String, reason: String, count: Int) = runBlocking {
+    private fun insert(receivedAt: String, sdkVersion: String, reason: String, count: Int, platform: String = "android") = runBlocking {
         database.transaction {
             query {
                 execute(
-                    "INSERT INTO client_reports (received_at, sdk_version, reason, count) VALUES (?::timestamptz, ?, ?, ?)",
-                    receivedAt, sdkVersion, reason, count,
+                    "INSERT INTO client_reports (received_at, sdk_platform, sdk_version, reason, count) VALUES (?::timestamptz, ?, ?, ?, ?)",
+                    receivedAt, platform, sdkVersion, reason, count,
                 )
             }
         }
@@ -54,11 +56,11 @@ class ClientReportStoreTest {
 
     @Test
     fun `stores one row per entry with a receipt time and no other identity`() = runBlocking {
-        ClientReportStore(database).store(ClientReport("0.1.0", listOf(
+        ClientReportStore(database).store(ClientReport("0.1.0", SdkPlatform.ANDROID, listOf(
             DiscardedCount(DiscardReason.QUEUE_FULL, 3), DiscardedCount(DiscardReason.SERVER_REJECTED, 1_000_000),
         )))
         assertEquals(listOf(Triple("0.1.0", "queue_full", 3), Triple("0.1.0", "server_rejected", 1_000_000)), rows())
-        assertEquals(listOf("id", "received_at", "sdk_version", "reason", "count"), CLIENT_REPORTS.fields().map { it.name })
+        assertEquals(listOf("id", "received_at", "sdk_version", "reason", "count", "sdk_platform"), CLIENT_REPORTS.fields().map { it.name })
         val receivedAt = database.transaction { query { select(CLIENT_REPORTS.RECEIVED_AT).from(CLIENT_REPORTS).fetch { it.value1()!!.toInstant() } } }
         assertTrue(receivedAt.all { it.isAfter(Instant.now().minusSeconds(60)) })
     }
@@ -67,7 +69,7 @@ class ClientReportStoreTest {
     fun `a failing entry rolls back the whole report`() = runBlocking {
         // 0 violates the count CHECK, so the second entry fails and the first must not stay.
         assertFailsWith<Exception> {
-            ClientReportStore(database).store(ClientReport("0.1.0", listOf(
+            ClientReportStore(database).store(ClientReport("0.1.0", SdkPlatform.ANDROID, listOf(
                 DiscardedCount(DiscardReason.QUEUE_FULL, 3), DiscardedCount(DiscardReason.STORAGE_ERROR, 0),
             )))
         }
@@ -92,31 +94,66 @@ class ClientReportStoreTest {
         insert("2026-10-12T10:00:00.000Z", "0.2.0", "queue_full", 9)
         insert("2026-10-11T23:59:59.999Z", "0.1.0", "queue_full", 100)
         insert("2026-10-13T00:00:00.000Z", "0.1.0", "queue_full", 100) // to: out
-        val counts = QueryStore(database).countClientReports(period)
+        val counts = QueryStore(database).countClientReports(ClientReportCountQuery(period, null))
         assertFalse(counts.truncated)
         assertEquals(
             listOf(
-                ClientReportCount("0.2.0", DiscardReason.QUEUE_FULL, 9),
-                ClientReportCount("0.1.0", DiscardReason.QUEUE_FULL, 5),
-                ClientReportCount("0.1.0", DiscardReason.STORAGE_ERROR, 5),
+                ClientReportCount(SdkPlatform.ANDROID, "0.2.0", DiscardReason.QUEUE_FULL, 9),
+                ClientReportCount(SdkPlatform.ANDROID, "0.1.0", DiscardReason.QUEUE_FULL, 5),
+                ClientReportCount(SdkPlatform.ANDROID, "0.1.0", DiscardReason.STORAGE_ERROR, 5),
             ),
             counts.items,
         )
     }
 
     @Test
+    fun `the platform is stored, the constraint rejects other values, and counts group and filter by platform`() = runBlocking {
+        ClientReportStore(database).store(ClientReport("0.1.0", SdkPlatform.IOS, listOf(DiscardedCount(DiscardReason.QUEUE_FULL, 4))))
+        assertEquals(listOf("ios"), database.transaction { query { select(CLIENT_REPORTS.SDK_PLATFORM).from(CLIENT_REPORTS).fetch { it.value1()!! } } })
+        for (bad in listOf("iOS", "unknown", "")) {
+            assertFailsWith<Exception>(bad) { insert("2026-10-12T01:00:00Z", "v", "queue_full", 1, platform = bad) }
+        }
+        // The same version on both platforms is two rows (ADR-0046); ties in count order by platform, then version.
+        insert("2026-10-12T10:00:00Z", "0.1.0", "queue_full", 4)
+        insert("2026-10-12T10:00:00Z", "0.1.0", "queue_full", 4, platform = "ios")
+        insert("2026-10-12T10:00:00Z", "0.2.0", "storage_error", 4)
+        insert("2026-10-12T10:00:00Z", "0.1.0", "storage_error", 1, platform = "ios")
+        val store = QueryStore(database)
+        assertEquals(
+            listOf(
+                ClientReportCount(SdkPlatform.ANDROID, "0.1.0", DiscardReason.QUEUE_FULL, 4),
+                ClientReportCount(SdkPlatform.ANDROID, "0.2.0", DiscardReason.STORAGE_ERROR, 4),
+                ClientReportCount(SdkPlatform.IOS, "0.1.0", DiscardReason.QUEUE_FULL, 4),
+                ClientReportCount(SdkPlatform.IOS, "0.1.0", DiscardReason.STORAGE_ERROR, 1),
+            ),
+            store.countClientReports(ClientReportCountQuery(period, null)).items,
+        )
+        assertEquals(
+            listOf(
+                ClientReportCount(SdkPlatform.IOS, "0.1.0", DiscardReason.QUEUE_FULL, 4),
+                ClientReportCount(SdkPlatform.IOS, "0.1.0", DiscardReason.STORAGE_ERROR, 1),
+            ),
+            store.countClientReports(ClientReportCountQuery(period, SdkPlatform.IOS)).items,
+        )
+        assertEquals(
+            listOf(SdkPlatform.ANDROID, SdkPlatform.ANDROID),
+            store.countClientReports(ClientReportCountQuery(period, SdkPlatform.ANDROID)).items.map { it.sdkPlatform },
+        )
+    }
+
+    @Test
     fun `counts are empty without rows and the sum does not overflow an int`() = runBlocking {
-        assertEquals(emptyList(), QueryStore(database).countClientReports(period).items)
+        assertEquals(emptyList(), QueryStore(database).countClientReports(ClientReportCountQuery(period, null)).items)
         repeat(3) { insert("2026-10-12T10:00:00Z", "0.1.0", "queue_full", 1_000_000) }
         database.transaction {
             query {
                 execute(
-                    """INSERT INTO client_reports (received_at, sdk_version, reason, count)
-                       SELECT timestamptz '2026-10-12 10:00:00+00', '0.1.0', 'storage_error', 1000000 FROM generate_series(1, 3000)""",
+                    """INSERT INTO client_reports (received_at, sdk_platform, sdk_version, reason, count)
+                       SELECT timestamptz '2026-10-12 10:00:00+00', 'android', '0.1.0', 'storage_error', 1000000 FROM generate_series(1, 3000)""",
                 )
             }
         }
-        assertEquals(listOf(3_000_000_000L, 3_000_000L), QueryStore(database).countClientReports(period).items.map { it.count })
+        assertEquals(listOf(3_000_000_000L, 3_000_000L), QueryStore(database).countClientReports(ClientReportCountQuery(period, null)).items.map { it.count })
     }
 
     @Test
@@ -124,12 +161,12 @@ class ClientReportStoreTest {
         database.transaction {
             query {
                 execute(
-                    """INSERT INTO client_reports (received_at, sdk_version, reason, count)
-                       SELECT timestamptz '2026-10-12 10:00:00+00', 'v' || lpad(g::text, 3, '0'), 'queue_full', 1 FROM generate_series(1, 101) g""",
+                    """INSERT INTO client_reports (received_at, sdk_platform, sdk_version, reason, count)
+                       SELECT timestamptz '2026-10-12 10:00:00+00', 'android', 'v' || lpad(g::text, 3, '0'), 'queue_full', 1 FROM generate_series(1, 101) g""",
                 )
             }
         }
-        val counts = QueryStore(database).countClientReports(period)
+        val counts = QueryStore(database).countClientReports(ClientReportCountQuery(period, null))
         assertEquals(MAX_CLIENT_REPORT_COUNTS, counts.items.size)
         assertTrue(counts.truncated)
     }
@@ -139,8 +176,8 @@ class ClientReportStoreTest {
         database.transaction {
             query {
                 execute(
-                    """INSERT INTO client_reports (received_at, sdk_version, reason, count)
-                       SELECT timestamptz '2026-09-01 00:00:00+00' + g * interval '2 minutes', '0.1.' || (g % 3), 'queue_full', 1
+                    """INSERT INTO client_reports (received_at, sdk_platform, sdk_version, reason, count)
+                       SELECT timestamptz '2026-09-01 00:00:00+00' + g * interval '2 minutes', 'android', '0.1.' || (g % 3), 'queue_full', 1
                        FROM generate_series(1, 20000) g""",
                 )
             }

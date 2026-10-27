@@ -3,6 +3,7 @@ package local.signaldock.query
 import java.time.Instant
 import java.time.ZoneId
 import java.util.UUID
+import local.signaldock.ingestion.SdkPlatform
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -30,15 +31,41 @@ class QueryTest {
     }
 
     @Test
-    fun `client report counts take only from and to`() {
-        val period = parseClientReportCountQuery(day(), seoul)
-        assertEquals(Instant.parse("2026-10-11T15:00:00Z"), period.from)
-        assertEquals(Instant.parse("2026-10-12T15:00:00Z"), period.to)
+    fun `client report counts take from, to, and sdkPlatform`() {
+        val query = parseClientReportCountQuery(day(), seoul)
+        assertEquals(Instant.parse("2026-10-11T15:00:00Z"), query.period.from)
+        assertEquals(Instant.parse("2026-10-12T15:00:00Z"), query.period.to)
+        assertNull(query.sdkPlatform)
         assertEquals("INVALID_PARAMETER", code { parseClientReportCountQuery(day("name" to "x"), seoul) })
         assertEquals("INVALID_PARAMETER", code { parseClientReportCountQuery(mapOf("from" to listOf("a")), seoul) })
         assertEquals("PERIOD_TOO_LONG", code {
             parseClientReportCountQuery(params("from" to "2026-09-12T00:00:00+09:00", "to" to "2026-10-13T00:00:00+09:00"), seoul)
         })
+    }
+
+    @Test
+    fun `sdkPlatform is accepted on the five endpoints and nowhere else, strictly`() {
+        assertNull(parseListQuery(day(), seoul).filter.sdkPlatform)
+        for ((wire, platform) in listOf("android" to SdkPlatform.ANDROID, "ios" to SdkPlatform.IOS)) {
+            val p = day("sdkPlatform" to wire)
+            assertEquals(platform, parseListQuery(p, seoul).filter.sdkPlatform)
+            assertEquals(platform, parseCountQuery(p, seoul).filter.sdkPlatform)
+            assertEquals(platform, parseTimeCountQuery(p, seoul).filter.sdkPlatform)
+            assertEquals(platform, parsePlanStatusCountQuery(p, seoul).filter.sdkPlatform)
+            assertEquals(platform, parseClientReportCountQuery(p, seoul).sdkPlatform)
+        }
+        for (bad in listOf("iOS", "IOS", "Android", "", " ios", "unknown")) {
+            val p = day("sdkPlatform" to bad)
+            assertEquals("INVALID_PARAMETER", code { parseListQuery(p, seoul) }, bad)
+            assertEquals("INVALID_PARAMETER", code { parseCountQuery(p, seoul) }, bad)
+            assertEquals("INVALID_PARAMETER", code { parseTimeCountQuery(p, seoul) }, bad)
+            assertEquals("INVALID_PARAMETER", code { parsePlanStatusCountQuery(p, seoul) }, bad)
+            assertEquals("INVALID_PARAMETER", code { parseClientReportCountQuery(p, seoul) }, bad)
+        }
+        val twice = day() + ("sdkPlatform" to listOf("ios", "android"))
+        assertEquals("INVALID_PARAMETER", code { parseListQuery(twice, seoul) })
+        assertEquals("INVALID_PARAMETER", code { parseClientReportCountQuery(twice, seoul) })
+        assertEquals("INVALID_PARAMETER", code { parseDetailRequest(id, mapOf("sdkPlatform" to listOf("ios"))) })
     }
 
     @Test

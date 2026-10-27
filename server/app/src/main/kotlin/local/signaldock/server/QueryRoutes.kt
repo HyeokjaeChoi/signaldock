@@ -15,6 +15,7 @@ import kotlinx.serialization.json.Json
 import local.signaldock.ingestion.PlanStatus
 import local.signaldock.ingestion.PropertyValue
 import local.signaldock.ingestion.RequestFailure
+import local.signaldock.ingestion.SdkPlatform
 import local.signaldock.persistence.Database
 import local.signaldock.persistence.DatabaseUnavailable
 import local.signaldock.persistence.QueryStore
@@ -43,7 +44,7 @@ import org.openapitools.client.models.EventReceiptPage
 import org.openapitools.client.models.EventReceiptSummary
 import org.openapitools.client.models.EventTimeBucket
 import org.openapitools.client.models.EventTimeCounts
-import org.openapitools.client.models.SdkPlatform
+import org.openapitools.client.models.SdkPlatform as ApiSdkPlatform
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.ZoneId
@@ -78,7 +79,7 @@ internal fun Application.queryModule(database: Database, queryKey: String, zone:
                 val summary = event.summary
                 json.encodeToString(EventReceiptDetail(
                     summary.eventId.toString(), summary.installationId.toString(), summary.name,
-                    summary.occurredAt.text(), summary.receivedAt.text(), summary.sdkVersion, ANDROID,
+                    summary.occurredAt.text(), summary.receivedAt.text(), summary.sdkVersion, summary.sdkPlatform.toDto(),
                     event.properties.mapValues { (_, value) -> value.toDto() },
                     summary.planStatus?.toDto(),
                 ))
@@ -93,7 +94,7 @@ internal fun Application.queryModule(database: Database, queryKey: String, zone:
         get("/v1/client-report-counts") {
             call.answer(database, queryKey) { budget ->
                 val counts = store.countClientReports(parseClientReportCountQuery(call.queryParameterMap(), zone), budget)
-                json.encodeToString(ClientReportCounts(counts.items.map { ClientReportCount(ANDROID, it.sdkVersion, DiscardReason.valueOf(it.reason.name), it.count) }, counts.truncated))
+                json.encodeToString(ClientReportCounts(counts.items.map { ClientReportCount(it.sdkPlatform.toDto(), it.sdkVersion, DiscardReason.valueOf(it.reason.name), it.count) }, counts.truncated))
             }
         }
         get("/v1/event-counts/by-plan-status") {
@@ -158,14 +159,16 @@ private fun ApplicationCall.queryParameterMap(): Map<String, List<String>> =
 
 private val TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC)
 
-/** Every stored row is from Android until the platform is stored (ADR-0046, ticket 02). */
-private val ANDROID = SdkPlatform.ANDROID
+private fun SdkPlatform.toDto() = when (this) {
+    SdkPlatform.ANDROID -> ApiSdkPlatform.ANDROID
+    SdkPlatform.IOS -> ApiSdkPlatform.IOS
+}
 
 /** UTC RFC 3339 with exactly three fractional digits (Q81, Q83). */
 private fun Instant.text(): String = TIMESTAMP.format(this)
 
 private fun ReceiptSummary.toDto() = EventReceiptSummary(
-    eventId.toString(), installationId.toString(), name, occurredAt.text(), receivedAt.text(), sdkVersion, ANDROID,
+    eventId.toString(), installationId.toString(), name, occurredAt.text(), receivedAt.text(), sdkVersion, sdkPlatform.toDto(),
     planStatus?.toDto(),
 )
 

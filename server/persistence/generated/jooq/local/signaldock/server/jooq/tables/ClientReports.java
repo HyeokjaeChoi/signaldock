@@ -58,6 +58,8 @@ public class ClientReports extends TableImpl<ClientReportsRecord> {
 
     public final TableField<ClientReportsRecord, Integer> COUNT = createField(DSL.name("count"), SQLDataType.INTEGER.nullable(false), this, "");
 
+    public final TableField<ClientReportsRecord, String> SDK_PLATFORM = createField(DSL.name("sdk_platform"), SQLDataType.CLOB.nullable(false), this, "");
+
     private ClientReports(Name alias, Table<ClientReportsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -103,6 +105,7 @@ public class ClientReports extends TableImpl<ClientReportsRecord> {
         return Arrays.asList(
             Internal.createCheck(this, DSL.name("client_reports_count_range"), "(((count >= 1) AND (count <= 1000000)))", true),
             Internal.createCheck(this, DSL.name("client_reports_reason_known"), "((reason = ANY (ARRAY['queue_full'::text, 'storage_error'::text, 'invalid_event'::text, 'event_too_large'::text, 'server_rejected'::text])))", true),
+            Internal.createCheck(this, DSL.name("client_reports_sdk_platform_known"), "((sdk_platform = ANY (ARRAY['android'::text, 'ios'::text])))", true),
             Internal.createCheck(this, DSL.name("client_reports_sdk_version_not_empty"), "((sdk_version <> ''::text))", true)
         );
     }

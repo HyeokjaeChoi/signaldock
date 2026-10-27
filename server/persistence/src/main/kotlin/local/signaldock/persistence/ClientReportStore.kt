@@ -13,6 +13,7 @@ public class ClientReportStore(private val database: Database) {
             report.entries.forEach { entry ->
                 query {
                     insertInto(CLIENT_REPORTS)
+                        .set(CLIENT_REPORTS.SDK_PLATFORM, report.sdkPlatform.wire)
                         .set(CLIENT_REPORTS.SDK_VERSION, report.sdkVersion)
                         .set(CLIENT_REPORTS.REASON, entry.reason.wire)
                         .set(CLIENT_REPORTS.COUNT, entry.count)
