@@ -1,7 +1,8 @@
 # 24. Pin check: the visible-`uses` rule in `wfb` misses a key with an anchor or tag
 
-Status: ready-for-agent
+Status: resolved
 Type: task
+Execution: Done (PR #240, 2026-10-27 UTC)
 Blocked by: None
 
 ## Scope and completion criteria

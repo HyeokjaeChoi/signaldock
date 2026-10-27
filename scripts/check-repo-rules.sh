@@ -147,10 +147,10 @@ ONK='^("on"|\047on\047|on):'
 # wfb: wf without block-scalar bodies (`run: |`, `>-`), whose lines are shell text, not YAML keys (issue 18).
 # YAML quote and flow state is not tracked, so a `k: |` text inside a multi-line quoted or flow scalar can start a
 # false skip. Fail-closed rule instead: a skipped line stays visible when `uses` or an explicit-key `?` starts a token
-# on it (after the line start, a dash, a comma, or a bracket), so no real key hides; `echo uses:` has a word before it and is skipped.
+# on it (after the line start, a dash, a comma, or a bracket, and an optional anchor or tag), so no real key hides; `echo uses:` has a word before it and is skipped.
 wfb() { wf "$1" | awk 'BEGIN { blk = -1 } {
   match($0, /^ */)
-  if (blk >= 0 && RLENGTH > blk) { if ($0 ~ /(^|[,{[])[[:space:]]*(-[[:space:]]+)*(\?([[:space:]]|$)|["\047]?uses["\047]?[[:space:]]*:)/) print; next }
+  if (blk >= 0 && RLENGTH > blk) { if ($0 ~ /(^|[,{[])[[:space:]]*(-[[:space:]]+)*([&!][^ ]*[[:space:]]+)*(\?([[:space:]]|$)|["\047]?uses["\047]?[[:space:]]*:)/) print; next }
   blk = -1
   K = "(\"[^\"]*\"|\047[^\047]*\047|[^ #{[\"\047,][^:]*)"
   # Header: `key: |`, `- key: |` or `- |`, with an optional anchor or tag. A bare `|` line is a plain-scalar continuation.
