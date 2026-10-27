@@ -1,6 +1,7 @@
 # 05. iOS package skeleton and CI gates
 
-Status: ready-for-agent
+Status: resolved
+Execution: Done (PR #245, 2026-10-28 UTC)
 Type: task
 Blocked by: None
 

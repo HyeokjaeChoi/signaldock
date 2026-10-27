@@ -11,7 +11,7 @@ When writing English, follow the simple, clear language principles of ASD-STE100
 
 ## Commands
 
-- Once per clone: `git config core.hooksPath .githooks`. Pre-commit runs `scripts/check-repo-rules.sh`. Pre-push also runs `scripts/verify-contract.sh` when code changed; it needs `ANDROID_HOME`, `ANDROID_SDK_ROOT`, or `sdk.dir` in `sdk/local.properties` (ADR-0019).
+- Once per clone: `git config core.hooksPath .githooks`. Pre-commit runs `scripts/check-repo-rules.sh`. Pre-push also runs `scripts/verify-contract.sh` when code changed; it needs `ANDROID_HOME`, `ANDROID_SDK_ROOT`, or `sdk.dir` in `sdk/local.properties` (ADR-0019). On macOS it also runs the iOS gates when full Xcode with an iOS Simulator runtime exists, else it skips them.
 - Before you open a PR: run the Claude Code `/code-review` skill on your branch, and fix its findings.
 
 ## Enforced rules
@@ -28,6 +28,9 @@ Code enforces these. Do not restate them in prose; read the check when it fails.
 | Every top-level directory except `.claude`, `.scratch`, and `docs` has a section in `docs/design-index.md` | `scripts/check-repo-rules.sh` |
 | A released Room schema file is frozen (ADR-0025) | `scripts/check-repo-rules.sh` |
 | `SDK_VERSION` equals `sdkVersion` | `scripts/check-repo-rules.sh` |
+| `sdk-ios/Package.swift` has no `.package(` dependency (ADR-0047 D13) | `scripts/check-repo-rules.sh` |
+| No `privacy: .public` under `sdk-ios` (ADR-0047 D13) | `scripts/check-repo-rules.sh` |
+| iOS SDK gates: `swift format` strict with documentation on public declarations, Simulator tests under TSan and under ASan and UBSan, `xcodebuild analyze` (ADR-0047 D13) | `scripts/verify-ios.sh`, CI `ios-test` and `ios-sanitize` |
 | Every `uses:` in `.github/workflows` and every tracked `action.yml` or `action.yaml` is pinned by a 40-character SHA (local `./` actions excepted) | `scripts/check-repo-rules.sh` |
 | No workflow triggers on `pull_request_target` or `workflow_run` | `scripts/check-repo-rules.sh` |
 | Every workflow has a top-level `permissions:` key | `scripts/check-repo-rules.sh` |

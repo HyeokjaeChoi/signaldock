@@ -12,6 +12,7 @@
 # 6. Checks the SDK public API dump (ADR-0019) and the published dependency baseline (ADR-0033).
 # 7. Tracking plan (ADR-0021): regenerates into a temp dir and diffs against
 #    tracking-plan/generated/, then runs the generator and cross-language tests.
+# 8. iOS SDK (ADR-0047 D13): runs only with full Xcode and an iOS Simulator runtime (scripts/verify-ios.sh).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -82,5 +83,14 @@ if ! diff -rq "$ROOT/tracking-plan/generated" "$TMP_PLAN"; then
   exit 1
 fi
 node --test "$ROOT/tracking-plan/generate.test.mjs"
+
+echo "=== 8. iOS SDK: format lint, Simulator tests under TSan, analyze (ADR-0047 D13) ==="
+# CI runs these on macOS in the ios-test and ios-sanitize jobs. A Mac with only Command Line Tools has an
+# xcodebuild shim, so the check needs full Xcode (`xcodebuild -version`) and an iOS Simulator runtime.
+if "$ROOT/scripts/verify-ios.sh" available; then
+  "$ROOT/scripts/verify-ios.sh" all
+else
+  echo "skip: no full Xcode with an iOS Simulator runtime; the iOS steps run in CI (ios-test, ios-sanitize)"
+fi
 
 echo "ALL CONTRACT CHECKS PASSED"

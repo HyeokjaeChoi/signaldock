@@ -16,7 +16,7 @@ permissions:
 jobs:
   analyze:
     name: analyze (${{ matrix.language }})
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     permissions:
       security-events: write
@@ -26,14 +26,22 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - language: java-kotlin
+          - os: ubuntu-latest
+            language: java-kotlin
             build-mode: manual
-          - language: javascript-typescript
+          - os: ubuntu-latest
+            language: javascript-typescript
             build-mode: none
-          - language: python
+          - os: ubuntu-latest
+            language: python
             build-mode: none
-          - language: actions
+          - os: ubuntu-latest
+            language: actions
             build-mode: none
+          # ADR-0032 (Swift addition): CodeQL traces an xcodebuild of the iOS SDK; Swift needs macOS.
+          - os: macos-26
+            language: swift
+            build-mode: manual
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -45,13 +53,13 @@ jobs:
           queries: security-and-quality
           config-file: ./.github/codeql/codeql-config.yml
       - name: Toolchain
-        if: matrix.build-mode == 'manual'
+        if: matrix.language == 'java-kotlin'
         run: scripts/setup-toolchain.sh
       # Main source sets of the three Gradle builds. ubuntu-latest ships an Android SDK at $ANDROID_HOME.
       # --no-daemon: CodeQL cannot trace a build that an existing daemon runs.
       # --no-build-cache: a cache hit skips compile tasks, and then CodeQL sees no source.
       - name: Build (java-kotlin)
-        if: matrix.build-mode == 'manual'
+        if: matrix.language == 'java-kotlin'
         run: |
           export JAVA_HOME="$PWD/.tools/$(ls .tools | grep '^jdk-')"
           # The CodeQL Kotlin extractor runs inside the compiler. The Gradle default heap of 512 MiB (server) is too small
@@ -60,6 +68,16 @@ jobs:
           sdk/gradlew -p sdk :sdk-android:assembleRelease :demo:app:assembleDebug "${OPTS[@]}"
           server/gradlew -p server classes "${OPTS[@]}"
           contract-check/gradlew -p contract-check classes "${OPTS[@]}"
+      - name: Select Xcode (swift)
+        if: matrix.language == 'swift'
+        run: sudo xcode-select -s /Applications/Xcode_26.6.app # ADR-0047: the default of macos-26
+      # A fresh -derivedDataPath: a cached build would skip compilation, and then CodeQL sees no source.
+      - name: Build (swift)
+        if: matrix.language == 'swift'
+        run: |
+          cd sdk-ios
+          xcodebuild build -scheme SignalDock -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/codeql-derived" CODE_SIGNING_ALLOWED=NO
       - uses: github/codeql-action/analyze@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
         with:
           category: /language:${{ matrix.language }}

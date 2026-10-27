@@ -150,6 +150,36 @@ jobs:
       - if: failure()
         run: echo "::notice::If the log says 'Dependency verification failed', run scripts/update-gradle-verification.sh and commit the changed gradle/verification-metadata.xml files (ADR-0038)."
 
+  # iOS SDK gates (ADR-0047 D13; commands in scripts/verify-ios.sh). macos-26 has no iOS 15 Simulator runtime, so the
+  # tests run on the oldest installed runtime (ADR-0047 "iOS 15 Simulator fallback"). The log lists the runtimes.
+  # Warnings are errors in CI only (IOS_WERROR).
+  ios-test:
+    runs-on: macos-26
+    timeout-minutes: 30
+    env:
+      IOS_WERROR: '1'
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - run: sudo xcode-select -s /Applications/Xcode_26.6.app # ADR-0047: the default of macos-26
+      - run: scripts/verify-ios.sh lint
+      - run: scripts/verify-ios.sh tsan
+      - run: scripts/verify-ios.sh analyze
+
+  # A separate run with ASan and UBSan; TSan cannot be combined with them.
+  ios-sanitize:
+    runs-on: macos-26
+    timeout-minutes: 30
+    env:
+      IOS_WERROR: '1'
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - run: sudo xcode-select -s /Applications/Xcode_26.6.app # ADR-0047: the default of macos-26
+      - run: scripts/verify-ios.sh asan
+
   # Checks every gradle-wrapper.jar in the checkout (sdk, server, contract-check, compatibility/consumer-android)
   # against Gradle's published checksums. A changed or unknown wrapper jar fails the job. Pinned by commit SHA (ADR-0024 item 4).
   gradle-wrapper:

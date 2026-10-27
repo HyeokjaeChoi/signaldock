@@ -106,20 +106,29 @@ Source: https://developer.apple.com/documentation/bundleresources/privacy-manife
 Mirrors: [ADR-0011](0011-sdk-device-test-harness.md), [ADR-0029](0029-device-fault-tests-and-power-loss.md), [ADR-0020](0020-sdk-host-app-cost.md) then [ADR-0023](0023-ci-device-tests-and-size-budget.md) (measure first, gate second), [ADR-0014](0014-sdk-device-measurement-harness.md).
 Rejected: a physical iPhone now (it needs the owner device, an Apple Developer account, and signing; like [ADR-0042](0042-measurement-on-a-physical-device.md)).
 
+## iOS 15 Simulator fallback (ticket 05, 2026-10-28)
+
+- The `macos-26` runner image (version 20261013.0424.1, Xcode 26.6 default) lists these iOS Simulator runtimes: 26.2, 26.4, and 26.5. The `macos-27` Xcode 27 image lists SDKs for iOS 27.0 to 27.2 and has no iOS 15 runtime either (sources: `images/macos/macos-26-arm64-Readme.md` and `images/macos/xcode-27-arm64-Readme.md` in `actions/runner-images`). The first CI run of each job must confirm this: `scripts/verify-ios.sh` prints `xcrun simctl list runtimes`.
+- Decision: CI uses `macos-26`. The package builds at deployment target iOS 15 (`Package.swift`). Tests and the sanitizer runs execute on the oldest installed runtime, which `scripts/verify-ios.sh` selects (iOS 26.2 on that image; iOS 27.0 on the local Mac of 2026-10-28). The script prints a note when the chosen runtime is not iOS 15.
+- Gap: no test runs on an iOS 15 runtime, so the iOS 15 form of the executor (D9) and iOS 15 behavior are not run-tested. A local iOS 15 runtime or a physical device (D15) would close it. The README (ticket 18) states this.
+- UBSan: `-enableUndefinedBehaviorSanitizer` is on in the ASan run. It instruments C-family code only, and the package has no C target. It starts to matter if one is added.
+- Analyze: `xcodebuild analyze` runs the Clang static analyzer, which checks C-family code only. For this Swift-only package the analyze step is a build, like the UBSan note. It starts to matter with a C target.
+- Xcode: the `ios-test`, `ios-sanitize`, and CodeQL Swift jobs run `sudo xcode-select -s /Applications/Xcode_26.6.app`, the default Xcode of the `macos-26` image above, so a change of the runner default does not change the toolchain silently. Change the version in the three jobs together.
+
 ## Known limits
 
 - A restored device can rarely share an installation ID (D6).
 - No periodic background send on iOS (D8).
 - The Simulator cannot reproduce a backup restore or a full disk. The script lists them as not run.
 - Simulator numbers are not device numbers (like emulator numbers, ADR-0014).
-- The GitHub macOS runner may not have an iOS 15 Simulator runtime. Fallback: build at deployment target 15, test on the oldest runtime the runner has, and say so in the README.
+- The GitHub macOS runner has no iOS 15 Simulator runtime (ticket 05, 2026-10-28; see "iOS 15 Simulator fallback"). Fallback: build at deployment target 15, test on the oldest runtime the runner has, and say so in the README.
 - Apple states the signature check for SDKs for binary dependencies. A source ZIP is not signed.
 
 ## Not verified here
 
 Everything. No iOS code exists yet. Tickets must confirm these facts before they rely on them:
 
-- An iOS 15 runtime exists on the CI runners.
+- Run time on an iOS 15 Simulator runtime (none exists on the CI runner; see "iOS 15 Simulator fallback").
 - The `swift6` generator output uses Foundation only and handles `PropertyValue` correctly.
 - The exact SwiftPM resource form that packages `PrivacyInfo.xcprivacy` (the Apple page does not state it).
 - Device-to-device transfer does not carry files that are excluded from backup.
