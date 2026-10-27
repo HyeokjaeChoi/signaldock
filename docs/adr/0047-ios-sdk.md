@@ -130,3 +130,20 @@ Everything. No iOS code exists yet. Tickets must confirm these facts before they
 - Maven Central and remote SwiftPM start (D11).
 - The owner can lend a physical iPhone and a developer account (D15).
 - A required-reason API becomes necessary (D14).
+
+## Amendment (2026-10-28, issue 20)
+
+D6 and D7 did not name a Data Protection class. The owner decided on 2026-10-28:
+
+- The SDK sets the class `completeUntilFirstUserAuthentication` explicitly on the installation ID file and on the SQLite queue files: the database file and the side files that SQLite makes and removes by itself (`-wal`, `-shm`, `-journal`). The class must cover files that SQLite creates later, so the SDK opens the database with the Apple SQLite open flag `SQLITE_OPEN_FILEPROTECTION_COMPLETEUNTILFIRSTUSERAUTHENTICATION` (`sqlite3_open_v2`). It may also set the class on the `signaldock/` directory; a class that the SDK sets on a side file after SQLite made it does not count, because the next file of the same name does not get it.
+- This is also the iOS default for third-party app files. The SDK states it so that a change of the OS default does not change the SDK behavior.
+- Before the first unlock after a restart, the system does not let the app open a file of this class. `initialize()` opens both files, as on Android (ADR-0003 item 6, ADR-0017, D9 parity). If it cannot open them for this reason, it returns the storage-failure init error (`InitError.StorageFailure`) and no instance: no throw into the host, and `track()` and `diagnostics()` cannot be called. Events that the host tracks in this window are dropped, as ADR-0017 says. The SDK does not open files lazily and does not retry by itself. After the first unlock, the host calls `initialize()` again (the integration guide row for `StorageFailure`). The iOS integration notes tell host developers this.
+- Rejected: a stricter class (a launch by the system before the first unlock would lose more events, and the queue holds business events, not secrets); keeping the OS default without stating it.
+
+Sources (read 2026-10-28):
+
+- [FileProtectionType.completeUntilFirstUserAuthentication](https://developer.apple.com/documentation/foundation/fileprotectiontype/completeuntilfirstuserauthentication): the file cannot be accessed until the device has booted and the user has unlocked it for the first time. Then the app can access it, also while the device is locked.
+- [Apple Platform Security, Data Protection classes](https://support.apple.com/guide/security/data-protection-classes-secb010e978a/web): this class is "the default class for all third-party app data not otherwise assigned to a Data Protection class".
+- `sqlite3.h` in the Apple iOS SDK (Xcode, `iPhoneOS.sdk/usr/include/sqlite3.h`) defines `SQLITE_OPEN_FILEPROTECTION_COMPLETEUNTILFIRSTUSERAUTHENTICATION`.
+
+Not verified here: the exact error code that SQLite returns for this open failure, and whether new files inherit the class from the directory (Apple primary docs found do not say). Ticket 07 checks both on a Simulator or device, and tests that a `-wal` or `-journal` file that SQLite made again after a close has the class.
