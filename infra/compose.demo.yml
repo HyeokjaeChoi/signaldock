@@ -48,7 +48,7 @@ services:
       # nginx-unprivileged (user nginx, 101) writes the rendered config, temp files, and the pid here.
       - /etc/nginx/conf.d:size=1m,noexec,nosuid,uid=101
       - /tmp:size=16m,noexec,nosuid,uid=101
-    # Image has busybox wget, no curl. 127.0.0.1, not localhost: nginx listens on IPv4 only.
+    # Healthcheck uses busybox wget (the base image also has curl). 127.0.0.1, not localhost: nginx listens on IPv4 only.
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
       interval: 10s

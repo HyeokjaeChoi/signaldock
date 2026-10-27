@@ -11,6 +11,7 @@ All notable changes to SignalDock are listed here. The format follows [Keep a Ch
 ### Fixed
 
 - The Dashboard image upgrades `brotli-libs` for CVE-2026-111497 (PR #217).
+- The Dashboard image upgrades `curl` and `libcurl` for CVE-2026-92392 (PR #242).
 - The server retries the Flyway connect at start, 5 retries (PR #221).
 - `scripts/demo-seed.py` treats any 503 as uncertain, and a later-day rerun stops at the sentinel (PR #229).
 - The reset checks the 6 h guard again after it takes the lock (PR #230).
