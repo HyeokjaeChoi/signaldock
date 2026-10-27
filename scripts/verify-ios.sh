@@ -1,6 +1,7 @@
 #!/bin/bash
 # iOS SDK gates (ADR-0047 D13). Usage: scripts/verify-ios.sh [all|lint|tsan|asan|analyze|available]
-# `available` exits 0 only with full Xcode and an iOS Simulator runtime (a Command Line Tools shim of xcodebuild is not enough).
+# `available` exits 0 only with full Xcode (Swift 6, `swift format`) and a Simulator runtime that pick_simulator can select
+# (iOS 15 or later, with an iPhone); a Command Line Tools shim of xcodebuild is not enough.
 # CI sets IOS_WERROR=1 (warnings as errors in CI only). The tests run on the oldest iOS Simulator runtime
 # that is installed, because the GitHub runner has no iOS 15 runtime (spec section 5; ADR-0047 "iOS 15 Simulator fallback").
 set -euo pipefail
@@ -13,7 +14,7 @@ if [ "${IOS_WERROR:-0}" = 1 ]; then
   WERROR=(SWIFT_TREAT_WARNINGS_AS_ERRORS=YES GCC_TREAT_WARNINGS_AS_ERRORS=YES)
 fi
 
-# Prints a Simulator UDID: the first iPhone of the oldest installed iOS runtime.
+# Prints a Simulator UDID: the first iPhone of the oldest installed iOS runtime at iOS 15 or later (the deployment target).
 pick_simulator() {
   xcrun simctl list runtimes >&2
   xcrun simctl list devices available -j | python3 -I -c '
@@ -23,10 +24,10 @@ runs = []
 for key, devs in data.items():
     m = re.search(r"iOS-(\d+)-(\d+)", key)
     phones = [d for d in devs if d["name"].startswith("iPhone") and d.get("isAvailable", True)]
-    if m and phones:
+    if m and int(m.group(1)) >= 15 and phones:
         runs.append((int(m.group(1)), int(m.group(2)), phones[0]["udid"]))
 if not runs:
-    sys.exit("error: no iOS Simulator runtime with an iPhone")
+    sys.exit("error: no iOS 15 or later Simulator runtime with an iPhone")
 runs.sort()
 major, minor, udid = runs[0]
 print(f"simulator runtime: iOS {major}.{minor} (oldest installed)", file=sys.stderr)
@@ -53,12 +54,20 @@ run_analyze() {
     -derivedDataPath "$DERIVED" ${WERROR[@]+"${WERROR[@]}"})
 }
 
+# Same selection as the tests use, so a skip here never turns into a failure later (spec D13).
+available() {
+  xcodebuild -version > /dev/null 2>&1 || return 1
+  [ "$(swift --version 2>&1 | sed -n 's/.*Swift version \([0-9][0-9]*\).*/\1/p' | head -1)" -ge 6 ] 2> /dev/null || return 1
+  swift format --version > /dev/null 2>&1 || return 1
+  pick_simulator > /dev/null 2>&1
+}
+
 case "${1:-all}" in
   lint) run_lint ;;
   tsan) echo "=== iOS: Simulator tests, Thread Sanitizer ==="; run_tests -enableThreadSanitizer YES ;;
   asan) echo "=== iOS: Simulator tests, ASan + UBSan ==="; run_tests -enableAddressSanitizer YES -enableUndefinedBehaviorSanitizer YES ;;
   analyze) run_analyze ;;
   all) run_lint; "$0" tsan; "$0" asan; run_analyze ;;
-  available) xcodebuild -version > /dev/null 2>&1 && [[ "$(xcrun simctl list runtimes 2> /dev/null)" == *$'\n'"iOS "* ]] ;;
+  available) available ;;
   *) echo "usage: $0 [all|lint|tsan|asan|analyze|available]" >&2; exit 2 ;;
 esac

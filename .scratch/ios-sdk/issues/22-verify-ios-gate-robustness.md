@@ -13,6 +13,7 @@ Minor findings from the PR #245 reviews (Claude review and Qodo), recorded under
 3. `available` passes on Xcode versions that cannot build a tools-version 6.0 package or run `swift format` (Xcode 15 or older). Also require Swift 6 and `swift format --version`.
 4. `scripts/check-repo-rules.sh`: the `privacy: .public` and `.package(` checks match one line only. A call split across lines (`privacy:` and `.public`, or `.package` and `(`) passes. Match across line boundaries, with a regression sample for each.
 5. Nit: the step 8 heading in `scripts/verify-contract.sh` does not name the ASan run.
+6. Record the real CI evidence of the first run on PR #245 (repo-rules run 40537476359, CodeQL run 40537476346): the runner runtimes and run links, in ADR-0047 "iOS 15 Simulator fallback" and ADR-0032 (it said "the first CI run decides").
 
 Verification:
 - Each case shown failing or skipping as expected (planted sample or simulated PATH), then passing on the clean repo.
