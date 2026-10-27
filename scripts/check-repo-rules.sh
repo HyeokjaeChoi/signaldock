@@ -137,6 +137,16 @@ if git rev-parse --verify -q origin/main >/dev/null; then
   done
 fi
 
+# A released iOS SQL migration is frozen (ADR-0047 D7, the iOS form of ADR-0025). A schema change needs a new V<n>__*.sql file.
+if git rev-parse --verify -q origin/main >/dev/null; then
+  for f in $(git ls-tree -r --name-only origin/main -- sdk-ios/Sources/SignalDock/Migrations); do
+    if ! git diff --quiet origin/main -- "$f"; then # a deleted file differs too
+      echo "error: $f exists on main and changed or was deleted; add a new migration file (ADR-0047 D7)" >&2
+      fail=1
+    fi
+  done
+fi
+
 # Workflow security (cloud-demo spec D9, ADR-0043 item 4). Reads the index. `wf` prints a workflow
 # without comments or blank lines, so a trigger or a pin named only in a comment does not count.
 wf() { git show ":$1" | sed -E 's/(^|[[:space:]])#.*//' | awk 'NF'; }

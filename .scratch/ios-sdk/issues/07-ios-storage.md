@@ -1,6 +1,6 @@
 # 07. iOS storage: installation ID and SQLite queue
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: 05, 20
 
