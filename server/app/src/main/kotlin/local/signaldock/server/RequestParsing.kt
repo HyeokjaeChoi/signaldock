@@ -120,8 +120,13 @@ internal fun parseClientReport(body: ByteArray): ClientReport {
     } catch (_: JsonSyntaxFailure) {
         throw RequestFailure("MALFORMED_REQUEST")
     }
-    val rootFields = requiredUniqueFields(root.asObjectOrNull() ?: throw RequestFailure("MALFORMED_REQUEST"), setOf("sdkVersion", "discardedEvents"))
+    val rootFields = requiredUniqueFields(
+        root.asObjectOrNull() ?: throw RequestFailure("MALFORMED_REQUEST"),
+        setOf("sdkVersion", "discardedEvents"), optional = setOf("sdkPlatform"),
+    )
     val sdkVersion = rootFields.getValue("sdkVersion").stringValue ?: throw RequestFailure("MALFORMED_REQUEST")
+    // Missing means `android` (ADR-0046). A value that is not a string is malformed, like `sdkVersion`; an unknown string is INVALID_REPORT.
+    val sdkPlatform = rootFields["sdkPlatform"]?.let { it.stringValue ?: throw RequestFailure("MALFORMED_REQUEST") }
     val nodes = rootFields.getValue("discardedEvents").arrayValues ?: throw RequestFailure("MALFORMED_REQUEST")
     val entries = nodes.map { node ->
         val fields = requiredUniqueFields(node.asObjectOrNull() ?: throw RequestFailure("MALFORMED_REQUEST"), setOf("reason", "count"))
@@ -131,7 +136,7 @@ internal fun parseClientReport(body: ByteArray): ClientReport {
         if (literal[0] != '-' && literal[0] !in '0'..'9') throw RequestFailure("MALFORMED_REQUEST") // true, false, null
         RawDiscardedCount(reason, literal)
     }
-    return validateClientReport(sdkVersion, entries)
+    return validateClientReport(sdkVersion, entries, sdkPlatform)
 }
 
 private fun candidateOf(node: JsonNode, element: JsonElement): EventCandidate? {
@@ -152,14 +157,19 @@ private fun candidateOf(node: JsonNode, element: JsonElement): EventCandidate? {
 
 private fun fieldsOf(element: JsonElement): EventFields? {
     val properties = (element as JsonObject)["properties"] as? JsonObject
+    // The generated DTO cannot decode `sdkPlatform` here (contextual serializer). Read the raw string; the rules judge it.
+    // Present but not a string (including null): the field is invalid, so the item is INVALID_EVENT (ADR-0027).
+    val platformNode = element["sdkPlatform"]
+    val sdkPlatform = platformNode?.let { (it as? JsonPrimitive)?.takeIf { p -> p.isString }?.content ?: return null }
     // The DTO cannot hold a nested or null property value. Decode it without the property values
     // and judge them in `propertyValuesOf`, so such a value is INVALID_PROPERTIES, not INVALID_EVENT.
     val dto = try {
-        json.decodeFromJsonElement<EventIngest>(if (properties == null) element else JsonObject(element + ("properties" to JsonObject(emptyMap()))))
+        val fields = (element as JsonObject) - "sdkPlatform"
+        json.decodeFromJsonElement<EventIngest>(JsonObject(if (properties == null) fields else fields + ("properties" to JsonObject(emptyMap()))))
     } catch (_: SerializationException) {
         return null
     }
-    return EventFields(dto.name, dto.occurredAt, dto.sdkVersion, properties?.let(::propertyValuesOf))
+    return EventFields(dto.name, dto.occurredAt, dto.sdkVersion, sdkPlatform, properties?.let(::propertyValuesOf))
 }
 
 private fun propertyValuesOf(properties: JsonObject): Map<String, PropertyValue> = properties.mapValues { (_, value) ->
@@ -173,8 +183,8 @@ private fun propertyValuesOf(properties: JsonObject): Map<String, PropertyValue>
     }
 }
 
-private fun requiredUniqueFields(objectNode: JsonObjectNode, allowed: Set<String>): Map<String, JsonNode> {
-    if (objectNode.fields.any { it.name !in allowed }) throw RequestFailure("UNKNOWN_FIELD")
+private fun requiredUniqueFields(objectNode: JsonObjectNode, allowed: Set<String>, optional: Set<String> = emptySet()): Map<String, JsonNode> {
+    if (objectNode.fields.any { it.name !in allowed && it.name !in optional }) throw RequestFailure("UNKNOWN_FIELD")
     val grouped = objectNode.fields.groupBy { it.name }
     if (grouped.any { it.value.size != 1 } || allowed.any { it !in grouped }) {
         throw RequestFailure("MALFORMED_REQUEST")
@@ -195,7 +205,7 @@ private fun decodeUtf8(body: ByteArray): String = try {
 private fun utf8Size(source: String, start: Int, end: Int): Int =
     source.substring(start, end).toByteArray(StandardCharsets.UTF_8).size
 
-private val EVENT_FIELDS = setOf("eventId", "name", "occurredAt", "properties", "sdkVersion", "contractVersion")
+private val EVENT_FIELDS = setOf("eventId", "name", "occurredAt", "properties", "sdkVersion", "sdkPlatform", "contractVersion")
 
 private sealed interface JsonNode { val start: Int; val end: Int }
 private data class JsonObjectNode(override val start: Int, override val end: Int, val fields: List<JsonField>) : JsonNode

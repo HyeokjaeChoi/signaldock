@@ -43,8 +43,10 @@ class CollectionControlTest {
 
     private fun id(n: Int) = UUID.fromString("00000000-0000-4000-8000-%012d".format(n))
 
-    private fun event(n: Int, name: String, sdkVersion: String = "0.1.0") =
-        """{"eventId":"${id(n)}","name":"$name","occurredAt":"2026-10-09T21:30:00.123Z","properties":{},"sdkVersion":"$sdkVersion","contractVersion":"1"}"""
+    /** `platform` null leaves `sdkPlatform` out, like Android SDK 0.1.0 to 0.3.0. */
+    private fun event(n: Int, name: String, sdkVersion: String = "0.1.0", platform: String? = null) =
+        """{"eventId":"${id(n)}","name":"$name","occurredAt":"2026-10-09T21:30:00.123Z","properties":{},"sdkVersion":"$sdkVersion",""" +
+            (platform?.let { """"sdkPlatform":"$it",""" } ?: "") + """"contractVersion":"1"}"""
 
     private fun batch(vararg events: String) =
         """{"installationId":"47c4d89f-352a-41da-9b31-529ea756515a","events":[${events.joinToString(",")}]}"""
@@ -98,6 +100,71 @@ class CollectionControlTest {
         assertEquals(listOf(ItemAck.Status.REJECTED, ItemAck.Status.ACCEPTED), results.map { it.status })
         assertEquals("COLLECTION_BLOCKED", results[0].code)
         assertEquals(1, stored())
+    }
+
+    private fun statuses(control: String, vararg events: String) = testApplication {
+        useControl(CollectionControl.fromEnv(mapOf("SIGNALDOCK_BLOCKED_SDK_VERSIONS" to control)::get))
+        runBlocking { database.transaction { query { deleteFrom(EVENTS).execute() } } } // the same IDs are reused for each setting
+        client.ingest(batch(*events)).bodyAsText().let { lastStatuses = acks(it).map { ack -> ack.code ?: ack.status.value } }
+    }
+
+    private var lastStatuses: List<String> = emptyList()
+
+    @Test
+    fun `an item with a platform prefix blocks only that platform and version`() {
+        val events = arrayOf(
+            event(1, "a", "0.1.0", "ios"), event(2, "a", "0.1.0", "android"), event(3, "a", "0.1.0"), // no field: android
+            event(4, "a", "0.2.0", "ios"),
+        )
+        statuses("ios:0.1.0", *events)
+        assertEquals(listOf("COLLECTION_BLOCKED", "accepted", "accepted", "accepted"), lastStatuses)
+        statuses("android:0.1.0", *events)
+        assertEquals(listOf("accepted", "COLLECTION_BLOCKED", "COLLECTION_BLOCKED", "accepted"), lastStatuses)
+        // Both pairs, with blanks around the items.
+        statuses(" ios:0.1.0 , android:0.1.0 ,, ios:0.2.0", *events)
+        assertEquals(listOf("COLLECTION_BLOCKED", "COLLECTION_BLOCKED", "COLLECTION_BLOCKED", "COLLECTION_BLOCKED"), lastStatuses)
+    }
+
+    @Test
+    fun `whitespace around the colon is trimmed like the item`() {
+        val expected = CollectionControl.fromEnv(mapOf("SIGNALDOCK_BLOCKED_SDK_VERSIONS" to "ios:0.1.0")::get).blockedSdkVersions
+        for (item in listOf("ios: 0.1.0", "ios :0.1.0", " ios : 0.1.0 ")) {
+            assertEquals(expected, CollectionControl.fromEnv(mapOf("SIGNALDOCK_BLOCKED_SDK_VERSIONS" to item)::get).blockedSdkVersions, item)
+        }
+        assertFailsWith<IllegalArgumentException> { CollectionControl.fromEnv(mapOf("SIGNALDOCK_BLOCKED_SDK_VERSIONS" to "ios: ")::get) }
+        statuses("ios: 0.1.0", event(1, "a", "0.1.0", "ios"), event(2, "a", "0.1.0", "android"))
+        assertEquals(listOf("COLLECTION_BLOCKED", "accepted"), lastStatuses)
+    }
+
+    @Test
+    fun `an item with no prefix means android, so old settings keep their meaning`() {
+        val events = arrayOf(event(1, "a", "0.1.0", "ios"), event(2, "a", "0.1.0", "android"), event(3, "a", "0.1.0"), event(4, "a", "0.1.1"))
+        statuses("0.1.0", *events)
+        assertEquals(listOf("accepted", "COLLECTION_BLOCKED", "COLLECTION_BLOCKED", "accepted"), lastStatuses)
+        // An unprefixed item and its `android:` form are the same pair.
+        assertEquals(
+            CollectionControl.fromEnv(mapOf("SIGNALDOCK_BLOCKED_SDK_VERSIONS" to "0.1.0")::get).blockedSdkVersions,
+            CollectionControl.fromEnv(mapOf("SIGNALDOCK_BLOCKED_SDK_VERSIONS" to "android:0.1.0")::get).blockedSdkVersions,
+        )
+    }
+
+    @Test
+    fun `matching of version and prefix is exact and case-sensitive`() {
+        statuses("ios:0.1.0-RC", event(1, "a", "0.1.0-rc", "ios"), event(2, "a", "0.1.0-RC", "ios"))
+        assertEquals(listOf("accepted", "COLLECTION_BLOCKED"), lastStatuses)
+    }
+
+    @Test
+    fun `a malformed or unknown platform prefix fails the start`() {
+        for (bad in listOf("iOS:0.1.0", "IOS:0.1.0", "Android:0.1.0", "ANDROID:0.1.0", "windows:0.1.0", ":0.1.0", "ios:", "android:", "ios:0.1.0,iOS:0.2.0")) {
+            val error = assertFailsWith<IllegalArgumentException>(bad) {
+                CollectionControl.fromEnv(mapOf("SIGNALDOCK_BLOCKED_SDK_VERSIONS" to bad)::get)
+            }
+            assertEquals(true, error.message?.contains("SIGNALDOCK_BLOCKED_SDK_VERSIONS"), bad) // the message names the variable
+        }
+        // Blank and empty values stay valid (nothing blocked).
+        CollectionControl.fromEnv(mapOf("SIGNALDOCK_BLOCKED_SDK_VERSIONS" to " , ")::get)
+        CollectionControl.fromEnv(mapOf("SIGNALDOCK_BLOCKED_SDK_VERSIONS" to "")::get)
     }
 
     @Test

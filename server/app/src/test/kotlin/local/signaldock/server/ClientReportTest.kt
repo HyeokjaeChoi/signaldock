@@ -99,7 +99,7 @@ class ClientReportTest {
         database.transaction {
             query {
                 execute(
-                    "INSERT INTO client_reports (received_at, sdk_version, reason, count) VALUES (?::timestamptz, ?, ?, ?)",
+                    "INSERT INTO client_reports (received_at, sdk_platform, sdk_version, reason, count) VALUES (?::timestamptz, 'android', ?, ?, ?)",
                     receivedAt, sdkVersion, reason, count,
                 )
             }
@@ -318,7 +318,7 @@ class ClientReportTest {
         assertTrue(response.headers[HttpHeaders.ContentType]?.startsWith("application/json") == true)
         val body = json.decodeFromString<ClientReportCounts>(response.bodyAsText())
         assertEquals(false, body.truncated)
-        assertTrue(body.items.all { it.sdkPlatform == SdkPlatform.ANDROID }) // ticket 02 stores the platform
+        assertTrue(body.items.all { it.sdkPlatform == SdkPlatform.ANDROID })
         // Largest first; the tie at 5 goes by SDK version, then reason.
         assertEquals(
             listOf(
@@ -348,8 +348,8 @@ class ClientReportTest {
             database.transaction {
                 query {
                     execute(
-                        """INSERT INTO client_reports (received_at, sdk_version, reason, count)
-                           SELECT timestamptz '2026-10-12 00:00:00+00', 'v' || lpad(g::text, 3, '0'), 'queue_full', 1 FROM generate_series(1, 101) g""",
+                        """INSERT INTO client_reports (received_at, sdk_platform, sdk_version, reason, count)
+                           SELECT timestamptz '2026-10-12 00:00:00+00', 'android', 'v' || lpad(g::text, 3, '0'), 'queue_full', 1 FROM generate_series(1, 101) g""",
                     )
                 }
             }

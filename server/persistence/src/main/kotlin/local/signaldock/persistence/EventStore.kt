@@ -11,6 +11,7 @@ import kotlinx.serialization.json.jsonObject
 import local.signaldock.ingestion.IngestPlan
 import local.signaldock.ingestion.ItemReceipt
 import local.signaldock.ingestion.PropertyValue
+import local.signaldock.ingestion.SdkPlatform
 import local.signaldock.ingestion.StoredEvent
 import local.signaldock.ingestion.TrackingPlan
 import local.signaldock.ingestion.sameContent
@@ -36,6 +37,7 @@ public class EventStore(private val database: Database, private val trackingPlan
                         .set(EVENTS.NAME, event.name)
                         .set(EVENTS.OCCURRED_AT, event.occurredAt.atOffset(ZoneOffset.UTC))
                         .set(EVENTS.SDK_VERSION, event.sdkVersion)
+                        .set(EVENTS.SDK_PLATFORM, event.sdkPlatform.wire)
                         .set(EVENTS.PROPERTIES, JSONB.valueOf(propertiesJson(event.properties)))
                         .set(EVENTS.PLAN_STATUS, trackingPlan?.check(event.name, event.properties)?.wire)
                         .onConflict(EVENTS.EVENT_ID).doNothing().execute() == 1
@@ -46,7 +48,7 @@ public class EventStore(private val database: Database, private val trackingPlan
                         ?: throw DatabaseUnavailable("CONCURRENT_ROW_REMOVAL")
                     sameContent(event, StoredEvent(
                         row.eventId!!, row.installationId!!, row.name!!, row.occurredAt!!.toInstant(),
-                        row.sdkVersion!!, propertiesFrom(Json.parseToJsonElement(row.properties!!.data()).jsonObject),
+                        row.sdkVersion!!, SdkPlatform.fromWire(row.sdkPlatform!!)!!, propertiesFrom(Json.parseToJsonElement(row.properties!!.data()).jsonObject),
                     ))
                 }
                 stored += group.receipts(inserted, equal)

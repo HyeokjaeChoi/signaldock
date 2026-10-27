@@ -65,6 +65,8 @@ public class Events extends TableImpl<EventsRecord> {
 
     public final TableField<EventsRecord, String> PLAN_STATUS = createField(DSL.name("plan_status"), SQLDataType.CLOB, this, "");
 
+    public final TableField<EventsRecord, String> SDK_PLATFORM = createField(DSL.name("sdk_platform"), SQLDataType.CLOB.nullable(false), this, "");
+
     private Events(Name alias, Table<EventsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -105,7 +107,8 @@ public class Events extends TableImpl<EventsRecord> {
         return Arrays.asList(
             Internal.createCheck(this, DSL.name("events_name_not_empty"), "((name <> ''::text))", true),
             Internal.createCheck(this, DSL.name("events_plan_status_known"), "((plan_status = ANY (ARRAY['planned'::text, 'unplanned_event'::text, 'invalid_properties'::text])))", true),
-            Internal.createCheck(this, DSL.name("events_properties_object"), "((jsonb_typeof(properties) = 'object'::text))", true)
+            Internal.createCheck(this, DSL.name("events_properties_object"), "((jsonb_typeof(properties) = 'object'::text))", true),
+            Internal.createCheck(this, DSL.name("events_sdk_platform_known"), "((sdk_platform = ANY (ARRAY['android'::text, 'ios'::text])))", true)
         );
     }
 

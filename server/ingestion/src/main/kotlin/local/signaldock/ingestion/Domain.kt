@@ -17,12 +17,24 @@ public sealed interface PropertyValue {
     public data object Unsupported : PropertyValue
 }
 
+/** Platform of the SDK (ADR-0046). A new platform is a contract change. */
+public enum class SdkPlatform(public val wire: String) {
+    ANDROID("android"),
+    IOS("ios");
+
+    public companion object {
+        /** Wire names are case-sensitive. */
+        public fun fromWire(wire: String): SdkPlatform? = entries.firstOrNull { it.wire == wire }
+    }
+}
+
 public data class StoredEvent(
     val eventId: UUID,
     val installationId: UUID,
     val name: String,
     val occurredAt: Instant,
     val sdkVersion: String,
+    val sdkPlatform: SdkPlatform,
     val properties: Map<String, PropertyValue>,
 )
 
@@ -51,6 +63,7 @@ public fun sameContent(a: StoredEvent, b: StoredEvent): Boolean =
         a.name == b.name &&
         a.occurredAt == b.occurredAt &&
         a.sdkVersion == b.sdkVersion &&
+        a.sdkPlatform == b.sdkPlatform &&
         sameProperties(a.properties, b.properties)
 
 private fun sameProperties(a: Map<String, PropertyValue>, b: Map<String, PropertyValue>): Boolean =

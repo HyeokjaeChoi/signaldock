@@ -18,7 +18,7 @@ Spec 1 sets the deployment: one local project, synthetic data, no login, no publ
 | Collection key | Host app configuration, inside the app | Lets a holder write events. Public by design |
 | Query key | Server and nginx environment (`SIGNALDOCK_QUERY_KEY`) | Lets a holder read all stored events |
 | Stored events | PostgreSQL volume `signaldock-db` | The product data |
-| Client reports | PostgreSQL table `client_reports` (migration `V3__create_client_reports.sql`) | Dropped-event counts by SDK version and reason. No installation ID and no event data (ADR-0036 items 4 and 8). Approximate |
+| Client reports | PostgreSQL table `client_reports` (migration `V3__create_client_reports.sql`) | Dropped-event counts by platform, SDK version, and reason. No installation ID and no event data (ADR-0036 items 4 and 8). Approximate |
 | DB password | `.env` | Full DB access |
 | Tracking plan file | `tracking-plan/plan.json`, mounted read-only | Changes event marks, not storage |
 

@@ -2,6 +2,8 @@ package local.signaldock.persistence
 
 import kotlinx.coroutines.runBlocking
 import local.signaldock.ingestion.PropertyValue
+import local.signaldock.ingestion.SdkPlatform
+import local.signaldock.query.PlanStatusCounts
 import local.signaldock.query.Bucket
 import local.signaldock.query.CountQuery
 import local.signaldock.query.EventFilter
@@ -59,6 +61,7 @@ class QueryStoreTest {
         name: String = "product_viewed",
         installationId: UUID = installation,
         properties: String = "{}",
+        sdkPlatform: String = "android",
     ) = runBlocking {
         database.transaction {
             query {
@@ -68,6 +71,7 @@ class QueryStoreTest {
                     .set(EVENTS.NAME, name)
                     .set(EVENTS.OCCURRED_AT, Instant.parse("2026-10-01T00:00:00Z").atOffset(ZoneOffset.UTC))
                     .set(EVENTS.SDK_VERSION, "0.1.0")
+                    .set(EVENTS.SDK_PLATFORM, sdkPlatform)
                     .set(EVENTS.PROPERTIES, JSONB.valueOf(properties))
                     .set(EVENTS.RECEIVED_AT, Instant.parse(receivedAt).atOffset(ZoneOffset.UTC))
                     .execute()
@@ -146,6 +150,41 @@ class QueryStoreTest {
         assertEquals(listOf(3).map(::id), ids(EventFilter(null, null, id(3))))
         assertEquals(emptyList(), ids(EventFilter("cart_add", null, id(3))))
         assertEquals(2L, store.countByName(CountQuery(october, EventFilter("cart_add", null, null))).items.single().count)
+    }
+
+    @Test
+    fun `the platform is stored per event and the filter applies to list and all event counts`() = runBlocking {
+        insert(1, "2026-10-12T00:00:00Z", name = "cart_add") // android by default in the helper
+        insert(2, "2026-10-12T00:00:01Z", name = "cart_add", sdkPlatform = "ios")
+        insert(3, "2026-10-12T00:00:02Z", name = "cart_view", sdkPlatform = "ios")
+        fun filter(p: SdkPlatform?) = EventFilter(null, null, null, sdkPlatform = p)
+        fun ids(p: SdkPlatform?) = runBlocking { store.list(listQuery(SortOrder.OLDEST_FIRST, 10, filter = filter(p))).items.map { it.eventId } }
+        assertEquals(listOf(1, 2, 3).map(::id), ids(null))
+        assertEquals(listOf(1).map(::id), ids(SdkPlatform.ANDROID))
+        assertEquals(listOf(2, 3).map(::id), ids(SdkPlatform.IOS))
+        assertEquals(
+            listOf(SdkPlatform.ANDROID, SdkPlatform.IOS, SdkPlatform.IOS),
+            store.list(listQuery(SortOrder.OLDEST_FIRST, 10)).items.map { it.sdkPlatform },
+        )
+        assertEquals(SdkPlatform.IOS, assertNotNull(store.find(id(2))).summary.sdkPlatform)
+        // The filter combines with the other exact filters.
+        assertEquals(listOf(2).map(::id), runBlocking { store.list(listQuery(SortOrder.OLDEST_FIRST, 10, filter = EventFilter("cart_add", null, null, sdkPlatform = SdkPlatform.IOS))).items.map { it.eventId } })
+
+        assertEquals(mapOf("cart_add" to 1L, "cart_view" to 1L), store.countByName(CountQuery(october, filter(SdkPlatform.IOS))).items.associate { it.name to it.count })
+        assertEquals(mapOf("cart_add" to 1L), store.countByName(CountQuery(october, filter(SdkPlatform.ANDROID))).items.associate { it.name to it.count })
+        assertEquals(PlanStatusCounts(0, 0, 0, 2), store.countByPlanStatus(CountQuery(october, filter(SdkPlatform.IOS))))
+        assertEquals(PlanStatusCounts(0, 0, 0, 3), store.countByPlanStatus(CountQuery(october, filter(null))))
+        val day = TimeCountQuery(period("2026-10-12T00:00:00Z", "2026-10-13T00:00:00Z"), filter(SdkPlatform.IOS), Bucket.DAY, ZoneId.of("UTC"))
+        assertEquals(mapOf(Instant.parse("2026-10-12T00:00:00Z") to 2L), store.countByTime(day))
+        assertEquals(mapOf(Instant.parse("2026-10-12T00:00:00Z") to 1L), store.countByTime(day.copy(filter = filter(SdkPlatform.ANDROID))))
+    }
+
+    @Test
+    fun `the platform check constraint rejects values other than android and ios`() {
+        for (bad in listOf("iOS", "Android", "unknown", "")) {
+            kotlin.test.assertFailsWith<Exception>(bad) { insert(1, "2026-10-12T00:00:00Z", sdkPlatform = bad) }
+        }
+        assertEquals(0, runBlocking { store.list(listQuery(SortOrder.NEWEST_FIRST, 10)).items.size })
     }
 
     @Test
@@ -232,8 +271,8 @@ class QueryStoreTest {
         database.transaction {
             query {
                 execute(
-                    """INSERT INTO events (event_id, installation_id, name, occurred_at, sdk_version, properties, received_at)
-                       SELECT gen_random_uuid(), gen_random_uuid(), 'e' || (g % 3), now(), '0.1.0', '{}'::jsonb,
+                    """INSERT INTO events (event_id, installation_id, name, occurred_at, sdk_version, sdk_platform, properties, received_at)
+                       SELECT gen_random_uuid(), gen_random_uuid(), 'e' || (g % 3), now(), '0.1.0', CASE WHEN g % 2 = 0 THEN 'ios' ELSE 'android' END, '{}'::jsonb,
                               timestamptz '2026-09-01 00:00:00+00' + g * interval '2 minutes'
                        FROM generate_series(1, 20000) g""",
                 )
@@ -249,7 +288,12 @@ class QueryStoreTest {
             val newest = plan("$base ORDER BY received_at DESC, event_id DESC LIMIT 51")
             val keyset = plan("$base AND (received_at, event_id) < ('2026-09-10 12:00:00+00', '00000000-0000-4000-8000-000000000000') ORDER BY received_at DESC, event_id DESC LIMIT 51")
             val counts = plan("SELECT name, count(*) FROM events WHERE received_at >= '2026-09-10 00:00:00+00' AND received_at < '2026-09-11 00:00:00+00' GROUP BY name")
-            for (p in listOf(newest, keyset, counts)) {
+            // The platform filter adds a row filter on the same index scan: no Seq Scan, no new index (ADR-0046).
+            val platform = "AND sdk_platform = 'ios'"
+            val newestIos = plan("$base $platform ORDER BY received_at DESC, event_id DESC LIMIT 51")
+            val keysetIos = plan("$base $platform AND (received_at, event_id) < ('2026-09-10 12:00:00+00', '00000000-0000-4000-8000-000000000000') ORDER BY received_at DESC, event_id DESC LIMIT 51")
+            val countsIos = plan("SELECT name, count(*) FROM events WHERE received_at >= '2026-09-10 00:00:00+00' AND received_at < '2026-09-11 00:00:00+00' $platform GROUP BY name")
+            for (p in listOf(newest, keyset, counts, newestIos, keysetIos, countsIos)) {
                 assertTrue(p.contains("events_received_cursor_idx"), p)
                 assertFalse(p.contains("Seq Scan"), p)
             }

@@ -1,8 +1,9 @@
 # 01. Contract: `sdkPlatform` field and filter
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
+Execution: Done (PR #246, 2026-10-28 UTC)
 
 ## Scope and completion criteria
 

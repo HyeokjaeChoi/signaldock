@@ -83,6 +83,14 @@ public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
         return (String) get(7);
     }
 
+    public void setSdkPlatform(String value) {
+        set(8, value);
+    }
+
+    public String getSdkPlatform() {
+        return (String) get(8);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -100,7 +108,7 @@ public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
         super(Events.EVENTS);
     }
 
-    public EventsRecord(UUID eventId, UUID installationId, String name, OffsetDateTime occurredAt, String sdkVersion, JSONB properties, OffsetDateTime receivedAt, String planStatus) {
+    public EventsRecord(UUID eventId, UUID installationId, String name, OffsetDateTime occurredAt, String sdkVersion, JSONB properties, OffsetDateTime receivedAt, String planStatus, String sdkPlatform) {
         super(Events.EVENTS);
 
         setEventId(eventId);
@@ -111,6 +119,7 @@ public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
         setProperties(properties);
         setReceivedAt(receivedAt);
         setPlanStatus(planStatus);
+        setSdkPlatform(sdkPlatform);
         resetTouchedOnNotNull();
     }
 }

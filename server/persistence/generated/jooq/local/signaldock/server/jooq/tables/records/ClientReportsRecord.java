@@ -57,6 +57,14 @@ public class ClientReportsRecord extends UpdatableRecordImpl<ClientReportsRecord
         return (Integer) get(4);
     }
 
+    public void setSdkPlatform(String value) {
+        set(5, value);
+    }
+
+    public String getSdkPlatform() {
+        return (String) get(5);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -74,7 +82,7 @@ public class ClientReportsRecord extends UpdatableRecordImpl<ClientReportsRecord
         super(ClientReports.CLIENT_REPORTS);
     }
 
-    public ClientReportsRecord(Long id, OffsetDateTime receivedAt, String sdkVersion, String reason, Integer count) {
+    public ClientReportsRecord(Long id, OffsetDateTime receivedAt, String sdkVersion, String reason, Integer count, String sdkPlatform) {
         super(ClientReports.CLIENT_REPORTS);
 
         setId(id);
@@ -82,6 +90,7 @@ public class ClientReportsRecord extends UpdatableRecordImpl<ClientReportsRecord
         setSdkVersion(sdkVersion);
         setReason(reason);
         setCount(count);
+        setSdkPlatform(sdkPlatform);
         resetTouchedOnNotNull();
     }
 }

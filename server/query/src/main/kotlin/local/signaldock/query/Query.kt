@@ -3,6 +3,7 @@ package local.signaldock.query
 import local.signaldock.ingestion.DiscardReason
 import local.signaldock.ingestion.PlanStatus
 import local.signaldock.ingestion.PropertyValue
+import local.signaldock.ingestion.SdkPlatform
 import java.time.Instant
 import java.time.OffsetDateTime
 import java.time.ZoneId
@@ -33,6 +34,7 @@ public data class EventFilter(
     val installationId: UUID?,
     val eventId: UUID?,
     val planStatus: PlanStatus? = null,
+    val sdkPlatform: SdkPlatform? = null,
 )
 
 public enum class SortOrder(public val parameter: String) {
@@ -51,6 +53,8 @@ public data class ListQuery(
     val after: ListCursor?,
 )
 
+public data class ClientReportCountQuery(val period: Period, val sdkPlatform: SdkPlatform?)
+
 public data class CountQuery(val period: Period, val filter: EventFilter)
 
 public enum class Bucket(public val parameter: String) { HOUR("hour"), DAY("day") }
@@ -65,6 +69,7 @@ public data class ReceiptSummary(
     val occurredAt: Instant,
     val receivedAt: Instant,
     val sdkVersion: String,
+    val sdkPlatform: SdkPlatform,
     /** Null when no plan was configured at ingest, and for events stored before the plan check (ADR-0022). */
     val planStatus: PlanStatus? = null,
 )
@@ -79,8 +84,8 @@ public data class NameCount(val name: String, val count: Long)
 /** At most [MAX_NAME_COUNTS] names; `truncated` means more names matched. */
 public data class NameCounts(val items: List<NameCount>, val truncated: Boolean)
 
-/** Events the SDKs reported as dropped, for one SDK version and reason. */
-public data class ClientReportCount(val sdkVersion: String, val reason: DiscardReason, val count: Long)
+/** Events the SDKs reported as dropped, for one (platform, SDK version) and reason. */
+public data class ClientReportCount(val sdkPlatform: SdkPlatform, val sdkVersion: String, val reason: DiscardReason, val count: Long)
 
 /** At most [MAX_CLIENT_REPORT_COUNTS] rows; `truncated` means more rows matched. */
 public data class ClientReportCounts(val items: List<ClientReportCount>, val truncated: Boolean)
@@ -91,7 +96,7 @@ public data class TimeBucketCount(val start: Instant, val count: Long)
 public data class PlanStatusCounts(val planned: Long, val unplannedEvent: Long, val invalidProperties: Long, val notChecked: Long)
 
 private val ID_FILTER_PARAMETERS = setOf("name", "installationId", "eventId")
-private val FILTER_PARAMETERS = ID_FILTER_PARAMETERS + "planStatus"
+private val FILTER_PARAMETERS = ID_FILTER_PARAMETERS + "planStatus" + "sdkPlatform"
 private val PERIOD_PARAMETERS = setOf("from", "to")
 
 public fun parseListQuery(params: Map<String, List<String>>, zone: ZoneId): ListQuery {
@@ -116,14 +121,18 @@ public fun parseCountQuery(params: Map<String, List<String>>, zone: ZoneId): Cou
 
 /** The plan-status counts take the exact filters but not `planStatus`: they already split by it. */
 public fun parsePlanStatusCountQuery(params: Map<String, List<String>>, zone: ZoneId): CountQuery {
-    rejectUnknown(params, PERIOD_PARAMETERS + ID_FILTER_PARAMETERS)
+    rejectUnknown(params, PERIOD_PARAMETERS + ID_FILTER_PARAMETERS + "sdkPlatform")
     return CountQuery(parsePeriod(params, zone), parseFilter(params))
 }
 
-/** The client report counts take only the period: a report has no event name, installation, or plan status. */
-public fun parseClientReportCountQuery(params: Map<String, List<String>>, zone: ZoneId): Period {
-    rejectUnknown(params, PERIOD_PARAMETERS)
-    return parsePeriod(params, zone)
+/** The client report counts take the period and the platform: a report has no event name, installation, or plan status. */
+public fun parseClientReportCountQuery(params: Map<String, List<String>>, zone: ZoneId): ClientReportCountQuery {
+    rejectUnknown(params, PERIOD_PARAMETERS + "sdkPlatform")
+    return ClientReportCountQuery(parsePeriod(params, zone), parseSdkPlatform(params))
+}
+
+private fun parseSdkPlatform(params: Map<String, List<String>>): SdkPlatform? = single(params, "sdkPlatform")?.let { raw ->
+    SdkPlatform.fromWire(raw) ?: invalid("sdkPlatform", "must be android or ios")
 }
 
 public fun parseTimeCountQuery(params: Map<String, List<String>>, zone: ZoneId): TimeCountQuery {
@@ -213,6 +222,7 @@ private fun parseFilter(params: Map<String, List<String>>): EventFilter = EventF
     planStatus = single(params, "planStatus")?.let { raw ->
         PlanStatus.fromWire(raw) ?: invalid("planStatus", "must be planned, unplanned_event, or invalid_properties")
     },
+    sdkPlatform = parseSdkPlatform(params),
 )
 
 /** Exact filter: no trimming or normalization (Q64, Q84), but a value storage cannot hold never matches. */

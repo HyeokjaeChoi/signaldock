@@ -21,6 +21,8 @@ public class EventFields(
     public val name: String,
     public val occurredAt: String,
     public val sdkVersion: String,
+    /** The `sdkPlatform` string, or null when the field is missing (ADR-0046: stored as `android`). */
+    public val sdkPlatform: String?,
     /** Null when `properties` is not a JSON object. */
     public val properties: Map<String, PropertyValue>?,
 )
@@ -74,6 +76,9 @@ public fun validateEvent(index: Int, candidate: EventCandidate?, installationId:
     if (!validText(fields.name, keyOrName = true) || !validText(fields.sdkVersion, keyOrName = false)) {
         return invalid(index, rawEventId, "INVALID_TEXT")
     }
+    // A value that is not `android` or `ios` is a per-item rejection like other invalid event fields (ADR-0046, ADR-0027).
+    val sdkPlatform = if (fields.sdkPlatform == null) SdkPlatform.ANDROID
+    else SdkPlatform.fromWire(fields.sdkPlatform) ?: return invalid(index, rawEventId, "INVALID_EVENT")
     val occurredAt = parseMillisInstant(fields.occurredAt) ?: return invalid(index, rawEventId, "INVALID_OCCURRED_AT")
     val properties = fields.properties ?: return invalid(index, rawEventId, "INVALID_PROPERTIES")
     if (!validProperties(properties)) return invalid(index, rawEventId, "INVALID_PROPERTIES")
@@ -81,7 +86,7 @@ public fun validateEvent(index: Int, candidate: EventCandidate?, installationId:
     return ValidatedItem(
         index = index,
         eventId = rawEventId,
-        event = StoredEvent(eventId, installationId, fields.name, occurredAt, fields.sdkVersion, properties),
+        event = StoredEvent(eventId, installationId, fields.name, occurredAt, fields.sdkVersion, sdkPlatform, properties),
         rejectionCode = null,
     )
 }
