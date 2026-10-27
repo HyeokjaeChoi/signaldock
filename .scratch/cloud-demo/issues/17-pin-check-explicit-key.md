@@ -1,8 +1,9 @@
 # 17. Pin check: reject a YAML explicit `?` key named `uses`
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: None
+Execution: Done (PR #235, 2026-10-27 UTC)
 
 ## Scope and completion criteria
 
