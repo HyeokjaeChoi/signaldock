@@ -130,3 +130,19 @@ Everything. No iOS code exists yet. Tickets must confirm these facts before they
 - Maven Central and remote SwiftPM start (D11).
 - The owner can lend a physical iPhone and a developer account (D15).
 - A required-reason API becomes necessary (D14).
+
+## Amendment (2026-10-28, issue 20)
+
+D6 and D7 did not name a Data Protection class. The owner decided on 2026-10-28:
+
+- The SDK sets the class `completeUntilFirstUserAuthentication` explicitly on the installation ID file and on the SQLite queue files: the database file and any side file that SQLite makes (`-wal`, `-shm`, `-journal`).
+- This is also the iOS default for third-party app files. The SDK states it so that a change of the OS default does not change the SDK behavior.
+- Before the first unlock after a restart, the system does not let the app open a file of this class. If the SDK cannot open the installation ID file or the database for this reason, this is "storage not available" (ADR-0017): no throw into the host, `track()` returns `StorageError`, `diagnostics()` shows `storageAvailable = false`. Events that the host tracks in this window are dropped, as ADR-0017 says. After the first unlock, the next call opens the files again.
+- Rejected: a stricter class (a launch by the system before the first unlock would lose more events, and the queue holds business events, not secrets); keeping the OS default without stating it.
+
+Sources (read 2026-10-28):
+
+- [FileProtectionType.completeUntilFirstUserAuthentication](https://developer.apple.com/documentation/foundation/fileprotectiontype/completeuntilfirstuserauthentication): the file cannot be accessed until the device has booted and the user has unlocked it for the first time. Then the app can access it, also while the device is locked.
+- [Apple Platform Security, Data Protection classes](https://support.apple.com/guide/security/data-protection-classes-secb010e978a/web): this class is "the default class for all third-party app data not otherwise assigned to a Data Protection class".
+
+Not verified here: the exact error code that SQLite returns for this open failure, and whether a `-wal` or `-shm` file that SQLite makes later gets the class from the directory. Ticket 07 checks both on a device or Simulator and sets the class on each side file itself.
