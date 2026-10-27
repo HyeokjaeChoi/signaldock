@@ -23,6 +23,8 @@ import common as c
 
 SEED = 1007  # generator seed, recorded in the seed metadata
 DAY_MS = 86_400_000
+# One column per CSV field, in order. V4 (ADR-0046) made sdk_platform NOT NULL without a default, so the COPY must name it.
+COPY_COLUMNS = ("event_id", "installation_id", "name", "occurred_at", "sdk_version", "sdk_platform", "properties", "received_at")
 
 
 def seed_name(size, dist):
@@ -78,7 +80,7 @@ def generate(size, dist, T, out):
             props = c.make_properties(rng, name)
             props = c.with_note(rng, pad, envelope, props)
             sizes.append(len(json.dumps(dict(envelope, properties=props), separators=(",", ":")).encode()))
-            w.writerow([eid, insts[i], name, c.iso_ms(occurred), "0.1.0", json.dumps(props, separators=(",", ":")), c.iso_ms(received)])
+            w.writerow([eid, insts[i], name, c.iso_ms(occurred), "0.1.0", "android", json.dumps(props, separators=(",", ":")), c.iso_ms(received)])
     return counts, (min(sizes), sum(sizes) // len(sizes), max(sizes))
 
 
@@ -102,8 +104,9 @@ def wait_health(timeout=90):
 def ensure_base_schema():
     """Flyway migrates through the real server, so the template has the product's own schema and history."""
     if c.psql("SELECT 1 FROM pg_database WHERE datname='base_schema'", db="postgres"):
-        # An interrupted first build can leave an empty template; reuse it only when Flyway created the events table.
-        if c.psql("SELECT to_regclass('public.events') IS NOT NULL", db="base_schema") == "t":
+        # An interrupted first build can leave an empty template; reuse it only when Flyway migrated it to the current schema (V4 added sdk_platform).
+        # A template made before V4 has no sdk_platform column: rebuild it.
+        if c.psql("SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='events' AND column_name='sdk_platform')", db="base_schema") == "t":
             ensure_extension("base_schema")
             return
         c.log("base_schema exists but is not migrated; rebuilding it")
@@ -141,8 +144,7 @@ def build(size, dist, day, force):
     c.psql(f"DROP DATABASE IF EXISTS {name}", db="postgres")
     c.psql(f"CREATE DATABASE {name} TEMPLATE base_schema", db="postgres")
     with open(csv_path) as f:
-        c.psql("COPY events (event_id, installation_id, name, occurred_at, sdk_version, properties, received_at) "
-               "FROM STDIN (FORMAT csv)", db=name, stdin=f)
+        c.psql(f"COPY events ({', '.join(COPY_COLUMNS)}) FROM STDIN (FORMAT csv)", db=name, stdin=f)
     c.psql("VACUUM (ANALYZE) events", db=name)
     c.psql("CHECKPOINT", db=name)
     rows = int(c.psql("SELECT count(*) FROM events", db=name))

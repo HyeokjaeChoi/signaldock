@@ -126,6 +126,17 @@ class CollectionControlTest {
     }
 
     @Test
+    fun `whitespace around the colon is trimmed like the item`() {
+        val expected = CollectionControl.fromEnv(mapOf("SIGNALDOCK_BLOCKED_SDK_VERSIONS" to "ios:0.1.0")::get).blockedSdkVersions
+        for (item in listOf("ios: 0.1.0", "ios :0.1.0", " ios : 0.1.0 ")) {
+            assertEquals(expected, CollectionControl.fromEnv(mapOf("SIGNALDOCK_BLOCKED_SDK_VERSIONS" to item)::get).blockedSdkVersions, item)
+        }
+        assertFailsWith<IllegalArgumentException> { CollectionControl.fromEnv(mapOf("SIGNALDOCK_BLOCKED_SDK_VERSIONS" to "ios: ")::get) }
+        statuses("ios: 0.1.0", event(1, "a", "0.1.0", "ios"), event(2, "a", "0.1.0", "android"))
+        assertEquals(listOf("COLLECTION_BLOCKED", "accepted"), lastStatuses)
+    }
+
+    @Test
     fun `an item with no prefix means android, so old settings keep their meaning`() {
         val events = arrayOf(event(1, "a", "0.1.0", "ios"), event(2, "a", "0.1.0", "android"), event(3, "a", "0.1.0"), event(4, "a", "0.1.1"))
         statuses("0.1.0", *events)

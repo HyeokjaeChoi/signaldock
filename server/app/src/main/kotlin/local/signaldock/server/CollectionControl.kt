@@ -44,8 +44,8 @@ internal class CollectionControl(
             // A version holds no `:` of its own in practice, so the first one splits. `:1.0` or `ios:` is malformed.
             fun versionPair(item: String): Pair<SdkPlatform, String> {
                 val colon = item.indexOf(':')
-                val platform = if (colon < 0) SdkPlatform.ANDROID else SdkPlatform.fromWire(item.substring(0, colon))
-                val version = if (colon < 0) item else item.substring(colon + 1)
+                val platform = if (colon < 0) SdkPlatform.ANDROID else SdkPlatform.fromWire(item.substring(0, colon).trim())
+                val version = if (colon < 0) item else item.substring(colon + 1).trim() // both sides of `:` are trimmed, like the item (ADR-0037)
                 require(platform != null && version.isNotEmpty()) {
                     "SIGNALDOCK_BLOCKED_SDK_VERSIONS item must be android:<version>, ios:<version>, or <version>"
                 }
