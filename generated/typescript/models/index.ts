@@ -21,3 +21,4 @@ export * from './EventTimeCounts';
 export * from './ItemAck';
 export * from './PlanStatus';
 export * from './PropertyValue';
+export * from './SdkPlatform';

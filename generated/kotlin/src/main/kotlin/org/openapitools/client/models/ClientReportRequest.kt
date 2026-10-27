@@ -24,6 +24,7 @@
 package org.openapitools.client.models
 
 import org.openapitools.client.models.DiscardedEventCount
+import org.openapitools.client.models.SdkPlatform
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
@@ -34,6 +35,7 @@ import kotlinx.serialization.Contextual
  *
  * @param sdkVersion SDK release version that counted the drops.
  * @param discardedEvents One entry per reason. A reason appears at most once.
+ * @param sdkPlatform Platform of the SDK. Optional on the wire; a missing value means `android` (ADR-0046 D3). Every new SDK must send it. 
  */
 @Serializable
 
@@ -45,7 +47,11 @@ internal data class ClientReportRequest (
 
     /* One entry per reason. A reason appears at most once. */
     @SerialName(value = "discardedEvents")
-    val discardedEvents: kotlin.collections.List<DiscardedEventCount>
+    val discardedEvents: kotlin.collections.List<DiscardedEventCount>,
+
+    /* Platform of the SDK. Optional on the wire; a missing value means `android` (ADR-0046 D3). Every new SDK must send it.  */
+    @Contextual @SerialName(value = "sdkPlatform")
+    val sdkPlatform: SdkPlatform? = null
 
 ) {
 

@@ -32,6 +32,7 @@ describe.each(PAYLOADS)("hostile text %s", (payload) => {
     occurredAt: "2026-10-12T01:00:00.000Z",
     receivedAt: "2026-10-12T01:00:01.000Z",
     sdkVersion: payload,
+    sdkPlatform: "android",
   };
   const detail: EventReceiptDetail = { ...summary, properties: { [payload]: payload } };
   const api = {

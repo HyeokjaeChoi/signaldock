@@ -13,6 +13,13 @@
  */
 
 import { mapValues } from '../runtime';
+import type { SdkPlatform } from './SdkPlatform';
+import {
+    SdkPlatformFromJSON,
+    SdkPlatformFromJSONTyped,
+    SdkPlatformToJSON,
+    SdkPlatformToJSONTyped,
+} from './SdkPlatform';
 import type { PlanStatus } from './PlanStatus';
 import {
     PlanStatusFromJSON,
@@ -55,6 +62,10 @@ export interface EventReceiptSummary {
      * SDK release version at collection time.
      */
     sdkVersion: string;
+    /**
+     * 
+     */
+    sdkPlatform: SdkPlatform;
 }
 
 
@@ -69,6 +80,7 @@ export function instanceOfEventReceiptSummary(value: object): value is EventRece
     if (!('occurredAt' in value) || value['occurredAt'] === undefined) return false;
     if (!('receivedAt' in value) || value['receivedAt'] === undefined) return false;
     if (!('sdkVersion' in value) || value['sdkVersion'] === undefined) return false;
+    if (!('sdkPlatform' in value) || value['sdkPlatform'] === undefined) return false;
     return true;
 }
 
@@ -89,6 +101,7 @@ export function EventReceiptSummaryFromJSONTyped(json: any, ignoreDiscriminator:
         'occurredAt': json['occurredAt'],
         'receivedAt': json['receivedAt'],
         'sdkVersion': json['sdkVersion'],
+        'sdkPlatform': SdkPlatformFromJSON(json['sdkPlatform']),
     };
 }
 
@@ -110,6 +123,7 @@ export function EventReceiptSummaryToJSONTyped(value?: EventReceiptSummary | nul
         'occurredAt': value['occurredAt'],
         'receivedAt': value['receivedAt'],
         'sdkVersion': value['sdkVersion'],
+        'sdkPlatform': SdkPlatformToJSON(value['sdkPlatform']),
     };
 }
 

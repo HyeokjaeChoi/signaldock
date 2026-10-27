@@ -13,6 +13,13 @@
  */
 
 import { mapValues, parseDate, parseDateTime, serializeDate, serializeDateTime } from '../runtime';
+import type { SdkPlatform } from './SdkPlatform';
+import {
+    SdkPlatformFromJSON,
+    SdkPlatformFromJSONTyped,
+    SdkPlatformToJSON,
+    SdkPlatformToJSONTyped,
+} from './SdkPlatform';
 import type { EventIngestPropertiesValue } from './EventIngestPropertiesValue';
 import {
     EventIngestPropertiesValueFromJSON,
@@ -51,6 +58,11 @@ export interface EventIngest {
      * SDK release version at collection time, kept unchanged on resend (Q66).
      */
     sdkVersion: string;
+    /**
+     * Platform of the SDK. Optional on the wire; a missing value means `android` (ADR-0046 D3). Only Android SDK 0.1.0 to 0.3.0 omit it; every newer SDK must send it.
+     * 
+     */
+    sdkPlatform?: SdkPlatform;
     /**
      * Transport contract version stored with the queue entry (Q66).
      */
@@ -97,6 +109,7 @@ export function EventIngestFromJSONTyped(json: any, ignoreDiscriminator: boolean
         'occurredAt': (json['occurredAt'] == null ? json['occurredAt'] : parseDateTime(json['occurredAt'])),
         'properties': (mapValues(json['properties'], EventIngestPropertiesValueFromJSON)),
         'sdkVersion': json['sdkVersion'],
+        'sdkPlatform': json['sdkPlatform'] == null ? undefined : SdkPlatformFromJSON(json['sdkPlatform']),
         'contractVersion': json['contractVersion'],
     };
 }
@@ -117,6 +130,7 @@ export function EventIngestToJSONTyped(value?: EventIngest | null, ignoreDiscrim
         'occurredAt': value['occurredAt'] == null ? value['occurredAt'] : serializeDateTime(value['occurredAt']),
         'properties': (mapValues(value['properties'], EventIngestPropertiesValueToJSON)),
         'sdkVersion': value['sdkVersion'],
+        'sdkPlatform': SdkPlatformToJSON(value['sdkPlatform']),
         'contractVersion': value['contractVersion'],
     };
 }

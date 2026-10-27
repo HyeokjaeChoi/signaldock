@@ -42,7 +42,7 @@ describe("plan status requests (ADR-0022)", () => {
 describe("client report counts (Q164)", () => {
   it("sends only from and to, with the contract header, and decodes the rows", async () => {
     const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) =>
-      new Response(JSON.stringify({ items: [{ sdkVersion: "0.1.0", reason: "queue_full", count: 3 }], truncated: true }), { status: 200 }));
+      new Response(JSON.stringify({ items: [{ sdkPlatform: "android", sdkVersion: "0.1.0", reason: "queue_full", count: 3 }], truncated: true }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
     const counts = await realApi.clientReportCounts({ ...filters, eventId: "e", installationId: "i" }, signal);
     const url = new URL(fetchMock.mock.calls[0]![0], "http://dashboard.test");
@@ -51,6 +51,6 @@ describe("client report counts (Q164)", () => {
     expect(url.searchParams.get("from")).toBe(filters.from);
     expect(url.searchParams.get("to")).toBe(filters.to);
     expect((fetchMock.mock.calls[0]![1]!.headers as Record<string, string>)["SignalDock-Contract-Version"]).toBe("1");
-    expect(counts).toEqual({ items: [{ sdkVersion: "0.1.0", reason: "queue_full", count: 3 }], truncated: true });
+    expect(counts).toEqual({ items: [{ sdkPlatform: "android", sdkVersion: "0.1.0", reason: "queue_full", count: 3 }], truncated: true });
   });
 });

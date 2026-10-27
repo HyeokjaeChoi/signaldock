@@ -24,6 +24,7 @@
 package org.openapitools.client.models
 
 import org.openapitools.client.models.DiscardReason
+import org.openapitools.client.models.SdkPlatform
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
@@ -32,6 +33,7 @@ import kotlinx.serialization.Contextual
 /**
  * 
  *
+ * @param sdkPlatform 
  * @param sdkVersion 
  * @param reason 
  * @param count 
@@ -39,6 +41,9 @@ import kotlinx.serialization.Contextual
 @Serializable
 
 internal data class ClientReportCount (
+
+    @Contextual @SerialName(value = "sdkPlatform")
+    val sdkPlatform: SdkPlatform,
 
     @SerialName(value = "sdkVersion")
     val sdkVersion: kotlin.String,

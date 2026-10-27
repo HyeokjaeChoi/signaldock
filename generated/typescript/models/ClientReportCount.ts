@@ -13,6 +13,13 @@
  */
 
 import { mapValues } from '../runtime';
+import type { SdkPlatform } from './SdkPlatform';
+import {
+    SdkPlatformFromJSON,
+    SdkPlatformFromJSONTyped,
+    SdkPlatformToJSON,
+    SdkPlatformToJSONTyped,
+} from './SdkPlatform';
 import type { DiscardReason } from './DiscardReason';
 import {
     DiscardReasonFromJSON,
@@ -27,6 +34,10 @@ import {
  * @interface ClientReportCount
  */
 export interface ClientReportCount {
+    /**
+     * 
+     */
+    sdkPlatform: SdkPlatform;
     /**
      * 
      */
@@ -47,6 +58,7 @@ export interface ClientReportCount {
  * Check if a given object implements the ClientReportCount interface.
  */
 export function instanceOfClientReportCount(value: object): value is ClientReportCount {
+    if (!('sdkPlatform' in value) || value['sdkPlatform'] === undefined) return false;
     if (!('sdkVersion' in value) || value['sdkVersion'] === undefined) return false;
     if (!('reason' in value) || value['reason'] === undefined) return false;
     if (!('count' in value) || value['count'] === undefined) return false;
@@ -63,6 +75,7 @@ export function ClientReportCountFromJSONTyped(json: any, ignoreDiscriminator: b
     }
     return {
         
+        'sdkPlatform': SdkPlatformFromJSON(json['sdkPlatform']),
         'sdkVersion': json['sdkVersion'],
         'reason': DiscardReasonFromJSON(json['reason']),
         'count': json['count'],
@@ -80,6 +93,7 @@ export function ClientReportCountToJSONTyped(value?: ClientReportCount | null, i
 
     return {
         
+        'sdkPlatform': SdkPlatformToJSON(value['sdkPlatform']),
         'sdkVersion': value['sdkVersion'],
         'reason': DiscardReasonToJSON(value['reason']),
         'count': value['count'],

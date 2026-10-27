@@ -1,6 +1,6 @@
 # 01. Contract: `sdkPlatform` field and filter
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: None
 
