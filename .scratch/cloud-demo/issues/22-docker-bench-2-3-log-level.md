@@ -12,4 +12,4 @@ Decide: set `log-level` in `daemon.json` (needs a Docker restart, see runbook se
 
 ## Comments
 
-2026-10-27, owner decision: accept, do not fix. The Docker daemon default `log-level` is already `info`, which is the value check 2.3 wants. The WARN appeared only because `daemon.json` now exists without the key. Adding the key changes no behavior and needs a Docker restart (runbook section 9). Score cost: 1 point.
+2026-10-27, owner decision: accept, do not fix. The Docker daemon default `log-level` is already `info`, which is the value check 2.3 wants. The WARN appeared only because `daemon.json` now exists without the key. Adding the key changes no behavior and needs a Docker restart (runbook section 9). Score cost: 2 points (a scored WARN subtracts 1, a scored PASS adds 1).
