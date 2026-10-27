@@ -146,7 +146,8 @@ ONK='^("on"|\047on\047|on):'
 # `uses` is found as a block key, in a flow mapping ({ uses: x }), and as a quoted key.
 # wfb: wf without block-scalar bodies (`run: |`, `>-`), whose lines are shell text, not YAML keys (issue 18).
 wfb() { wf "$1" | awk 'BEGIN { blk = -1 } { match($0, /^ */); if (blk >= 0 && RLENGTH > blk) next; blk = -1
-  if ($0 ~ /[:-][ ]+([&!][^ ]*[ ]+)*[|>][-+0-9]*[ ]*$/) { k = $0; sub(/^( *- +)*/, "", k); blk = length($0) - length(k) }
+  # The header is `[- ]key: |`, `- |` (optional anchor or tag); blk is the column of the key, so sibling keys stay visible.
+  if ($0 ~ /^ *(- +)*([^ #{["\047,][^:]*:[ ]+)?([&!][^ ]*[ ]+)*[|>][-+0-9]*[ ]*$/) { k = $0; sub(/^ *(- +)*/, "", k); blk = length($0) - length(k) }
   print }'; }
 check_pins() {
   local body; body="$(wfb "$1")"
