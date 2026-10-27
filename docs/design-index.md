@@ -322,6 +322,6 @@ Do not suggest these alternatives.
 - DI framework in the SDK: spec section "8. Additional implementation policies and individual agreements", "C. Small modules and local execution" (Q87).
 - Redis for idempotency: architecture "Lost ACKs and event deduplication"; spec Q69.
 - Aggregate tables or counters: architecture "DB time budgets and queries"; spec Q70.
-- iOS or Flutter SDKs, Maven Central, automatic events, identify: spec "1. Goal and scope".
+- Flutter SDKs, Maven Central, automatic events, identify: spec "1. Goal and scope". The iOS SDK is no longer rejected: `.scratch/ios-sdk/spec.md` and ADR-0047 replace that exclusion (2026-10-27).
 - Trimming or normalizing names and keys: spec Q64 and Q84.
 - Cloud demo (the full list with reasons is in each ADR's "Rejected alternatives"): managed containers, PaaS, Azure, k3s or Argo CD, `sslip.io`, Cloudflare proxy, GitHub OIDC or an SSH key for deploy, build on the VM, a paid account, app login, in-app 429, Caddy, server TTL, Secret Manager, sops + age, a hashed key table, OTel Collector or Cloud Logging or Loki, Falco, rootless Docker, userns-remap, cosign verify on the VM: ADR-0043, ADR-0044, ADR-0045.
