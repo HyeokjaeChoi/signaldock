@@ -1,8 +1,9 @@
 # 22. iOS local gates: skip and selection robustness
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: None
+Execution: Done (PR #247, 2026-10-28 UTC)
 
 ## Scope and completion criteria
 
