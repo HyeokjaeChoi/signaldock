@@ -15,7 +15,7 @@ ADR-0047 D6 and D7 do not name an iOS Data Protection class for the installation
 
 ## Answer
 
-Owner decision, 2026-10-28: option A. Set `completeUntilFirstUserAuthentication` explicitly on the installation ID file and on the SQLite queue files (database, `-wal`, `-shm`, `-journal`). An open failure is "storage not available" (ADR-0017); events in that window are dropped.
+Owner decision, 2026-10-28: option A. Set `completeUntilFirstUserAuthentication` explicitly on the installation ID file and on the SQLite queue files (database, `-wal`, `-shm`, `-journal`). An open failure makes `initialize()` return `InitError.StorageFailure` with no instance, as on Android (ADR-0003 item 6, ADR-0017); events in that window are dropped, and the host calls `initialize()` again later.
 
 Facts confirmed from Apple (read 2026-10-28):
 
