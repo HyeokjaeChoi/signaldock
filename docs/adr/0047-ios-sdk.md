@@ -50,7 +50,7 @@ Source: https://developer.apple.com/documentation/uikit/uiapplication/beginbackg
 - iOS 15 or later. Swift 6 language mode with strict concurrency.
 - The public API is `async`, one to one with the Kotlin `suspend` API. Results are Swift `enum` values. Public types are `Sendable`.
 - Swift Concurrency only. No third-party async library.
-- The sender is an `actor`. SQLite runs only on an actor whose custom `SerialExecutor` (SE-0392) uses a dedicated serial queue, so blocking calls stay off the cooperative pool.
+- The sender is an `actor`. SQLite runs only on an actor whose custom `SerialExecutor` (SE-0392) uses a dedicated serial queue, so blocking calls stay off the cooperative pool. On iOS 15 the executor implements `enqueue(_ job: UnownedJob)` and calls `UnownedJob.runSynchronously(on:)`; `ExecutorJob` and `enqueue(_: consuming ExecutorJob)` need iOS 17 and are not used. Check (2026-10-27, Xcode 27.1, Swift 6.4): this form type-checks for `arm64-apple-ios15.0-simulator` in Swift 6 mode with `-warnings-as-errors`; the `ExecutorJob` form fails with "only available in iOS 17.0 or newer". Gap: run time on an iOS 15 runtime is not verified (ticket 07).
 - Code checks actor state again after every `await` (SE-0306).
 - `@unchecked Sendable` needs an ADR that names its lock or queue invariant.
 - Public entry points are `@available(iOSApplicationExtension, unavailable)`. The first release is for apps only.
