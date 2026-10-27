@@ -19,3 +19,4 @@ src/main/kotlin/org/openapitools/client/models/EventTimeCounts.kt
 src/main/kotlin/org/openapitools/client/models/ItemAck.kt
 src/main/kotlin/org/openapitools/client/models/PlanStatus.kt
 src/main/kotlin/org/openapitools/client/models/PropertyValue.kt
+src/main/kotlin/org/openapitools/client/models/SdkPlatform.kt

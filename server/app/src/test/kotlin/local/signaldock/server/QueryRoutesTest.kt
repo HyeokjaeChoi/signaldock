@@ -29,6 +29,7 @@ import org.openapitools.client.models.EventReceiptDetail
 import org.openapitools.client.models.EventReceiptPage
 import org.openapitools.client.models.EventTimeCounts
 import org.openapitools.client.models.PropertyValue
+import org.openapitools.client.models.SdkPlatform
 import org.testcontainers.postgresql.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 import java.time.Instant
@@ -209,6 +210,7 @@ class QueryRoutesTest {
         assertEquals("2026-10-12T01:00:00.500Z", page.items[0].receivedAt)
         assertEquals("2026-10-12T00:00:00.250Z", page.items[0].occurredAt)
         assertEquals("0.1.0", page.items[0].sdkVersion)
+        assertEquals(SdkPlatform.ANDROID, page.items[0].sdkPlatform) // ticket 02 stores the platform
         assertEquals(installation.toString(), page.items[0].installationId)
         // Lists carry no properties.
         assertTrue(json.parseToJsonElement(firstText).jsonObject["items"]!!.jsonArray.all { "properties" !in it.jsonObject })
@@ -244,6 +246,7 @@ class QueryRoutesTest {
         val text = response.bodyAsText()
         val detail = json.decodeFromString<EventReceiptDetail>(text)
         assertEquals(id(1).toString(), detail.eventId)
+        assertEquals(SdkPlatform.ANDROID, detail.sdkPlatform)
         assertEquals("2026-10-12T00:00:00.250Z", detail.occurredAt)
         assertEquals("2026-10-12T01:00:00.500Z", detail.receivedAt)
         assertEquals(PropertyValue.StringValue("a"), detail.properties["sku"])

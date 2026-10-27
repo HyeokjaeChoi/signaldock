@@ -20,6 +20,13 @@ import {
     DiscardedEventCountToJSON,
     DiscardedEventCountToJSONTyped,
 } from './DiscardedEventCount';
+import type { SdkPlatform } from './SdkPlatform';
+import {
+    SdkPlatformFromJSON,
+    SdkPlatformFromJSONTyped,
+    SdkPlatformToJSON,
+    SdkPlatformToJSONTyped,
+} from './SdkPlatform';
 
 /**
  * 
@@ -32,10 +39,17 @@ export interface ClientReportRequest {
      */
     sdkVersion: string;
     /**
+     * Platform of the SDK. Optional on the wire; a missing value means `android` (ADR-0046 D3). Only Android SDK 0.1.0 to 0.3.0 omit it; every newer SDK must send it.
+     * 
+     */
+    sdkPlatform?: SdkPlatform;
+    /**
      * One entry per reason. A reason appears at most once.
      */
     discardedEvents: Array<DiscardedEventCount>;
 }
+
+
 
 /**
  * Check if a given object implements the ClientReportRequest interface.
@@ -57,6 +71,7 @@ export function ClientReportRequestFromJSONTyped(json: any, ignoreDiscriminator:
     return {
         
         'sdkVersion': json['sdkVersion'],
+        'sdkPlatform': json['sdkPlatform'] == null ? undefined : SdkPlatformFromJSON(json['sdkPlatform']),
         'discardedEvents': ((json['discardedEvents'] as Array<any>).map(DiscardedEventCountFromJSON)),
     };
 }
@@ -73,6 +88,7 @@ export function ClientReportRequestToJSONTyped(value?: ClientReportRequest | nul
     return {
         
         'sdkVersion': value['sdkVersion'],
+        'sdkPlatform': SdkPlatformToJSON(value['sdkPlatform']),
         'discardedEvents': ((value['discardedEvents'] as Array<any>).map(DiscardedEventCountToJSON)),
     };
 }

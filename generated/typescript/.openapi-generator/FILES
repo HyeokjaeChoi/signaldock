@@ -20,5 +20,6 @@ models/EventTimeCounts.ts
 models/ItemAck.ts
 models/PlanStatus.ts
 models/PropertyValue.ts
+models/SdkPlatform.ts
 models/index.ts
 runtime.ts

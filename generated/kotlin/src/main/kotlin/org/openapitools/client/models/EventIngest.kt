@@ -24,6 +24,7 @@
 package org.openapitools.client.models
 
 import org.openapitools.client.models.EventIngestPropertiesValue
+import org.openapitools.client.models.SdkPlatform
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
@@ -38,6 +39,7 @@ import kotlinx.serialization.Contextual
  * @param properties Flat event properties. Keys map to scalar string, number, or boolean values only; no null values and no nesting (Q33-35). Keys follow the event name whitespace rule: no leading or trailing whitespace, not empty or whitespace-only. The whitespace set is U+0009..U+000D, U+0020, U+0085, U+00A0, U+1680, U+2000..U+200A, U+2028, U+2029, U+202F, U+205F, U+3000 (Q64; fixtures/validation/whitespace-set.json). 
  * @param sdkVersion SDK release version at collection time, kept unchanged on resend (Q66).
  * @param contractVersion Transport contract version stored with the queue entry (Q66).
+ * @param sdkPlatform Platform of the SDK. Optional on the wire; a missing value means `android` (ADR-0046 D3). Only Android SDK 0.1.0 to 0.3.0 omit it; every newer SDK must send it. 
  */
 @Serializable
 
@@ -65,7 +67,11 @@ internal data class EventIngest (
 
     /* Transport contract version stored with the queue entry (Q66). */
     @SerialName(value = "contractVersion")
-    val contractVersion: EventIngest.ContractVersion
+    val contractVersion: EventIngest.ContractVersion,
+
+    /* Platform of the SDK. Optional on the wire; a missing value means `android` (ADR-0046 D3). Only Android SDK 0.1.0 to 0.3.0 omit it; every newer SDK must send it.  */
+    @Contextual @SerialName(value = "sdkPlatform")
+    val sdkPlatform: SdkPlatform? = null
 
 ) {
 

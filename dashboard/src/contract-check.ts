@@ -75,13 +75,14 @@ assertEq(
 );
 
 // ADR-0022: plan status is optional on received events; absent and null both mean "not checked".
-const receipt = { eventId: "e1", installationId: "i1", name: "x_y", occurredAt: "t", receivedAt: "t", sdkVersion: "0.1.0" };
+const receipt = { eventId: "e1", installationId: "i1", name: "x_y", occurredAt: "t", receivedAt: "t", sdkVersion: "0.1.0", sdkPlatform: "ios" };
 const page = EventReceiptPageFromJSON({
   items: [receipt, { ...receipt, planStatus: "unplanned_event" }, { ...receipt, planStatus: null }, { ...receipt, planStatus: "invalid_properties" }],
 });
 assertEq(page.items.map((i) => i.planStatus), [undefined, "unplanned_event", undefined, "invalid_properties"], "plan status on list items");
 const detail = EventReceiptDetailFromJSON({ ...receipt, properties: {}, planStatus: "planned" });
 assertEq(EventReceiptDetailToJSON(detail).planStatus, "planned", "plan status on detail round-trip");
+assertEq(EventReceiptDetailToJSON(detail).sdkPlatform, "ios", "sdkPlatform on detail round-trip");
 assertEq(
   EventPlanStatusCountsFromJSON({ planned: 1, unplannedEvent: 2, invalidProperties: 3, notChecked: 4 }),
   { planned: 1, unplannedEvent: 2, invalidProperties: 3, notChecked: 4 },
@@ -90,8 +91,8 @@ assertEq(
 
 // ADR-0036: client report counts (a new query response).
 assertEq(
-  ClientReportCountsFromJSON({ items: [{ sdkVersion: "0.1.0", reason: "queue_full", count: 12 }], truncated: false }),
-  { items: [{ sdkVersion: "0.1.0", reason: "queue_full", count: 12 }], truncated: false },
+  ClientReportCountsFromJSON({ items: [{ sdkPlatform: "android", sdkVersion: "0.1.0", reason: "queue_full", count: 12 }], truncated: false }),
+  { items: [{ sdkPlatform: "android", sdkVersion: "0.1.0", reason: "queue_full", count: 12 }], truncated: false },
   "client report counts",
 );
 

@@ -13,6 +13,13 @@
  */
 
 import { mapValues } from '../runtime';
+import type { SdkPlatform } from './SdkPlatform';
+import {
+    SdkPlatformFromJSON,
+    SdkPlatformFromJSONTyped,
+    SdkPlatformToJSON,
+    SdkPlatformToJSONTyped,
+} from './SdkPlatform';
 import type { PropertyValue } from './PropertyValue';
 import {
     PropertyValueFromJSON,
@@ -63,6 +70,10 @@ export interface EventReceiptDetail {
      */
     sdkVersion: string;
     /**
+     * Stored platform; `android` for events sent without it.
+     */
+    sdkPlatform: SdkPlatform;
+    /**
      * Stored properties. Values passed through JSONB, so this is not the original HTTP payload and key order is not preserved.
      * 
      */
@@ -81,6 +92,7 @@ export function instanceOfEventReceiptDetail(value: object): value is EventRecei
     if (!('occurredAt' in value) || value['occurredAt'] === undefined) return false;
     if (!('receivedAt' in value) || value['receivedAt'] === undefined) return false;
     if (!('sdkVersion' in value) || value['sdkVersion'] === undefined) return false;
+    if (!('sdkPlatform' in value) || value['sdkPlatform'] === undefined) return false;
     if (!('properties' in value) || value['properties'] === undefined) return false;
     return true;
 }
@@ -102,6 +114,7 @@ export function EventReceiptDetailFromJSONTyped(json: any, ignoreDiscriminator: 
         'occurredAt': json['occurredAt'],
         'receivedAt': json['receivedAt'],
         'sdkVersion': json['sdkVersion'],
+        'sdkPlatform': SdkPlatformFromJSON(json['sdkPlatform']),
         'properties': (mapValues(json['properties'], PropertyValueFromJSON)),
     };
 }
@@ -124,6 +137,7 @@ export function EventReceiptDetailToJSONTyped(value?: EventReceiptDetail | null,
         'occurredAt': value['occurredAt'],
         'receivedAt': value['receivedAt'],
         'sdkVersion': value['sdkVersion'],
+        'sdkPlatform': SdkPlatformToJSON(value['sdkPlatform']),
         'properties': (mapValues(value['properties'], PropertyValueToJSON)),
     };
 }

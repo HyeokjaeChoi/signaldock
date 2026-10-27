@@ -16,6 +16,7 @@ import org.openapitools.client.models.EventTimeCounts
 import org.openapitools.client.models.ItemAck
 import org.openapitools.client.models.PlanStatus
 import org.openapitools.client.models.PropertyValue
+import org.openapitools.client.models.SdkPlatform
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -175,6 +176,26 @@ class RoundTripTest {
         assertEquals(listOf(12L, 3L), counts.items.map { it.count })
         assertFailsWith<kotlinx.serialization.SerializationException> {
             json.decodeFromString(ClientReportRequest.serializer(), fixture("client-report-request.json").replace("queue_full", "ratelimit_backoff"))
+        }
+    }
+
+    // ADR-0046 D2: sdkPlatform is optional on both requests; the response side requires it. An unknown value is an error.
+    @Test
+    fun `sdkPlatform round trips on both requests and rejects an unknown value`() {
+        val batchRaw = fixture("batch-request-ios.json")
+        val batch = json.decodeFromString<BatchIngestRequest>(batchRaw)
+        assertTrue(batch.events.all { it.sdkPlatform == SdkPlatform.IOS })
+        assertEquals(json.parseToJsonElement(batchRaw), json.parseToJsonElement(json.encodeToString(BatchIngestRequest.serializer(), batch)))
+        val reportRaw = fixture("client-report-request-ios.json")
+        val report = json.decodeFromString<ClientReportRequest>(reportRaw)
+        assertEquals(SdkPlatform.IOS, report.sdkPlatform)
+        assertEquals(json.parseToJsonElement(reportRaw), json.parseToJsonElement(json.encodeToString(ClientReportRequest.serializer(), report)))
+        assertEquals(listOf("android", "ios"), SdkPlatform.entries.map { it.value })
+        assertFailsWith<kotlinx.serialization.SerializationException> {
+            json.decodeFromString(BatchIngestRequest.serializer(), batchRaw.replace("\"ios\"", "\"flutter\""))
+        }
+        assertFailsWith<kotlinx.serialization.SerializationException> {
+            json.decodeFromString(ClientReportRequest.serializer(), reportRaw.replace("\"ios\"", "\"flutter\""))
         }
     }
 
