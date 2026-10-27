@@ -30,6 +30,10 @@ The user decided (Q162, 2026-10-16 UTC) to replace the CodeQL default setup with
 7. Every action is pinned by full commit SHA with a tag comment (like the other workflows).
 8. The default setup must be turned off when this workflow lands. GitHub rejects SARIF from an advanced setup while the default setup is on. The repository owner does this at merge time: `gh api -X PATCH repos/HyeokjaeChoi/signaldock/code-scanning/default-setup -f state=not-configured`. This PR does not change repository settings.
 
+## Addition: Swift (iOS SDK ticket 05, ADR-0047 D13 item 6)
+
+`swift` joins the matrix with `build-mode: manual` on a `macos-26` runner (the other languages stay on `ubuntu-latest`). The build is `xcodebuild build` of the `SignalDock` scheme in `sdk-ios` for the iOS Simulator, with `CODE_SIGNING_ALLOWED=NO` and no incremental reuse (a fresh `-derivedDataPath`). The Gradle toolchain step and build step now run for `java-kotlin` only. Same query suite and permissions as above. Gap: the first CI run decides whether the Swift extraction works; it is not run yet.
+
 ## Consequences
 
 - The `java-kotlin` analysis covers the main source sets of `sdk-android`, `demo`, `server`, and `contract-check`. Tests are not built, so test code is not analyzed.

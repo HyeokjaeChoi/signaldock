@@ -134,6 +134,20 @@ Spec (`.scratch/signaldock/spec.md`):
 - 6. User screens and distribution, Demo and diagnostics
 - Q152 to Q154 (tracking plan)
 
+## `sdk-ios/` (iOS SDK Swift package, iOS SDK ticket 05)
+
+Architecture (`architecture.md`):
+- Independent distribution and verification
+
+ADRs:
+- ADR-0047 (`docs/adr/0047-ios-sdk.md`), D9 (language level), D11 (distribution), D13 (CI gates), and "iOS 15 Simulator fallback"; the Android SDK is the parity reference
+- ADR-0032 (`docs/adr/0032-codeql-advanced-setup.md`), for the Swift entry of `.github/workflows/codeql.yml`
+
+Spec (`.scratch/ios-sdk/spec.md`):
+- D9, D11, D13, and section 5 (known limits)
+
+Also read `scripts/verify-ios.sh` (the gates that CI and `scripts/verify-contract.sh` share).
+
 ## `tracking-plan/` (optional tracking plan and code generation, issue 37)
 
 `plan.json` is the source. `generate.mjs` validates it and writes `generated/kotlin/TrackingPlan.kt` (compiled by `sdk/demo/core/data`), `generated/typescript/events.ts`, and `generated/manifest.json`. `generate.test.mjs` checks plan validation and that the Kotlin and TypeScript outputs agree. Change a generated file only by changing `plan.json` or `generate.mjs`, then run `node tracking-plan/generate.mjs`. `scripts/verify-contract.sh` (step 7) checks the drift. The SDK (`sdk/sdk-android`) and its public API dump must not change for this area; the consumer app stays on plain `track()`. The server reads the same `plan.json` (path in `SIGNALDOCK_TRACKING_PLAN`, mounted by Compose) and marks stored events (ADR-0022); a change of the plan format needs a change of `server/app/.../TrackingPlanFile.kt` in the same PR.

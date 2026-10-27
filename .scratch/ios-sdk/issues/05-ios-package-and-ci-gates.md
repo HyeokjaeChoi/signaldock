@@ -1,6 +1,6 @@
 # 05. iOS package skeleton and CI gates
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: None
 

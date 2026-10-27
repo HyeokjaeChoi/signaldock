@@ -239,4 +239,14 @@ if [ -z "$sdk_gradle_version" ] || [ "$sdk_gradle_version" != "$sdk_const_versio
   fail=1
 fi
 
+# iOS SDK (ADR-0047 D7, D13): no package dependency in sdk-ios/Package.swift, and no `privacy: .public` log interpolation.
+if git grep --cached -nE '\.package[[:space:]]*\(' -- sdk-ios/Package.swift >&2; then
+  echo "error: sdk-ios/Package.swift declares a package dependency above; the iOS SDK has no external dependency (ADR-0047 D13)" >&2
+  fail=1
+fi
+if git grep --cached -nE 'privacy:[[:space:]]*\.public' -- sdk-ios >&2; then
+  echo "error: privacy: .public above; log values stay private (ADR-0047 D13)" >&2
+  fail=1
+fi
+
 exit "$fail"
