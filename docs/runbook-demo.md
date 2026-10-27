@@ -454,11 +454,13 @@ Pinned: tag v1.6.1, commit `ba0b402ea56aafbb9a56f09cc13ee629160c58b6` (checked w
 d=$(mktemp -d) && cd "$d"
 git clone https://github.com/docker/docker-bench-security.git && cd docker-bench-security
 git checkout ba0b402ea56aafbb9a56f09cc13ee629160c58b6 && git rev-parse HEAD    # must print the same commit
-sudo sh docker-bench-security.sh -l "$d/bench.log"
+sudo bash docker-bench-security.sh -l "$d/bench.log"    # bash, not sh
 grep -E '^\[(WARN|FAIL)\]' "$d/bench.log" | sort | uniq -c | sort -rn | head -50
 tail -n 12 "$d/bench.log"                          # the score summary
 ```
 
-Re-run docker-bench after every `daemon.json` change (section 9) and record the new score. The re-run on 2026-10-26 UTC (after live-restore and no-new-privileges) scored 25 in 117 checks (22 before). Details are in [issue 19](../.scratch/cloud-demo/issues/19-docker-hardening-vm-rollout.md).
+Use `bash`, not `sh`. The script starts with `#!/bin/bash` and uses `[[ ]]`. On the VM `/bin/sh` is dash, which cannot run `[[ ]]`, so some checks (for example 2.2) fall to WARN by mistake.
 
-Record: put the summary (checks, score, the list of WARN lines) in the PR description. For each WARN, either fix it if it is cheap (one setting, no new moving part), or write a local issue under `.scratch/cloud-demo/issues/` with the check number and the reason it stays open (for example "needs rootless Docker, rejected in ADR-0045"). Then copy the log to your computer and delete it on the VM (`rm -rf "$d"`). The log can hold container names and paths, so keep it out of git.
+Re-run docker-bench after every `daemon.json` change (section 9) and record the new score. The re-run on 2026-10-26 UTC (after live-restore and no-new-privileges) scored 25 in 117 checks (22 before). Both runs used `sh`, so those scores are not comparable. The run with `bash` on 2026-10-27 UTC scored 27 in 117 checks (same pinned commit); check 2.2 passes. Details are in [issue 19](../.scratch/cloud-demo/issues/19-docker-hardening-vm-rollout.md).
+
+Record: put the summary (checks, score, the list of WARN lines) in the PR description. For each WARN, either fix it if it is cheap (one setting, no new moving part), or write a local issue under `.scratch/cloud-demo/issues/` with the check number and the reason it stays open (for example "needs rootless Docker, rejected in ADR-0045"). Then copy the log to your computer and delete it on the VM (`sudo rm -rf "$d"`; the script writes root-owned files under `log/`). The log can hold container names and paths, so keep it out of git.
