@@ -81,7 +81,7 @@ Docker 29.4.0 and Compose v5.1.2 (OrbStack) ran `docker compose up -d --build`.
 |---|---|---|
 | R8 (bundled in AGP 9.3.3) | 9.3.28 | `scripts/verify-consumer.sh`: `compatibility/consumer-android` `assembleRelease` with `isMinifyEnabled = true`; `app/build/outputs/mapping/release/mapping.txt` header `# compiler_version: 9.3.28`. Meets the 9.1.29 minimum for Kotlin 2.4 (the SDK compiler) |
 | Consumer Kotlin | 2.2.10 (AGP 9.3.3 built-in default, no override) | The SDK sets `languageVersion`/`apiVersion` 2.2 and stdlib 2.2.21, so its metadata is 2.2.0 (Q132, ADR-0009 decision 4). `scripts/verify-consumer.sh` checks this |
-| Maven publication | `maven-publish`, `local.signaldock:sdk-android:0.1.0` | `sdk/gradlew -p sdk :sdk-android:signaldockMavenZip` (AAR, sources jar, POM, Gradle module metadata) |
+| Maven publication | `maven-publish`, `local.signaldock:sdk-android:0.3.0` | `sdk/gradlew -p sdk :sdk-android:signaldockMavenZip` (AAR, sources jar, POM, Gradle module metadata) |
 | Android emulator run | AVD `signaldock-api37`, system image android-37.2, headless | Consumer release APK installed; `track()` then `lastAck accepted=1`; the row was in PostgreSQL |
 
 ## Build-verified in issue #20

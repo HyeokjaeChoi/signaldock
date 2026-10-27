@@ -32,4 +32,4 @@ The load, pool candidates, warm-up, repetitions, test timeout settings, metrics,
 
 ## Decisions for future changes
 
-The first release implements only contract 1. Decide the previous-contract support period and migration policy when introducing contract 2. Do not promise indefinite support now or record an end-of-support policy as already decided. Existing exclusions, such as public hosting, multiple projects, iOS/Flutter, and Maven Central, are not current remaining decisions.
+The first release implements only contract 1. Q159 (`spec.md`, 2026-10-16) decided the previous-contract support policy: the server keeps the previous contract version for at least 12 months and until its traffic falls below a threshold (ADR-0030; `docs/integration-guide.md`). Still open: the threshold value (ADR-0030 "Gaps"), and the server `Deprecation` and `Sunset` headers and traffic counts, which wait for contract 2. Existing exclusions, such as public hosting, multiple projects, iOS/Flutter, and Maven Central, are not current remaining decisions.

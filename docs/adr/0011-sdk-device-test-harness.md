@@ -26,3 +26,7 @@ The design sources leave the test harness open (spec section 7 "Offline recovery
 - Auto Backup was exercised through the local transport, not the Google transport, device-to-device transfer or manufacturer tools (ADR-0001: not guaranteed).
 - `SIGKILL` through `am force-stop` does not test power loss. SQLite in WAL mode with the default `synchronous=NORMAL` is durable against process death but not against power loss. ADR-0029 documents this and pins the setting with a test.
 - The suites ran on two emulator images (API 24 `google_apis` arm64 and API 37.2), not on a physical device.
+
+## Amendment (2026-10-27)
+
+The instrumented suites later ran on a physical phone (Galaxy Z Flip7). Issue 73 (`.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md`, PR #187, 2026-10-18 UTC) was the first run. Issue 85 (`.scratch/signaldock/issues/85-device-verification-v0.3.0.md`, PR #204, 2026-10-24 UTC) ran again with 33 test cases: 17 passed, 16 skipped. `scripts/device-durability.sh` still runs on emulators only (ADR-0042 decision 8).
