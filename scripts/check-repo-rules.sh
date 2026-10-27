@@ -156,7 +156,12 @@ wfb() { wf "$1" | awk 'BEGIN { blk = -1 } {
     k = $0; sub(/^ *(- +)*/, "", k); blk = length($0) - length(k)   # column of the key, so sibling keys stay visible
     if (k ~ /^([&!][^ ]*[ ]+)*[|>]/) { p = substr($0, 1, blk); sub(/ +$/, "", p); blk = length(p) - 1 }   # `- |`: column of the dash
   }
-  t = $0; dq += gsub(/"/, "", t); sq += gsub(/\047/, "", t); br += gsub(/[[{]/, "", t) - gsub(/[]}]/, "", t); if (br < 0) br = 0
+  # Backslash escapes and whole quoted strings are removed first, so \" and brackets inside text do not skew the counts.
+  # A single quote counts only at a token edge, so an apostrophe inside a word does not.
+  t = $0; gsub(/\\./, "", t)
+  u = t; gsub(/"[^"]*"/, "", u); br += gsub(/[[{]/, "", u) - gsub(/[]}]/, "", u); if (br < 0) br = 0
+  dq += gsub(/"/, "", t)
+  sq += gsub(/(^|[ [{,:])\047/, "", t) + gsub(/\047($|[ ,\]}:])/, "", t)
   open = (dq % 2) || (sq % 2) || br > 0
   print }'; }
 check_pins() {
