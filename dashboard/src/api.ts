@@ -15,6 +15,7 @@ import type {
   EventReceiptPage,
   EventTimeCounts,
   PlanStatus,
+  SdkPlatform,
 } from "../../generated/typescript/models";
 import { QueryError } from "./polling";
 
@@ -26,6 +27,8 @@ export interface Filters {
   installationId?: string;
   eventId?: string;
   planStatus?: PlanStatus;
+  /** Absent means all platforms (ADR-0046 decision 6). */
+  sdkPlatform?: SdkPlatform;
 }
 export type Sort = "receivedAt_desc" | "receivedAt_asc";
 export const PAGE_SIZE = 50;
@@ -37,7 +40,7 @@ export interface Api {
   countsByTime(filters: Filters, signal: AbortSignal): Promise<EventTimeCounts>;
   /** Counts per plan status. The route splits by status, so `planStatus` is never sent (ADR-0022). */
   countsByPlanStatus(filters: Filters, signal: AbortSignal): Promise<EventPlanStatusCounts>;
-  /** SDK-reported dropped events (Q164). Only the period applies: the event filters do not, so only `from` and `to` are sent. */
+  /** SDK-reported dropped events (Q164). Only the period and the platform apply (ADR-0046 decision 6): the other event filters do not, so only `from`, `to`, and `sdkPlatform` are sent. */
   clientReportCounts(filters: Filters, signal: AbortSignal): Promise<ClientReportCounts>;
 }
 
@@ -68,7 +71,7 @@ async function getJson(path: string, params: Record<string, string | undefined>,
 }
 
 const filterParams = (f: Filters) => ({
-  from: f.from, to: f.to, name: f.name, installationId: f.installationId, eventId: f.eventId, planStatus: f.planStatus,
+  from: f.from, to: f.to, name: f.name, installationId: f.installationId, eventId: f.eventId, planStatus: f.planStatus, sdkPlatform: f.sdkPlatform,
 });
 
 export const realApi: Api = {
@@ -90,6 +93,6 @@ export const realApi: Api = {
     return EventPlanStatusCountsFromJSON(await getJson("/v1/event-counts/by-plan-status", { ...filterParams(f), planStatus: undefined }, signal));
   },
   async clientReportCounts(f, signal) {
-    return ClientReportCountsFromJSON(await getJson("/v1/client-report-counts", { from: f.from, to: f.to }, signal));
+    return ClientReportCountsFromJSON(await getJson("/v1/client-report-counts", { from: f.from, to: f.to, sdkPlatform: f.sdkPlatform }, signal));
   },
 };

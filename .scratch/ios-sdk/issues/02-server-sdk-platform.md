@@ -1,8 +1,9 @@
 # 02. Server: store, default, kill switch, filters
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: 01
+Execution: Done (PR #248, 2026-10-28 UTC)
 
 ## Scope and completion criteria
 

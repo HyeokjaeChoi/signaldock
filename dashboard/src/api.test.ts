@@ -54,3 +54,30 @@ describe("client report counts (Q164)", () => {
     expect(counts).toEqual({ items: [{ sdkPlatform: "android", sdkVersion: "0.1.0", reason: "queue_full", count: 3 }], truncated: true });
   });
 });
+
+describe("platform filter (ADR-0046 decision 6)", () => {
+  const withIos = { ...filters, sdkPlatform: "ios" as const };
+  const sent = async (call: (f: typeof withIos | typeof filters) => Promise<unknown>, body: unknown, f: typeof withIos | typeof filters) => {
+    const url = stubFetch(body);
+    await call(f);
+    return url();
+  };
+  const cases: [string, (f: typeof withIos | typeof filters) => Promise<unknown>, unknown][] = [
+    ["/v1/events", (f) => realApi.listEvents(f, "receivedAt_desc", undefined, signal), { items: [] }],
+    ["/v1/event-counts/by-name", (f) => realApi.countsByName(f, signal), { items: [], truncated: false }],
+    ["/v1/event-counts/by-time", (f) => realApi.countsByTime(f, signal), { timeZone: "Asia/Seoul", bucket: "hour", items: [] }],
+    ["/v1/event-counts/by-plan-status", (f) => realApi.countsByPlanStatus(f, signal), { planned: 0, unplannedEvent: 0, invalidProperties: 0, notChecked: 0 }],
+    ["/v1/client-report-counts", (f) => realApi.clientReportCounts(f, signal), { items: [], truncated: false }],
+  ];
+  it.each(cases)("sends sdkPlatform to %s, and nothing when it is absent", async (path, call, body) => {
+    const url = await sent(call, body, withIos);
+    expect(url.pathname).toBe(path);
+    expect(url.searchParams.get("sdkPlatform")).toBe("ios");
+    expect((await sent(call, body, filters)).searchParams.has("sdkPlatform")).toBe(false);
+  });
+
+  it("sends only from, to, and sdkPlatform to the client report counts", async () => {
+    const url = await sent((f) => realApi.clientReportCounts({ ...f, eventId: "e", installationId: "i" }, signal), { items: [], truncated: false }, withIos);
+    expect([...url.searchParams.keys()].sort()).toEqual(["from", "sdkPlatform", "to"]);
+  });
+});

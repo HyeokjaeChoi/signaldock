@@ -15,7 +15,7 @@ import { describe, expect, it } from "vitest";
 const here = dirname(fileURLToPath(import.meta.url));
 const ROOTS = [here, join(here, "../../perf/report/src")];
 const VISIBLE_ATTRIBUTES = new Set(["aria-label", "aria-description", "title", "placeholder", "alt", "label", "name"]);
-const ALLOWED = new Set(["receivedAt", "installationId", "eventId", "eventName", "planStatus", "ms", "Hikari"]);
+const ALLOWED = new Set(["receivedAt", "installationId", "eventId", "eventName", "planStatus", "sdkPlatform", "ms", "Hikari"]);
 
 // A field that holds a count, size, or duration (by its name) must be shown through n() / f1() (ADR-0015).
 const NUMERIC_FIELD = /(_s|_ms|_kib|_size|size|count|counts|repetition|started|scheduled|dropped|requests|samples|rows|days|clients|calls)$/i;

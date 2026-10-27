@@ -21,11 +21,12 @@ export function DroppedCard({ counts }: { counts?: ClientReportCounts }) {
           <table>
             <caption className="sr-only">{t("dropped.title")}</caption>
             <thead>
-              <tr><th scope="col">{t("dropped.sdkVersion")}</th><th scope="col">{t("dropped.reason")}</th><th scope="col" className="num">{t("dropped.count")}</th></tr>
+              <tr><th scope="col">{t("dropped.platform")}</th><th scope="col">{t("dropped.sdkVersion")}</th><th scope="col">{t("dropped.reason")}</th><th scope="col" className="num">{t("dropped.count")}</th></tr>
             </thead>
             <tbody>
               {counts.items.map((r) => (
-                <tr key={`${r.sdkVersion}|${r.reason}`}>
+                <tr key={`${r.sdkPlatform}|${r.sdkVersion}|${r.reason}`}>
+                  <td>{t(`platform.${r.sdkPlatform}`)}</td>
                   <td>{r.sdkVersion}</td>
                   <td>{t(`dropped.reasons.${r.reason}`)} <code>{r.reason}</code></td>
                   <td className="num">{n(r.count)}</td>
@@ -33,7 +34,7 @@ export function DroppedCard({ counts }: { counts?: ClientReportCounts }) {
               ))}
             </tbody>
             <tfoot>
-              <tr><th scope="row" colSpan={2}>{t("dropped.total")}</th><td className="num">{n(total ?? 0)}</td></tr>
+              <tr><th scope="row" colSpan={3}>{t("dropped.total")}</th><td className="num">{n(total ?? 0)}</td></tr>
             </tfoot>
           </table>
         </div>
