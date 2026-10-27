@@ -145,10 +145,19 @@ ONK='^("on"|\047on\047|on):'
 # Every action is pinned by a 40-hex commit SHA; only local ./ actions are exempt (docker:// is not).
 # `uses` is found as a block key, in a flow mapping ({ uses: x }), and as a quoted key.
 # wfb: wf without block-scalar bodies (`run: |`, `>-`), whose lines are shell text, not YAML keys (issue 18).
-wfb() { wf "$1" | awk 'BEGIN { blk = -1 } { match($0, /^ */); if (blk >= 0 && RLENGTH > blk) next; blk = -1
-  # The header is `[- ]key: |`, `- |` (optional anchor or tag); blk is the column of the key, so sibling keys stay visible.
-  # A bare `|` line (no dash, no key) is a plain-scalar continuation in a flow mapping, so it is not a header.
-  if ($0 ~ /^ *((- +)+(("[^"]*"|\047[^\047]*\047|[^ #{["\047,][^:]*):[ ]+)?|("[^"]*"|\047[^\047]*\047|[^ #{["\047,][^:]*):[ ]+)([&!][^ ]*[ ]+)*[|>][-+0-9]*[ ]*$/) { k = $0; sub(/^ *(- +)*/, "", k); blk = length($0) - length(k) }
+# A header counts only in block context: a quote or flow bracket still open from an earlier kept line may hold
+# a `k: |` text that is not a header, and skipping then could hide a real `uses` key (fails closed: skipping stops).
+# ponytail: quote and bracket state is counted per character, so an apostrophe in a plain scalar also stops skipping.
+wfb() { wf "$1" | awk 'BEGIN { blk = -1 } {
+  match($0, /^ */); if (blk >= 0 && RLENGTH > blk) next; blk = -1
+  K = "(\"[^\"]*\"|\047[^\047]*\047|[^ #{[\"\047,][^:]*)"
+  # Header: `key: |`, `- key: |` or `- |`, with an optional anchor or tag. A bare `|` line is a plain-scalar continuation.
+  if (!open && $0 ~ ("^ *((- +)+(" K ":[ ]+)?|" K ":[ ]+)([&!][^ ]*[ ]+)*[|>][-+0-9]*[ ]*$")) {
+    k = $0; sub(/^ *(- +)*/, "", k); blk = length($0) - length(k)   # column of the key, so sibling keys stay visible
+    if (k ~ /^([&!][^ ]*[ ]+)*[|>]/) { p = substr($0, 1, blk); sub(/ +$/, "", p); blk = length(p) - 1 }   # `- |`: column of the dash
+  }
+  t = $0; dq += gsub(/"/, "", t); sq += gsub(/\047/, "", t); br += gsub(/[[{]/, "", t) - gsub(/[]}]/, "", t); if (br < 0) br = 0
+  open = (dq % 2) || (sq % 2) || br > 0
   print }'; }
 check_pins() {
   local body; body="$(wfb "$1")"
