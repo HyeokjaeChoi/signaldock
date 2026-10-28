@@ -11,12 +11,20 @@ internal enum LogMessage: Sendable, Equatable {
   case trackCancelledDuringStorage
   case diagnosticsStorageFailed
   case clearQueueStorageFailed
+  case deliveryAttemptStarted
+  case deliveryAttemptFinished
+  case deliveryFailed
+  case deliveryPaused
+  case deliveryResumed
+  case deliveryRunFailed
+  case contractDeprecated
 
   internal var level: LogLevel {
     switch self {
-    case .initialized, .optOutSet: .debug
+    case .initialized, .optOutSet, .deliveryAttemptStarted, .deliveryAttemptFinished, .deliveryFailed: .debug
     case .optOutNotStored, .installationIdInvalid, .trackStorageFailed, .trackCancelledDuringStorage,
-      .diagnosticsStorageFailed, .clearQueueStorageFailed:
+      .diagnosticsStorageFailed, .clearQueueStorageFailed, .deliveryPaused, .deliveryResumed, .deliveryRunFailed,
+      .contractDeprecated:
       .warn
     }
   }
@@ -48,6 +56,16 @@ internal struct OSLogSink: SDKLogger {
       logger.warning("track cancelled during storage; the event may already be stored")
     case .diagnosticsStorageFailed: logger.warning("diagnostics storage failed")
     case .clearQueueStorageFailed: logger.warning("clearQueue storage failed")
+    case .deliveryAttemptStarted: logger.debug("delivery attempt started")
+    case .deliveryAttemptFinished: logger.debug("delivery attempt finished")
+    case .deliveryFailed: logger.debug("delivery failed; see diagnostics for the kind")
+    case .deliveryPaused:
+      logger.warning(
+        "delivery paused by a configuration, authentication or contract error; rechecking every 30 minutes")
+    case .deliveryResumed: logger.warning("delivery resumed after a successful ACK")
+    case .deliveryRunFailed: logger.warning("delivery run failed in storage; the queue is unchanged")
+    case .contractDeprecated:
+      logger.warning("server contract version is deprecated; see diagnostics for the dates")
     }
   }
 }

@@ -19,10 +19,11 @@ public final class SignalDockSDK: Sendable {
   internal let optOut: OptOutStore
   internal let notice: DeprecationNotice
   internal let config: SignalDockConfig
+  internal let delivery: DeliveryCoordinator
 
   internal init(
     collector: EventCollector, queue: QueueStore, logger: any SDKLogger, optOut: OptOutStore,
-    notice: DeprecationNotice, config: SignalDockConfig
+    notice: DeprecationNotice, config: SignalDockConfig, delivery: DeliveryCoordinator
   ) {
     self.collector = collector
     self.queue = queue
@@ -30,6 +31,7 @@ public final class SignalDockSDK: Sendable {
     self.optOut = optOut
     self.notice = notice
     self.config = config
+    self.delivery = delivery
   }
 
   /// Initializes the SDK. The same configuration shares one attempt and reuses a success. A different configuration

@@ -81,11 +81,12 @@ struct Harness {
 
   static func make(
     dir: TempDirectory? = nil, limits: QueueLimits = QueueLimits(), ids: any IdGenerator = SequenceIds(),
-    clock: FixedClock = FixedClock(), logger: RecordingLogger = RecordingLogger()
+    clock: FixedClock = FixedClock(), logger: RecordingLogger = RecordingLogger(),
+    delivery: DeliveryDependencies = .inert
   ) async throws -> Harness {
     let dir = try dir ?? TempDirectory()
     let sdk = try await SDKFactory.create(
-      config: config, base: dir.url, clock: clock, ids: ids, limits: limits, logger: logger)
+      config: config, base: dir.url, clock: clock, ids: ids, limits: limits, logger: logger, delivery: delivery)
     return Harness(dir: dir, sdk: sdk, logger: logger)
   }
 
@@ -106,7 +107,8 @@ struct Harness {
       collector: EventCollector(
         installationId: old.installationId, sink: sink, clock: old.clock, ids: old.ids, limits: limits,
         logger: old.logger, optOut: old.optOut),
-      queue: sdk.queue, logger: sdk.logger, optOut: sdk.optOut, notice: sdk.notice, config: sdk.config)
+      queue: sdk.queue, logger: sdk.logger, optOut: sdk.optOut, notice: sdk.notice, config: sdk.config,
+      delivery: sdk.delivery)
   }
 }
 

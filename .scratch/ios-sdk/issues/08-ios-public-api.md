@@ -1,6 +1,7 @@
 # 08. iOS public API: initialize, track, opt-out, diagnostics
 
-Status: claimed
+Status: resolved
+Execution: Done (PR #255, 2026-10-28 UTC)
 Type: task
 Blocked by: 06, 07
 
