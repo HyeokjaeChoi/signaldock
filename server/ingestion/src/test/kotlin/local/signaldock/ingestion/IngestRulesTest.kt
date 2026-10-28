@@ -100,6 +100,33 @@ class IngestRulesTest {
         }
     }
 
+    @Test
+    fun `accepts shortest round-trip text and Java text of one Double, including subnormals`() {
+        // Swift spelling first, then the Java Double.toString spelling of the same Double (ADR-0027 amendment 2026-10-28).
+        val pairs = listOf(
+            "5e-324" to "4.9E-324",
+            "1e-323" to "9.9E-324",
+            "1.5e-323" to "1.5E-323",
+            "1e-322" to "9.9E-323",
+            "2.5e-323" to "2.5E-323",
+            "0.1" to "0.1",
+            "2.2250738585072014e-308" to "2.2250738585072014E-308",
+        )
+        for ((swift, java) in pairs) {
+            assertEquals(swift.toDouble(), java.toDouble(), swift)
+            for (text in listOf(swift, java, "-$swift", "-$java")) {
+                assertNotNull(validate(properties = mapOf("n" to PropertyValue.Number(text))).event, text)
+            }
+        }
+    }
+
+    @Test
+    fun `still rejects decimals that are not the shortest text of their Double`() {
+        for (text in listOf("3e-324", "6e-324", "4.95e-324", "0.10000000000000001", "1e-400", "1e309", "0.1e400")) {
+            assertEquals("INVALID_PROPERTIES", validate(properties = mapOf("n" to PropertyValue.Number(text))).rejectionCode, text)
+        }
+    }
+
     private fun validate(
         id: String = eventId,
         name: String = "product_viewed",

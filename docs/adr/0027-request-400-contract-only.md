@@ -37,3 +37,13 @@ For a correct SDK, a request-level 400 means a contract or configuration bug. Th
 - A lone surrogate in `contractVersion` is a request-level error (`CONTRACT_VERSION_UNSUPPORTED`), because the version decides how to read the request.
 - The corpus covers the shapes that the SDK can make today. A new SDK feature (a new property type, a new field) needs new cases in `WireCorpusTest`; the test does not find a missing case by itself.
 - The corpus holds a 256 KiB file. Git stores it compressed, but each refresh adds a new copy.
+
+## Amendment (2026-10-28, iOS ticket 09 finding)
+
+Owner decision (2026-10-28): the per-item number rule accepts the shortest round-trip text of a Double, not only the Java `Double.toString` text.
+
+- **Problem.** `IngestRules.validNumber` accepted a non-integer number only if its value equalled `BigDecimal.valueOf(double)`, which is the Java `Double.toString` text. Java writes at least two digits, so for subnormals it differs from the shortest round-trip text that Swift writes (`Double.leastNonzeroMagnitude` is `5e-324` in Swift and `4.9E-324` in Java). An iOS event with such a value got `INVALID_PROPERTIES`.
+- **Rule now.** A non-integer literal is valid when it parses to a finite Double and its value equals the Java text of that Double or the shortest round-trip text of that Double (the shortest decimal that parses back to the Double, the closest one at that length). So `5e-324` and `4.9E-324` are both valid. `3e-324` is not: it parses to the same Double but is neither text.
+- **Unchanged.** NaN and Infinity, out-of-range values, `0.10000000000000001`-style precision loss, the integer rule (+-(2^53-1)), and the digit limits. For a normal Double the two texts denote the same value, so the accepted set does not change; only subnormals gain a second spelling.
+- **Tests.** `IngestRulesTest` has both spellings for `5e-324`, `1e-323`, `1e-322`, and others, and the rejected near misses.
+- **Contract.** `openapi/contract-v1.yaml` does not state the old rule, so it and the baseline do not change.
