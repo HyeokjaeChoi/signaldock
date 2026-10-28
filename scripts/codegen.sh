@@ -31,7 +31,11 @@ JAVA_BIN="$JAVA_HOME/bin/java"
 OUT="${1:-$ROOT/generated}"
 KOTLIN_OUT="$OUT/kotlin"
 TS_OUT="$OUT/typescript"
-SWIFT_OUT="$OUT/swift"
+# The Swift models go straight into the iOS package (ADR-0047 D10 amendment): a host gets the SDK only from the
+# source ZIP (D11), and a link to a folder outside the package would dangle there. Optional $2 is the drift-check copy.
+SWIFT_OUT="${2:-$ROOT/sdk-ios/Sources/SignalDock/Generated}"
+SWIFT_STAGE="$(mktemp -d)"
+trap 'rm -rf "$SWIFT_STAGE"' EXIT
 
 rm -rf "$KOTLIN_OUT" "$TS_OUT" "$SWIFT_OUT"
 
@@ -69,7 +73,7 @@ TEMPLATES="$ROOT/openapi/templates"
 "$JAVA_BIN" -jar "$JAR" generate \
   -g swift6 \
   -i "$SPEC" \
-  -o "$SWIFT_OUT" \
+  -o "$SWIFT_STAGE" \
   --type-mappings DateTime=String \
   --additional-properties=validatable=false \
   --global-property models,modelDocs=false,modelTests=false,apis=false,apiDocs=false,apiTests=false,supportingFiles=
@@ -88,16 +92,17 @@ rm -rf "$TS_OUT/.openapi-generator-ignore"
 find "$TS_OUT" -maxdepth 1 -name "*.md" -delete
 find "$TS_OUT" -maxdepth 1 -name "*.json" -not -name "package.json" -delete
 
-# Swift: keep only Sources/OpenAPIClient/Models (Foundation only; the Infrastructure folder is the client runtime).
-find "$SWIFT_OUT" -mindepth 1 -maxdepth 1 -not -name Sources -not -name .openapi-generator -exec rm -rf {} +
-rm -rf "$SWIFT_OUT/Sources/OpenAPIClient/Infrastructure"
-# `public ` -> nothing: Swift's default access is internal. BSD and GNU sed both take -i.bak.
-find "$SWIFT_OUT/Sources" -name '*.swift' -exec sed -i.bak -E 's/(^|[[:space:]])public /\1/' {} +
-find "$SWIFT_OUT/Sources" -name '*.bak' -delete
+# Swift: keep only the model files (Foundation only; the Infrastructure folder is the client runtime and the
+# metadata would sit inside the package sources). `public ` at the start of a (indented) line is removed:
+# Swift's default access is internal.
+mkdir -p "$SWIFT_OUT"
+for f in "$SWIFT_STAGE"/Sources/OpenAPIClient/Models/*.swift; do
+  sed -E 's/^([[:space:]]*)public /\1/' "$f" > "$SWIFT_OUT/$(basename "$f")"
+done
 
 # Rebuild the FILES metadata to match the actual remaining files: the
 # generator's list goes stale after the cleanup above, which would make
 # drift checks compare against a phantom file set.
-for out in "$KOTLIN_OUT" "$TS_OUT" "$SWIFT_OUT"; do
+for out in "$KOTLIN_OUT" "$TS_OUT"; do
   (cd "$out" && find . -type f ! -path "./.openapi-generator/FILES" ! -path "./.openapi-generator/VERSION" | sed 's|^\./||' | sort > .openapi-generator/FILES)
 done

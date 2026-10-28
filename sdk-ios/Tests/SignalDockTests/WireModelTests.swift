@@ -112,8 +112,13 @@ import Testing
     #expect(!request.events.isEmpty)
   }
 
-  @Test func androidWireCasesAreFound() {
-    #expect(Self.files(in: "sdk-wire/android").count >= 5)
+  @Test func androidWireCasesAreExactlyTheKnownNine() {
+    #expect(
+      Set(Self.files(in: "sdk-wire/android")) == [
+        "all-property-types.json", "empty-and-short-strings.json", "max-batch-bytes.json", "max-batch-events.json",
+        "max-event-size-multibyte.json", "max-event-size.json", "max-property-count.json", "minimal.json",
+        "unicode.json",
+      ])
   }
 
   @Test func propertyValueDecodesStringNumberAndBooleanByValue() throws {

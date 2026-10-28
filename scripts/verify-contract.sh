@@ -32,9 +32,15 @@ fi
 echo "=== 1. codegen drift check ==="
 TMP_GEN="$(mktemp -d)"
 trap 'rm -rf "$TMP_GEN"' EXIT
-"$ROOT/scripts/codegen.sh" "$TMP_GEN" > /dev/null
+"$ROOT/scripts/codegen.sh" "$TMP_GEN" "$TMP_GEN-swift" > /dev/null
+trap 'rm -rf "$TMP_GEN" "$TMP_GEN-swift"' EXIT
 if ! diff -rq "$ROOT/generated" "$TMP_GEN"; then
   echo "error: generated/ drifted from openapi/contract-v1.yaml" >&2
+  echo "run scripts/codegen.sh and commit the result" >&2
+  exit 1
+fi
+if ! diff -rq "$ROOT/sdk-ios/Sources/SignalDock/Generated" "$TMP_GEN-swift"; then
+  echo "error: sdk-ios/Sources/SignalDock/Generated drifted from openapi/contract-v1.yaml" >&2
   echo "run scripts/codegen.sh and commit the result" >&2
   exit 1
 fi

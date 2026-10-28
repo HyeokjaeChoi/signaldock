@@ -295,7 +295,7 @@ then
   fail=1
 fi
 
-# iOS privacy manifest (ADR-0047 D14): the manifest exists, and every required-reason API that sdk-ios/Sources and generated/swift (linked into the package) use has its
+# iOS privacy manifest (ADR-0047 D14): the manifest exists, and every required-reason API that sdk-ios/Sources uses has its
 # category in it. Names and categories: https://developer.apple.com/documentation/bundleresources/app-privacy-configuration/nsprivacyaccessedapitypes/nsprivacyaccessedapitype
 ios_manifest=sdk-ios/Sources/SignalDock/PrivacyInfo.xcprivacy
 if ! git cat-file -e ":$ios_manifest" 2> /dev/null; then
@@ -316,7 +316,7 @@ UserDefaults|UserDefaults
 ActiveKeyboards|activeInputModes'
 while IFS='|' read -r category pattern; do
   rc=0
-  raw="$(git grep --cached -nE "$pattern" -- 'sdk-ios/Sources/*.swift' 'sdk-ios/Sources/*.[chm]' 'generated/swift/*.swift')" || rc=$?
+  raw="$(git grep --cached -nE "$pattern" -- 'sdk-ios/Sources/*.swift' 'sdk-ios/Sources/*.[chm]')" || rc=$?
   if [ "$rc" -ge 2 ]; then
     echo "error: git grep failed (exit $rc) for the $category required-reason check" >&2
     fail=1
