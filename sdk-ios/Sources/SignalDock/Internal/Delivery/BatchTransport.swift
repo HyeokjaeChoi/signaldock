@@ -82,6 +82,7 @@ internal final class URLSessionBatchTransport: BatchTransport {
     var urlRequest = URLRequest(url: url)
     urlRequest.httpMethod = "POST"
     urlRequest.httpBody = request.body
+    urlRequest.timeoutInterval = session.configuration.timeoutIntervalForRequest
     urlRequest.setValue(authorization, forHTTPHeaderField: "Authorization")
     urlRequest.setValue(request.contractVersion, forHTTPHeaderField: "SignalDock-Contract-Version")
     urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")

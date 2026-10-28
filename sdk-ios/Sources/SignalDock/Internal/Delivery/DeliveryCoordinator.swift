@@ -41,14 +41,16 @@ internal final class DeliveryCoordinator: Sendable {
 
   /// A drain that never throws: cancellation ends it quietly; a storage failure is logged and the queue stays as it
   /// was, so the next trigger tries again.
-  internal static func drain(_ sender: Sender, _ logger: any SDKLogger) async {
+  @discardableResult
+  internal static func drain(_ sender: Sender, _ logger: any SDKLogger) async -> Int64? {
     do {
-      _ = try await sender.run()
+      if case .waiting(let until) = try await sender.run().end { return until }
     } catch is CancellationError {
-      return
+      return nil
     } catch {
       logger.log(.deliveryRunFailed)
     }
+    return nil
   }
 
   /// Builds sender, trigger, and lifecycle observer.
@@ -60,20 +62,30 @@ internal final class DeliveryCoordinator: Sendable {
       queue: queue, transport: dependencies.transport ?? URLSessionBatchTransport(config: config), clock: clock,
       jitter: dependencies.jitter, logger: logger, notice: notice)
     let afterDrain = dependencies.afterDrain
-    let drain: @Sendable () async -> Void = {
-      await Self.drain(sender, logger)
+    let drain: @Sendable () async -> Int64? = {
+      let until = await Self.drain(sender, logger)
       await afterDrain?()
+      return until
     }
     let trigger = DeliveryTrigger(
       eventThreshold: dependencies.eventThreshold, delayMillis: dependencies.delayMillis, timer: dependencies.timer,
-      drain: drain)
+      clock: clock, drain: drain)
     let observer: LifecycleObserver? =
       dependencies.observeLifecycle
       ? await MainActor.run {
-        let drainer = BackgroundDrainer(tasks: dependencies.backgroundTasks, drain: drain)
+        let drainer = BackgroundDrainer(tasks: dependencies.backgroundTasks) { _ = await drain() }
         return LifecycleObserver(
-          center: dependencies.notificationCenter, onForeground: { Task { await trigger.requestDrain() } },
-          onBackground: { drainer.enteredBackground() })
+          center: dependencies.notificationCenter,
+          onForeground: {
+            Task {
+              await trigger.setActive(true)
+              await trigger.requestDrain()
+            }
+          },
+          onBackground: {
+            drainer.enteredBackground()
+            Task { await trigger.setActive(false) }
+          })
       } : nil
     let coordinator = DeliveryCoordinator(sender: sender, trigger: trigger, observer: observer)
     if dependencies.drainAtLaunch { await trigger.requestDrain() }

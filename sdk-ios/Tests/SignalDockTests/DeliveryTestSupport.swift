@@ -186,18 +186,19 @@ struct SenderRig {
 
   static func make(
     replies: [FakeTransport.Reply] = [], jitter: [Int64] = [], events: Int = 3, dir: TempDirectory? = nil,
-    clock: TestClock = TestClock(), transport: FakeTransport? = nil
+    clock: TestClock = TestClock(), transport: FakeTransport? = nil, betweenReads: (@Sendable () async -> Void)? = nil,
+    onLockWait: (@Sendable () -> Void)? = nil
   ) async throws -> SenderRig {
     let dir = try dir ?? TempDirectory()
     let queue = try await QueueStore.open(directory: dir.url)
     return try await SenderRig(
       dir: dir, queue: queue, transport: transport ?? FakeTransport(replies), clock: clock,
-      jitter: ScriptedJitter(jitter), events: events)
+      jitter: ScriptedJitter(jitter), events: events, betweenReads: betweenReads, onLockWait: onLockWait)
   }
 
   private init(
     dir: TempDirectory, queue: QueueStore, transport: FakeTransport, clock: TestClock, jitter: ScriptedJitter,
-    events: Int
+    events: Int, betweenReads: (@Sendable () async -> Void)?, onLockWait: (@Sendable () -> Void)?
   ) async throws {
     self.dir = dir
     self.queue = queue
@@ -207,7 +208,8 @@ struct SenderRig {
     logger = RecordingLogger()
     notice = DeprecationNotice(logger: logger)
     sender = Sender(
-      queue: queue, transport: transport, clock: clock, jitter: jitter, logger: logger, notice: notice)
+      queue: queue, transport: transport, clock: clock, jitter: jitter, logger: logger, notice: notice,
+      betweenReads: betweenReads, onLockWait: onLockWait)
     for n in stride(from: 1, through: events, by: 1) {
       _ = try await queue.addWithinLimits(sendEvent(n, createdAt: clock.nowMillis()), limits: QueueLimits())
     }
@@ -304,6 +306,7 @@ final class FakeBackgroundTasks: BackgroundTasks, @unchecked Sendable {
   private var endedTokens: [Int] = []
   private var handlers: [@MainActor @Sendable () -> Void] = []
   var refuse = false
+  private var endWatchers: [(Int, CheckedContinuation<Void, Never>)] = []
 
   @MainActor func begin(expiration: @escaping @MainActor @Sendable () -> Void) -> Int? {
     lock.lock()
@@ -320,12 +323,28 @@ final class FakeBackgroundTasks: BackgroundTasks, @unchecked Sendable {
     lock.lock()
     defer { lock.unlock() }
     endedTokens.append(task)
+    let ready = endWatchers.filter { endedTokens.count >= $0.0 }
+    endWatchers.removeAll { endedTokens.count >= $0.0 }
+    for watcher in ready { watcher.1.resume() }
   }
 
   var begun: [Int] {
     lock.lock()
     defer { lock.unlock() }
     return begunTokens
+  }
+
+  /// Returns once at least `count` tasks were ended.
+  func waitEnded(_ count: Int) async {
+    await withCheckedContinuation { (c: CheckedContinuation<Void, Never>) in
+      lock.lock()
+      defer { lock.unlock() }
+      if endedTokens.count >= count {
+        c.resume()
+      } else {
+        endWatchers.append((count, c))
+      }
+    }
   }
 
   var ended: [Int] {

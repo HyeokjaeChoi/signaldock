@@ -25,6 +25,8 @@ internal actor Sender {
   private let jitter: any Jitter
   private let logger: any SDKLogger
   private let notice: DeprecationNotice
+  private let betweenReads: (@Sendable () async -> Void)?
+  private let onLockWait: (@Sendable () -> Void)?
 
   private var locked = false
   private var lockWaiters: [CheckedContinuation<Void, Never>] = []
@@ -38,8 +40,11 @@ internal actor Sender {
 
   internal init(
     queue: QueueStore, transport: any BatchTransport, clock: any MillisClock, jitter: any Jitter,
-    logger: any SDKLogger, notice: DeprecationNotice
+    logger: any SDKLogger, notice: DeprecationNotice, betweenReads: (@Sendable () async -> Void)? = nil,
+    onLockWait: (@Sendable () -> Void)? = nil
   ) {
+    self.betweenReads = betweenReads
+    self.onLockWait = onLockWait
     self.queue = queue
     self.transport = transport
     self.clock = clock
@@ -61,12 +66,10 @@ internal actor Sender {
     }
   }
 
-  /// How many callers wait for the lock. Tests use it to know that a second run has reached the lock.
-  internal var lockWaiterCount: Int { lockWaiters.count }
-
   private func sendLocked() async throws -> Step {
     await acquire()
     defer { release() }
+    try Task.checkCancellation()
     return try await sendOne()
   }
 
@@ -75,7 +78,10 @@ internal actor Sender {
       locked = true
       return
     }
-    await withCheckedContinuation { lockWaiters.append($0) }  // the lock is handed over, `locked` stays true
+    await withCheckedContinuation { (c: CheckedContinuation<Void, Never>) in
+      lockWaiters.append(c)
+      onLockWait?()  // a test seam: the caller is registered
+    }  // the lock is handed over, `locked` stays true
   }
 
   private func release() {
@@ -95,8 +101,10 @@ internal actor Sender {
 
     // Batches are grouped by stored contract version (Q66); the request also carries one installationId.
     let cap = min(maxBatchEvents, state.maxBatchEvents ?? maxBatchEvents)
+    await betweenReads?()  // a test seam: `clearQueue()` can run between the two reads
     let rows = try await queue.oldestOfGroup(
       contractVersion: head.contractVersion, installationId: head.installationId, limit: cap)
+    if rows.isEmpty { return .continue }  // the queue was cleared meanwhile: look again
     let batch = try buildBatch(rows: rows, maxEvents: cap)
 
     logger.log(.deliveryAttemptStarted)

@@ -111,7 +111,7 @@ import UIKit
     await MainActor.run { p.center.post(name: UIApplication.didEnterBackgroundNotification, object: nil) }
     #expect(p.tasks.begun == [1], "the task began before the notification handler returned")
     await p.probe.waitFinished(1)
-    while p.tasks.ended.isEmpty { await Task.yield() }
+    await p.tasks.waitEnded(1)
     #expect(p.tasks.ended == [1])
     #expect(await p.transport.requests.count == 1)
     #expect(try await h.sdk.diagnostics().queuedEvents == 0)

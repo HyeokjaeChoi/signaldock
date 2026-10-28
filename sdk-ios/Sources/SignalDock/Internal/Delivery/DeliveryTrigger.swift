@@ -25,18 +25,24 @@ internal actor DeliveryTrigger {
   private let eventThreshold: Int
   private let delayMillis: Int64
   private let timer: any TriggerTimer
-  private let drain: @Sendable () async -> Void
+  private let clock: any MillisClock
+  /// One drain; it returns the time at which it must run again when it ended with a wait.
+  private let drain: @Sendable () async -> Int64?
 
+  private var active = true
+  private var retryTask: Task<Void, Never>?
+  private var retryGeneration = 0
   private var stored = 0
   private var timerTask: Task<Void, Never>?
   private var timerGeneration = 0
   private var drainState = DrainState.idle
 
-  /// - Parameter drain: one drain; it handles its own errors.
+  /// - Parameter drain: one drain; it handles its own errors and returns the end of its wait, if it ended with one.
   internal init(
     eventThreshold: Int = triggerEvents, delayMillis: Int64 = triggerDelayMillis, timer: any TriggerTimer,
-    drain: @escaping @Sendable () async -> Void
+    clock: any MillisClock, drain: @escaping @Sendable () async -> Int64?
   ) {
+    self.clock = clock
     self.eventThreshold = eventThreshold
     self.delayMillis = delayMillis
     self.timer = timer
@@ -86,9 +92,42 @@ internal actor DeliveryTrigger {
     }
   }
 
+  /// The app is in the foreground (`true`) or not. No retry timer runs in the background (owner decision, 2026-10-28).
+  internal func setActive(_ value: Bool) {
+    active = value
+    if !value { cancelRetry() }
+  }
+
+  private func cancelRetry() {
+    retryTask?.cancel()
+    retryTask = nil
+    retryGeneration += 1
+  }
+
+  /// A drain that ended with a wait arms the timer once for the persisted time (the Android `requestAt`). The next
+  /// drain cancels it and arms a new one, so there is at most one.
+  private func armRetry(until: Int64) {
+    cancelRetry()
+    let generation = retryGeneration
+    let timer = timer
+    let delay = max(0, until - clock.nowMillis())
+    retryTask = Task {
+      do { try await timer.sleep(milliseconds: delay) } catch { return }
+      retryFired(generation)
+    }
+  }
+
+  private func retryFired(_ generation: Int) {
+    guard generation == retryGeneration, retryTask != nil else { return }
+    retryTask = nil
+    requestDrain()
+  }
+
   private func runDrains() async {
     while true {
-      await drain()
+      cancelRetry()
+      let until = await drain()
+      if active, let until { armRetry(until: until) }
       if drainState == .draining {
         drainState = .idle
         return

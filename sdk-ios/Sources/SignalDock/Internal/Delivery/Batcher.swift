@@ -28,14 +28,16 @@ internal enum BatchBody {
 /// The finished body is not the size that the arithmetic gave. A bug, never data.
 internal struct BatchSizeMismatch: Error {}
 
+/// `buildBatch` got no rows: never trap the host app for it.
+internal struct EmptyBatch: Error {}
+
 /// Takes events from the front of `rows` while the request stays within `maxEvents` and `maxBytes` (uncompressed
 /// UTF-8 JSON including the wrapper, spec section 4). `rows` must be one batch group: same contract version and
 /// installation ID, oldest first. At least one event is always taken; a stored event is at most 16 KiB, so it fits.
 internal func buildBatch(rows: [EventRow], maxEvents: Int = maxBatchEvents, maxBytes: Int = maxBatchBytes) throws
   -> Batch
 {
-  precondition(!rows.isEmpty)
-  let first = rows[0]
+  guard let first = rows.first else { throw EmptyBatch() }
   let suffix = try BatchBody.suffix(installationId: first.installationId)
   var size = BatchBody.prefix.utf8.count + suffix.utf8.count
   var taken: [EventRow] = []

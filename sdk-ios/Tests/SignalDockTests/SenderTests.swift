@@ -544,12 +544,15 @@ private struct Row: Sendable, CustomTestStringConvertible {
   @Test func twoRunsNeverHaveTwoRequestsInFlight() async throws {
     let entered = Gate()
     let release = Gate()
-    let rig = try await SenderRig.make(replies: [.gated(entered: entered, release: release), .ack()], events: 3)
+    let waiting = Gate()
+    let rig = try await SenderRig.make(
+      replies: [.gated(entered: entered, release: release), .ack()], events: 3,
+      onLockWait: { Task { await waiting.open() } })
     let sender = rig.sender
     let a = Task { try await sender.run() }
     await entered.wait()
     let b = Task { try await sender.run() }
-    while await sender.lockWaiterCount == 0 { await Task.yield() }  // b waits for the lock; it sends nothing
+    await waiting.wait()  // b is registered for the lock; it sends nothing
     #expect(await rig.transport.requests.count == 1)
     await release.open()
     _ = try await a.value
@@ -557,6 +560,19 @@ private struct Row: Sendable, CustomTestStringConvertible {
     #expect(await rig.transport.requests.count == 1, "b found an empty queue after a's ACK: no resend")
     #expect(await rig.transport.maxInFlight == 1)
     #expect(try await rig.queuedIds.isEmpty)
+  }
+
+  // MARK: The queue is cleared while a batch is selected
+
+  @Test func aClearBetweenTheHeadReadAndTheGroupReadSendsNothingAndDoesNotCrash() async throws {
+    let holder = QueueHolder()
+    let rig = try await SenderRig.make(
+      replies: [.ack()], betweenReads: { _ = try? await holder.queue?.deleteAll() })
+    await holder.set(rig.queue)
+    let result = try await rig.sender.run()
+    #expect(result == RunResult(batches: 1, end: .queueEmpty))
+    #expect(await rig.transport.requests.isEmpty)
+    #expect(throws: EmptyBatch.self) { try buildBatch(rows: []) }
   }
 
   // MARK: Storage failure
@@ -567,4 +583,10 @@ private struct Row: Sendable, CustomTestStringConvertible {
     await #expect(throws: StorageError.self) { try await rig.sender.run() }
     #expect(await rig.transport.requests.isEmpty)
   }
+}
+
+/// Gives a hook the queue of a rig that is built after the hook.
+actor QueueHolder {
+  private(set) var queue: QueueStore?
+  func set(_ queue: QueueStore) { self.queue = queue }
 }

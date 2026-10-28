@@ -49,9 +49,13 @@ actor DrainProbe {
 /// No test sleeps: the timer and the background task are fakes that the test drives.
 @Suite struct TriggerTests {
   private func trigger(
-    threshold: Int = 20, timer: ManualTimer = ManualTimer(), probe: DrainProbe = DrainProbe()
+    threshold: Int = 20, timer: ManualTimer = ManualTimer(), probe: DrainProbe = DrainProbe(),
+    clock: TestClock = TestClock(), waiting: Int64? = nil
   ) -> DeliveryTrigger {
-    DeliveryTrigger(eventThreshold: threshold, delayMillis: 10_000, timer: timer) { await probe.drain() }
+    DeliveryTrigger(eventThreshold: threshold, delayMillis: 10_000, timer: timer, clock: clock) {
+      await probe.drain()
+      return waiting
+    }
   }
 
   // MARK: Foreground trigger
@@ -143,9 +147,10 @@ actor DrainProbe {
     let rig = try await SenderRig.make(replies: [http(503), .ack()], jitter: [30_000])
     let probe = DrainProbe()
     let sender = rig.sender
-    let t = DeliveryTrigger(eventThreshold: 1, delayMillis: 10_000, timer: ManualTimer()) {
+    let t = DeliveryTrigger(eventThreshold: 1, delayMillis: 10_000, timer: ManualTimer(), clock: rig.clock) {
       _ = try? await sender.run()
       await probe.drain()
+      return nil
     }
     await t.onEventStored()
     await probe.waitFinished(1)
@@ -158,6 +163,69 @@ actor DrainProbe {
     await probe.waitFinished(3)
     #expect(await rig.transport.requests.count == 2)
     #expect(try await rig.queuedIds.isEmpty)
+  }
+
+  // MARK: Retry timer (owner decision 2026-10-28: the Android `requestAt`, in the foreground)
+
+  @Test func aDrainThatEndsWithAWaitArmsTheTimerOnceForThatTimeAndTheFireDrainsAgain() async {
+    let probe = DrainProbe()
+    let timer = ManualTimer()
+    let clock = TestClock(1_000_000)
+    let t = trigger(timer: timer, probe: probe, clock: clock, waiting: 1_007_500)
+    await t.requestDrain()
+    await probe.waitFinished(1)
+    await timer.waitUntilSleeping()
+    #expect(await timer.requestedMillis == [7500], "the delay is the stored time minus now")
+    clock.set(1_007_500)
+    await timer.fire()
+    await probe.waitFinished(2)  // the drain of the fire; it ends with the same wait and arms again
+    #expect(await probe.started == 2)
+  }
+
+  @Test func theNextDrainReplacesTheArmedTimer() async {
+    let probe = DrainProbe()
+    let timer = ManualTimer()
+    let t = trigger(timer: timer, probe: probe, waiting: TestClock().nowMillis() + 60_000)
+    await t.requestDrain()
+    await probe.waitFinished(1)
+    await timer.waitUntilSleeping()
+    await t.requestDrain()
+    await probe.waitFinished(2)
+    await timer.waitUntilSleeping()
+    #expect(await timer.requestedMillis == [60_000, 60_000])
+    await timer.fire()  // only the second timer is left; the first was cancelled
+    await probe.waitFinished(3)
+    #expect(await probe.started == 3)
+  }
+
+  @Test func aWaitThatHasPassedFiresWithoutDelay() async {
+    let probe = DrainProbe()
+    let timer = ManualTimer()
+    let clock = TestClock(5_000)
+    let t = trigger(timer: timer, probe: probe, clock: clock, waiting: 1_000)
+    await t.requestDrain()
+    await probe.waitFinished(1)
+    await timer.waitUntilSleeping()
+    #expect(await timer.requestedMillis == [0])
+  }
+
+  @Test func noTimerRunsInTheBackgroundAndNoneIsArmedWithoutAWait() async {
+    let probe = DrainProbe()
+    let timer = ManualTimer()
+    let t = trigger(timer: timer, probe: probe, waiting: TestClock().nowMillis() + 5000)
+    await t.requestDrain()
+    await probe.waitFinished(1)
+    await timer.waitUntilSleeping()
+    await t.setActive(false)  // the app went to the background: the timer is cancelled
+    await timer.waitUntilIdle()
+    await t.requestDrain()
+    await probe.waitFinished(2)
+    #expect(await timer.requestedMillis == [5000], "no timer is armed while the app is not active")
+    await t.setActive(true)
+    await t.requestDrain()
+    await probe.waitFinished(3)
+    await timer.waitUntilSleeping()
+    #expect(await timer.requestedMillis == [5000, 5000])
   }
 
   // MARK: Events stored
@@ -193,8 +261,7 @@ actor DrainProbe {
     }
     await MainActor.run { drainer.enteredBackground() }
     await done.wait()
-    await Task.yield()
-    while tasks.ended.isEmpty { await Task.yield() }
+    await tasks.waitEnded(1)
     #expect(order.events == ["work"], "the task began before the work")
     #expect(tasks.begun == [1] && tasks.ended == [1])
   }
@@ -219,7 +286,7 @@ actor DrainProbe {
     await MainActor.run { tasks.expireLast() }  // the system is about to end the task
     #expect(tasks.ended == [1], "the expiration handler ends the task before it returns")
     await finished.wait()  // the cancelled request returned
-    await Task.yield()
+    await (MainActor.run { drainer.lastTask })?.value  // and the end path of the drainer has run
     #expect(tasks.ended == [1], "ended once, not again when the work finishes")
     #expect(try await rig.queuedIds == ids)
     #expect(try await rig.queue.retryState() == nil, "no failure is counted for a cancelled request")
@@ -232,10 +299,10 @@ actor DrainProbe {
     let drainer = await MainActor.run { BackgroundDrainer(tasks: tasks) { await probe.drain() } }
     await MainActor.run { drainer.enteredBackground() }
     await probe.waitFinished(1)
-    while tasks.ended.count < 1 { await Task.yield() }
+    await tasks.waitEnded(1)
     await MainActor.run { drainer.enteredBackground() }
     await probe.waitFinished(2)
-    while tasks.ended.count < 2 { await Task.yield() }
+    await tasks.waitEnded(2)
     #expect(tasks.begun == [1, 2] && tasks.ended == [1, 2])
   }
 
@@ -246,7 +313,7 @@ actor DrainProbe {
     let drainer = await MainActor.run { BackgroundDrainer(tasks: tasks) { await probe.drain() } }
     await MainActor.run { drainer.enteredBackground() }
     await probe.waitFinished(1)
-    await Task.yield()
+    await (MainActor.run { drainer.lastTask })?.value  // the end path has run
     #expect(tasks.begun.isEmpty && tasks.ended.isEmpty)
   }
 

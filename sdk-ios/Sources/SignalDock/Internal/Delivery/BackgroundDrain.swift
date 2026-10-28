@@ -39,6 +39,8 @@ internal final class BackgroundDrainer {
     var ended = false
   }
 
+  /// The drain task of the latest entry into the background. Tests await it to know that the end has run.
+  internal private(set) var lastTask: Task<Void, Never>?
   private let tasks: any BackgroundTasks
   private let drain: @Sendable () async -> Void
 
@@ -56,6 +58,7 @@ internal final class BackgroundDrainer {
       await drain()
       finish(run)
     }
+    lastTask = run.task
   }
 
   private func expire(_ run: Run) {
