@@ -1,6 +1,6 @@
 # 13. iOS release ZIP and workflow
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: 08, 12
 

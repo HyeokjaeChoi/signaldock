@@ -215,16 +215,20 @@ for f in $(git ls-files -- '.github/workflows/*.yml' '.github/workflows/*.yaml')
   fi
 done
 
-# demo-deploy.yml: only a push of demo-v* tags; no OIDC token, no write-all, and no secrets context, even in comments (ADR-0043 item 4).
-# ponytail: skipped when the file is absent (teardown deletes it); a rename escapes this check.
-demo=.github/workflows/demo-deploy.yml
+# demo-deploy.yml runs only on a push of demo-v* tags, release-ios.yml only on a push of ios-v* tags (ADR-0043 item 4;
+# ADR-0047 D11). A wider trigger could run the file on the Android v*.*.* tags or on a branch.
+# demo-deploy.yml also has no OIDC token, no write-all, and no secrets context, even in comments.
+# ponytail: skipped when a file is absent (teardown deletes demo-deploy.yml); a rename escapes this check.
+for pair in .github/workflows/demo-deploy.yml:demo-v .github/workflows/release-ios.yml:ios-v; do
+demo="${pair%%:*}"
+tagprefix="${pair##*:}"
 if git cat-file -e ":$demo" 2>/dev/null; then
-  msgs="$(wf "$demo" | awk -v k="$ONK" '
+  msgs="$(wf "$demo" | awk -v k="$ONK" -v pre="^$tagprefix" '
     function items(s,   n, a, i, v) {
       gsub(/[\[\]]/, "", s); n = split(s, a, ",")
       for (i = 1; i <= n; i++) {
         v = a[i]; sub(/^[ ]*-?[ ]*/, "", v); gsub(/["\047 ]/, "", v)
-        if (v != "" && v !~ /^demo-v/) print "tag pattern \047" v "\047 does not start with demo-v"
+        if (v != "" && v !~ pre) print "tag pattern \047" v "\047 does not start with " substr(pre, 2)
       }
     }
     $0 ~ k { if ($0 !~ k "[ ]*$") print "on: must be a block with only push:"; p = 1; next }
@@ -245,11 +249,12 @@ if git cat-file -e ":$demo" 2>/dev/null; then
     echo "$msgs" | sed "s|^|error: $demo: |" >&2
     fail=1
   fi
-  if git show ":$demo" | grep -niE 'id-token|write-all|(^|[^A-Za-z0-9_-])secrets([^A-Za-z0-9_-]|$)' >&2; then
+  if [ "$tagprefix" = demo-v ] && git show ":$demo" | grep -niE 'id-token|write-all|(^|[^A-Za-z0-9_-])secrets([^A-Za-z0-9_-]|$)' >&2; then
     echo "error: $demo above must not use id-token, write-all, or the secrets context (the VM pulls images; GitHub holds no credentials)" >&2
     fail=1
   fi
 fi
+done
 
 # The wire constant SDK_VERSION must equal sdkVersion of the Maven publication (release.sh and the tag use sdkVersion).
 sdk_gradle_version="$(sed -n 's/^val sdkVersion = "\(.*\)"$/\1/p' sdk/sdk-android/build.gradle.kts)"
