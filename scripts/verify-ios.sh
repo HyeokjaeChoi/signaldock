@@ -38,7 +38,10 @@ print(udid)'
 
 run_lint() {
   echo "=== iOS: swift format lint --strict ==="
-  swift format lint --strict --recursive "$PKG/Package.swift" "$PKG/Sources" "$PKG/Tests"
+  # Sources/SignalDock/Generated is generator output (internal, 4-space, no documentation): the generator pins its
+  # format and the drift check in verify-contract.sh guards it, so the lint skips that folder (ADR-0047 D10 amendment).
+  find "$PKG/Package.swift" "$PKG/Sources" "$PKG/Tests" -path "$PKG/Sources/SignalDock/Generated" -prune -o -name '*.swift' -print0 |
+    xargs -0 swift format lint --strict
 }
 
 run_tests() { # arguments: sanitizer flags

@@ -31,8 +31,18 @@ JAVA_BIN="$JAVA_HOME/bin/java"
 OUT="${1:-$ROOT/generated}"
 KOTLIN_OUT="$OUT/kotlin"
 TS_OUT="$OUT/typescript"
+# The Swift models go straight into the iOS package (ADR-0047 D10 amendment): a host gets the SDK only from the
+# source ZIP (D11), and a link to a folder outside the package would dangle there. With an output dir argument
+# (the drift check) they go to "$OUT/swift" instead, and the checkout is not touched.
+if [ -n "${1:-}" ]; then
+  SWIFT_OUT="$OUT/swift"
+else
+  SWIFT_OUT="$ROOT/sdk-ios/Sources/SignalDock/Generated"
+fi
+SWIFT_STAGE="$(mktemp -d)"
+trap 'rm -rf "$SWIFT_STAGE"' EXIT
 
-rm -rf "$KOTLIN_OUT" "$TS_OUT"
+rm -rf "$KOTLIN_OUT" "$TS_OUT" "$SWIFT_OUT"
 
 # Pinned template override lives in openapi/templates (Q91): it fixes the
 # oneOf number branch for kotlinx_serialization (upstream maps type:number to
@@ -61,8 +71,21 @@ TEMPLATES="$ROOT/openapi/templates"
   -o "$TS_OUT" \
   --global-property models,modelDocs=false,modelTests=false,apis=false,apiDocs=false,apiTests=false,supportingFiles=
 
+# Swift models for the iOS SDK (ADR-0047 D10). swift6 emits Foundation Codable only. DateTime=String keeps
+# occurredAt a String, like the Kotlin step. validatable=false drops the Rule helpers that need the Infrastructure
+# folder (the SDK validates apart from the models, Q81-83). The generator has no non-public switch, so the cleanup
+# below removes `public` and the models become `internal`.
+"$JAVA_BIN" -jar "$JAR" generate \
+  -g swift6 \
+  -i "$SPEC" \
+  -o "$SWIFT_STAGE" \
+  --type-mappings DateTime=String \
+  --additional-properties=validatable=false \
+  --global-property models,modelDocs=false,modelTests=false,apis=false,apiDocs=false,apiTests=false,supportingFiles=
+
 echo "generated -> $KOTLIN_OUT"
 echo "generated -> $TS_OUT"
+echo "generated -> $SWIFT_OUT"
 
 # Keep only the models; infrastructure/supporting files are not used
 # (models compile standalone). Metadata is kept for drift checks (Q91).
@@ -73,6 +96,14 @@ rm -rf "$KOTLIN_OUT/gradle"
 rm -rf "$TS_OUT/.openapi-generator-ignore"
 find "$TS_OUT" -maxdepth 1 -name "*.md" -delete
 find "$TS_OUT" -maxdepth 1 -name "*.json" -not -name "package.json" -delete
+
+# Swift: keep only the model files (Foundation only; the Infrastructure folder is the client runtime and the
+# metadata would sit inside the package sources). `public ` at the start of a (indented) line is removed:
+# Swift's default access is internal.
+mkdir -p "$SWIFT_OUT"
+for f in "$SWIFT_STAGE"/Sources/OpenAPIClient/Models/*.swift; do
+  sed -E 's/^([[:space:]]*)public /\1/' "$f" > "$SWIFT_OUT/$(basename "$f")"
+done
 
 # Rebuild the FILES metadata to match the actual remaining files: the
 # generator's list goes stale after the cleanup above, which would make

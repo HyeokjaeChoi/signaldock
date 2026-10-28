@@ -142,6 +142,7 @@ Architecture (`architecture.md`):
 ADRs:
 - ADR-0047 (`docs/adr/0047-ios-sdk.md`), D9 (language level), D11 (distribution), D13 (CI gates), and "iOS 15 Simulator fallback"; the Android SDK is the parity reference
 - ADR-0032 (`docs/adr/0032-codeql-advanced-setup.md`), for the Swift entry of `.github/workflows/codeql.yml`
+- ADR-0002 and ADR-0047 D10, for `sdk-ios/Sources/SignalDock/Generated`, the Swift wire models that `scripts/codegen.sh` writes (ticket 06; the drift check is step 1 of `scripts/verify-contract.sh`)
 - ADR-0003 (`docs/adr/0003-sdk-storage-decisions.md`), ADR-0017 (`docs/adr/0017-sdk-crash-safety.md`), ADR-0025 (`docs/adr/0025-sdk-clock-jump.md`), for the queue and the installation ID (ticket 07); the Android storage code under `sdk/sdk-android/src/main/kotlin/local/signaldock/internal/storage/` is the parity reference
 
 Spec (`.scratch/ios-sdk/spec.md`):
