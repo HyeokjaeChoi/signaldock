@@ -241,3 +241,9 @@ Owner decision: `isOptedOut()` is synchronous. D9 now says: Kotlin non-suspend f
 ## Amendment (2026-10-28, ticket 08 review, enum evolution)
 
 Owner decision: a minor version may add a case to a public result enum (`TrackResult`, `InvalidReason`, `InitError`, and the diagnostics enums). This is additive and follows Android, where `OptedOut` was added to `TrackResult` in 0.2.0. The enums are not marked `@frozen`. The `.swiftinterface` check shows an added case as a diff, so the change is made on purpose. The integration guide (ticket 18) tells hosts: minor versions can add cases; use `default` in `switch`.
+
+## Amendment (2026-10-28, ticket 08 review, owner decisions on names, throws, and duplicate keys)
+
+- **Type name `SignalDockSDK`, module `SignalDock`.** Same-name module and type breaks qualified lookup (`SignalDock.Name` resolves to the type, not the module) and the `.swiftinterface` check. Vendors that avoid it: Sentry (`SentrySDK`) and PostHog (`PostHogSDK`) suffix the type; Amplitude, Braze, Adjust, and Datadog suffix the module; only Mixpanel and AppsFlyer share the name. The iOS type differs from Android's `SignalDock` on purpose.
+- **Typed throws stay.** `async throws(CancellationError)` on `initialize`, `track`, `clearQueue`, and `diagnostics` (Q114; ADR-0017: nothing else is thrown).
+- **Duplicate keys.** `é` (U+00E9) and `e` + U+0301 are one key in Swift, and the wire model is a `[String: ...]` dictionary, so iOS returns `duplicateKey` where Android stores two properties. Accepted as a Swift-forced difference. `fixtures/validation/canonical-equivalent-keys.json` holds the keys and the expected result per platform; `TrackTest.kt` and `TrackTests.swift` both load it.

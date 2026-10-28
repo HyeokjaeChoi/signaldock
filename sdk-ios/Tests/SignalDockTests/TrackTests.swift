@@ -167,10 +167,17 @@ import Testing
       try await invalid(h, "e") {
         $0.property("k", 1); $0.property("k", 1)
       } == .duplicateKey)
-    // Swift treats canonically equal strings as one key; the call is rejected, not merged
+    // Swift treats canonically equal strings as one key; the call is rejected, not merged. The keys and the
+    // expected result per platform are in the fixture shared with the Android SDK test.
+    let url = WireModelTests.root.appendingPathComponent("fixtures/validation/canonical-equivalent-keys.json")
+    let json = try #require(try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+    let keys = try #require(json["keys"] as? [String])
+    #expect((json["expected"] as? [String: String])?["ios"] == "invalid duplicateKey")
+    #expect(keys.count == 2)
+    #expect(keys[0].unicodeScalars.count != keys[1].unicodeScalars.count)  // different code points, one Swift key
     #expect(
       try await invalid(h, "e") {
-        $0.property("\u{00E9}", 1); $0.property("e\u{0301}", 2)
+        $0.property(keys[0], 1); $0.property(keys[1], 2)
       } == .duplicateKey)
   }
 

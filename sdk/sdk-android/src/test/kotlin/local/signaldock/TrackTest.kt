@@ -133,6 +133,19 @@ class TrackTest {
     }
 
     @Test
+    fun `canonically equivalent keys are two keys on Android (shared fixture, iOS rejects them)`() = runBlocking {
+        val sdk = newSdk()
+        val fixture = Json.parseToJsonElement(java.io.File("../../fixtures/validation/canonical-equivalent-keys.json").readText()).jsonObject
+        assertEquals("stored both keys", fixture["expected"]!!.jsonObject["android"]!!.jsonPrimitive.content)
+        val keys = (fixture["keys"] as kotlinx.serialization.json.JsonArray).map { it.jsonPrimitive.content }
+        assertEquals(2, keys.size)
+        val r = sdk.track("e") { property(keys[0], 1); property(keys[1], 2) }
+        assertTrue(r is TrackResult.Success)
+        val p = Json.parseToJsonElement(sdk.dao.oldest(10).single().payloadJson).jsonObject["properties"] as JsonObject
+        assertEquals(keys.toSet(), p.keys)
+    }
+
+    @Test
     fun `numbers outside the contract are rejected, boundaries accepted`() = runBlocking {
         val sdk = newSdk()
         val max = 9_007_199_254_740_991L

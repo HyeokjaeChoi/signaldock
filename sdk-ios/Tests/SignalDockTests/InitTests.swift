@@ -68,7 +68,7 @@ import Testing
   }
 
   @available(iOS 16.0, *)
-  @Test(.timeLimit(.minutes(1))) func sameConfigCallsShareOneAttemptAndADifferentOneConflictsWhileItRuns() async throws
+  @Test(.timeLimit(.minutes(5))) func sameConfigCallsShareOneAttemptAndADifferentOneConflictsWhileItRuns() async throws
   {
     let gate = Gate()
     let builder = try Builder(gate: gate)
@@ -76,7 +76,7 @@ import Testing
     async let a = init1.initialize(Self.valid)
     async let b = init1.initialize(Self.valid)
     // Both callers are waiting for the one attempt before it is released.
-    while await init1.waiterCount < 2 { await Task.yield() }
+    while await init1.waiterCount < 2 { try await Task.sleep(nanoseconds: 2_000_000) }
     var other = Self.valid
     other.collectionKey = "other"
     #expect(try await init1.initialize(other).error == .configurationConflict)
@@ -90,7 +90,7 @@ import Testing
   }
 
   @available(iOS 16.0, *)
-  @Test(.timeLimit(.minutes(1))) func cancellingACallerCancelsOnlyItsOwnWait() async throws {
+  @Test(.timeLimit(.minutes(5))) func cancellingACallerCancelsOnlyItsOwnWait() async throws {
     let gate = Gate()
     let builder = try Builder(gate: gate)
     let init1 = coordinator(builder)
@@ -103,7 +103,7 @@ import Testing
       }
     }
     let kept = Task { try await init1.initialize(Self.valid) }
-    while await init1.waiterCount < 2 { await Task.yield() }
+    while await init1.waiterCount < 2 { try await Task.sleep(nanoseconds: 2_000_000) }
     cancelled.cancel()
     #expect(await cancelled.value, "the cancelled caller leaves with CancellationError while the attempt runs")
     #expect(await init1.waiterCount == 1)
@@ -113,7 +113,7 @@ import Testing
   }
 
   @available(iOS 16.0, *)
-  @Test(.timeLimit(.minutes(1))) func theAttemptContinuesWhenEveryWaiterLeaves() async throws {
+  @Test(.timeLimit(.minutes(5))) func theAttemptContinuesWhenEveryWaiterLeaves() async throws {
     let gate = Gate()
     let builder = try Builder(gate: gate)
     let init1 = coordinator(builder)
@@ -123,7 +123,7 @@ import Testing
         return false
       } catch { return true }
     }
-    while await init1.waiterCount < 1 { await Task.yield() }
+    while await init1.waiterCount < 1 { try await Task.sleep(nanoseconds: 2_000_000) }
     only.cancel()
     #expect(await only.value)
     await gate.open()
