@@ -112,7 +112,7 @@ final class StubURLProtocol: URLProtocol {
   /// A transport for a new host that the test controls.
   private func make(
     endpoint: String = "https://@HOST@", callTimeout: TimeInterval = 30, connectTimeout: TimeInterval = 10,
-    readTimeout: TimeInterval = 10, writeTimeout: TimeInterval = 10,
+    readTimeout: TimeInterval = 10, writeTimeout: TimeInterval = 10, ackLimit: Int = maxAckBytes,
     _ handler: @escaping @Sendable (StubRequest) -> StubAction
   ) -> (URLSessionBatchTransport, String) {
     let host = "t-\(UUID().uuidString.lowercased()).test"
@@ -120,7 +120,7 @@ final class StubURLProtocol: URLProtocol {
     let config = SignalDockConfig(
       endpoint: endpoint.replacingOccurrences(of: "@HOST@", with: host), collectionKey: "key-123",
       callTimeout: callTimeout, connectTimeout: connectTimeout, readTimeout: readTimeout, writeTimeout: writeTimeout)
-    return (URLSessionBatchTransport(config: config, protocolClasses: [StubURLProtocol.self]), host)
+    return (URLSessionBatchTransport(config: config, protocolClasses: [StubURLProtocol.self], ackLimit: ackLimit), host)
   }
 
   private let request = BatchHttpRequest(contractVersion: "1", body: Data(#"{"events":[],"installationId":"i"}"#.utf8))
@@ -205,12 +205,15 @@ final class StubURLProtocol: URLProtocol {
     }
   }
 
-  @Test func anAckBodyOver1MiBIsNotReadAndOneOfExactly1MiBIs() async throws {
-    let (big, _) = make { _ in .respond(status: 200, body: Data(count: maxAckBytes + 1)) }
+  /// The limit is a small test value: a 1 MiB body takes about a minute to read on a loaded CI runner under ASan.
+  @Test func anAckBodyOverTheLimitIsNotReadAndOneOfExactlyTheLimitIs() async throws {
+    #expect(maxAckBytes == 1 << 20, "the contract limit is 1 MiB")
+    let limit = 4096
+    let (big, _) = make(ackLimit: limit) { _ in .respond(status: 200, body: Data(count: limit + 1)) }
     #expect(try await big.send(request) == .http(HttpResult(status: 200, body: nil)))
-    let (exact, _) = make { _ in .respond(status: 200, body: Data(count: maxAckBytes)) }
+    let (exact, _) = make(ackLimit: limit) { _ in .respond(status: 200, body: Data(count: limit)) }
     guard case .http(let http) = try await exact.send(request) else { Issue.record("expected HTTP"); return }
-    #expect(http.body?.count == maxAckBytes)
+    #expect(http.body?.count == limit)
   }
 
   @Test func cancellingTheTaskDuringTheRequestThrowsCancellationError() async throws {

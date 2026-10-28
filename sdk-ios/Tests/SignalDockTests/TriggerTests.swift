@@ -220,6 +220,7 @@ actor DrainProbe {
     await timer.waitUntilIdle()
     await t.requestDrain()
     await probe.waitFinished(2)
+    await t.waitUntilIdle()  // the drain has done its follow-up while the app was still inactive
     #expect(await timer.requestedMillis == [5000], "no timer is armed while the app is not active")
     t.setActive(true)
     await t.requestDrain()

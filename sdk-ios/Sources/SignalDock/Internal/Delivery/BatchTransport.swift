@@ -47,9 +47,14 @@ internal final class URLSessionBatchTransport: BatchTransport {
   internal let session: URLSession
   private let url: URL?
   private let authorization: String
+  private let ackLimit: Int
 
-  /// - Parameter protocolClasses: a test seam. `nil` keeps the system protocols.
-  internal init(config: SignalDockConfig, protocolClasses: [AnyClass]? = nil) {
+  /// - Parameters:
+  ///   - protocolClasses: a test seam. `nil` keeps the system protocols.
+  ///   - ackLimit: a test seam. A test uses a small limit, because reading a body byte by byte is very slow on a
+  ///     loaded CI runner under a sanitizer (a 1 MiB body took 57 s there).
+  internal init(config: SignalDockConfig, protocolClasses: [AnyClass]? = nil, ackLimit: Int = maxAckBytes) {
+    self.ackLimit = ackLimit
     authorization = "Bearer \(config.collectionKey)"
     var base = config.endpoint
     while base.hasSuffix("/") { base.removeLast() }
@@ -89,7 +94,7 @@ internal final class URLSessionBatchTransport: BatchTransport {
     do {
       let (bytes, response) = try await session.bytes(for: urlRequest)
       guard let http = response as? HTTPURLResponse else { return .failed(.network) }
-      let body = http.statusCode == 200 ? try await Self.readCapped(bytes) : nil
+      let body = http.statusCode == 200 ? try await Self.readCapped(bytes, limit: ackLimit) : nil
       return .http(
         HttpResult(
           status: http.statusCode, body: body, retryAfter: http.value(forHTTPHeaderField: "Retry-After"),
@@ -101,11 +106,11 @@ internal final class URLSessionBatchTransport: BatchTransport {
     }
   }
 
-  private static func readCapped(_ bytes: URLSession.AsyncBytes) async throws -> Data? {
+  private static func readCapped(_ bytes: URLSession.AsyncBytes, limit: Int) async throws -> Data? {
     var data = Data()
     for try await byte in bytes {
       data.append(byte)
-      if data.count > maxAckBytes { return nil }
+      if data.count > limit { return nil }
     }
     return data
   }

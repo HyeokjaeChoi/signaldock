@@ -63,6 +63,7 @@ internal actor DeliveryTrigger {
   private var timerTask: Task<Void, Never>?
   private var timerGeneration = 0
   private var drainState = DrainState.idle
+  private var idleWaiters: [CheckedContinuation<Void, Never>] = []
 
   /// - Parameter drain: one drain; it handles its own errors and returns the end of its wait, if it ended with one.
   internal init(
@@ -109,6 +110,13 @@ internal actor DeliveryTrigger {
     timerTask?.cancel()
     timerTask = nil
     timerGeneration += 1
+  }
+
+  /// Returns once no drain runs and none is requested, after the drain's own follow-up (the retry timer) is done. A
+  /// test seam: the drain itself reports its end before that follow-up.
+  internal func waitUntilIdle() async {
+    if drainState == .idle { return }
+    await withCheckedContinuation { idleWaiters.append($0) }
   }
 
   /// One drain at a time; a request during a drain makes it run once more.
@@ -168,6 +176,9 @@ internal actor DeliveryTrigger {
       if flag.isActive, let until { armRetry(until: until) }
       if drainState == .draining {
         drainState = .idle
+        let waiting = idleWaiters
+        idleWaiters = []
+        for waiter in waiting { waiter.resume() }
         return
       }
       drainState = .draining  // a request arrived during the drain: run once more
