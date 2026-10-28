@@ -134,7 +134,14 @@ function swift(plan) {
     // Same shape as `track`: the caller's isolation first, typed throws, so the closure runs on the caller's actor.
     out.push(`  internal func ${camel(e.name)}(`, "    isolation: isolated (any Actor)? = #isolation" + (params.length ? "," : ""));
     params.forEach((p, i) => out.push(`    ${p}${i < params.length - 1 ? "," : ""}`));
-    out.push("  ) async throws(CancellationError) -> TrackResult {", `    try await self.track(isolation: isolation, EventNames.${camel(e.name)}) {`);
+    const track = `    try await self.track(isolation: isolation, EventNames.${camel(e.name)})`;
+    out.push("  ) async throws(CancellationError) -> TrackResult {");
+    if (e.properties.length === 0) {
+      // An empty trailing closure does not compile: the closure takes one argument, `inout EventBuilder`.
+      out.push(`${track} { _ in }`, "  }");
+      return;
+    }
+    out.push(`${track} {`);
     for (const p of ordered(e)) {
       const call = `$0.property("${p.key}", ${camel(p.key)})`;
       out.push(p.required ? `      ${call}` : `      if let ${camel(p.key)} { ${call} }`);

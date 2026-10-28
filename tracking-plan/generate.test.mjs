@@ -111,6 +111,12 @@ test("Swift calls self.track, so a property key named track cannot shadow the me
   assert.ok(out.includes('$0.property("track", track)'));
 });
 
+test("Swift event without properties passes a closure that takes its argument", () => {
+  const out = generate(withEvent({ properties: [] }))["swift/TrackingPlan.swift"];
+  assert.ok(out.includes("try await self.track(isolation: isolation, EventNames.productViewed) { _ in }"));
+  assert.ok(!out.includes("{\n    }"));
+});
+
 const dir = mkdtempSync(join(tmpdir(), "tracking-plan-"));
 writeFileSync(join(dir, "events.ts"), files["typescript/events.ts"]);
 const ts = await import(pathToFileURL(join(dir, "events.ts")).href);
