@@ -19,3 +19,7 @@ Verification:
 - `server` test task (command and count in the PR).
 - `scripts/verify-contract.sh`, `bash scripts/check-repo-rules.sh`.
 - Compose smoke: one event with `ios`, one without the field; both stored as expected.
+
+## Compose smoke run 2026-10-28
+
+Local stack `docker compose -p sdverify` (db and server, ports 18080 and 15432, `.env.example` values) built from origin/main (be20394). `POST /v1/events:batch` with `"sdkPlatform":"ios"` and without the field: both HTTP 200, `accepted`. `psql` on `events`: `ios` and `android`. `GET /v1/events?sdkPlatform=ios` and `=android` each returned only the matching event.

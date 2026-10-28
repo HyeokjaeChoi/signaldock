@@ -1,8 +1,9 @@
 # 11. Tracking plan: Swift output
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: 08
+Execution: Done (PR #256, 2026-10-28 UTC)
 
 ## Scope and completion criteria
 
