@@ -37,19 +37,25 @@ import Testing
     try holder.executeScript("BEGIN IMMEDIATE")
     let path = dir.file("queue.db").path
     let (signals, signal) = AsyncStream<Void>.makeStream()
-    let waiter = Task.detached { () -> Bool in
-      // Ends the stream if the open throws, so the test fails instead of waiting forever.
-      defer { signal.finish() }
-      let other = try SQLiteDatabase(path: path)
-      try other.execute("PRAGMA busy_timeout = 60000")
-      signal.yield()
-      return (try? other.execute("CREATE TABLE waited (a INTEGER)")) != nil
+    // The waiter blocks in SQLite's busy handler, so it runs on a Dispatch thread, never on the cooperative pool:
+    // a blocked pool thread would delay the holder's COMMIT and every other test that waits for a thread.
+    let waiter = Task { () -> Bool in
+      await withCheckedContinuation { (done: CheckedContinuation<Bool, Never>) in
+        DispatchQueue.global().async {
+          // Ends the stream if the open throws, so the test fails instead of waiting forever.
+          defer { signal.finish() }
+          guard let other = try? SQLiteDatabase(path: path) else { return done.resume(returning: false) }
+          _ = try? other.execute("PRAGMA busy_timeout = 10000")
+          signal.yield()
+          done.resume(returning: (try? other.execute("CREATE TABLE waited (a INTEGER)")) != nil)
+        }
+      }
     }
     for await _ in signals { break }
     // A short pause lets the waiter reach the lock; the result is the same if it has not yet.
     try await Task.sleep(nanoseconds: 50_000_000)
     try holder.executeScript("COMMIT")
-    #expect(try await waiter.value)
+    #expect(await waiter.value)
   }
 
   @Test func aFailedCommitRollsBackAndLeavesTheConnectionUsable() throws {

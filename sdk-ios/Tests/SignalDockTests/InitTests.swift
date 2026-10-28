@@ -37,7 +37,7 @@ import Testing
       }()
       await gate?.wait()
       if let failure { throw failure }
-      return try await SDKFactory.create(config: config, base: dir.url, logger: RecordingLogger())
+      return try await SDKFactory.create(config: config, base: dir.url, logger: RecordingLogger(), delivery: .inert)
     }
   }
 
@@ -175,10 +175,12 @@ import Testing
   @Test func theFactoryOpensStorageAndKeepsTheInstallationIdAcrossInstances() async throws {
     let dir = try TempDirectory()
     let ids = SequenceIds()
-    let first = try await SDKFactory.create(config: Self.valid, base: dir.url, ids: ids, logger: RecordingLogger())
+    let first = try await SDKFactory.create(
+      config: Self.valid, base: dir.url, ids: ids, logger: RecordingLogger(), delivery: .inert)
     _ = try await first.track("e")
     await first.queue.close()
-    let second = try await SDKFactory.create(config: Self.valid, base: dir.url, ids: ids, logger: RecordingLogger())
+    let second = try await SDKFactory.create(
+      config: Self.valid, base: dir.url, ids: ids, logger: RecordingLogger(), delivery: .inert)
     #expect(first.collector.installationId == second.collector.installationId)
     #expect(isUuidV4(second.collector.installationId))
     #expect(try await second.diagnostics().queuedEvents == 1)  // the queue is kept
@@ -186,7 +188,7 @@ import Testing
 
   @Test func theFactoryLogsInitializedAtDebugOnly() async throws {
     let logger = RecordingLogger()
-    _ = try await SDKFactory.create(config: Self.valid, base: try TempDirectory().url, logger: logger)
+    _ = try await SDKFactory.create(config: Self.valid, base: try TempDirectory().url, logger: logger, delivery: .inert)
     #expect(logger.messages == [.initialized])
     #expect(LogMessage.initialized.level == .debug)  // a WARN default config does not write it
   }
@@ -195,7 +197,9 @@ import Testing
     let dir = try TempDirectory()
     let file = dir.file("not-a-directory")
     try Data("x".utf8).write(to: file)
-    let init1 = InitCoordinator { try await SDKFactory.create(config: $0, base: file, logger: RecordingLogger()) }
+    let init1 = InitCoordinator {
+      try await SDKFactory.create(config: $0, base: file, logger: RecordingLogger(), delivery: .inert)
+    }
     guard case .failure(.storageFailure(let message)) = try await init1.initialize(Self.valid) else {
       Issue.record("storage failure")
       return
@@ -210,7 +214,9 @@ import Testing
     let garbage = Data("this is not a database; it is long enough to be read as a header, but not a header".utf8)
     try garbage.write(to: directory.appendingPathComponent("queue.db"))
     let base = dir.url
-    let init1 = InitCoordinator { try await SDKFactory.create(config: $0, base: base, logger: RecordingLogger()) }
+    let init1 = InitCoordinator {
+      try await SDKFactory.create(config: $0, base: base, logger: RecordingLogger(), delivery: .inert)
+    }
     #expect(try await init1.initialize(Self.valid).error == .storageFailure(message: "StorageError(sqlite, 26)"))
     #expect(try Data(contentsOf: directory.appendingPathComponent("queue.db")) == garbage)
     // The installation ID was made before the queue failed, and it stays (ADR-0003 item 6).
@@ -221,12 +227,15 @@ import Testing
     // The open failure before the first unlock cannot be made on the Simulator (ticket 07 results). A file the
     // process may not open is the same kind of failure: SQLITE_CANTOPEN, no instance, then a retry works.
     let dir = try TempDirectory()
-    let first = try await SDKFactory.create(config: Self.valid, base: dir.url, logger: RecordingLogger())
+    let first = try await SDKFactory.create(
+      config: Self.valid, base: dir.url, logger: RecordingLogger(), delivery: .inert)
     await first.queue.close()
     let database = dir.url.appendingPathComponent("signaldock/queue.db").path
     #expect(chmod(database, 0o000) == 0)
     let base = dir.url
-    let init1 = InitCoordinator { try await SDKFactory.create(config: $0, base: base, logger: RecordingLogger()) }
+    let init1 = InitCoordinator {
+      try await SDKFactory.create(config: $0, base: base, logger: RecordingLogger(), delivery: .inert)
+    }
     #expect(try await init1.initialize(Self.valid).error == .storageFailure(message: "StorageError(sqlite, 14)"))
     chmod(database, 0o600)
     guard case .success = try await init1.initialize(Self.valid) else { Issue.record("works after the unlock"); return }

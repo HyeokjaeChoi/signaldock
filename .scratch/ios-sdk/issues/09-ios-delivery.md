@@ -1,6 +1,6 @@
 # 09. iOS delivery: sender, ACK, retry, triggers
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: 02, 04, 08
 

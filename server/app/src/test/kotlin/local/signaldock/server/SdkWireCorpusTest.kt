@@ -2,7 +2,9 @@ package local.signaldock.server
 
 import java.io.File
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -26,6 +28,11 @@ class SdkWireCorpusTest {
     @Test
     fun `corpus is present`() {
         assertTrue(files.count { it.first == "android" } >= 9, "expected the Android SDK corpus in fixtures/sdk-wire/android")
+        assertEquals(
+            files.filter { it.first == "android" }.map { it.second.name },
+            files.filter { it.first == "ios" }.map { it.second.name },
+            "the iOS corpus has the case names of the Android corpus (ADR-0047 D10)",
+        )
         assertTrue(root.listFiles { f -> f.isFile }.orEmpty().isEmpty(), "fixtures/sdk-wire has files outside a platform folder")
     }
 
@@ -48,6 +55,48 @@ class SdkWireCorpusTest {
             events.forEachIndexed { i, e ->
                 assertEquals(platform, (e as JsonObject)["sdkPlatform"]?.jsonPrimitive?.content, "$name event $i: sdkPlatform missing or not the folder platform")
             }
+        }
+    }
+
+    /**
+     * ADR-0047 D10: cases with the same name have equal JSON values on both platforms. Numbers compare by value (Kotlin
+     * writes `1.0E-7`, Swift `1e-7`), and `sdkPlatform` and `sdkVersion` of each event are left out. Byte equality is not a goal.
+     * [knownDifferences] lists the properties that the iOS case does not have, with the reason (an open question of iOS SDK ticket 09).
+     */
+    @Test
+    fun `the same case has equal JSON values on both platforms`() {
+        fun comparable(file: File, left: Set<String>): JsonObject {
+            val root = Json.parseToJsonElement(file.readText()).jsonObject
+            val events = root.getValue("events").jsonArray.map { e ->
+                val fields = e.jsonObject.filterKeys { it != "sdkPlatform" && it != "sdkVersion" }.toMutableMap()
+                fields["properties"] = JsonObject(fields.getValue("properties").jsonObject.filterKeys { it !in left }.mapValues { (_, v) -> normalize(v) })
+                JsonObject(fields)
+            }
+            return JsonObject(root + ("events" to JsonArray(events)))
+        }
+        val android = files.filter { it.first == "android" }.associate { it.second.name to it.second }
+        files.filter { it.first == "ios" }.forEach { (_, file) ->
+            val left = knownDifferences[file.name].orEmpty()
+            assertEquals(comparable(android.getValue(file.name), left), comparable(file, left), "${file.name}: iOS and Android differ")
+        }
+    }
+
+    /**
+     * Swift writes the shortest digits that read back as the same Double: `5e-324` for the smallest subnormal. The server
+     * accepts a decimal only if it equals `BigDecimal.valueOf(double)`, and Java writes that value as `4.9E-324`, so the
+     * server answers `INVALID_PROPERTIES` for the Swift text. Both platforms send the same Double. Until the owner decides
+     * (relax the server rule, or reject subnormals in the SDK), the iOS case does not have the property.
+     */
+    private val knownDifferences = mapOf("all-property-types.json" to setOf("double_tiny"))
+
+    /** A number as its exact decimal value: `1`, `1.0` and `1.0E0` are one number. Strings and booleans stay as they are. */
+    private fun normalize(v: kotlinx.serialization.json.JsonElement): kotlinx.serialization.json.JsonElement = when (v) {
+        is JsonObject -> JsonObject(v.mapValues { (_, x) -> normalize(x) })
+        is JsonArray -> JsonArray(v.map { normalize(it) })
+        is JsonPrimitive -> if (!v.isString && v.content != "true" && v.content != "false" && v.content != "null") {
+            JsonPrimitive(v.content.toBigDecimal().stripTrailingZeros())
+        } else {
+            v
         }
     }
 }
