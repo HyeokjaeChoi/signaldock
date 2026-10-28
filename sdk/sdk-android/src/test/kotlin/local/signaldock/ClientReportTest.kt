@@ -123,8 +123,9 @@ class ClientReportTest {
         val report = transport.reports.single()
         assertEquals("1", report.contractVersion)
         val root = Json.parseToJsonElement(String(report.body, Charsets.UTF_8)).jsonObject
-        assertEquals(setOf("sdkVersion", "discardedEvents"), root.keys)
-        assertEquals("0.3.0", root["sdkVersion"]!!.jsonPrimitive.content)
+        assertEquals(setOf("sdkVersion", "sdkPlatform", "discardedEvents"), root.keys)
+        assertEquals("0.4.0", root["sdkVersion"]!!.jsonPrimitive.content)
+        assertEquals("android", root["sdkPlatform"]!!.jsonPrimitive.content)
         assertEquals(mapOf("queue_full" to 3, "storage_error" to 1), reportEntries(report))
         // Nothing left to report: the next cycle sends no second report.
         sdk.track("e")
@@ -162,9 +163,11 @@ class ClientReportTest {
         val body = Json.parseToJsonElement(String(buildClientReport(rows)!!.body, Charsets.UTF_8)).jsonObject
         val fixture = Json.parseToJsonElement(File("../../fixtures/roundtrip/client-report-request.json").readText()).jsonObject
         fun entries(o: JsonObject) = o["discardedEvents"]!!.jsonArray.map { it.jsonObject["reason"]!!.jsonPrimitive.content to it.jsonObject["count"]!!.jsonPrimitive.int }.toSet()
-        assertEquals(fixture["sdkVersion"], body["sdkVersion"])
+        assertEquals("0.4.0", body["sdkVersion"]!!.jsonPrimitive.content) // the fixture keeps the 0.3.0 value
         assertEquals(entries(fixture), entries(body))
-        assertEquals(fixture.keys, body.keys)
+        // The fixture is the 0.3.0 form (no platform, still valid for old SDKs); 0.4.0 adds sdkPlatform (ADR-0046).
+        assertEquals(fixture.keys + "sdkPlatform", body.keys)
+        assertEquals("android", body["sdkPlatform"]!!.jsonPrimitive.content)
     }
 
     @Test

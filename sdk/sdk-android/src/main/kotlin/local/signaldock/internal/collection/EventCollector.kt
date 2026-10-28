@@ -21,6 +21,7 @@ import local.signaldock.internal.transport.singleEventRequestBytes
 import local.signaldock.internal.transport.transportJson
 import local.signaldock.internal.validation.checkText
 import org.openapitools.client.models.EventIngest
+import org.openapitools.client.models.SdkPlatform
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -50,6 +51,7 @@ internal class EventCollector(
             occurredAt = formatUtcMillis(now),
             properties = builder.properties,
             sdkVersion = SDK_VERSION,
+            sdkPlatform = SdkPlatform.ANDROID,
             contractVersion = EventIngest.ContractVersion._1,
         )
         val payload = transportJson.encodeToString(EventIngest.serializer(), event)

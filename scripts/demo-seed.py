@@ -73,7 +73,7 @@ def sentinel(now, seed):
     rng = random.Random(f"{seed}-sentinel")
     t = datetime.combine(day, time.min, SEOUL)
     ev = {"eventId": _uuid4(rng), "name": "product_viewed", "occurredAt": _fmt(t),
-          "properties": {"product_id": "prd-001"}, "sdkVersion": sdk_version(), "contractVersion": "1"}
+          "properties": {"product_id": "prd-001"}, "sdkVersion": sdk_version(), "sdkPlatform": "android", "contractVersion": "1"}
     return ("00000000-0000-4000-8000-000000000001", ev, None)
 
 
@@ -126,7 +126,7 @@ def generate(now, seed, plan):
                     name, props, violation = _violate(rng, name, props, plan)
                 t = t.replace(microsecond=t.microsecond // 1000 * 1000)
                 out.append((inst, {"eventId": _uuid4(rng), "name": name, "occurredAt": _fmt(t), "properties": props,
-                                   "sdkVersion": version, "contractVersion": "1"}, violation))
+                                   "sdkVersion": version, "sdkPlatform": "android", "contractVersion": "1"}, violation))
     out.sort(key=lambda x: (x[1]["occurredAt"], x[1]["eventId"]))
     return out
 
@@ -160,7 +160,7 @@ def client_reports(seed):
     for version, n in ((sdk_version(), 4), (OLD_SDK_VERSION, 2)):
         for _ in range(n):
             reasons = rng.sample(REPORT_REASONS, rng.randint(1, 3))
-            reports.append({"sdkVersion": version,
+            reports.append({"sdkVersion": version, "sdkPlatform": "android",
                             "discardedEvents": [{"reason": r, "count": rng.randint(1, 12)} for r in reasons]})
     return reports
 

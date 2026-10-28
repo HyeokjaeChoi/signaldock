@@ -29,7 +29,7 @@ ADRs:
 - ADR-0019 (`docs/adr/0019-sdk-public-api-check.md`), for `sdk/sdk-android/api/sdk-android.api` and the `apiCheck` and `apiDump` tasks (issue 35)
 - ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for the cost of the SDK in a host app (issue 36)
 - ADR-0025 (`docs/adr/0025-sdk-clock-jump.md`), for the clamp of the stored retry wait when the clock moves (issue 44)
-- ADR-0027 (`docs/adr/0027-request-400-contract-only.md`), for `WireCorpusTest` and `fixtures/sdk-wire/` (issue 49)
+- ADR-0027 (`docs/adr/0027-request-400-contract-only.md`), and ADR-0047 D10 (`docs/adr/0047-ios-sdk.md`), for `WireCorpusTest` and `fixtures/sdk-wire/android/` (issue 49)
 - ADR-0029 (`docs/adr/0029-device-fault-tests-and-power-loss.md`), for the fault phases (`FaultPhases.kt`, `PowerLossSemanticsDeviceTest.kt`, `scripts/ack-server.py`) and the power-loss semantics (issue 47)
 - ADR-0030 (`docs/adr/0030-sdk-contract-deprecation-warning.md`), for `DeprecationNotice.kt` and `Diagnostics.contractDeprecation` (issue 50)
 - ADR-0033 (`docs/adr/0033-sdk-dependency-baseline.md`), for `sdk/sdk-android/dependencies/` and the `dependencyGuard` and `dependencyGuardBaseline` tasks (issue 56)
@@ -108,7 +108,7 @@ Architecture (`architecture.md`):
 ADRs:
 - ADR-0002
 - ADR-0022 (`docs/adr/0022-server-tracking-plan-status.md`), for the additive `planStatus` change and the baseline update (issue 39)
-- ADR-0027 (`docs/adr/0027-request-400-contract-only.md`), for `fixtures/sdk-wire/`, the SDK output corpus (issue 49)
+- ADR-0027 (`docs/adr/0027-request-400-contract-only.md`), and ADR-0047 D10 (`docs/adr/0047-ios-sdk.md`), for `fixtures/sdk-wire/<platform>/`, the SDK output corpus (issue 49)
 - ADR-0036 (`docs/adr/0036-sdk-client-reports.md`), for the additive client report endpoints (issue 61)
 - ADR-0046 (`docs/adr/0046-sdk-platform-field.md`), for the additive `sdkPlatform` field, the filter parameter, and the baseline update
 

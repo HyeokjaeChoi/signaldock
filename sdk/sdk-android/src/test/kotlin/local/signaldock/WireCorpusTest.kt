@@ -1,7 +1,12 @@
 package local.signaldock
 
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import local.signaldock.internal.delivery.buildBatch
+import local.signaldock.internal.storage.EventEntity
 import local.signaldock.internal.transport.batchRequestJson
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -13,7 +18,7 @@ import java.io.File
 /**
  * Drift guard for the SDK/server wire contract (ADR-0027). It builds request bodies with the real
  * `track()` path and the real batch assembly, then compares them byte for byte with the committed
- * corpus in `fixtures/sdk-wire/`. The server test `SdkWireCorpusTest` parses the same files with
+ * corpus in `fixtures/sdk-wire/android/` (ADR-0047 D10). The server test `SdkWireCorpusTest` parses the same files with
  * the real request parser and expects no request-level failure and no per-item rejection.
  * To refresh the corpus after a deliberate change: `UPDATE_SDK_WIRE=1 sdk/gradlew -p sdk
  * :sdk-android:testDebugUnitTest --tests '*WireCorpusTest'`, then review the diff.
@@ -21,7 +26,7 @@ import java.io.File
 @RunWith(RobolectricTestRunner::class)
 class WireCorpusTest {
     private val installationId = "47c4d89f-352a-41da-9b31-529ea756515a"
-    private val dir = File("../../fixtures/sdk-wire")
+    private val dir = File("../../fixtures/sdk-wire/android")
     private val max = 9_007_199_254_740_991L
 
     private suspend fun SignalDock.ok(name: String, block: EventBuilder.() -> Unit = {}) {
@@ -133,8 +138,34 @@ class WireCorpusTest {
     }
 
     @Test
+    fun `an event queued by 0_3_0 is sent with its stored bytes and no sdkPlatform (ADR-0006 decision 3)`() = runBlocking {
+        val legacy = """{"eventId":"00000000-0000-4000-8000-000000000001","name":"app_opened","occurredAt":"2025-10-09T08:53:20.123Z","properties":{},"sdkVersion":"0.3.0","contractVersion":"1"}"""
+        val transport = FakeTransport()
+        val sdk = newSdk(transport = transport)
+        val size = "{\"installationId\":\"$installationId\",\"events\":[$legacy]}".toByteArray().size
+        // A row as 0.3.0 wrote it into Room: same payload bytes, no sdkPlatform.
+        sdk.dao.insert(
+            EventEntity(
+                eventId = "00000000-0000-4000-8000-000000000001", installationId = installationId, contractVersion = "1",
+                payloadJson = legacy, sizeBytes = size, createdAtMillis = 1L,
+            ),
+        )
+        sdk.delivery.sender.run()
+        assertEquals(1, transport.requests.size)
+        assertEquals("""{"installationId":"$installationId","events":[$legacy]}""", String(transport.requests[0].body, Charsets.UTF_8))
+    }
+
+    @Test
     fun `corpus matches what the SDK builds`() {
         val built = cases()
+        // ADR-0046 decision 3: every SDK must send sdkPlatform; the server default is for 0.1.0 to 0.3.0 only.
+        built.forEach { (name, body) ->
+            val events = Json.parseToJsonElement(body).jsonObject.getValue("events").jsonArray
+            assertTrue("$name has no event", events.isNotEmpty())
+            events.forEachIndexed { i, e ->
+                assertEquals("$name event $i", "android", e.jsonObject["sdkPlatform"]?.jsonPrimitive?.content)
+            }
+        }
         if (System.getenv("UPDATE_SDK_WIRE") == "1") {
             dir.mkdirs()
             dir.listFiles()?.forEach { it.delete() }
@@ -143,7 +174,7 @@ class WireCorpusTest {
         val committed = dir.listFiles { f -> f.extension == "json" }.orEmpty().map { it.name }.sorted()
         assertEquals("corpus files differ from the cases (run with UPDATE_SDK_WIRE=1)", built.keys.map { "$it.json" }.sorted(), committed)
         built.forEach { (name, body) ->
-            assertEquals("fixtures/sdk-wire/$name.json drifted from the SDK output", File(dir, "$name.json").readText(Charsets.UTF_8), body)
+            assertEquals("fixtures/sdk-wire/android/$name.json drifted from the SDK output", File(dir, "$name.json").readText(Charsets.UTF_8), body)
         }
     }
 }

@@ -14,6 +14,7 @@ import local.signaldock.internal.transport.transportJson
 import org.openapitools.client.models.ClientReportRequest
 import org.openapitools.client.models.DiscardReason
 import org.openapitools.client.models.DiscardedEventCount
+import org.openapitools.client.models.SdkPlatform
 
 /**
  * SDK health report (Q164, ADR-0036): the SDK counts the events it dropped, by reason, and sends the
@@ -62,7 +63,7 @@ internal fun buildClientReport(counters: List<DroppedCountEntity>): ClientReport
         sent += DroppedCountEntity(row.reason, count)
     }
     if (entries.isEmpty()) return null
-    val json = transportJson.encodeToString(ClientReportRequest.serializer(), ClientReportRequest(SDK_VERSION, entries))
+    val json = transportJson.encodeToString(ClientReportRequest.serializer(), ClientReportRequest(sdkVersion = SDK_VERSION, discardedEvents = entries, sdkPlatform = SdkPlatform.ANDROID))
     return ClientReport(json.toByteArray(Charsets.UTF_8), sent)
 }
 
