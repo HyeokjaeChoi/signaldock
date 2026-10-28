@@ -42,6 +42,9 @@ const invalid = [
   ["Kotlin keyword in package", { ...plan, kotlinPackage: "local.class" }, /Kotlin keyword/],
   ["kotlinPackage as array", { ...plan, kotlinPackage: ["a.b"] }, /kotlinPackage must be/],
   ["missing kotlinPackage", { ...plan, kotlinPackage: undefined }, /kotlinPackage must be/],
+  ["event name that is an SDK member (clear_queue)", withEvent({ name: "clear_queue" }), /reserved/],
+  ["event name that is an SDK member (is_opted_out)", withEvent({ name: "is_opted_out" }), /reserved/],
+  ["event name that is an SDK member (set_opt_out)", withEvent({ name: "set_opt_out" }), /reserved/],
   ["Swift keyword key", withProp({ key: "default" }), /Swift keyword/],
   ["key named isolation", withProp({ key: "isolation" }), /Swift keyword/],
   ["type as array", withProp({ type: ["string"] }), /type must be one of/],
@@ -81,7 +84,7 @@ test("Kotlin output has exactly the plan events", () => {
 const camelOf = (s) => s.replace(/_([a-z0-9])/g, (_, c) => c.toUpperCase());
 function parseSwift(text) {
   const events = {};
-  const re = /internal func (\w+)\(\n    isolation: isolated \(any Actor\)\? = #isolation,?\n([\s\S]*?)  \) async throws\(CancellationError\) -> TrackResult \{\n    try await track\(isolation: isolation, EventNames\.(\w+)\) \{\n([\s\S]*?)\n    \}\n  \}/g;
+  const re = /internal func (\w+)\(\n    isolation: isolated \(any Actor\)\? = #isolation,?\n([\s\S]*?)  \) async throws\(CancellationError\) -> TrackResult \{\n    try await self\.track\(isolation: isolation, EventNames\.(\w+)\) \{\n([\s\S]*?)\n    \}\n  \}/g;
   for (const m of text.matchAll(re)) {
     const params = {};
     for (const p of m[2].matchAll(/(\w+): (\w+)(\?)?( = nil)?,?\n/g)) params[p[1]] = { type: p[2], optional: Boolean(p[3]) };
@@ -99,6 +102,13 @@ test("Swift output has exactly the plan events, each with its name constant", ()
     assert.ok(files["swift/TrackingPlan.swift"].includes(`static let ${camelOf(e.name)} = "${e.name}"`));
     assert.equal(swift[camelOf(e.name)].nameConstant, camelOf(e.name));
   }
+});
+
+test("Swift calls self.track, so a property key named track cannot shadow the method", () => {
+  const out = generate(withProp({ key: "track" }))["swift/TrackingPlan.swift"];
+  assert.ok(out.includes("try await self.track(isolation: isolation, EventNames.productViewed)"));
+  assert.ok(!/try await track\(/.test(out));
+  assert.ok(out.includes('$0.property("track", track)'));
 });
 
 const dir = mkdtempSync(join(tmpdir(), "tracking-plan-"));

@@ -18,7 +18,7 @@ extension SignalDockSDK {
     productId: String,
     priceMinor: Int64? = nil
   ) async throws(CancellationError) -> TrackResult {
-    try await track(isolation: isolation, EventNames.productViewed) {
+    try await self.track(isolation: isolation, EventNames.productViewed) {
       $0.property("product_id", productId)
       if let priceMinor { $0.property("price_minor", priceMinor) }
     }
@@ -32,7 +32,7 @@ extension SignalDockSDK {
     quantity: Int64,
     priceMinor: Int64
   ) async throws(CancellationError) -> TrackResult {
-    try await track(isolation: isolation, EventNames.addToCart) {
+    try await self.track(isolation: isolation, EventNames.addToCart) {
       $0.property("product_id", productId)
       $0.property("quantity", quantity)
       $0.property("price_minor", priceMinor)
@@ -45,7 +45,7 @@ extension SignalDockSDK {
     itemCount: Int64,
     totalMinor: Int64
   ) async throws(CancellationError) -> TrackResult {
-    try await track(isolation: isolation, EventNames.checkoutStarted) {
+    try await self.track(isolation: isolation, EventNames.checkoutStarted) {
       $0.property("item_count", itemCount)
       $0.property("total_minor", totalMinor)
     }
@@ -60,7 +60,7 @@ extension SignalDockSDK {
     totalMinor: Int64,
     isSimulated: Bool
   ) async throws(CancellationError) -> TrackResult {
-    try await track(isolation: isolation, EventNames.purchaseCompleted) {
+    try await self.track(isolation: isolation, EventNames.purchaseCompleted) {
       $0.property("order_id", orderId)
       $0.property("item_count", itemCount)
       $0.property("total_minor", totalMinor)

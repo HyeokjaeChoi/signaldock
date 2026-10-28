@@ -32,8 +32,9 @@ const SWIFT_RESERVED = new Set(
     "switch where while any as await false is nil self super throw throws true try isolation").split(" "),
 );
 
-// Value names the generated TypeScript declares itself; an event function with the same name would clash.
-const RESERVED_IDS = new Set(["eventNames"]);
+// Value names the generated TypeScript declares itself, and public members of SignalDock (Android) and SignalDockSDK (iOS);
+// an event function with the same name would clash or, as an SDK member wins, silently call the member.
+const RESERVED_IDS = new Set(["eventNames", "clearQueue", "isOptedOut", "setOptOut", "diagnostics", "track", "initialize"]);
 
 export function validatePlan(plan) {
   const errors = [];
@@ -133,7 +134,7 @@ function swift(plan) {
     // Same shape as `track`: the caller's isolation first, typed throws, so the closure runs on the caller's actor.
     out.push(`  internal func ${camel(e.name)}(`, "    isolation: isolated (any Actor)? = #isolation" + (params.length ? "," : ""));
     params.forEach((p, i) => out.push(`    ${p}${i < params.length - 1 ? "," : ""}`));
-    out.push("  ) async throws(CancellationError) -> TrackResult {", `    try await track(isolation: isolation, EventNames.${camel(e.name)}) {`);
+    out.push("  ) async throws(CancellationError) -> TrackResult {", `    try await self.track(isolation: isolation, EventNames.${camel(e.name)}) {`);
     for (const p of ordered(e)) {
       const call = `$0.property("${p.key}", ${camel(p.key)})`;
       out.push(p.required ? `      ${call}` : `      if let ${camel(p.key)} { ${call} }`);

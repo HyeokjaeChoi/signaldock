@@ -38,3 +38,7 @@ The Kotlin is executed in `sdk/demo/core/data` (`SdkSignalDockClientTest`, Robol
 ## Amendment (2026-10-15)
 
 Spec Q155 adds a server-side check after all: the server marks stored events with a plan status and never rejects one. The first "Not done" item above is now done in [ADR-0022](0022-server-tracking-plan-status.md). Everything else in this ADR stands; the SDK and the generated code are unchanged.
+
+## Amendment (2026-10-28, ticket 11 review)
+
+Decision 2 also reserves the public member names of the SDK classes: `clearQueue`, `isOptedOut`, `setOptOut`, `diagnostics`, `track`, and `initialize` (the Android `SignalDock` and the iOS `SignalDockSDK`). An event whose camelCase name is one of them is a plan error, because the generated function would collide with the member, and the member wins. The generated Swift calls `self.track`, so a property key named `track` does not shadow the method.

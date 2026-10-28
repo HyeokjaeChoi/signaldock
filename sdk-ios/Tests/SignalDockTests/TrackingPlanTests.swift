@@ -13,7 +13,7 @@ import Testing
     let full = try await h.sdk.productViewed(productId: "P-001", priceMinor: 1_999)
     let short = try await h.sdk.productViewed(productId: "P-002")
     for result in [full, short] {
-      guard case .success = result else { Issue.record("expected success, got \(result)"); return }
+      if case .success = result {} else { Issue.record("expected success, got \(result)") }
     }
     let events = try await h.storedEvents()
     #expect(events.count == 2)
