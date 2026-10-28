@@ -95,7 +95,7 @@ Rejected: test retry (fix flaky tests at the cause); a coverage floor (one of ni
 
 ### D14. Privacy manifest
 
-`PrivacyInfo.xcprivacy` is a package resource. `NSPrivacyTracking = false`, no tracking domains. Collected data: `DeviceID` (installation ID) and `ProductInteraction` (business events). Both are not linked, not tracking, purpose Analytics. Required-reason APIs: none planned. The SDK does not use `systemUptime`, `mach_absolute_time`, disk-space APIs, `UserDefaults`, or file timestamps. If one becomes necessary, the manifest and the D13 check change in the same PR. The integration guide tells hosts to declare any other data type that they put in event properties.
+`PrivacyInfo.xcprivacy` is a package resource, declared as `resources: [.process("PrivacyInfo.xcprivacy")]` on the `SignalDock` target (Apple: a resource that Xcode does not detect by default must be declared in the package manifest, https://developer.apple.com/documentation/xcode/bundling-resources-with-a-swift-package). `NSPrivacyTracking = false`, no tracking domains. Collected data: `DeviceID` (installation ID) and `ProductInteraction` (business events). Both are not linked, not tracking, purpose Analytics. Required-reason APIs: none planned. The SDK does not use `systemUptime`, `mach_absolute_time`, disk-space APIs, `UserDefaults`, or file timestamps. If one becomes necessary, the manifest and the D13 check change in the same PR. The integration guide tells hosts to declare any other data type that they put in event properties.
 Mirrors: [ADR-0034](0034-sdk-opt-out.md) (what the SDK collects), [ADR-0001](0001-installation-scoped-identity.md).
 Rejected: no manifest (Apple rejects uploads that use a required-reason API without a reason; 8 of 9 surveyed vendors ship one).
 Source: https://developer.apple.com/documentation/bundleresources/privacy-manifest-files and https://developer.apple.com/documentation/bundleresources/describing-use-of-required-reason-api
@@ -130,7 +130,6 @@ Everything. No iOS code exists yet. Tickets must confirm these facts before they
 
 - Run time on an iOS 15 Simulator runtime (none exists on the CI runner; see "iOS 15 Simulator fallback").
 - The `swift6` generator output uses Foundation only and handles `PropertyValue` correctly.
-- The exact SwiftPM resource form that packages `PrivacyInfo.xcprivacy` (the Apple page does not state it).
 - Device-to-device transfer does not carry files that are excluded from backup.
 
 ## Revisit when

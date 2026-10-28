@@ -144,7 +144,7 @@ ADRs:
 - ADR-0032 (`docs/adr/0032-codeql-advanced-setup.md`), for the Swift entry of `.github/workflows/codeql.yml`
 
 Spec (`.scratch/ios-sdk/spec.md`):
-- D9, D11, D13, and section 5 (known limits)
+- D9, D11, D13, D14 (privacy manifest, `Sources/SignalDock/PrivacyInfo.xcprivacy`), and section 5 (known limits)
 
 Also read `scripts/verify-ios.sh` (the gates that CI and `scripts/verify-contract.sh` share).
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-# iOS SDK gates (ADR-0047 D13). Usage: scripts/verify-ios.sh [all|lint|tsan|asan|analyze|available]
+# iOS SDK gates (ADR-0047 D13). Usage: scripts/verify-ios.sh [all|lint|tsan|asan|analyze|manifest|available]
 # `available` exits 0 only with full Xcode (Swift 6, `swift format`) and a Simulator runtime that pick_simulator can select
 # (iOS 15 or later, with an iPhone); a Command Line Tools shim of xcodebuild is not enough.
 # CI sets IOS_WERROR=1 (warnings as errors in CI only). The tests run on the oldest iOS Simulator runtime
@@ -62,12 +62,29 @@ available() {
   pick_simulator > /dev/null 2>&1
 }
 
+# The built package must carry the privacy manifest in its resource bundle (ADR-0047 D14).
+run_manifest() {
+  echo "=== iOS: privacy manifest in the built bundle ==="
+  rm -rf "$DERIVED/Build/Products" # a stale bundle from an earlier run must not pass
+  (cd "$PKG" && xcodebuild build -scheme SignalDock -destination 'generic/platform=iOS Simulator' \
+    -derivedDataPath "$DERIVED" ${WERROR[@]+"${WERROR[@]}"})
+  local found
+  found="$(find "$DERIVED/Build/Products" -name PrivacyInfo.xcprivacy -path '*/SignalDock_SignalDock.bundle/PrivacyInfo.xcprivacy' | head -1)"
+  if [ -z "$found" ]; then
+    echo "error: PrivacyInfo.xcprivacy is not in a SignalDock resource bundle under $DERIVED/Build/Products" >&2
+    exit 1
+  fi
+  plutil -lint "$found"
+  echo "found: $found"
+}
+
 case "${1:-all}" in
   lint) run_lint ;;
   tsan) echo "=== iOS: Simulator tests, Thread Sanitizer ==="; run_tests -enableThreadSanitizer YES ;;
   asan) echo "=== iOS: Simulator tests, ASan + UBSan ==="; run_tests -enableAddressSanitizer YES -enableUndefinedBehaviorSanitizer YES ;;
   analyze) run_analyze ;;
-  all) run_lint; "$0" tsan; "$0" asan; run_analyze ;;
+  manifest) run_manifest ;;
+  all) run_lint; "$0" tsan; "$0" asan; run_analyze; run_manifest ;;
   available) available ;;
-  *) echo "usage: $0 [all|lint|tsan|asan|analyze|available]" >&2; exit 2 ;;
+  *) echo "usage: $0 [all|lint|tsan|asan|analyze|manifest|available]" >&2; exit 2 ;;
 esac
