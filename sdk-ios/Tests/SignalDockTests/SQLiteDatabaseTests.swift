@@ -37,6 +37,8 @@ import Testing
     let path = dir.file("queue.db").path
     let (signals, signal) = AsyncStream<Void>.makeStream()
     let waiter = Task.detached { () -> Bool in
+      // Ends the stream if the open throws, so the test fails instead of waiting forever.
+      defer { signal.finish() }
       let other = try SQLiteDatabase(path: path)
       signal.yield()
       return (try? other.execute("CREATE TABLE waited (a INTEGER)")) != nil
