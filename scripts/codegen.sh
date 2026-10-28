@@ -32,8 +32,13 @@ OUT="${1:-$ROOT/generated}"
 KOTLIN_OUT="$OUT/kotlin"
 TS_OUT="$OUT/typescript"
 # The Swift models go straight into the iOS package (ADR-0047 D10 amendment): a host gets the SDK only from the
-# source ZIP (D11), and a link to a folder outside the package would dangle there. Optional $2 is the drift-check copy.
-SWIFT_OUT="${2:-$ROOT/sdk-ios/Sources/SignalDock/Generated}"
+# source ZIP (D11), and a link to a folder outside the package would dangle there. With an output dir argument
+# (the drift check) they go to "$OUT/swift" instead, and the checkout is not touched.
+if [ -n "${1:-}" ]; then
+  SWIFT_OUT="$OUT/swift"
+else
+  SWIFT_OUT="$ROOT/sdk-ios/Sources/SignalDock/Generated"
+fi
 SWIFT_STAGE="$(mktemp -d)"
 trap 'rm -rf "$SWIFT_STAGE"' EXIT
 
