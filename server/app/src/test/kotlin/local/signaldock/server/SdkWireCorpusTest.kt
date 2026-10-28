@@ -61,40 +61,30 @@ class SdkWireCorpusTest {
     /**
      * ADR-0047 D10: cases with the same name have equal JSON values on both platforms. Numbers compare by value (Kotlin
      * writes `1.0E-7`, Swift `1e-7`), and `sdkPlatform` and `sdkVersion` of each event are left out. Byte equality is not a goal.
-     * [knownDifferences] lists the properties that the iOS case does not have, with the reason (an open question of iOS SDK ticket 09).
      */
     @Test
     fun `the same case has equal JSON values on both platforms`() {
-        fun comparable(file: File, left: Set<String>): JsonObject {
+        fun comparable(file: File): JsonObject {
             val root = Json.parseToJsonElement(file.readText()).jsonObject
             val events = root.getValue("events").jsonArray.map { e ->
                 val fields = e.jsonObject.filterKeys { it != "sdkPlatform" && it != "sdkVersion" }.toMutableMap()
-                fields["properties"] = JsonObject(fields.getValue("properties").jsonObject.filterKeys { it !in left }.mapValues { (_, v) -> normalize(v) })
+                fields["properties"] = JsonObject(fields.getValue("properties").jsonObject.mapValues { (_, v) -> normalize(v) })
                 JsonObject(fields)
             }
             return JsonObject(root + ("events" to JsonArray(events)))
         }
         val android = files.filter { it.first == "android" }.associate { it.second.name to it.second }
         files.filter { it.first == "ios" }.forEach { (_, file) ->
-            val left = knownDifferences[file.name].orEmpty()
-            assertEquals(comparable(android.getValue(file.name), left), comparable(file, left), "${file.name}: iOS and Android differ")
+            assertEquals(comparable(android.getValue(file.name)), comparable(file), "${file.name}: iOS and Android differ")
         }
     }
 
-    /**
-     * Swift writes the shortest digits that read back as the same Double: `5e-324` for the smallest subnormal. The server
-     * accepts a decimal only if it equals `BigDecimal.valueOf(double)`, and Java writes that value as `4.9E-324`, so the
-     * server answers `INVALID_PROPERTIES` for the Swift text. Both platforms send the same Double. Until the owner decides
-     * (relax the server rule, or reject subnormals in the SDK), the iOS case does not have the property.
-     */
-    private val knownDifferences = mapOf("all-property-types.json" to setOf("double_tiny"))
-
-    /** A number as its exact decimal value: `1`, `1.0` and `1.0E0` are one number. Strings and booleans stay as they are. */
+    /** A number as its `Double` value (as the Swift comparison does): `1`, `1.0` and `1.0E0` are one number, and so are `4.9E-324` and `5e-324`. Strings and booleans stay as they are. */
     private fun normalize(v: kotlinx.serialization.json.JsonElement): kotlinx.serialization.json.JsonElement = when (v) {
         is JsonObject -> JsonObject(v.mapValues { (_, x) -> normalize(x) })
         is JsonArray -> JsonArray(v.map { normalize(it) })
         is JsonPrimitive -> if (!v.isString && v.content != "true" && v.content != "false" && v.content != "null") {
-            JsonPrimitive(v.content.toBigDecimal().stripTrailingZeros())
+            JsonPrimitive(v.content.toDouble() + 0.0) // + 0.0: -0 equals 0
         } else {
             v
         }

@@ -70,7 +70,7 @@ import Testing
       $0.property("double_neg_zero", -0.0)
       $0.property("double_big", Double(maxSafe) - 1.0)
       $0.property("double_frac_big", 4_503_599_627_370_496.5)
-      // `double_tiny` (the smallest subnormal) is not in the iOS case; see `knownDifferences`.
+      $0.property("double_tiny", Double.leastNonzeroMagnitude)
       $0.property("double_large_frac", 1.7976931348623157E308 / 1e300)
     }
     out.append(("all-property-types", try await body()))
@@ -196,14 +196,8 @@ import Testing
 
   // MARK: Comparison with the Android corpus (ADR-0047 D10)
 
-  /// Properties that the iOS case does not have, per case file. Swift writes the smallest subnormal `Double` as `5e-324`;
-  /// Java writes the same Double as `4.9E-324`, and the server accepts a decimal only if it equals
-  /// `BigDecimal.valueOf(double)`, so it answers `INVALID_PROPERTIES` to the Swift text. This is an open question of
-  /// iOS SDK ticket 09 (relax the server rule, or reject subnormals in the SDK). The same list is in `SdkWireCorpusTest`.
-  static let knownDifferences: [String: Set<String>] = ["all-property-types.json": ["double_tiny"]]
-
   /// The request as a JSON value without the fields that differ by platform: `sdkPlatform` and `sdkVersion` of each event.
-  static func comparable(_ data: Data, without left: Set<String> = []) throws -> WireModelTests.JSONNode {
+  static func comparable(_ data: Data) throws -> WireModelTests.JSONNode {
     guard case .object(var root) = try JSONDecoder().decode(WireModelTests.JSONNode.self, from: data),
       case .array(let events)? = root["events"]
     else { throw CorpusError.notStored("not a batch request") }
@@ -212,10 +206,6 @@ import Testing
         guard case .object(var fields) = event else { return event }
         fields["sdkPlatform"] = nil
         fields["sdkVersion"] = nil
-        if case .object(var properties)? = fields["properties"] {
-          for key in left { properties[key] = nil }
-          fields["properties"] = .object(properties)
-        }
         return .object(fields)
       })
     return .object(root)
@@ -223,16 +213,14 @@ import Testing
 
   @Test(arguments: WireModelTests.files(in: "sdk-wire/ios"))
   func theSameCaseHasEqualJSONValuesOnBothPlatforms(file: String) throws {
-    let left = Self.knownDifferences[file] ?? []
-    let ios = try Self.comparable(Data(contentsOf: Self.iosDirectory.appendingPathComponent(file)), without: left)
-    let android = try Self.comparable(
-      Data(contentsOf: Self.androidDirectory.appendingPathComponent(file)), without: left)
+    let ios = try Self.comparable(Data(contentsOf: Self.iosDirectory.appendingPathComponent(file)))
+    let android = try Self.comparable(Data(contentsOf: Self.androidDirectory.appendingPathComponent(file)))
     #expect(ios == android, "\(file): numbers compare by value; sdkPlatform and sdkVersion are excluded")
   }
 
   @Test func theSwiftTextOfTheSmallestSubnormalIsNotTheTextJavaWrites() throws {
     let text = String(decoding: try JSONEncoder().encode([Double.leastNonzeroMagnitude]), as: UTF8.self)
-    #expect(text == "[5e-324]", "Java writes 4.9E-324, the only text that the server accepts for this Double")
+    #expect(text == "[5e-324]", "Java writes 4.9E-324; the server accepts both since ADR-0027 amendment 2026-10-28")
   }
 
   @Test func theComparisonSeesADifference() throws {

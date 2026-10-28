@@ -1,7 +1,8 @@
 # 28. iOS corpus: re-add double_tiny
 
-Status: ready-for-agent
+Status: resolved
 Type: task
+Execution: Done (PR #261, 2026-10-28 UTC)
 Blocked by: the server subnormal PR (relaxes `IngestRules.validNumber` so that the server accepts `5e-324`)
 
 ## Scope and completion criteria
