@@ -13,7 +13,7 @@ let package = Package(
       name: "SignalDock",
       // Apple: a resource that Xcode does not detect by default must be declared in the package manifest.
       // https://developer.apple.com/documentation/xcode/bundling-resources-with-a-swift-package
-      resources: [.process("PrivacyInfo.xcprivacy")]
+      resources: [.process("PrivacyInfo.xcprivacy"), .copy("Migrations")]
     ),
     .testTarget(name: "SignalDockTests", dependencies: ["SignalDock"]),
   ],

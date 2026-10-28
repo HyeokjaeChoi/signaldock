@@ -155,3 +155,40 @@ Sources (read 2026-10-28):
 - `sqlite3.h` in the Apple iOS SDK (Xcode, `iPhoneOS.sdk/usr/include/sqlite3.h`) defines `SQLITE_OPEN_FILEPROTECTION_COMPLETEUNTILFIRSTUSERAUTHENTICATION`.
 
 Not verified here: the exact error code that SQLite returns for this open failure, and whether new files inherit the class from the directory (Apple primary docs found do not say). Ticket 07 checks both on a Simulator or device, and tests that a `-wal` or `-journal` file that SQLite made again after a close has the class.
+
+## Ticket 07 results (2026-10-28, storage)
+
+Code: `sdk-ios/Sources/SignalDock/Internal/Storage/`. Facts below come from runs on the iOS 27.0 Simulator (Xcode 27.1, Swift 6.4), the only runtime installed on that Mac.
+
+Built as the design sources say:
+
+- The queue schema is the Android Room schema 3 (tables `events`, `rejections`, `retry_state`, `dropped_counts`), in one migration file `V1__initial.sql`, because iOS 0.1.0 is not released. `PRAGMA user_version` holds the applied version; each file runs in one transaction with the version update; a database with a newer version than the SDK knows is a storage failure. `scripts/check-repo-rules.sh` freezes every file in `Migrations/` that exists on `origin/main`.
+- The queue uses WAL, as the Android Room queue does.
+- The open is eager and has the open flag `SQLITE_OPEN_FILEPROTECTION_COMPLETEUNTILFIRSTUSERAUTHENTICATION`. A failed open, a failed migration, and a database that is not a SQLite file all throw `StorageError`, which `initialize()` (ticket 08) maps to `InitError.StorageFailure`. The SDK does not delete or repair a damaged file (ADR-0003 item 6 and the Android `InitCoordinator` keep the queue after a failure).
+- The installation ID file is written to a temp file, synced, and renamed. The temp file has the class (`.completeFileProtectionUntilFirstUserAuthentication`) and `isExcludedFromBackup`; a rename keeps both. A file that is not a lowercase UUIDv4 is replaced with a WARN, as on Android.
+
+iOS 15 executor (D9): `SerialExecutor.asUnownedSerialExecutor()` has a default implementation only on iOS 17 and later. For the iOS 15 target the executor must implement it: `UnownedSerialExecutor(ordinary: self)`. Without it the build fails with "requires 'asUnownedSerialExecutor()' to be available in iOS 15.0 and newer". Run time on an iOS 15 runtime is still not verified (no such runtime installed).
+
+Facts checked on the Simulator:
+
+| Question | Result |
+| --- | --- |
+| SQLite code for an open failure | `SQLITE_CANTOPEN` (14) for a missing directory, a read-only directory, and a database file with mode 000. `SQLITE_NOTADB` (26) for a file that is not a database. A damaged page opens fine and fails the first read with `SQLITE_CORRUPT` (11). |
+| The open failure before the first unlock | Not reproducible. The Simulator does not enforce Data Protection. The code of the real failure is not known; the code treats every open failure the same, so it does not depend on the code. Needs a device. |
+| Class of the database, `-wal`, `-shm`, `-journal`, and the installation ID file | Not verifiable. The Simulator reports `completeUntilFirstUserAuthentication` for every file (`URLResourceValues.fileProtection`, `fcntl(F_GETPROTECTIONCLASS)` returns 3), also for a file that was set to `complete` (the setting is ignored and reads back as the default). `attributesOfItem[.protectionKey]` returns nil. The class tests pass on the Simulator without proving that the SDK set the class; they check on a device. |
+| Side files made again have the class | The test removes `-wal` and `-shm` after a close (this SQLite leaves them as empty files after a close) and checks that SQLite makes them again and that they report the class; the `-journal` test does the same in rollback-journal mode. Same limit as the row above. |
+| `signaldock/` directory class inherited | Not verifiable. The SDK does not set a class on the directory. |
+| `isExcludedFromBackup` on the installation ID file | Reads back `true` after the SDK sets it. |
+
+Not covered by ticket 07: the opt-out marker file (ADR-0034), the public API, and the sender. The backup exclusion is set on the whole `signaldock/` directory (see the next Amendment).
+
+## Amendment (2026-10-28, ticket 07 review, D6)
+
+D6 named only the installation ID file for `isExcludedFromBackup`. Android keeps every SDK file in `noBackupFilesDir`. The owner decided on 2026-10-28:
+
+- The SDK sets `isExcludedFromBackup = true` on the whole `signaldock/` directory, so the installation ID, the queue database, its side files, and later files (for example the opt-out marker) stay out of backups, as on Android (ADR-0001).
+- The flag stays on the installation ID file too, because D6 names the file and the flag on the directory is one more thing that a restore could differ on. The directory flag is the rule; the file flag is a second guard.
+- The known limit of D6 stays: Apple does not guarantee that an excluded item never appears on a restored device.
+- The tests check that the directory and the file read back `true`. Not verified: that a real backup and restore leaves the directory out (the Simulator cannot do a restore).
+
+Also from the review: the connection waits up to 2.5 s for a lock (`sqlite3_busy_timeout`, the Android framework default); a transaction that cannot roll back closes the connection; the WAL pragma must answer `wal`.

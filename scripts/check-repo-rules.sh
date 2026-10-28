@@ -127,11 +127,31 @@ then
   fail=1
 fi
 
-# A released Room schema file is frozen (ADR-0025). A schema change needs a new version, a migration, and a new N.json.
+# The two freeze checks below compare with origin/main. In CI a missing ref must fail the check, not skip it:
+# the workflow fetches it (a shallow checkout has no origin/main).
+HAVE_MAIN=0
 if git rev-parse --verify -q origin/main >/dev/null; then
+  HAVE_MAIN=1
+elif [ "${CI:-}" = true ]; then
+  echo "error: CI=true and origin/main is missing; the schema and migration freeze checks cannot run (fetch it before this script)" >&2
+  fail=1
+fi
+
+# A released Room schema file is frozen (ADR-0025). A schema change needs a new version, a migration, and a new N.json.
+if [ "$HAVE_MAIN" = 1 ]; then
   for f in $(git ls-tree -r --name-only origin/main -- sdk/sdk-android/schemas); do
     if ! git diff --quiet origin/main -- "$f"; then # a deleted file differs too
       echo "error: $f exists on main and changed or was deleted; bump the database version and add a migration (ADR-0025)" >&2
+      fail=1
+    fi
+  done
+fi
+
+# A released iOS SQL migration is frozen (ADR-0047 D7, the iOS form of ADR-0025). A schema change needs a new V<n>__*.sql file.
+if [ "$HAVE_MAIN" = 1 ]; then
+  for f in $(git ls-tree -r --name-only origin/main -- sdk-ios/Sources/SignalDock/Migrations); do
+    if ! git diff --quiet origin/main -- "$f"; then # a deleted file differs too
+      echo "error: $f exists on main and changed or was deleted; add a new migration file (ADR-0047 D7)" >&2
       fail=1
     fi
   done
