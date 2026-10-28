@@ -167,6 +167,7 @@ jobs:
       - run: scripts/verify-ios.sh lint
       - run: scripts/verify-ios.sh tsan
       - run: scripts/verify-ios.sh analyze
+      - run: scripts/verify-ios.sh manifest
 
   # A separate run with ASan and UBSan; TSan cannot be combined with them.
   ios-sanitize:

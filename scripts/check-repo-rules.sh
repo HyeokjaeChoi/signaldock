@@ -275,4 +275,39 @@ then
   fail=1
 fi
 
+# iOS privacy manifest (ADR-0047 D14): the manifest exists, and every required-reason API that sdk-ios/Sources uses has its
+# category in it. Names and categories: https://developer.apple.com/documentation/bundleresources/app-privacy-configuration/nsprivacyaccessedapitypes/nsprivacyaccessedapitype
+ios_manifest=sdk-ios/Sources/SignalDock/PrivacyInfo.xcprivacy
+if ! git cat-file -e ":$ios_manifest" 2> /dev/null; then
+  echo "error: $ios_manifest is missing (ADR-0047 D14)" >&2
+  fail=1
+fi
+ios_manifest_text="$(git show ":$ios_manifest" 2> /dev/null || true)"
+# Format: category|extended regex. C calls match as whole words followed by `(`; Swift names match as substrings, with
+# both cases of the first letter (`creationDate`, `NSFileCreationDate`, `contentModificationDateKey`). Only code files are
+# scanned (.swift, .c, .h, .m), and a line that starts with `//` is skipped. Apple lists `getattrlist`, `fgetattrlist`, and
+# `getattrlistat` under both FileTimestamp and DiskSpace, so a use of them needs both categories in the manifest.
+ios_reason_apis='FileTimestamp|[Cc]reationDate|[Mm]odificationDate
+FileTimestamp|(^|[^A-Za-z0-9_])(stat|fstat|fstatat|lstat|getattrlist|getattrlistbulk|fgetattrlist|getattrlistat)[[:space:]]*\(
+SystemBootTime|systemUptime|mach_absolute_time
+DiskSpace|statvfs|statfs|volumeAvailableCapacity|volumeTotalCapacity|systemFreeSize|systemSize
+DiskSpace|(^|[^A-Za-z0-9_])(fstatfs|fstatvfs|getattrlist|fgetattrlist|getattrlistat)[[:space:]]*\(
+UserDefaults|UserDefaults
+ActiveKeyboards|activeInputModes'
+while IFS='|' read -r category pattern; do
+  rc=0
+  raw="$(git grep --cached -nE "$pattern" -- 'sdk-ios/Sources/*.swift' 'sdk-ios/Sources/*.[chm]')" || rc=$?
+  if [ "$rc" -ge 2 ]; then
+    echo "error: git grep failed (exit $rc) for the $category required-reason check" >&2
+    fail=1
+    continue
+  fi
+  hits="$(grep -Ev '^[^:]*:[0-9]+:[[:space:]]*//' <<< "$raw" || true)"
+  if [ -n "$hits" ] && ! grep -q "<string>NSPrivacyAccessedAPICategory$category</string>" <<< "$ios_manifest_text"; then
+    echo "$hits" >&2
+    echo "error: sdk-ios/Sources uses a $category required-reason API above, but $ios_manifest has no NSPrivacyAccessedAPICategory$category entry (ADR-0047 D14)" >&2
+    fail=1
+  fi
+done <<< "$ios_reason_apis"
+
 exit "$fail"

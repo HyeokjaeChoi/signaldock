@@ -9,7 +9,12 @@ let package = Package(
     .library(name: "SignalDock", targets: ["SignalDock"])
   ],
   targets: [
-    .target(name: "SignalDock"),
+    .target(
+      name: "SignalDock",
+      // Apple: a resource that Xcode does not detect by default must be declared in the package manifest.
+      // https://developer.apple.com/documentation/xcode/bundling-resources-with-a-swift-package
+      resources: [.process("PrivacyInfo.xcprivacy")]
+    ),
     .testTarget(name: "SignalDockTests", dependencies: ["SignalDock"]),
   ],
   swiftLanguageModes: [.v6]

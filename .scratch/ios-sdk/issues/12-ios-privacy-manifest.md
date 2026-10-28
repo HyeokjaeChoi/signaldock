@@ -1,6 +1,6 @@
 # 12. iOS privacy manifest and required-reason check
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: 05
 

@@ -28,6 +28,7 @@ Code enforces these. Do not restate them in prose; read the check when it fails.
 | Every top-level directory except `.claude`, `.scratch`, and `docs` has a section in `docs/design-index.md` | `scripts/check-repo-rules.sh` |
 | A released Room schema file is frozen (ADR-0025) | `scripts/check-repo-rules.sh` |
 | `SDK_VERSION` equals `sdkVersion` | `scripts/check-repo-rules.sh` |
+| `sdk-ios/Sources` uses no required-reason API (file timestamp, boot time, disk space, `UserDefaults`, active keyboards) whose category is missing in `PrivacyInfo.xcprivacy` (ADR-0047 D14) | `scripts/check-repo-rules.sh` |
 | `sdk-ios/Package.swift` has no `.package(` dependency (ADR-0047 D13) | `scripts/check-repo-rules.sh` |
 | No `privacy: .public` under `sdk-ios` (ADR-0047 D13) | `scripts/check-repo-rules.sh` |
 | iOS SDK gates: `swift format` strict with documentation on public declarations, Simulator tests under TSan and under ASan and UBSan, `xcodebuild analyze` (ADR-0047 D13) | `scripts/verify-ios.sh`, CI `ios-test` and `ios-sanitize` |
