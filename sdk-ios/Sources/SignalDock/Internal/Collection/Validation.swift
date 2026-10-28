@@ -29,9 +29,9 @@ internal func checkText(_ text: String, isName: Bool) -> InvalidReason? {
 }
 
 /// Kotlin `String.isBlank()` (`Char.isWhitespace`): the Unicode White_Space set plus U+001C..U+001F, which Java counts
-/// as whitespace. Used for the collection key only; names use the fixed set above.
+/// as whitespace, minus U+0085 (NEL), which Java does not. Used for the collection key only; names use the fixed set above.
 internal func isBlankScalar(_ scalar: Unicode.Scalar) -> Bool {
-  scalar.properties.isWhitespace || (0x1C...0x1F).contains(scalar.value)
+  (scalar.properties.isWhitespace && scalar.value != 0x85) || (0x1C...0x1F).contains(scalar.value)
 }
 
 private let timeoutMillisLimit = Int64(Int32.max)

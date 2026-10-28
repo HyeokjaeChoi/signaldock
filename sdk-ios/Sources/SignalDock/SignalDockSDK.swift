@@ -98,7 +98,12 @@ public final class SignalDockSDK: Sendable {
   public func clearQueue() async throws(CancellationError) -> Int? {
     if Task.isCancelled { throw CancellationError() }
     do {
-      return try await queue.deleteAll()
+      let deleted = try await queue.deleteAll()
+      // Like Android's `withContext`: a caller cancelled during the call gets the cancellation, not the result.
+      if Task.isCancelled { throw CancellationError() }
+      return deleted
+    } catch is CancellationError {
+      throw CancellationError()
     } catch {
       logger.log(.clearQueueStorageFailed)
       if Task.isCancelled { throw CancellationError() }
@@ -118,6 +123,10 @@ public final class SignalDockSDK: Sendable {
     let snapshot: DiagnosticsSnapshot
     do {
       snapshot = try await queue.diagnosticsSnapshot()
+      // Like Android's `withContext`: a caller cancelled during the call gets the cancellation, not the result.
+      if Task.isCancelled { throw CancellationError() }
+    } catch is CancellationError {
+      throw CancellationError()
     } catch {
       // Storage failure: reported as data, never as an error (ADR-0017). Caller cancellation still propagates.
       logger.log(.diagnosticsStorageFailed)

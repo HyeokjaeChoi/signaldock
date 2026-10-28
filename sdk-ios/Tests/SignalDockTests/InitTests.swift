@@ -269,7 +269,8 @@ import Testing
       #expect(
         validateConfig(SignalDockConfig(endpoint: "https://e.com", collectionKey: key)) == "collectionKey is blank")
     }
-    // not all blank
+    // not all blank; U+0085 is whitespace for Unicode but not for Kotlin `isBlank()`
+    #expect(validateConfig(SignalDockConfig(endpoint: "https://e.com", collectionKey: "\u{85}")) == nil)
     #expect(validateConfig(SignalDockConfig(endpoint: "https://e.com", collectionKey: "\u{1C}k")) == nil)
     let secret = "super-secret-collection-key"
     let messages = [
