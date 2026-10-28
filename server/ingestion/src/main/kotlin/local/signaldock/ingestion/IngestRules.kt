@@ -1,6 +1,7 @@
 package local.signaldock.ingestion
 
 import java.math.BigDecimal
+import java.math.MathContext
 import java.time.Instant
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
@@ -128,12 +129,21 @@ private fun validNumber(raw: String): Boolean = try {
         val double = number.toDouble()
         val integerDigits = normalized.precision() - normalized.scale()
         double.isFinite() &&
-            BigDecimal.valueOf(double).compareTo(number) == 0 &&
+            (BigDecimal.valueOf(double).compareTo(number) == 0 || shortestRoundTrip(double).compareTo(number) == 0) &&
             normalized.scale() <= MAX_NUMERIC_FRACTIONAL_DIGITS &&
             integerDigits <= MAX_NUMERIC_INTEGER_DIGITS
     }
 } catch (_: NumberFormatException) {
     false
+}
+
+/**
+ * The shortest decimal that parses back to [double], the closest one at that length (the text Swift writes).
+ * Java's `Double.toString` uses at least two digits, so it differs for subnormals (`4.9E-324` and `5e-324`).
+ */
+private fun shortestRoundTrip(double: Double): BigDecimal {
+    val exact = BigDecimal(double)
+    return (1..17).asSequence().map { exact.round(MathContext(it)) }.first { it.toDouble() == double }
 }
 
 private fun parseMillisInstant(value: String): Instant? = try {

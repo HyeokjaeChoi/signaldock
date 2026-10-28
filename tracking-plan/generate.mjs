@@ -3,18 +3,19 @@
 // Reads tracking-plan/plan.json, validates it, and writes:
 //   kotlin/TrackingPlan.kt        typed SignalDock extension functions (demo app)
 //   typescript/events.ts          types + builders that return { name, properties }
-//   manifest.json                 what both outputs must agree on (checked by generate.test.mjs)
+//   swift/TrackingPlan.swift      typed SignalDockSDK extension functions (iOS; compiled by the sdk-ios tests)
+//   manifest.json                 what all outputs must agree on (checked by generate.test.mjs)
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-// Plan value types -> contract wire type -> Kotlin type. "integer" is Long: the contract allows +-(2^53-1).
+// Plan value types -> contract wire type -> Kotlin and Swift type. "integer" is Long: the contract allows +-(2^53-1).
 const TYPES = {
-  string: { wire: "string", kotlin: "String" },
-  integer: { wire: "number", kotlin: "Long" },
-  number: { wire: "number", kotlin: "Double" },
-  boolean: { wire: "boolean", kotlin: "Boolean" },
+  string: { wire: "string", kotlin: "String", swift: "String" },
+  integer: { wire: "number", kotlin: "Long", swift: "Int64" },
+  number: { wire: "number", kotlin: "Double", swift: "Double" },
+  boolean: { wire: "boolean", kotlin: "Boolean", swift: "Bool" },
 };
 // Naming convention (ADR-0021): lowercase snake_case. A stricter subset of Q64, which only bans
 // empty/whitespace-padded names, so every valid plan name is a valid SDK and server name.
@@ -24,8 +25,16 @@ const KOTLIN_KEYWORDS = new Set(
   "as break class continue do else false for fun if in interface is null object package return super this throw true try typealias typeof val var when while".split(" "),
 );
 
-// Value names the generated TypeScript declares itself; an event function with the same name would clash.
-const RESERVED_IDS = new Set(["eventNames"]);
+// A generated Swift parameter or local name must not be one of these (the parameter `isolation` is the one of `track`).
+const SWIFT_RESERVED = new Set(
+  ("associatedtype class deinit enum extension fileprivate func import init inout internal let open operator private precedencegroup protocol public " +
+    "rethrows static struct subscript typealias var break case catch continue default defer do else fallthrough for guard if in repeat return " +
+    "switch where while any as await false is nil self super throw throws true try isolation").split(" "),
+);
+
+// Value names the generated TypeScript declares itself, and public members of SignalDock (Android) and SignalDockSDK (iOS);
+// an event function with the same name would clash or, as an SDK member wins, silently call the member.
+const RESERVED_IDS = new Set(["eventNames", "clearQueue", "isOptedOut", "setOptOut", "diagnostics", "track", "initialize"]);
 
 export function validatePlan(plan) {
   const errors = [];
@@ -60,6 +69,7 @@ export function validatePlan(plan) {
       const pat = `${at}, property "${p?.key}"`;
       if (typeof p?.key !== "string" || !SNAKE.test(p.key) || p.key.length > MAX_LEN) bad(`${pat}: key must be snake_case (${SNAKE}), at most ${MAX_LEN} characters`);
       else if (KOTLIN_KEYWORDS.has(p.key)) bad(`${pat}: key is a Kotlin keyword`);
+      else if (SWIFT_RESERVED.has(camel(p.key))) bad(`${pat}: key is a Swift keyword or the Swift parameter name "isolation"`);
       if (keys.has(p?.key)) bad(`${pat}: duplicate key`);
       keys.add(p?.key);
       if (typeof p?.key === "string") {
@@ -100,6 +110,48 @@ function kotlin(plan) {
   return out.join("\n") + "\n";
 }
 
+// Word-wraps a doc comment so that every line stays within the 120 columns of `swift format`.
+function swiftDoc(text) {
+  const lines = [];
+  let line = "///";
+  for (const word of text.split(" ")) {
+    if (line.length + 1 + word.length > 100 && line !== "///") { lines.push(line); line = "///"; }
+    line += ` ${word}`;
+  }
+  return [...lines, line];
+}
+
+function swift(plan) {
+  const out = [`// ${HEADER}`, "", "import SignalDock", ""];
+  out.push("/// Event names from the tracking plan.", "internal enum EventNames {");
+  for (const e of plan.events) out.push(`  static let ${camel(e.name)} = "${e.name}"`);
+  out.push("}");
+  out.push("", "extension SignalDockSDK {");
+  plan.events.forEach((e, n) => {
+    const params = ordered(e).map((p) => `${camel(p.key)}: ${TYPES[p.type].swift}${p.required ? "" : "? = nil"}`);
+    if (n) out.push("");
+    out.push(...swiftDoc(`${e.description} Calls \`track\`; optional properties that are nil are left out.`).map((l) => `  ${l}`));
+    // Same shape as `track`: the caller's isolation first, typed throws, so the closure runs on the caller's actor.
+    out.push(`  internal func ${camel(e.name)}(`, "    isolation: isolated (any Actor)? = #isolation" + (params.length ? "," : ""));
+    params.forEach((p, i) => out.push(`    ${p}${i < params.length - 1 ? "," : ""}`));
+    const track = `    try await self.track(isolation: isolation, EventNames.${camel(e.name)})`;
+    out.push("  ) async throws(CancellationError) -> TrackResult {");
+    if (e.properties.length === 0) {
+      // An empty trailing closure does not compile: the closure takes one argument, `inout EventBuilder`.
+      out.push(`${track} { _ in }`, "  }");
+      return;
+    }
+    out.push(`${track} {`);
+    for (const p of ordered(e)) {
+      const call = `$0.property("${p.key}", ${camel(p.key)})`;
+      out.push(p.required ? `      ${call}` : `      if let ${camel(p.key)} { ${call} }`);
+    }
+    out.push("    }", "  }");
+  });
+  out.push("}");
+  return out.join("\n") + "\n";
+}
+
 function typescript(plan) {
   const out = [
     `// ${HEADER}`,
@@ -136,7 +188,7 @@ function manifest(plan) {
     events: plan.events.map((e) => ({
       name: e.name,
       function: camel(e.name),
-      properties: ordered(e).map((p) => ({ key: p.key, param: camel(p.key), type: p.type, wire: TYPES[p.type].wire, kotlin: TYPES[p.type].kotlin, required: p.required })),
+      properties: ordered(e).map((p) => ({ key: p.key, param: camel(p.key), type: p.type, wire: TYPES[p.type].wire, kotlin: TYPES[p.type].kotlin, swift: TYPES[p.type].swift, required: p.required })),
     })),
   }, null, 2) + "\n";
 }
@@ -144,7 +196,7 @@ function manifest(plan) {
 /** Returns { relativePath: content }. Throws on an invalid plan. */
 export function generate(plan) {
   validatePlan(plan);
-  return { "kotlin/TrackingPlan.kt": kotlin(plan), "typescript/events.ts": typescript(plan), "manifest.json": manifest(plan) };
+  return { "kotlin/TrackingPlan.kt": kotlin(plan), "typescript/events.ts": typescript(plan), "swift/TrackingPlan.swift": swift(plan), "manifest.json": manifest(plan) };
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

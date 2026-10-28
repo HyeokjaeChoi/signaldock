@@ -154,11 +154,12 @@ Also read `scripts/verify-ios.sh` (the gates that CI and `scripts/verify-contrac
 
 ## `tracking-plan/` (optional tracking plan and code generation, issue 37)
 
-`plan.json` is the source. `generate.mjs` validates it and writes `generated/kotlin/TrackingPlan.kt` (compiled by `sdk/demo/core/data`), `generated/typescript/events.ts`, and `generated/manifest.json`. `generate.test.mjs` checks plan validation and that the Kotlin and TypeScript outputs agree. Change a generated file only by changing `plan.json` or `generate.mjs`, then run `node tracking-plan/generate.mjs`. `scripts/verify-contract.sh` (step 7) checks the drift. The SDK (`sdk/sdk-android`) and its public API dump must not change for this area; the consumer app stays on plain `track()`. The server reads the same `plan.json` (path in `SIGNALDOCK_TRACKING_PLAN`, mounted by Compose) and marks stored events (ADR-0022); a change of the plan format needs a change of `server/app/.../TrackingPlanFile.kt` in the same PR.
+`plan.json` is the source. `generate.mjs` validates it and writes `generated/kotlin/TrackingPlan.kt` (compiled by `sdk/demo/core/data`), `generated/typescript/events.ts`, `generated/swift/TrackingPlan.swift` (compiled by the `sdk-ios` tests through the link `sdk-ios/Tests/SignalDockTests/TrackingPlan.swift`), and `generated/manifest.json`. `generate.test.mjs` checks plan validation and that the Kotlin, Swift, and TypeScript outputs agree. Change a generated file only by changing `plan.json` or `generate.mjs`, then run `node tracking-plan/generate.mjs`. `scripts/verify-contract.sh` (step 7) checks the drift. The SDK (`sdk/sdk-android`) and its public API dump must not change for this area; the consumer app stays on plain `track()`. The server reads the same `plan.json` (path in `SIGNALDOCK_TRACKING_PLAN`, mounted by Compose) and marks stored events (ADR-0022); a change of the plan format needs a change of `server/app/.../TrackingPlanFile.kt` in the same PR.
 
 ADRs:
 - ADR-0002 and ADR-0012, for the generated-and-tracked output pattern
 - ADR-0021 (`docs/adr/0021-tracking-plan-codegen.md`)
+- ADR-0047 D10 and its amendment for ticket 11 (`docs/adr/0047-ios-sdk.md`), for the Swift output
 - ADR-0022 (`docs/adr/0022-server-tracking-plan-status.md`)
 
 Spec (`.scratch/signaldock/spec.md`):
