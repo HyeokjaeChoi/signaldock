@@ -1,11 +1,5 @@
 import Foundation
 
-/// The SDK log boundary. A message is fixed text: never event content, event names, installation IDs,
-/// credentials, HTTP bodies, or system error messages (Q115). `StaticString` enforces that.
-internal protocol SDKLogger {
-  func warn(_ message: StaticString)
-}
-
 /// Source of new installation IDs. A test supplies fixed values.
 internal protocol IdGenerator: Sendable {
   func newId() -> String
@@ -49,7 +43,7 @@ internal struct InstallationIdStore: Sendable {
         let existing = text.trimmingCharacters(in: .whitespacesAndNewlines)
         if Self.isUuidV4(existing) { return existing }
       }
-      logger.warn("installation id file is invalid; generating a new id")
+      logger.log(.installationIdInvalid)
     }
     let id = ids.newId()
     try write(id, to: file)

@@ -144,9 +144,10 @@ ADRs:
 - ADR-0032 (`docs/adr/0032-codeql-advanced-setup.md`), for the Swift entry of `.github/workflows/codeql.yml`
 - ADR-0002 and ADR-0047 D10, for `sdk-ios/Sources/SignalDock/Generated`, the Swift wire models that `scripts/codegen.sh` writes (ticket 06; the drift check is step 1 of `scripts/verify-contract.sh`)
 - ADR-0003 (`docs/adr/0003-sdk-storage-decisions.md`), ADR-0017 (`docs/adr/0017-sdk-crash-safety.md`), ADR-0025 (`docs/adr/0025-sdk-clock-jump.md`), for the queue and the installation ID (ticket 07); the Android storage code under `sdk/sdk-android/src/main/kotlin/local/signaldock/internal/storage/` is the parity reference
+- ADR-0034 (`docs/adr/0034-sdk-opt-out.md`), ADR-0035 (`docs/adr/0035-sdk-https-enforcement.md`), ADR-0030 (`docs/adr/0030-sdk-contract-deprecation-warning.md`), ADR-0003 (validation), ADR-0017, ADR-0019 (`docs/adr/0019-sdk-public-api-check.md`, the iOS form is `sdk-ios/api/SignalDock.swiftinterface`), and ADR-0047 "Ticket 08 results", for the public API (ticket 08); the Android public API under `sdk/sdk-android/src/main/kotlin/local/signaldock/` (`SignalDock.kt`, `Results.kt`, `EventBuilder.kt`, `internal/init/InitCoordinator.kt`, `internal/collection/`, `internal/validation/`) is the parity reference
 
 Spec (`.scratch/ios-sdk/spec.md`):
-- D6, D7, D9, D11, D13, D14 (privacy manifest, `Sources/SignalDock/PrivacyInfo.xcprivacy`), and section 5 (known limits)
+- D1, D6, D7, D9, D11, D13, D14 (privacy manifest, `Sources/SignalDock/PrivacyInfo.xcprivacy`), and section 5 (known limits)
 
 Also read `scripts/verify-ios.sh` (the gates that CI and `scripts/verify-contract.sh` share).
 

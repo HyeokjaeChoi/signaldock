@@ -1,6 +1,7 @@
 # 07. iOS storage: installation ID and SQLite queue
 
-Status: claimed
+Status: resolved
+Execution: Done (PR #252, 2026-10-28 UTC)
 Type: task
 Blocked by: 05, 20
 

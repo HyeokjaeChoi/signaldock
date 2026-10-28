@@ -1,0 +1,11 @@
+{
+  "description": "Two property keys that are canonically equivalent but have different code points: U+00E9 and U+0065 U+0301. Platforms differ on purpose (ADR-0047, ticket 08 results): Kotlin compares UTF-16 code units, so Android stores two properties. A Swift String treats canonically equal strings as equal and the wire model is a dictionary, so iOS returns the invalid reason duplicateKey. The SDK tests of each platform load this file and check their own expected result.",
+  "keys": [
+    "é",
+    "é"
+  ],
+  "expected": {
+    "android": "stored both keys",
+    "ios": "invalid duplicateKey"
+  }
+}

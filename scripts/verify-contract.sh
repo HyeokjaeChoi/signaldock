@@ -12,7 +12,8 @@
 # 6. Checks the SDK public API dump (ADR-0019) and the published dependency baseline (ADR-0033).
 # 7. Tracking plan (ADR-0021): regenerates into a temp dir and diffs against
 #    tracking-plan/generated/, then runs the generator and cross-language tests.
-# 8. iOS SDK (ADR-0047 D13; format lint, TSan, ASan, analyze): runs only with full Xcode and an iOS Simulator runtime (scripts/verify-ios.sh).
+# 8. iOS SDK (ADR-0047 D13; format lint, TSan, ASan, analyze, privacy manifest, public API diff against
+#    sdk-ios/api/SignalDock.swiftinterface): runs only with full Xcode and an iOS Simulator runtime (scripts/verify-ios.sh).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -89,7 +90,7 @@ if ! diff -rq "$ROOT/tracking-plan/generated" "$TMP_PLAN"; then
 fi
 node --test "$ROOT/tracking-plan/generate.test.mjs"
 
-echo "=== 8. iOS SDK: format lint, Simulator tests under TSan and ASan, analyze (ADR-0047 D13) ==="
+echo "=== 8. iOS SDK: format lint, Simulator tests under TSan and ASan, analyze, manifest, public API (ADR-0047 D13) ==="
 # CI runs these on macOS in the ios-test and ios-sanitize jobs. A Mac with only Command Line Tools has an
 # xcodebuild shim, so the check needs full Xcode (`xcodebuild -version`) and an iOS Simulator runtime.
 if "$ROOT/scripts/verify-ios.sh" available; then

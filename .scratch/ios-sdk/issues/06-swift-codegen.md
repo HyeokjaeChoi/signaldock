@@ -1,6 +1,7 @@
 # 06. Swift wire models from the contract
 
-Status: claimed
+Status: resolved
+Execution: Done (PR #253, 2026-10-28 UTC)
 Type: task
 Blocked by: 01, 04, 05
 

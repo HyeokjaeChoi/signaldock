@@ -1,0 +1,153 @@
+public enum LogLevel : Swift.Sendable, Swift.Equatable, Swift.CaseIterable {
+  case debug
+  case info
+  case warn
+  case error
+  case none
+  public static func == (a: SignalDock.LogLevel, b: SignalDock.LogLevel) -> Swift.Bool
+  public typealias AllCases = [SignalDock.LogLevel]
+  public static var allCases: [SignalDock.LogLevel] {
+    get
+  }
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+public struct SignalDockConfig : Swift.Sendable, Swift.Equatable, Swift.CustomStringConvertible, Swift.CustomDebugStringConvertible, Swift.CustomReflectable {
+  public var endpoint: Swift.String
+  public var collectionKey: Swift.String
+  public var logLevel: SignalDock.LogLevel
+  public var callTimeout: Foundation.TimeInterval
+  public var connectTimeout: Foundation.TimeInterval
+  public var readTimeout: Foundation.TimeInterval
+  public var writeTimeout: Foundation.TimeInterval
+  public var allowInsecureEndpoint: Swift.Bool
+  public init(endpoint: Swift.String, collectionKey: Swift.String, logLevel: SignalDock.LogLevel = .warn, callTimeout: Foundation.TimeInterval = 30, connectTimeout: Foundation.TimeInterval = 10, readTimeout: Foundation.TimeInterval = 10, writeTimeout: Foundation.TimeInterval = 10, allowInsecureEndpoint: Swift.Bool = false)
+  public var description: Swift.String {
+    get
+  }
+  public var debugDescription: Swift.String {
+    get
+  }
+  public var customMirror: Swift.Mirror {
+    get
+  }
+  public static func == (a: SignalDock.SignalDockConfig, b: SignalDock.SignalDockConfig) -> Swift.Bool
+}
+public struct EventBuilder : Swift.Sendable {
+  public mutating func property(_ key: Swift.String, _ value: Swift.String)
+  public mutating func property(_ key: Swift.String, _ value: Swift.Bool)
+  public mutating func property(_ key: Swift.String, _ value: Swift.Int)
+  public mutating func property(_ key: Swift.String, _ value: Swift.Int64)
+  public mutating func property(_ key: Swift.String, _ value: Swift.Double)
+}
+@available(iOSApplicationExtension, unavailable)
+public enum InitResult : Swift.Sendable {
+  case success(SignalDock.SignalDockSDK)
+  case failure(SignalDock.InitError)
+}
+public enum InitError : Swift.Sendable, Swift.Equatable {
+  case invalidConfiguration(message: Swift.String)
+  case configurationConflict
+  case storageFailure(message: Swift.String)
+  public static func == (a: SignalDock.InitError, b: SignalDock.InitError) -> Swift.Bool
+}
+public enum TrackResult : Swift.Sendable, Swift.Equatable {
+  case success(eventId: Swift.String)
+  case invalid(reason: SignalDock.InvalidReason, field: Swift.String?)
+  case optedOut
+  case queueFull
+  case storageError(message: Swift.String)
+  public static func == (a: SignalDock.TrackResult, b: SignalDock.TrackResult) -> Swift.Bool
+}
+public enum InvalidReason : Swift.Sendable, Swift.Equatable, Swift.CaseIterable {
+  case emptyName
+  case leadingOrTrailingWhitespace
+  case forbiddenCharacter
+  case duplicateKey
+  case nonFiniteNumber
+  case numberOutOfRange
+  case eventTooLarge
+  public static func == (a: SignalDock.InvalidReason, b: SignalDock.InvalidReason) -> Swift.Bool
+  public typealias AllCases = [SignalDock.InvalidReason]
+  public static var allCases: [SignalDock.InvalidReason] {
+    get
+  }
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+public struct RejectionDiagnostic : Swift.Sendable, Swift.Equatable {
+  public let eventId: Swift.String
+  public let code: Swift.String
+  public let rejectedAtEpochMillis: Swift.Int64
+  public static func == (a: SignalDock.RejectionDiagnostic, b: SignalDock.RejectionDiagnostic) -> Swift.Bool
+}
+public struct AckDiagnostic : Swift.Sendable, Swift.Equatable {
+  public let atEpochMillis: Swift.Int64
+  public let accepted: Swift.Int
+  public let duplicate: Swift.Int
+  public let rejected: Swift.Int
+  public static func == (a: SignalDock.AckDiagnostic, b: SignalDock.AckDiagnostic) -> Swift.Bool
+}
+public enum DeliveryErrorKind : Swift.String, Swift.Sendable, Swift.Equatable, Swift.CaseIterable {
+  case network
+  case timeout
+  case rateLimited
+  case serverError
+  case authOrConfiguration
+  case contract
+  case payloadTooLarge
+  case invalidAck
+  public init?(rawValue: Swift.String)
+  public typealias AllCases = [SignalDock.DeliveryErrorKind]
+  public typealias RawValue = Swift.String
+  public static var allCases: [SignalDock.DeliveryErrorKind] {
+    get
+  }
+  public var rawValue: Swift.String {
+    get
+  }
+}
+public struct DeliveryErrorDiagnostic : Swift.Sendable, Swift.Equatable {
+  public let kind: SignalDock.DeliveryErrorKind
+  public let httpStatus: Swift.Int?
+  public let atEpochMillis: Swift.Int64
+  public static func == (a: SignalDock.DeliveryErrorDiagnostic, b: SignalDock.DeliveryErrorDiagnostic) -> Swift.Bool
+}
+public struct ContractDeprecation : Swift.Sendable, Swift.Equatable {
+  public let deprecatedAtEpochMillis: Swift.Int64?
+  public let sunsetAtEpochMillis: Swift.Int64?
+  public static func == (a: SignalDock.ContractDeprecation, b: SignalDock.ContractDeprecation) -> Swift.Bool
+}
+public struct Diagnostics : Swift.Sendable, Swift.Equatable {
+  public let sdkVersion: Swift.String
+  public let queuedEvents: Swift.Int
+  public let queuedBytes: Swift.Int64
+  public let oldestPendingEpochMillis: Swift.Int64?
+  public let recentRejections: [SignalDock.RejectionDiagnostic]
+  public let lastAck: SignalDock.AckDiagnostic?
+  public let lastDeliveryError: SignalDock.DeliveryErrorDiagnostic?
+  public let retryFailureCount: Swift.Int
+  public let nextAttemptEpochMillis: Swift.Int64?
+  public let storageAvailable: Swift.Bool
+  public let contractDeprecation: SignalDock.ContractDeprecation?
+  public static func == (a: SignalDock.Diagnostics, b: SignalDock.Diagnostics) -> Swift.Bool
+}
+@_hasMissingDesignatedInitializers @available(iOSApplicationExtension, unavailable)
+final public class SignalDockSDK : Swift.Sendable {
+  public static let version: Swift.String
+  public static func initialize(_ config: SignalDock.SignalDockConfig) async throws(_Concurrency.CancellationError) -> SignalDock.InitResult
+  final public func track(isolation: isolated (any _Concurrency.Actor)? = #isolation, _ name: Swift.String, _ build: (inout SignalDock.EventBuilder) -> Swift.Void = { _ in }) async throws(_Concurrency.CancellationError) -> SignalDock.TrackResult
+  final public func setOptOut(_ optedOut: Swift.Bool) async -> Swift.Bool
+  final public func isOptedOut() -> Swift.Bool
+  final public func clearQueue() async throws(_Concurrency.CancellationError) -> Swift.Int?
+  final public func diagnostics() async throws(_Concurrency.CancellationError) -> SignalDock.Diagnostics
+  @objc deinit
+}
+extension SignalDock.LogLevel : Swift.Hashable {}
+extension SignalDock.InvalidReason : Swift.Hashable {}
+extension SignalDock.DeliveryErrorKind : Swift.Hashable {}
+extension SignalDock.DeliveryErrorKind : Swift.RawRepresentable {}
