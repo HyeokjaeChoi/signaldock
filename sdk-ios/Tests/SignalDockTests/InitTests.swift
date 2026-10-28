@@ -67,6 +67,7 @@ import Testing
     #expect(again === first)
   }
 
+  @available(iOS 16.0, *)
   @Test(.timeLimit(.minutes(1))) func sameConfigCallsShareOneAttemptAndADifferentOneConflictsWhileItRuns() async throws
   {
     let gate = Gate()
@@ -88,6 +89,7 @@ import Testing
     #expect(builder.builds == 1)
   }
 
+  @available(iOS 16.0, *)
   @Test(.timeLimit(.minutes(1))) func cancellingACallerCancelsOnlyItsOwnWait() async throws {
     let gate = Gate()
     let builder = try Builder(gate: gate)
@@ -110,6 +112,7 @@ import Testing
     #expect(builder.builds == 1)
   }
 
+  @available(iOS 16.0, *)
   @Test(.timeLimit(.minutes(1))) func theAttemptContinuesWhenEveryWaiterLeaves() async throws {
     let gate = Gate()
     let builder = try Builder(gate: gate)
