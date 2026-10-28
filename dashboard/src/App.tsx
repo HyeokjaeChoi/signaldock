@@ -220,7 +220,7 @@ export function App({ api = realApi }: { api?: Api }) {
   // A card without another sub line still says what is known: the last success of any query, or that there is none yet (Q144).
   const lastSuccessSub = lastSuccess ? t("kpi.liveSub", { time: clock(lastSuccess) }) : t("kpi.noSuccessSub");
 
-  // At 720 px or less the three exact filters sit in a disclosure that is open while a filter is in force (Q147).
+  // At 720 px or less the five filter fields sit in a disclosure that is open while a filter is in force (Q147).
   const narrow = useNarrow();
   const [moreOpen, setMoreOpen] = useState(false);
   useEffect(() => { setMoreOpen(filtered); }, [filtered]);
