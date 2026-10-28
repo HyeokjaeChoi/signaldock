@@ -40,8 +40,10 @@ run_lint() {
   echo "=== iOS: swift format lint --strict ==="
   # Sources/SignalDock/Generated is generator output (internal, 4-space, no documentation): the generator pins its
   # format and the drift check in verify-contract.sh guards it, so the lint skips that folder (ADR-0047 D10 amendment).
+  # --follow-symlinks: Tests/SignalDockTests/TrackingPlan.swift is a link to the generated tracking plan (ADR-0047,
+  # ticket 11); without the flag swift-format skips a link and exits 0.
   find "$PKG/Package.swift" "$PKG/Sources" "$PKG/Tests" -path "$PKG/Sources/SignalDock/Generated" -prune -o -name '*.swift' -print0 |
-    xargs -0 swift format lint --strict
+    xargs -0 swift format lint --strict --follow-symlinks
 }
 
 run_tests() { # arguments: sanitizer flags
