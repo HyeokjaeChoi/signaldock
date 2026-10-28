@@ -16,7 +16,12 @@ internal struct DeliveryDependencies: Sendable {
   internal var observeLifecycle = true
   /// Whether the app is active now, read once on the main actor when the SDK is built. A launch in the background
   /// (a silent push, a background fetch) starts without the retry timer.
-  internal var initialActive: @MainActor @Sendable () -> Bool = { UIApplication.shared.applicationState == .active }
+  internal var initialActive: @MainActor @Sendable () -> Bool = {
+    DeliveryDependencies.isForeground(UIApplication.shared.applicationState)
+  }
+  /// A normal foreground launch reports `.inactive` until the first `didBecomeActive`, so only `.background` counts as
+  /// not active: no lifecycle notification follows that launch.
+  internal static func isForeground(_ state: UIApplication.State) -> Bool { state != .background }
   /// One drain when the SDK is built (a launch with a restored queue).
   internal var drainAtLaunch = true
   /// Where the lifecycle notifications come from. A test seam: a test posts on its own center.

@@ -7,6 +7,12 @@ import UIKit
 /// The real factory with a fake transport, a manual timer, and a fake background task: `track` to ACK, and the launch,
 /// foreground, and background triggers (ADR-0047 D8).
 @Suite struct DeliveryIntegrationTests {
+  @Test func aLaunchInTheInactiveStateCountsAsForegroundAndOnlyBackgroundDoesNot() {
+    #expect(DeliveryDependencies.isForeground(.inactive))
+    #expect(DeliveryDependencies.isForeground(.active))
+    #expect(!DeliveryDependencies.isForeground(.background))
+  }
+
   private struct Parts {
     var deps: DeliveryDependencies
     let transport: FakeTransport

@@ -145,7 +145,7 @@ final class StubURLProtocol: URLProtocol {
 
   @Test func statusHeadersAndTheBodyOfA200ComeBack() async throws {
     let ack = Data(ackJson(ids: ["a"]).utf8)
-    let (transport, _) = make { _ in
+    let (transport, _) = make(callTimeout: 5, readTimeout: 5) { _ in
       .respond(
         status: 200,
         headers: ["Retry-After": "5", "Deprecation": "@1788220800", "Sunset": "Wed, 11 Nov 2026 23:59:59 GMT"],
@@ -215,7 +215,7 @@ final class StubURLProtocol: URLProtocol {
 
   @Test func cancellingTheTaskDuringTheRequestThrowsCancellationError() async throws {
     let entered = Gate()
-    let (transport, _) = make { _ in .hang(entered: entered) }
+    let (transport, _) = make(callTimeout: 5, readTimeout: 5) { _ in .hang(entered: entered) }
     let body = request
     let task = Task { try await transport.send(body) }
     await entered.wait()  // the request is in flight
