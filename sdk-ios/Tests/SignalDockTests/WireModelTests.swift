@@ -3,7 +3,7 @@ import Testing
 
 @testable import SignalDock
 
-/// The generated wire models (`generated/swift`, ADR-0047 D10) against the shared fixtures: every fixture decodes,
+/// The generated wire models (`sdk-ios/Sources/SignalDock/Generated`, ADR-0047 D10) against the shared fixtures: every fixture decodes,
 /// encodes again, and equals the original by JSON value (numbers by value, not by spelling).
 @Suite struct WireModelTests {
   /// Repository root, from this file's path: `<root>/sdk-ios/Tests/SignalDockTests/<file>`.
@@ -72,22 +72,24 @@ import Testing
   }
 
   /// Fixture file name to the model that carries it.
-  static let roundtripModels: [(String, any Codable.Type)] = [
-    ("batch-ack.json", BatchAckResponse.self),
-    ("batch-request.json", BatchIngestRequest.self),
-    ("batch-request-ios.json", BatchIngestRequest.self),
-    ("client-report-counts.json", ClientReportCounts.self),
-    ("client-report-request.json", ClientReportRequest.self),
-    ("client-report-request-ios.json", ClientReportRequest.self),
-    ("error-400.json", ModelErrorResponse.self),
-    ("event-name-counts.json", EventNameCounts.self),
-    ("event-plan-status-counts.json", EventPlanStatusCounts.self),
-    ("event-receipt-detail.json", EventReceiptDetail.self),
-    ("event-receipt-detail-plan-status.json", EventReceiptDetail.self),
-    ("event-receipt-page.json", EventReceiptPage.self),
-    ("event-receipt-page-plan-status.json", EventReceiptPage.self),
-    ("event-time-counts.json", EventTimeCounts.self),
-  ]
+  static var roundtripModels: [(String, any Codable.Type)] {
+    [
+      ("batch-ack.json", BatchAckResponse.self),
+      ("batch-request.json", BatchIngestRequest.self),
+      ("batch-request-ios.json", BatchIngestRequest.self),
+      ("client-report-counts.json", ClientReportCounts.self),
+      ("client-report-request.json", ClientReportRequest.self),
+      ("client-report-request-ios.json", ClientReportRequest.self),
+      ("error-400.json", ModelErrorResponse.self),
+      ("event-name-counts.json", EventNameCounts.self),
+      ("event-plan-status-counts.json", EventPlanStatusCounts.self),
+      ("event-receipt-detail.json", EventReceiptDetail.self),
+      ("event-receipt-detail-plan-status.json", EventReceiptDetail.self),
+      ("event-receipt-page.json", EventReceiptPage.self),
+      ("event-receipt-page-plan-status.json", EventReceiptPage.self),
+      ("event-time-counts.json", EventTimeCounts.self),
+    ]
+  }
 
   @Test func everyRoundtripFixtureHasAModel() {
     #expect(Set(Self.files(in: "roundtrip")) == Set(Self.roundtripModels.map(\.0)))

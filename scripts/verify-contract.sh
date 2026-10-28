@@ -31,9 +31,9 @@ fi
 
 echo "=== 1. codegen drift check ==="
 TMP_GEN="$(mktemp -d)"
-trap 'rm -rf "$TMP_GEN"' EXIT
+TMP_PLAN="$TMP_GEN-plan" # created in step 7
+trap 'rm -rf "$TMP_GEN" "$TMP_GEN-swift" "$TMP_PLAN"' EXIT # the only trap: later steps must not reset it
 "$ROOT/scripts/codegen.sh" "$TMP_GEN" "$TMP_GEN-swift" > /dev/null
-trap 'rm -rf "$TMP_GEN" "$TMP_GEN-swift"' EXIT
 if ! diff -rq "$ROOT/generated" "$TMP_GEN"; then
   echo "error: generated/ drifted from openapi/contract-v1.yaml" >&2
   echo "run scripts/codegen.sh and commit the result" >&2
@@ -80,8 +80,7 @@ fi
 
 echo "=== 7. tracking plan codegen drift + cross-language test (ADR-0021) ==="
 # Needs only Node (no Android SDK). Verification never rewrites the checkout.
-TMP_PLAN="$(mktemp -d)"
-trap 'rm -rf "$TMP_GEN" "$TMP_PLAN"' EXIT
+mkdir -p "$TMP_PLAN"
 node "$ROOT/tracking-plan/generate.mjs" "$TMP_PLAN" > /dev/null
 if ! diff -rq "$ROOT/tracking-plan/generated" "$TMP_PLAN"; then
   echo "error: tracking-plan/generated/ drifted from tracking-plan/plan.json" >&2
