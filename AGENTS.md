@@ -39,6 +39,7 @@ Code enforces these. Do not restate them in prose; read the check when it fails.
 | `demo-deploy.yml` runs only on `push` of `demo-v*` tags | `scripts/check-repo-rules.sh` |
 | `demo-deploy.yml` has no `id-token`, `write-all`, or `secrets` context | `scripts/check-repo-rules.sh` |
 | Contract and generated code: codegen drift, `oasdiff` baseline, SDK public API dump, SDK dependency baseline, tracking plan codegen | `scripts/verify-contract.sh` (pre-push, CI `verify-contract`) |
+| iOS SDK public API: `sdk-ios/api/SignalDock.swiftinterface` equals the normalized interface of a check-only build; update it with `scripts/verify-ios.sh api-update` | `scripts/verify-contract.sh` step 8 on a Mac with Xcode (pre-push), CI `ios-test` (`scripts/verify-ios.sh api`) |
 | PR description is 3,500 characters or less (author text only; Dependabot and Renovate PRs exempt) | `.github/workflows/pr-description.yml` |
 | Builds, tests, device tests, SDK size budget, Gradle wrapper checksums | `.github/workflows/repo-rules.yml` |
 

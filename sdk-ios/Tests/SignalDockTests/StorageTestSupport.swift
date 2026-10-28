@@ -21,11 +21,25 @@ final class TempDirectory {
   func file(_ name: String) -> URL { url.appendingPathComponent(name) }
 }
 
-/// Collects warnings. Used on one thread at a time, so it needs no lock.
-final class RecordingLogger: SDKLogger {
-  private(set) var warnings: [String] = []
+/// Collects log messages from many tasks. `@unchecked Sendable`: `stored` is read and written only under `lock`
+/// (ADR-0047 amendment, ticket 08: test helpers).
+final class RecordingLogger: SDKLogger, @unchecked Sendable {
+  private let lock = NSLock()
+  private var stored: [LogMessage] = []
 
-  func warn(_ message: StaticString) { warnings.append("\(message)") }
+  func log(_ message: LogMessage) {
+    lock.lock()
+    defer { lock.unlock() }
+    stored.append(message)
+  }
+
+  var messages: [LogMessage] {
+    lock.lock()
+    defer { lock.unlock() }
+    return stored
+  }
+
+  var warnings: [LogMessage] { messages.filter { $0.level == .warn } }
 }
 
 struct FixedId: IdGenerator {

@@ -1,6 +1,6 @@
 # 08. iOS public API: initialize, track, opt-out, diagnostics
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: 06, 07
 
@@ -13,7 +13,7 @@ Spec D1, D9. ADR-0034, ADR-0035, ADR-0030, ADR-0019, ADR-0047.
 3. Public API check: `.swiftinterface` from a check-only build in `sdk-ios/api/`, diffed in `scripts/verify-contract.sh` (`AGENTS.md` row).
 4. DocC-style documentation on every public declaration (format gate from ticket 05).
 5. Storage failure gives the Android crash-safety results (ADR-0017), moved from ticket 07: `StorageError` from the storage layer becomes `InitError.StorageFailure` (no instance), `TrackResult.storageError`, and `storageAvailable = false` in `diagnostics()`; nothing is thrown into the host.
-6. `track` rejects an `Int` or `Int64` property value outside +-(2^53-1) (spec section 3, Android `MAX_SAFE_INTEGER`): the generated `PropertyValue` is a `Double` (ADR-0047, ticket 06 results).
+6. `track` rejects an `Int` or `Int64` property value outside +-(2^53-1) (spec section 3, Android `MAX_SAFE_INTEGER`): the generated `EventIngestPropertiesValue` (the send type of `EventIngest.properties`; `PropertyValue` is only for `EventReceiptDetail`) is a `Double` (ADR-0047, ticket 06 results).
 7. Tests: also the failure cases of item 5, and every `TrackResult` and `InitResult` case; opt-out race of ADR-0034 decision 8; validation fixtures shared with Android.
 
 Verification:

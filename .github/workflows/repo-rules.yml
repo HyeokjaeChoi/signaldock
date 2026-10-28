@@ -170,6 +170,7 @@ jobs:
       - run: scripts/verify-ios.sh tsan
       - run: scripts/verify-ios.sh analyze
       - run: scripts/verify-ios.sh manifest
+      - run: scripts/verify-ios.sh api # public API against sdk-ios/api/SignalDock.swiftinterface (ADR-0047 D13 item 7)
 
   # A separate run with ASan and UBSan; TSan cannot be combined with them.
   ios-sanitize:

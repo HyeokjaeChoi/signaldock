@@ -123,7 +123,7 @@ import Testing
       ])
   }
 
-  @Test func propertyValueDecodesStringNumberAndBooleanByValue() throws {
+  @Test func eventIngestPropertiesValueDecodesStringNumberAndBooleanByValueFromTheAndroidCorpus() throws {
     let data = try Self.fixture("sdk-wire/android/all-property-types.json")
     let props = try #require(JSONDecoder().decode(BatchIngestRequest.self, from: data).events.first).properties
     #expect(props["text"] == .typeString("hello"))
@@ -139,19 +139,54 @@ import Testing
     #expect(props["double_big"] == .typeDouble(9.00719925474099e15))
   }
 
+  /// `EventIngest.properties` is the send type (`track` uses it); `PropertyValue` only `EventReceiptDetail` uses. The
+  /// generator makes two identical enums, so both get the same checks.
   @Test func propertyValueEncodesEachCaseAsItsOwnJSONType() throws {
+    try checkEncodes(PropertyValue.typeString, PropertyValue.typeBool, PropertyValue.typeDouble)
+  }
+
+  @Test func eventIngestPropertiesValueEncodesEachCaseAsItsOwnJSONType() throws {
+    try checkEncodes(
+      EventIngestPropertiesValue.typeString, EventIngestPropertiesValue.typeBool, EventIngestPropertiesValue.typeDouble)
+  }
+
+  private func checkEncodes<T: Codable>(
+    _ string: (String) -> T, _ bool: (Bool) -> T, _ double: (Double) -> T
+  ) throws {
     let encoder = JSONEncoder()
-    #expect(String(decoding: try encoder.encode([PropertyValue.typeString("a")]), as: UTF8.self) == #"["a"]"#)
-    #expect(String(decoding: try encoder.encode([PropertyValue.typeBool(true)]), as: UTF8.self) == "[true]")
-    #expect(String(decoding: try encoder.encode([PropertyValue.typeDouble(2)]), as: UTF8.self) == "[2]")
-    #expect(String(decoding: try encoder.encode([PropertyValue.typeDouble(12.5)]), as: UTF8.self) == "[12.5]")
+    #expect(String(decoding: try encoder.encode([string("a")]), as: UTF8.self) == #"["a"]"#)
+    #expect(String(decoding: try encoder.encode([bool(true)]), as: UTF8.self) == "[true]")
+    #expect(String(decoding: try encoder.encode([double(2)]), as: UTF8.self) == "[2]")
+    #expect(String(decoding: try encoder.encode([double(12.5)]), as: UTF8.self) == "[12.5]")
   }
 
   @Test func propertyValueRejectsNullAndNesting() {
+    checkRejects(PropertyValue.self)
+  }
+
+  @Test func eventIngestPropertiesValueRejectsNullAndNesting() {
+    checkRejects(EventIngestPropertiesValue.self)
+  }
+
+  private func checkRejects<T: Decodable>(_ type: T.Type) {
     let decoder = JSONDecoder()
     for bad in ["null", "[1]", #"{"a":1}"#] {
-      #expect(throws: DecodingError.self) { try decoder.decode(PropertyValue.self, from: Data(bad.utf8)) }
+      #expect(throws: DecodingError.self) { try decoder.decode(T.self, from: Data(bad.utf8)) }
     }
+  }
+
+  /// Bool, then Double, then String: `1` and `0` are numbers, `true` and `false` are booleans, and a quoted `"1"`
+  /// stays a string.
+  @Test func eventIngestPropertiesValueDecodesInTheOrderBoolDoubleString() throws {
+    let values = try JSONDecoder().decode(
+      [EventIngestPropertiesValue].self, from: Data(#"[1, true, "x", 0, false, 1.5, "1", "true", -0.0]"#.utf8))
+    #expect(
+      values == [
+        .typeDouble(1), .typeBool(true), .typeString("x"), .typeDouble(0), .typeBool(false), .typeDouble(1.5),
+        .typeString("1"), .typeString("true"), .typeDouble(-0.0),
+      ])
+    let received = try JSONDecoder().decode([PropertyValue].self, from: Data(#"[1, true, "1"]"#.utf8))
+    #expect(received == [.typeDouble(1), .typeBool(true), .typeString("1")])
   }
 
   @Test func occurredAtStaysAStringAndSdkPlatformIsKept() throws {
