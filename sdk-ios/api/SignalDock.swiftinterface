@@ -142,7 +142,7 @@ final public class SignalDockSDK : Swift.Sendable {
   public static func initialize(_ config: SignalDock.SignalDockConfig) async throws(_Concurrency.CancellationError) -> SignalDock.InitResult
   final public func track(isolation: isolated (any _Concurrency.Actor)? = #isolation, _ name: Swift.String, _ build: (inout SignalDock.EventBuilder) -> Swift.Void = { _ in }) async throws(_Concurrency.CancellationError) -> SignalDock.TrackResult
   final public func setOptOut(_ optedOut: Swift.Bool) async -> Swift.Bool
-  final public func isOptedOut() async -> Swift.Bool
+  final public func isOptedOut() -> Swift.Bool
   final public func clearQueue() async throws(_Concurrency.CancellationError) -> Swift.Int?
   final public func diagnostics() async throws(_Concurrency.CancellationError) -> SignalDock.Diagnostics
   @objc deinit

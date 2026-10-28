@@ -18,7 +18,7 @@ internal struct EventCollector: Sendable {
     // Before anything else: nothing is evaluated, stored, or sent while opted out (ADR-0034 decision 2).
     // The flag can change right after this read: a `track` that started before `setOptOut(true)` returned can still
     // store its event (ADR-0034 decision 8).
-    if await optOut.isOptedOut() { return .optedOut }
+    if optOut.isOptedOut { return .optedOut }
     let now = clock.nowMillis()
     var builder = EventBuilder()
     build(&builder)

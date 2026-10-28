@@ -87,7 +87,7 @@ public final class SignalDockSDK: Sendable {
   }
 
   /// `true` while collection is off because of ``setOptOut(_:)``.
-  public func isOptedOut() async -> Bool { await optOut.isOptedOut() }
+  public func isOptedOut() -> Bool { optOut.isOptedOut }
 
   /// Deletes every queued event from the device. Use it with ``setOptOut(_:)`` when a user withdraws consent.
   /// Diagnostics about past rejections and ACKs stay; they hold no event content. A batch that the SDK is sending at

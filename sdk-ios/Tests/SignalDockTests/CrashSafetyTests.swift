@@ -25,7 +25,7 @@ import Testing
     #expect(diagnostics.nextAttemptEpochMillis == nil)
     #expect(diagnostics.sdkVersion == SignalDockSDK.version)
     #expect(try await h.sdk.clearQueue() == nil)
-    #expect(await h.sdk.isOptedOut() == false)  // the opt-out calls need no queue
+    #expect(h.sdk.isOptedOut() == false)  // the opt-out calls need no queue
     #expect(await h.sdk.setOptOut(true))
     #expect(h.logger.messages.contains(.trackStorageFailed))
     #expect(h.logger.messages.contains(.diagnosticsStorageFailed))
@@ -158,7 +158,7 @@ import Testing
       return
     }
     #expect(stored)
-    #expect(await sdk.isOptedOut())
+    #expect(sdk.isOptedOut())
     #expect(FileManager.default.fileExists(atPath: h.sdkDirectory.appendingPathComponent("opt-out").path))
   }
 
@@ -178,7 +178,7 @@ import Testing
         group.addTask { _ = try await sdk.track("e\(n)") }
         group.addTask { _ = await sdk.setOptOut(n % 2 == 0) }
         group.addTask { _ = try await sdk.diagnostics() }
-        group.addTask { _ = await sdk.isOptedOut() }
+        group.addTask { _ = sdk.isOptedOut() }
         if n % 10 == 0 { group.addTask { _ = try await sdk.clearQueue() } }
       }
       try await group.waitForAll()

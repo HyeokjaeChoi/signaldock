@@ -121,13 +121,13 @@ import Testing
 
   @Test func theOptOutStoreReadsOnlyTheMarkersExistence() async throws {
     let dir = try TempDirectory()
-    #expect(await OptOutStore(directory: dir.url).isOptedOut() == false)
+    #expect(OptOutStore(directory: dir.url).isOptedOut == false)
     let store = OptOutStore(directory: dir.url)
     #expect(await store.set(true))
-    #expect(await OptOutStore(directory: dir.url).isOptedOut())
+    #expect(OptOutStore(directory: dir.url).isOptedOut)
     #expect(await store.set(true))  // idempotent
     #expect(await store.set(false))
     #expect(await store.set(false))
-    #expect(await OptOutStore(directory: dir.url).isOptedOut() == false)
+    #expect(OptOutStore(directory: dir.url).isOptedOut == false)
   }
 }
