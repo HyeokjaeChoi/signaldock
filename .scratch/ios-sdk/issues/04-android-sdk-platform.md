@@ -1,8 +1,9 @@
 # 04. Android SDK 0.4.0 sends `sdkPlatform`
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: 01, 02
+Execution: Done (PR #251, 2026-10-28 UTC)
 
 ## Scope and completion criteria
 
@@ -17,3 +18,7 @@ Spec D2, D3. ADR-0046.
 Verification:
 - SDK unit tests, `scripts/verify-contract.sh`, `bash scripts/check-repo-rules.sh`.
 - `scripts/verify-consumer.sh` against a server from ticket 02.
+
+## Verification run 2026-10-28
+
+`JAVA_HOME=<repo>/.tools/jdk-21.0.12.1+1 ANDROID_HOME=<sdk> bash scripts/verify-consumer.sh` on origin/main (be20394): exit 0. Maven ZIP `signaldock-sdk-android-0.4.0-maven.zip`; AAR Kotlin metadata `mv=[2,2,0]`; consumer Kotlin Gradle plugin 2.2.10; `:app:assembleRelease` (R8 9.4.24) `BUILD SUCCESSFUL`. The script needs no emulator and sends no request to a server, so the Compose stack is not part of this check.
