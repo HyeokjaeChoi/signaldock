@@ -109,10 +109,12 @@ final class StubURLProtocol: URLProtocol {
 
 /// `URLSessionBatchTransport` against the stub (ADR-0006 decision 12, Android `TransportTest`).
 @Suite struct TransportTests {
-  /// A transport for a new host that the test controls.
+  /// A transport for a new host that the test controls. The timeouts are long on purpose: a CI runner under a
+  /// sanitizer can starve the whole process for a minute, and a real 5 s or 30 s timeout then ends a request that the
+  /// stub has not yet seen (`.failed(.timeout)`). No test here checks a real timeout; they check the session settings.
   private func make(
-    endpoint: String = "https://@HOST@", callTimeout: TimeInterval = 30, connectTimeout: TimeInterval = 10,
-    readTimeout: TimeInterval = 10, writeTimeout: TimeInterval = 10, ackLimit: Int = maxAckBytes,
+    endpoint: String = "https://@HOST@", callTimeout: TimeInterval = 600, connectTimeout: TimeInterval = 600,
+    readTimeout: TimeInterval = 600, writeTimeout: TimeInterval = 600, ackLimit: Int = maxAckBytes,
     _ handler: @escaping @Sendable (StubRequest) -> StubAction
   ) -> (URLSessionBatchTransport, String) {
     let host = "t-\(UUID().uuidString.lowercased()).test"
@@ -145,7 +147,7 @@ final class StubURLProtocol: URLProtocol {
 
   @Test func statusHeadersAndTheBodyOfA200ComeBack() async throws {
     let ack = Data(ackJson(ids: ["a"]).utf8)
-    let (transport, _) = make(callTimeout: 5, readTimeout: 5) { _ in
+    let (transport, _) = make { _ in
       .respond(
         status: 200,
         headers: ["Retry-After": "5", "Deprecation": "@1788220800", "Sunset": "Wed, 11 Nov 2026 23:59:59 GMT"],
@@ -218,7 +220,7 @@ final class StubURLProtocol: URLProtocol {
 
   @Test func cancellingTheTaskDuringTheRequestThrowsCancellationError() async throws {
     let entered = Gate()
-    let (transport, _) = make(callTimeout: 5, readTimeout: 5) { _ in .hang(entered: entered) }
+    let (transport, _) = make { _ in .hang(entered: entered) }
     let body = request
     let task = Task { try await transport.send(body) }
     await entered.wait()  // the request is in flight
@@ -237,8 +239,8 @@ final class StubURLProtocol: URLProtocol {
   // MARK: Session settings (Q119 to Q123)
 
   @Test func theDefaultsAreA30SecondCallTimeoutAndTenSecondProgressTimeouts() {
-    let (transport, _) = make { _ in .respond(status: 200) }
-    let c = transport.session.configuration
+    let config = SignalDockConfig(endpoint: "https://defaults.test", collectionKey: "key-123")
+    let c = URLSessionBatchTransport(config: config).session.configuration
     #expect(c.timeoutIntervalForResource == 30)
     #expect(c.timeoutIntervalForRequest == 10)
   }
