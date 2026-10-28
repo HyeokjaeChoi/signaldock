@@ -1,8 +1,9 @@
 # 12. iOS privacy manifest and required-reason check
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: 05
+Execution: Done (PR #250, 2026-10-28 UTC)
 
 ## Scope and completion criteria
 
