@@ -88,6 +88,7 @@ function DetailBody({ detail, timeZone }: { detail: EventReceiptDetail; timeZone
         <dt>{t("details.installationId")}</dt><dd><code>{detail.installationId}</code> <CopyButton text={detail.installationId} label={t("copy.installationId")} /></dd>
         <dt>{t("details.occurredAt")}</dt><dd>{formatDateTime(detail.occurredAt, timeZone, i18n.language)}</dd>
         <dt>{t("details.receivedAt")}</dt><dd>{formatDateTime(detail.receivedAt, timeZone, i18n.language)}</dd>
+        <dt>{t("details.sdkPlatform")}</dt><dd>{t(`platform.${detail.sdkPlatform}`)}</dd>
         <dt>{t("details.sdkVersion")}</dt><dd>{detail.sdkVersion}</dd>
         <dt>{t("details.planStatus")}</dt><dd><PlanBadge status={detail.planStatus} /></dd>
       </dl>

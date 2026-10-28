@@ -17,7 +17,7 @@ import { useTranslation } from "./i18n";
 import type { T } from "./i18n";
 import { LANGUAGES, formatBucketLabel, formatClock, formatDate, formatDateTimeParts, formatNumber } from "../../web-shared/i18n";
 import type { Language } from "../../web-shared/i18n";
-import { PlanStatus } from "../../generated/typescript/models";
+import { PlanStatus, SdkPlatform } from "../../generated/typescript/models";
 import { THEMES, useTheme } from "../../web-shared/theme";
 import type { Theme } from "../../web-shared/theme";
 
@@ -25,9 +25,10 @@ import type { Theme } from "../../web-shared/theme";
 export const PROJECT_TIME_ZONE: string = import.meta.env.VITE_SIGNALDOCK_TIME_ZONE ?? "Asia/Seoul";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-interface Draft { name: string; installationId: string; eventId: string; planStatus: "" | PlanStatus }
-const EMPTY: Draft = { name: "", installationId: "", eventId: "", planStatus: "" };
+interface Draft { name: string; installationId: string; eventId: string; planStatus: "" | PlanStatus; sdkPlatform: "" | SdkPlatform }
+const EMPTY: Draft = { name: "", installationId: "", eventId: "", planStatus: "", sdkPlatform: "" };
 const PLAN_STATUSES = Object.values(PlanStatus);
+const PLATFORMS = Object.values(SdkPlatform);
 
 const HEALTH_BADGE: Record<Health, string> = { live: "ok", paused: "idle", loading: "idle", retrying: "warn", stopped: "bad", idle: "idle" };
 
@@ -164,6 +165,7 @@ export function App({ api = realApi }: { api?: Api }) {
         installationId: applied.installationId || undefined,
         eventId: applied.eventId || undefined,
         planStatus: applied.planStatus || undefined,
+        sdkPlatform: applied.sdkPlatform || undefined,
       }
     : undefined;
   const filterKey = filters ? JSON.stringify(filters) : null;
@@ -174,8 +176,8 @@ export function App({ api = realApi }: { api?: Api }) {
   const byTime = usePolledQuery(filterKey && `time|${filterKey}`, (s) => api.countsByTime(filters!, s));
   // The plan-status counts split by status, so the status filter does not apply to them (ADR-0022).
   const byPlan = usePolledQuery(filterKey && `plan|${JSON.stringify({ ...filters, planStatus: undefined })}`, (s) => api.countsByPlanStatus(filters!, s));
-  // SDK-reported dropped events: the period only. No event filter applies to them (Q164).
-  const dropped = usePolledQuery(filters ? `dropped|${filters.from}|${filters.to}` : null, (s) => api.clientReportCounts(filters!, s));
+  // SDK-reported dropped events: the period and the platform. No other event filter applies to them (Q164, ADR-0046).
+  const dropped = usePolledQuery(filters ? `dropped|${filters.from}|${filters.to}|${filters.sdkPlatform ?? ""}` : null, (s) => api.clientReportCounts(filters!, s));
 
   const resetPaging =() => setCursors([]);
   const applyFilters = (e: React.FormEvent<HTMLFormElement>) => {
@@ -204,7 +206,7 @@ export function App({ api = realApi }: { api?: Api }) {
 
   const page = list.state.data;
   const today = formatDate(now, tz, lang);
-  const filtered = Boolean(applied.name || applied.installationId || applied.eventId || applied.planStatus);
+  const filtered = Boolean(applied.name || applied.installationId || applied.eventId || applied.planStatus || applied.sdkPlatform);
 
   // KPI values: derived from the three queries above (Q140). No extra request.
   const receivedToday = receivedOnDay(byTime.state.data, dateIn(now, tz), tz);
@@ -218,7 +220,7 @@ export function App({ api = realApi }: { api?: Api }) {
   // A card without another sub line still says what is known: the last success of any query, or that there is none yet (Q144).
   const lastSuccessSub = lastSuccess ? t("kpi.liveSub", { time: clock(lastSuccess) }) : t("kpi.noSuccessSub");
 
-  // At 720 px or less the three exact filters sit in a disclosure that is open while a filter is in force (Q147).
+  // At 720 px or less the five filter fields sit in a disclosure that is open while a filter is in force (Q147).
   const narrow = useNarrow();
   const [moreOpen, setMoreOpen] = useState(false);
   useEffect(() => { setMoreOpen(filtered); }, [filtered]);
@@ -246,6 +248,12 @@ export function App({ api = realApi }: { api?: Api }) {
         <select name="planStatus" value={draft.planStatus} onChange={(e) => setDraft({ ...draft, planStatus: e.target.value as Draft["planStatus"] })}>
           <option value="">{t("plan.all")}</option>
           {PLAN_STATUSES.map((s) => <option key={s} value={s}>{t(`plan.${s}`)}</option>)}
+        </select>
+      </label>
+      <label className="field">{t("controls.platform")}{" "}
+        <select name="sdkPlatform" value={draft.sdkPlatform} onChange={(e) => setDraft({ ...draft, sdkPlatform: e.target.value as Draft["sdkPlatform"] })}>
+          <option value="">{t("platform.all")}</option>
+          {PLATFORMS.map((p) => <option key={p} value={p}>{t(`platform.${p}`)}</option>)}
         </select>
       </label>
     </>
@@ -354,7 +362,7 @@ export function App({ api = realApi }: { api?: Api }) {
               <table>
                 <caption className="sr-only">{t("list.title", { page: formatNumber(cursors.length + 1, i18n.language) })}</caption>
                 <thead>
-                  <tr><th scope="col">receivedAt</th><th scope="col">{t("list.name")}</th><th scope="col">{t("list.eventId")}</th><th scope="col">{t("list.installationId")}</th><th scope="col">{t("list.sdk")}</th><th scope="col">{t("list.plan")}</th></tr>
+                  <tr><th scope="col">receivedAt</th><th scope="col">{t("list.name")}</th><th scope="col">{t("list.eventId")}</th><th scope="col">{t("list.installationId")}</th><th scope="col">{t("list.platform")}</th><th scope="col">{t("list.sdk")}</th><th scope="col">{t("list.plan")}</th></tr>
                 </thead>
                 <tbody>
                   {page.items.map((ev) => (
@@ -363,6 +371,7 @@ export function App({ api = realApi }: { api?: Api }) {
                       <td><button type="button" className="link" ref={(el) => { if (el) rowLinks.current.set(ev.eventId, el); else rowLinks.current.delete(ev.eventId); }} aria-current={ev.eventId === selected ? "true" : undefined} onClick={() => setSelected(ev.eventId)}>{ev.name}</button></td>
                       <td><code>{ev.eventId.slice(0, 8)}</code> <CopyButton text={ev.eventId} label={t("copy.eventIdOf", { id: ev.eventId })} /></td>
                       <td><code>{ev.installationId.slice(0, 8)}</code> <CopyButton text={ev.installationId} label={t("copy.installationIdOf", { id: ev.installationId })} /></td>
+                      <td>{t(`platform.${ev.sdkPlatform}`)}</td>
                       <td>{ev.sdkVersion}</td>
                       <td><PlanBadge status={ev.planStatus} /></td>
                     </tr>

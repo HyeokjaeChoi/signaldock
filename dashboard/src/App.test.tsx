@@ -333,10 +333,53 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
     });
   });
 
+  describe("platform (ADR-0046)", () => {
+    const ios = (n: number) => ({ ...summary(n), sdkPlatform: "ios" as const });
+
+    it("shows the platform of an ios and an android event in the list and in the details", async () => {
+      const { container } = render(fakeApi({
+        listEvents: vi.fn(async () => ({ items: [summary(1), ios(2)] })) as never,
+        getEvent: vi.fn(async () => ({ ...detail, ...ios(1), properties: {} })) as never,
+      }));
+      await flush();
+      const head = Array.from(container.querySelectorAll("thead th")).map((h) => h.textContent);
+      const col = head.indexOf(t("list.platform"));
+      expect(col).toBeGreaterThan(-1);
+      expect(Array.from(container.querySelectorAll("tbody tr")).map((r) => r.children[col]!.textContent)).toEqual([t("platform.android"), t("platform.ios")]);
+      fireEvent.click(screen.getByRole("button", { name: "event_1" }));
+      await flush();
+      const panel = screen.getByRole("region", { name: t("details.label") });
+      expect(within(panel).getByText(t("details.sdkPlatform")).nextElementSibling!.textContent).toBe(t("platform.ios"));
+    });
+
+    it("filters by platform on every query: All sends nothing, a choice is sent after Apply, Clear removes it", async () => {
+      const api = fakeApi();
+      render(api);
+      await flush();
+      const select = screen.getByRole("combobox", { name: new RegExp(t("controls.platform")) }) as HTMLSelectElement;
+      expect(Array.from(select.options).map((o) => [o.value, o.textContent])).toEqual([
+        ["", t("platform.all")],
+        ["android", t("platform.android")],
+        ["ios", t("platform.ios")],
+      ]);
+      const sent = () => [api.listEvents, api.countsByName, api.countsByTime, api.countsByPlanStatus, api.clientReportCounts].map((m) => (m as ReturnType<typeof vi.fn>).mock.calls.at(-1)?.[0].sdkPlatform);
+      expect(sent()).toEqual([undefined, undefined, undefined, undefined, undefined]);
+      fireEvent.change(select, { target: { value: "ios" } });
+      expect(sent()).toEqual([undefined, undefined, undefined, undefined, undefined]); // a draft only
+      fireEvent.click(screen.getByRole("button", { name: t("controls.apply") }));
+      await flush();
+      expect(sent()).toEqual(["ios", "ios", "ios", "ios", "ios"]);
+      fireEvent.click(screen.getByRole("button", { name: t("controls.clear") }));
+      await flush();
+      expect(sent()).toEqual([undefined, undefined, undefined, undefined, undefined]);
+      expect(select.value).toBe("");
+    });
+  });
+
   describe("dropped events (Q164)", () => {
     const rows = [
-      { sdkVersion: "0.2.0", reason: "queue_full" as const, count: 1500 },
-      { sdkVersion: "0.1.0", reason: "server_rejected" as const, count: 4 },
+      { sdkPlatform: "android" as const, sdkVersion: "0.2.0", reason: "queue_full" as const, count: 1500 },
+      { sdkPlatform: "ios" as const, sdkVersion: "0.1.0", reason: "server_rejected" as const, count: 4 },
     ];
     const card = () => screen.getByRole("region", { name: t("dropped.title") });
     const fmt = (n: number) => new Intl.NumberFormat(lang).format(n);
@@ -347,8 +390,8 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
       const table = within(card()).getByRole("table", { name: t("dropped.title") });
       const body = Array.from(table.querySelectorAll("tbody tr")).map((r) => Array.from(r.children).map((c) => c.textContent));
       expect(body).toEqual([
-        ["0.2.0", `${t("dropped.reasons.queue_full")} queue_full`, fmt(1500)],
-        ["0.1.0", `${t("dropped.reasons.server_rejected")} server_rejected`, "4"],
+        [t("platform.android"), "0.2.0", `${t("dropped.reasons.queue_full")} queue_full`, fmt(1500)],
+        [t("platform.ios"), "0.1.0", `${t("dropped.reasons.server_rejected")} server_rejected`, "4"],
       ]);
       expect(table.querySelector("tfoot")!.textContent).toBe(`${t("dropped.total")}${fmt(1504)}`);
       expect(within(card()).queryByText(t("dropped.truncated", { limit: fmt(100) }))).toBeNull();
@@ -366,7 +409,7 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
       expect(within(card()).getByText(t("dropped.truncated", { limit: fmt(100) }))).toBeTruthy();
     });
 
-    it("uses the period only, never the event filters", async () => {
+    it("uses the period and the platform, never the other event filters", async () => {
       const api = fakeApi();
       render(api);
       await flush();
@@ -380,6 +423,25 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
       fireEvent.change(screen.getByRole("combobox", { name: new RegExp(t("controls.period")) }), { target: { value: "7d" } });
       await flush();
       expect(api.clientReportCounts.mock.calls.length).toBe(calls + 1); // a period change does
+      expect(api.clientReportCounts.mock.calls.at(-1)?.[0].sdkPlatform).toBeUndefined();
+      fireEvent.change(screen.getByRole("combobox", { name: new RegExp(t("controls.platform")) }), { target: { value: "ios" } });
+      fireEvent.click(screen.getByRole("button", { name: t("controls.apply") }));
+      await flush();
+      expect(api.clientReportCounts.mock.calls.length).toBe(calls + 2); // a platform change does too
+      expect(api.clientReportCounts.mock.calls.at(-1)?.[0].sdkPlatform).toBe("ios");
+    });
+
+    it("keeps rows unique when only the platform differs (React key)", async () => {
+      const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+      const same = [
+        { sdkPlatform: "android" as const, sdkVersion: "0.1.0", reason: "queue_full" as const, count: 2 },
+        { sdkPlatform: "ios" as const, sdkVersion: "0.1.0", reason: "queue_full" as const, count: 3 },
+      ];
+      render(fakeApi({ clientReportCounts: vi.fn(async () => ({ items: same, truncated: false })) as never }));
+      await flush();
+      expect(within(card()).getAllByRole("row")).toHaveLength(4); // head, two rows, foot
+      expect(errors.mock.calls.filter((c) => String(c[0]).includes("same key"))).toEqual([]);
+      errors.mockRestore();
     });
 
     it("keeps the rows on a transient error and shows its own status with a retry", async () => {

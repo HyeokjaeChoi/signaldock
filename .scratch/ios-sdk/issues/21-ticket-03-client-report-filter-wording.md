@@ -1,8 +1,9 @@
 # 21. Ticket 03: platform filter wording for client report counts
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: None
+Execution: Done (PR #249, 2026-10-28 UTC)
 
 ## Scope and completion criteria
 
