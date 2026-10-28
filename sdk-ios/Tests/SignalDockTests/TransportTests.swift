@@ -109,8 +109,6 @@ final class StubURLProtocol: URLProtocol {
 
 /// `URLSessionBatchTransport` against the stub (ADR-0006 decision 12, Android `TransportTest`).
 @Suite struct TransportTests {
-  init() { _ = Heartbeat.start }
-
   /// A transport for a new host that the test controls.
   private func make(
     endpoint: String = "https://@HOST@", callTimeout: TimeInterval = 30, connectTimeout: TimeInterval = 10,
