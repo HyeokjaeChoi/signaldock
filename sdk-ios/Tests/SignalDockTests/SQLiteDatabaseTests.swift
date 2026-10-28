@@ -29,7 +29,8 @@ import Testing
   }
 
   /// The holder commits as soon as the waiter signals that it is about to write, so the wait is short on
-  /// any runner. The 2.5 s value itself is checked in the test above, not by the clock.
+  /// any runner. The 2.5 s value itself is checked in the test above, not by the clock. The waiter raises its own
+  /// timeout, because a sanitizer runner can delay the holder's COMMIT past 2.5 s and fail the write with BUSY.
   @Test func aSecondConnectionWaitsForTheWriteLockInsteadOfFailing() async throws {
     let holder = try rawConnection(dir.url)
     try holder.executeScript("CREATE TABLE seed (a INTEGER)")
@@ -40,6 +41,7 @@ import Testing
       // Ends the stream if the open throws, so the test fails instead of waiting forever.
       defer { signal.finish() }
       let other = try SQLiteDatabase(path: path)
+      try other.execute("PRAGMA busy_timeout = 60000")
       signal.yield()
       return (try? other.execute("CREATE TABLE waited (a INTEGER)")) != nil
     }
