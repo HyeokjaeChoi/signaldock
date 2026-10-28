@@ -1,6 +1,6 @@
 # 06. Swift wire models from the contract
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: 01, 04, 05
 

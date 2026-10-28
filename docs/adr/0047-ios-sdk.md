@@ -192,3 +192,12 @@ D6 named only the installation ID file for `isExcludedFromBackup`. Android keeps
 - The tests check that the directory and the file read back `true`. Not verified: that a real backup and restore leaves the directory out (the Simulator cannot do a restore).
 
 Also from the review: the connection waits up to 2.5 s for a lock (`sqlite3_busy_timeout`, the Android framework default); a transaction that cannot roll back closes the connection; the WAL pragma must answer `wal`.
+
+## Ticket 06 results (2026-10-28, Swift wire models)
+
+The generator path of D10 works; the hand-written fallback is not used. Facts below come from running the pinned openapi-generator 7.26.0 `swift6` on the contract and from the iOS 27.0 Simulator tests (Xcode 27.1, Swift 6.4).
+
+- `scripts/codegen.sh` writes the models to `generated/swift/Sources/OpenAPIClient/Models`. Options: `--type-mappings DateTime=String` (`occurredAt` stays a String, as in the Kotlin step) and `validatable=false` (the default output has `ArrayRule`, `StringRule`, and `NumericRule` helpers that live in the generator's `Infrastructure` folder). The script deletes the `Infrastructure` folder and the package files, and removes `public`, because `swift6` has no non-public switch. The models are then `internal` and use `Foundation` `Codable` only. The generator names the error model `ModelErrorResponse`.
+- `PropertyValue` is an enum with `typeBool`, `typeDouble`, and `typeString`. It tries `Bool`, then `Double`, then `String`; `JSONDecoder` does not read `1` or `0` as `Bool`. A number is a `Double`, so it is kept by value (`9007199254740991`, `1.0E-7`, `4.9E-324` read back equal). The encoder writes `2` for `2.0`. The spelling can differ from the input; the value does not (D10).
+- Wiring: `sdk-ios/Sources/SignalDock/Generated` is a symlink to the models folder, because a SwiftPM target cannot name a path outside the package. `swift format lint` skips the symlink. The release ZIP step (ticket 12 or later) must copy the symlink target into the ZIP. `git grep` does not follow a symlink, so `scripts/check-repo-rules.sh` scans `generated/swift/*.swift` for required-reason APIs as well.
+- Tests: `sdk-ios/Tests/SignalDockTests/WireModelTests.swift` reads every file in `fixtures/roundtrip` and `fixtures/sdk-wire/android`, decodes it with the model, encodes it again, and compares JSON values (numbers by value, `true` is not `1`). A response `null` is read as absent, because the models omit nil fields.

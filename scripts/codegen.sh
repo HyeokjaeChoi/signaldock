@@ -31,8 +31,9 @@ JAVA_BIN="$JAVA_HOME/bin/java"
 OUT="${1:-$ROOT/generated}"
 KOTLIN_OUT="$OUT/kotlin"
 TS_OUT="$OUT/typescript"
+SWIFT_OUT="$OUT/swift"
 
-rm -rf "$KOTLIN_OUT" "$TS_OUT"
+rm -rf "$KOTLIN_OUT" "$TS_OUT" "$SWIFT_OUT"
 
 # Pinned template override lives in openapi/templates (Q91): it fixes the
 # oneOf number branch for kotlinx_serialization (upstream maps type:number to
@@ -61,8 +62,21 @@ TEMPLATES="$ROOT/openapi/templates"
   -o "$TS_OUT" \
   --global-property models,modelDocs=false,modelTests=false,apis=false,apiDocs=false,apiTests=false,supportingFiles=
 
+# Swift models for the iOS SDK (ADR-0047 D10). swift6 emits Foundation Codable only. DateTime=String keeps
+# occurredAt a String, like the Kotlin step. validatable=false drops the Rule helpers that need the Infrastructure
+# folder (the SDK validates apart from the models, Q81-83). The generator has no non-public switch, so the cleanup
+# below removes `public` and the models become `internal`.
+"$JAVA_BIN" -jar "$JAR" generate \
+  -g swift6 \
+  -i "$SPEC" \
+  -o "$SWIFT_OUT" \
+  --type-mappings DateTime=String \
+  --additional-properties=validatable=false \
+  --global-property models,modelDocs=false,modelTests=false,apis=false,apiDocs=false,apiTests=false,supportingFiles=
+
 echo "generated -> $KOTLIN_OUT"
 echo "generated -> $TS_OUT"
+echo "generated -> $SWIFT_OUT"
 
 # Keep only the models; infrastructure/supporting files are not used
 # (models compile standalone). Metadata is kept for drift checks (Q91).
@@ -74,9 +88,16 @@ rm -rf "$TS_OUT/.openapi-generator-ignore"
 find "$TS_OUT" -maxdepth 1 -name "*.md" -delete
 find "$TS_OUT" -maxdepth 1 -name "*.json" -not -name "package.json" -delete
 
+# Swift: keep only Sources/OpenAPIClient/Models (Foundation only; the Infrastructure folder is the client runtime).
+find "$SWIFT_OUT" -mindepth 1 -maxdepth 1 -not -name Sources -not -name .openapi-generator -exec rm -rf {} +
+rm -rf "$SWIFT_OUT/Sources/OpenAPIClient/Infrastructure"
+# `public ` -> nothing: Swift's default access is internal. BSD and GNU sed both take -i.bak.
+find "$SWIFT_OUT/Sources" -name '*.swift' -exec sed -i.bak -E 's/(^|[[:space:]])public /\1/' {} +
+find "$SWIFT_OUT/Sources" -name '*.bak' -delete
+
 # Rebuild the FILES metadata to match the actual remaining files: the
 # generator's list goes stale after the cleanup above, which would make
 # drift checks compare against a phantom file set.
-for out in "$KOTLIN_OUT" "$TS_OUT"; do
+for out in "$KOTLIN_OUT" "$TS_OUT" "$SWIFT_OUT"; do
   (cd "$out" && find . -type f ! -path "./.openapi-generator/FILES" ! -path "./.openapi-generator/VERSION" | sed 's|^\./||' | sort > .openapi-generator/FILES)
 done
