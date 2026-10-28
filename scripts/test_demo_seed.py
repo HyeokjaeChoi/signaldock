@@ -96,6 +96,9 @@ class DemoSeedTest(unittest.TestCase):
         self.assertRegex(v, r"^\d+\.\d+\.\d+")
         self.assertIn(f'SDK_VERSION = "{v}"', seed.VERSIONS_PATH.read_text())
         self.assertTrue(all(e["sdkVersion"] == v for _, e, _ in self.events))
+        # ADR-0046: every SDK sends sdkPlatform, so the seed must too.
+        self.assertTrue(all(e["sdkPlatform"] == "android" for _, e, _ in self.events))
+        self.assertTrue(all(r["sdkPlatform"] == "android" for r in seed.client_reports(1)))
         with self.assertRaises(SystemExit):
             seed.sdk_version(HERE / "demo-seed.py")
 

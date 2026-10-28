@@ -6,6 +6,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import local.signaldock.internal.delivery.buildBatch
+import local.signaldock.internal.storage.EventEntity
 import local.signaldock.internal.transport.batchRequestJson
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -137,9 +138,21 @@ class WireCorpusTest {
     }
 
     @Test
-    fun `an event queued by 0_3_0 is sent with its stored bytes and no sdkPlatform (ADR-0006 decision 3)`() {
+    fun `an event queued by 0_3_0 is sent with its stored bytes and no sdkPlatform (ADR-0006 decision 3)`() = runBlocking {
         val legacy = """{"eventId":"00000000-0000-4000-8000-000000000001","name":"app_opened","occurredAt":"2025-10-09T08:53:20.123Z","properties":{},"sdkVersion":"0.3.0","contractVersion":"1"}"""
-        assertEquals("""{"installationId":"$installationId","events":[$legacy]}""", batchRequestJson(installationId, listOf(legacy)))
+        val transport = FakeTransport()
+        val sdk = newSdk(transport = transport)
+        val size = "{\"installationId\":\"$installationId\",\"events\":[$legacy]}".toByteArray().size
+        // A row as 0.3.0 wrote it into Room: same payload bytes, no sdkPlatform.
+        sdk.dao.insert(
+            EventEntity(
+                eventId = "00000000-0000-4000-8000-000000000001", installationId = installationId, contractVersion = "1",
+                payloadJson = legacy, sizeBytes = size, createdAtMillis = 1L,
+            ),
+        )
+        sdk.delivery.sender.run()
+        assertEquals(1, transport.requests.size)
+        assertEquals("""{"installationId":"$installationId","events":[$legacy]}""", String(transport.requests[0].body, Charsets.UTF_8))
     }
 
     @Test
