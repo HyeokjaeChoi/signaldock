@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 /// What the factory needs to build delivery. Production values come from `production(config:)`; a test replaces the
 /// transport, the randomness, the timer, and the background task boundary, and can switch the triggers off.
@@ -13,6 +14,9 @@ internal struct DeliveryDependencies: Sendable {
   internal var delayMillis = triggerDelayMillis
   /// Observe the app lifecycle (foreground return and background entry).
   internal var observeLifecycle = true
+  /// Whether the app is active now, read once on the main actor when the SDK is built. A launch in the background
+  /// (a silent push, a background fetch) starts without the retry timer.
+  internal var initialActive: @MainActor @Sendable () -> Bool = { UIApplication.shared.applicationState == .active }
   /// One drain when the SDK is built (a launch with a restored queue).
   internal var drainAtLaunch = true
   /// Where the lifecycle notifications come from. A test seam: a test posts on its own center.
@@ -67,24 +71,25 @@ internal final class DeliveryCoordinator: Sendable {
       await afterDrain?()
       return until
     }
+    let initialActive: Bool =
+      dependencies.observeLifecycle ? await MainActor.run { dependencies.initialActive() } : true
     let trigger = DeliveryTrigger(
       eventThreshold: dependencies.eventThreshold, delayMillis: dependencies.delayMillis, timer: dependencies.timer,
-      clock: clock, drain: drain)
+      clock: clock, active: initialActive, drain: drain)
     let observer: LifecycleObserver? =
       dependencies.observeLifecycle
       ? await MainActor.run {
-        let drainer = BackgroundDrainer(tasks: dependencies.backgroundTasks) { _ = await drain() }
+        let drainer = BackgroundDrainer(
+          tasks: dependencies.backgroundTasks, onExpire: { sender.cancelInFlight() }, drain: { _ = await drain() })
         return LifecycleObserver(
           center: dependencies.notificationCenter,
           onForeground: {
-            Task {
-              await trigger.setActive(true)
-              await trigger.requestDrain()
-            }
+            trigger.setActive(true)
+            Task { await trigger.requestDrain() }
           },
           onBackground: {
+            trigger.setActive(false)  // at once: before the background drain starts, no foreground retry can start
             drainer.enteredBackground()
-            Task { await trigger.setActive(false) }
           })
       } : nil
     let coordinator = DeliveryCoordinator(sender: sender, trigger: trigger, observer: observer)

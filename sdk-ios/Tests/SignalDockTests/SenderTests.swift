@@ -562,6 +562,38 @@ private struct Row: Sendable, CustomTestStringConvertible {
     #expect(try await rig.queuedIds.isEmpty)
   }
 
+  @Test func cancelInFlightCancelsTheRequestOfADrainThatIsNotCancelledItself() async throws {
+    let entered = Gate()
+    let rig = try await SenderRig.make(replies: [.hold(entered: entered)])
+    let sender = rig.sender
+    let drain = Task { try await sender.run() }
+    await entered.wait()
+    sender.cancelInFlight()
+    await #expect(throws: CancellationError.self) { try await drain.value }
+    #expect(try await rig.queuedIds.count == 3)
+    #expect(try await rig.queue.retryState() == nil)
+  }
+
+  @Test func aCancelledWaiterLeavesTheLineAndTheLockIsNotStuck() async throws {
+    let entered = Gate()
+    let release = Gate()
+    let waiting = Gate()
+    let rig = try await SenderRig.make(
+      replies: [.gated(entered: entered, release: release), .ack()], events: 3,
+      onLockWait: { Task { await waiting.open() } })
+    let sender = rig.sender
+    let a = Task { try await sender.run() }
+    await entered.wait()
+    let b = Task { try await sender.run() }
+    await waiting.wait()
+    b.cancel()
+    await #expect(throws: CancellationError.self) { try await b.value }  // b ends while a still holds the lock
+    await release.open()
+    _ = try await a.value
+    #expect(try await sender.run() == RunResult(batches: 0, end: .queueEmpty))  // the lock is free again
+    #expect(await rig.transport.requests.count == 1)
+  }
+
   // MARK: The queue is cleared while a batch is selected
 
   @Test func aClearBetweenTheHeadReadAndTheGroupReadSendsNothingAndDoesNotCrash() async throws {

@@ -11,7 +11,34 @@ internal protocol TriggerTimer: Sendable {
 
 internal struct TaskSleepTimer: TriggerTimer {
   internal func sleep(milliseconds: Int64) async throws {
-    try await Task.sleep(nanoseconds: UInt64(milliseconds) * 1_000_000)
+    // A wait can be huge (a Retry-After is never capped). The multiplication must not trap, and a timer longer than a
+    // day is pointless: the next drain arms a new one.
+    let capped = UInt64(min(max(milliseconds, 0), maxTimerMillis))
+    try await Task.sleep(nanoseconds: capped * 1_000_000)
+  }
+}
+
+internal let maxTimerMillis: Int64 = 24 * 3_600_000
+
+/// Whether the app is active. Read and written without `await`, so the background entry can switch it off before the
+/// background drain starts. `@unchecked Sendable`: `value` is read and written only under `lock`.
+internal final class ActiveFlag: @unchecked Sendable {
+  private let lock = NSLock()
+  private var value: Bool
+
+  internal init(_ value: Bool) { self.value = value }
+
+  internal var isActive: Bool {
+    get {
+      lock.lock()
+      defer { lock.unlock() }
+      return value
+    }
+    set {
+      lock.lock()
+      defer { lock.unlock() }
+      value = newValue
+    }
   }
 }
 
@@ -29,7 +56,7 @@ internal actor DeliveryTrigger {
   /// One drain; it returns the time at which it must run again when it ended with a wait.
   private let drain: @Sendable () async -> Int64?
 
-  private var active = true
+  private nonisolated let flag: ActiveFlag
   private var retryTask: Task<Void, Never>?
   private var retryGeneration = 0
   private var stored = 0
@@ -40,8 +67,9 @@ internal actor DeliveryTrigger {
   /// - Parameter drain: one drain; it handles its own errors and returns the end of its wait, if it ended with one.
   internal init(
     eventThreshold: Int = triggerEvents, delayMillis: Int64 = triggerDelayMillis, timer: any TriggerTimer,
-    clock: any MillisClock, drain: @escaping @Sendable () async -> Int64?
+    clock: any MillisClock, active: Bool = true, drain: @escaping @Sendable () async -> Int64?
   ) {
+    flag = ActiveFlag(active)
     self.clock = clock
     self.eventThreshold = eventThreshold
     self.delayMillis = delayMillis
@@ -50,6 +78,8 @@ internal actor DeliveryTrigger {
   }
 
   internal func onEventStored() {
+    // Not active: no timer and no drain here. The background drain or the next foreground return sends the event.
+    guard flag.isActive else { return }
     stored += 1
     if stored >= eventThreshold {
       stored = 0
@@ -69,7 +99,7 @@ internal actor DeliveryTrigger {
 
   /// A fire that was overtaken by the threshold path (or by a newer timer) is ignored.
   private func timerFired(_ generation: Int) {
-    guard generation == timerGeneration, timerTask != nil else { return }
+    guard generation == timerGeneration, timerTask != nil, flag.isActive else { return }
     stored = 0
     timerTask = nil
     requestDrain()
@@ -92,10 +122,18 @@ internal actor DeliveryTrigger {
     }
   }
 
-  /// The app is in the foreground (`true`) or not. No retry timer runs in the background (owner decision, 2026-10-28).
-  internal func setActive(_ value: Bool) {
-    active = value
-    if !value { cancelRetry() }
+  /// The app is in the foreground (`true`) or not. The flag changes at once, so a timer that fires in the window
+  /// before the cancellation below does nothing. No timer runs in the background (owner decision, 2026-10-28).
+  internal nonisolated func setActive(_ value: Bool) {
+    flag.isActive = value
+    if !value { Task { await cancelTimers() } }
+  }
+
+  private func cancelTimers() {
+    guard !flag.isActive else { return }
+    cancelRetry()
+    cancelTimer()
+    stored = 0
   }
 
   private func cancelRetry() {
@@ -118,7 +156,7 @@ internal actor DeliveryTrigger {
   }
 
   private func retryFired(_ generation: Int) {
-    guard generation == retryGeneration, retryTask != nil else { return }
+    guard generation == retryGeneration, retryTask != nil, flag.isActive else { return }
     retryTask = nil
     requestDrain()
   }
@@ -127,7 +165,7 @@ internal actor DeliveryTrigger {
     while true {
       cancelRetry()
       let until = await drain()
-      if active, let until { armRetry(until: until) }
+      if flag.isActive, let until { armRetry(until: until) }
       if drainState == .draining {
         drainState = .idle
         return

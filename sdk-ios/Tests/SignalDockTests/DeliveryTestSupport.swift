@@ -367,6 +367,7 @@ extension DeliveryDependencies {
   /// that never fires. A test that wants a trigger builds its own.
   static var inert: DeliveryDependencies {
     var d = DeliveryDependencies()
+    d.initialActive = { true }
     d.transport = FakeTransport()
     d.timer = ManualTimer()
     d.backgroundTasks = FakeBackgroundTasks()

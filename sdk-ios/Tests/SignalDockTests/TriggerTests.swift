@@ -216,16 +216,83 @@ actor DrainProbe {
     await t.requestDrain()
     await probe.waitFinished(1)
     await timer.waitUntilSleeping()
-    await t.setActive(false)  // the app went to the background: the timer is cancelled
+    t.setActive(false)  // the app went to the background: the timer is cancelled
     await timer.waitUntilIdle()
     await t.requestDrain()
     await probe.waitFinished(2)
     #expect(await timer.requestedMillis == [5000], "no timer is armed while the app is not active")
-    await t.setActive(true)
+    t.setActive(true)
     await t.requestDrain()
     await probe.waitFinished(3)
     await timer.waitUntilSleeping()
     #expect(await timer.requestedMillis == [5000, 5000])
+  }
+
+  @Test func aTriggerThatStartsInactiveArmsNoRetryTimerAndAnInactiveTriggerIgnoresStoredEvents() async {
+    let probe = DrainProbe()
+    let timer = ManualTimer()
+    let t = DeliveryTrigger(
+      eventThreshold: 1, delayMillis: 10_000, timer: timer, clock: TestClock(), active: false
+    ) {
+      await probe.drain()
+      return TestClock().nowMillis() + 5000
+    }
+    await t.onEventStored()  // threshold 1, but the app is not active: no drain, no timer
+    await t.requestDrain()  // a barrier: the only drain is this one
+    await probe.waitFinished(1)
+    #expect(await probe.started == 1)
+    #expect(await timer.requestedMillis.isEmpty, "a launch in the background arms no retry timer")
+  }
+
+  @Test func goingInactiveCancelsTheEventTimerAndItStartsNoDrain() async {
+    let probe = DrainProbe()
+    let timer = ManualTimer()
+    let t = trigger(timer: timer, probe: probe)
+    await t.onEventStored()
+    await timer.waitUntilSleeping()
+    t.setActive(false)
+    await timer.waitUntilIdle()  // cancelled
+    await timer.fire()
+    await t.requestDrain()  // a barrier
+    await probe.waitFinished(1)
+    #expect(await probe.started == 1, "the event timer did not drain outside the background drain")
+  }
+
+  @Test func theTimerSleepDoesNotTrapOnAHugeDelay() async throws {
+    let task = Task { try await TaskSleepTimer().sleep(milliseconds: Int64.max) }
+    task.cancel()
+    await #expect(throws: CancellationError.self) { try await task.value }
+    let negative = Task { try await TaskSleepTimer().sleep(milliseconds: Int64.min) }
+    _ = try await negative.value  // a negative delay is zero
+  }
+
+  @Test func aHugeWaitArmsTheTimerWithoutOverflow() async {
+    let probe = DrainProbe()
+    let timer = ManualTimer()
+    let t = trigger(timer: timer, probe: probe, clock: TestClock(1000), waiting: Int64.max)
+    await t.requestDrain()
+    await probe.waitFinished(1)
+    await timer.waitUntilSleeping()
+    #expect(await timer.requestedMillis == [Int64.max - 1000])
+  }
+
+  @Test func expirationRunsTheExpireHookBeforeTheTaskEnds() async {
+    let tasks = FakeBackgroundTasks()
+    let probe = DrainProbe()
+    let order = Order()
+    let held = await probe.hold(1)
+    let drainer = await MainActor.run {
+      BackgroundDrainer(
+        tasks: tasks, onExpire: { order.record(tasks.ended.isEmpty ? "expire first" : "expire after end") }
+      ) { await probe.drain() }
+    }
+    await MainActor.run { drainer.enteredBackground() }
+    await probe.waitStarted(1)
+    await MainActor.run { tasks.expireLast() }
+    #expect(order.events == ["expire first"] && tasks.ended == [1])
+    await held.open()
+    await (MainActor.run { drainer.lastTask })?.value
+    #expect(tasks.ended == [1])
   }
 
   // MARK: Events stored

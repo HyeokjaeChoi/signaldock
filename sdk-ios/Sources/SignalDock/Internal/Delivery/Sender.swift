@@ -29,7 +29,9 @@ internal actor Sender {
   private let onLockWait: (@Sendable () -> Void)?
 
   private var locked = false
-  private var lockWaiters: [CheckedContinuation<Void, Never>] = []
+  private var lockWaiters: [(id: UInt64, continuation: CheckedContinuation<Void, any Error>)] = []
+  private var nextWaiter: UInt64 = 0
+  private nonisolated let inFlight = InFlightRequest()
 
   private enum Step {
     case empty
@@ -66,29 +68,49 @@ internal actor Sender {
     }
   }
 
+  /// Cancels the request that is in flight, whichever drain started it (the expiration of a background task). The
+  /// drain that owns it throws `CancellationError`; the queue and the retry state stay as they were.
+  internal nonisolated func cancelInFlight() { inFlight.cancel() }
+
   private func sendLocked() async throws -> Step {
-    await acquire()
+    try await acquire()
     defer { release() }
     try Task.checkCancellation()
     return try await sendOne()
   }
 
-  private func acquire() async {
+  /// A waiter that is cancelled leaves the line and throws; it never owns the lock then.
+  private func acquire() async throws {
     if !locked {
       locked = true
       return
     }
-    await withCheckedContinuation { (c: CheckedContinuation<Void, Never>) in
-      lockWaiters.append(c)
-      onLockWait?()  // a test seam: the caller is registered
-    }  // the lock is handed over, `locked` stays true
+    let id = nextWaiter
+    nextWaiter += 1
+    try await withTaskCancellationHandler {
+      try await withCheckedThrowingContinuation { (c: CheckedContinuation<Void, any Error>) in
+        if Task.isCancelled {
+          c.resume(throwing: CancellationError())
+          return
+        }
+        lockWaiters.append((id, c))  // the lock is handed over on release, `locked` stays true
+        onLockWait?()  // a test seam: the caller is registered
+      }
+    } onCancel: {
+      Task { await self.cancelWaiter(id) }
+    }
+  }
+
+  private func cancelWaiter(_ id: UInt64) {
+    guard let index = lockWaiters.firstIndex(where: { $0.id == id }) else { return }
+    lockWaiters.remove(at: index).continuation.resume(throwing: CancellationError())
   }
 
   private func release() {
     if lockWaiters.isEmpty {
       locked = false
     } else {
-      lockWaiters.removeFirst().resume()
+      lockWaiters.removeFirst().continuation.resume()
     }
   }
 
@@ -109,7 +131,21 @@ internal actor Sender {
 
     logger.log(.deliveryAttemptStarted)
     // A cancellation here leaves the queue untouched; the same IDs and bytes are sent again later.
-    let result = try await transport.send(BatchHttpRequest(contractVersion: batch.contractVersion, body: batch.body))
+    let request = BatchHttpRequest(contractVersion: batch.contractVersion, body: batch.body)
+    let transport = transport
+    let task = Task<TransportResult, any Error> { try await transport.send(request) }
+    inFlight.set(task)
+    defer { inFlight.set(nil) }
+    let result: TransportResult
+    do {
+      result = try await withTaskCancellationHandler {
+        try await task.value
+      } onCancel: {
+        task.cancel()
+      }
+    } catch {
+      throw CancellationError()  // the transport throws nothing else
+    }
     let after = clock.nowMillis()
     logger.log(.deliveryAttemptFinished)
     switch result {
@@ -241,5 +277,24 @@ internal actor Sender {
   private static func code(of item: ItemAck) -> String {
     let code = item.code.flatMap { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0 }
     return String((code ?? "UNSPECIFIED").prefix(maxCodeLength))
+  }
+}
+
+/// The task of the request in flight. `@unchecked Sendable`: `task` is read and written only under `lock`.
+private final class InFlightRequest: @unchecked Sendable {
+  private let lock = NSLock()
+  private var task: Task<TransportResult, any Error>?
+
+  func set(_ task: Task<TransportResult, any Error>?) {
+    lock.lock()
+    defer { lock.unlock() }
+    self.task = task
+  }
+
+  func cancel() {
+    lock.lock()
+    let current = task
+    lock.unlock()
+    current?.cancel()
   }
 }

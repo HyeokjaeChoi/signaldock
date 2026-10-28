@@ -23,6 +23,7 @@ import UIKit
     let probe = DrainProbe()
     let center = NotificationCenter()
     var deps = DeliveryDependencies()
+    deps.initialActive = { true }
     deps.transport = transport
     deps.timer = timer
     deps.backgroundTasks = tasks
@@ -115,6 +116,52 @@ import UIKit
     #expect(p.tasks.ended == [1])
     #expect(await p.transport.requests.count == 1)
     #expect(try await h.sdk.diagnostics().queuedEvents == 0)
+  }
+
+  @Test func expirationAlsoCancelsARequestThatAForegroundDrainOwns() async throws {
+    let entered = Gate()
+    let p = parts(replies: [.hold(entered: entered)], lifecycle: true)
+    let h = try await Harness.make(delivery: p.deps)
+    for i in 0..<3 { try await track(h, "e\(i)") }
+    let ids = try await h.sdk.queue.oldest(limit: 10).map(\.eventId)
+    await h.sdk.delivery.trigger.requestDrain()  // a foreground drain
+    await entered.wait()  // its request is in flight
+    await MainActor.run { p.center.post(name: UIApplication.didEnterBackgroundNotification, object: nil) }
+    await MainActor.run { p.tasks.expireLast() }
+    await p.probe.waitFinished(2)  // both drains returned: the foreground one was cancelled too
+    #expect(await p.transport.requests.count == 1, "nothing was sent again")
+    #expect(try await h.sdk.queue.oldest(limit: 10).map(\.eventId) == ids)
+    #expect(try await h.sdk.diagnostics().retryFailureCount == 0)
+  }
+
+  @Test func aLaunchInTheBackgroundArmsNoRetryTimerUntilTheAppReturns() async throws {
+    var p = parts(replies: [.result(.failed(.network)), .result(.failed(.network))], lifecycle: true, launch: true)
+    p.deps.initialActive = { false }
+    let dir = try TempDirectory()
+    let first = try await Harness.make(dir: dir)
+    try await track(first, "kept")
+    await first.sdk.queue.close()
+    let h = try await Harness.make(dir: dir, delivery: p.deps)
+    await p.probe.waitFinished(1)  // the launch drain failed and left a wait
+    #expect(await p.timer.requestedMillis.isEmpty)
+    await MainActor.run { p.center.post(name: UIApplication.willEnterForegroundNotification, object: nil) }
+    await p.probe.waitFinished(2)  // the foreground drain; it ends with a wait and arms the timer
+    await p.timer.waitUntilSleeping()
+    #expect(await p.timer.requestedMillis.count == 1)
+    withExtendedLifetime(h) {}
+  }
+
+  @Test func theBackgroundEntryDeactivatesTheTriggerBeforeItReturns() async throws {
+    let p = parts(replies: [.ack()], lifecycle: true)
+    var deps = p.deps
+    deps.eventThreshold = 1
+    let h = try await Harness.make(delivery: deps)
+    await MainActor.run { p.center.post(name: UIApplication.didEnterBackgroundNotification, object: nil) }
+    await p.probe.waitFinished(1)  // the background drain (empty queue)
+    try await track(h, "e")  // threshold 1, but the app is in the background: no foreground drain
+    await h.sdk.delivery.trigger.requestDrain()  // a barrier
+    await p.probe.waitFinished(2)
+    #expect(await p.probe.started == 2)
   }
 
   @Test func theExpirationOfTheBackgroundTaskKeepsTheQueueAndTheNextLaunchSendsTheSameEvents() async throws {

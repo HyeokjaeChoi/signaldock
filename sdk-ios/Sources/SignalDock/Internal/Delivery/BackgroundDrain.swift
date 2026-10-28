@@ -43,9 +43,16 @@ internal final class BackgroundDrainer {
   internal private(set) var lastTask: Task<Void, Never>?
   private let tasks: any BackgroundTasks
   private let drain: @Sendable () async -> Void
+  private let onExpire: @Sendable () -> Void
 
-  /// - Parameter drain: one drain; it handles its own errors and returns when it is cancelled.
-  internal init(tasks: any BackgroundTasks, drain: @escaping @Sendable () async -> Void) {
+  /// - Parameters:
+  ///   - drain: one drain; it handles its own errors and returns when it is cancelled.
+  ///   - onExpire: runs when the system ends the task, before it ends: cancels a request that another drain owns.
+  internal init(
+    tasks: any BackgroundTasks, onExpire: @escaping @Sendable () -> Void = {},
+    drain: @escaping @Sendable () async -> Void
+  ) {
+    self.onExpire = onExpire
     self.tasks = tasks
     self.drain = drain
   }
@@ -63,6 +70,7 @@ internal final class BackgroundDrainer {
 
   private func expire(_ run: Run) {
     run.task?.cancel()
+    onExpire()
     end(run)
   }
 
