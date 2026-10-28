@@ -240,12 +240,38 @@ if [ -z "$sdk_gradle_version" ] || [ "$sdk_gradle_version" != "$sdk_const_versio
 fi
 
 # iOS SDK (ADR-0047 D7, D13): no package dependency in sdk-ios/Package.swift, and no `privacy: .public` log interpolation.
-if git grep --cached -nE '\.package[[:space:]]*\(' -- 'sdk-ios/Package*.swift' >&2; then
-  echo "error: a sdk-ios/Package*.swift manifest declares a package dependency above; the iOS SDK has no external dependency (ADR-0047 D13)" >&2
-  fail=1
-fi
-if git grep --cached -nE 'privacy:[[:space:]]*\.public' -- sdk-ios >&2; then
-  echo "error: privacy: .public above; log values stay private (ADR-0047 D13)" >&2
+# The patterns use \s, so a call split across lines is also found (issue 22); the samples keep that true.
+if ! python3 - <<'PY'
+import re, subprocess, sys
+
+PACKAGE = re.compile(r"\.package\s*\(")
+PUBLIC = re.compile(r"privacy:\s*\.public")
+# Regression samples: each must match, on one line and split across lines.
+for rx, ok in ((PACKAGE, (".package(", ".package\n  (")), (PUBLIC, ("privacy: .public", "privacy:\n  .public"))):
+    for sample in ok:
+        if not rx.search(sample):
+            sys.exit("error: check-repo-rules.sh multi-line sample no longer matches: " + repr(sample))
+
+def files(*pathspec):
+    out = subprocess.run(["git", "ls-files", "-z", "--", *pathspec], capture_output=True, text=True, check=True).stdout
+    return [f for f in out.split("\0") if f]
+
+def scan(rx, path):
+    text = subprocess.run(["git", "show", ":" + path], capture_output=True, text=True, check=True).stdout
+    return [(path, text.count("\n", 0, m.start()) + 1) for m in rx.finditer(text)]
+
+bad = False
+for path, line in [h for f in files("sdk-ios/Package*.swift") for h in scan(PACKAGE, f)]:
+    print(f"{path}:{line}", file=sys.stderr)
+    print("error: a sdk-ios/Package*.swift manifest declares a package dependency above; the iOS SDK has no external dependency (ADR-0047 D13)", file=sys.stderr)
+    bad = True
+for path, line in [h for f in files("sdk-ios") for h in scan(PUBLIC, f)]:
+    print(f"{path}:{line}", file=sys.stderr)
+    print("error: privacy: .public above; log values stay private (ADR-0047 D13)", file=sys.stderr)
+    bad = True
+sys.exit(1 if bad else 0)
+PY
+then
   fail=1
 fi
 

@@ -32,7 +32,7 @@ The user decided (Q162, 2026-10-16 UTC) to replace the CodeQL default setup with
 
 ## Addition: Swift (iOS SDK ticket 05, ADR-0047 D13 item 6)
 
-`swift` joins the matrix with `build-mode: manual` on a `macos-26` runner (the other languages stay on `ubuntu-latest`). The build is `xcodebuild build` of the `SignalDock` scheme in `sdk-ios` for the iOS Simulator, with `CODE_SIGNING_ALLOWED=NO` and no incremental reuse (a fresh `-derivedDataPath`). The Gradle toolchain step and build step now run for `java-kotlin` only. Same query suite and permissions as above. Gap: the first CI run decides whether the Swift extraction works; it is not run yet.
+`swift` joins the matrix with `build-mode: manual` on a `macos-26` runner (the other languages stay on `ubuntu-latest`). The build is `xcodebuild build` of the `SignalDock` scheme in `sdk-ios` for the iOS Simulator, with `CODE_SIGNING_ALLOWED=NO` and no incremental reuse (a fresh `-derivedDataPath`). The Gradle toolchain step and build step now run for `java-kotlin` only. Same query suite and permissions as above. The first CI run on PR #245 passed: [CodeQL run 40537476346, `analyze (swift)`](https://github.com/HyeokjaeChoi/signaldock/actions/runs/40537476346/job/122306521304) (head 06e526b).
 
 ## Consequences
 
