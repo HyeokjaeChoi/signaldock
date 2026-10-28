@@ -1,16 +1,16 @@
-public enum LogLevel : Swift.Int, Swift.Sendable, Swift.Equatable, Swift.CaseIterable {
+public enum LogLevel : Swift.Sendable, Swift.Equatable, Swift.CaseIterable {
   case debug
   case info
   case warn
   case error
   case none
-  public init?(rawValue: Swift.Int)
+  public static func == (a: SignalDock.LogLevel, b: SignalDock.LogLevel) -> Swift.Bool
   public typealias AllCases = [SignalDock.LogLevel]
-  public typealias RawValue = Swift.Int
-  nonisolated public static var allCases: [SignalDock.LogLevel] {
+  public static var allCases: [SignalDock.LogLevel] {
     get
   }
-  public var rawValue: Swift.Int {
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
     get
   }
 }
@@ -71,7 +71,7 @@ public enum InvalidReason : Swift.Sendable, Swift.Equatable, Swift.CaseIterable 
   case eventTooLarge
   public static func == (a: SignalDock.InvalidReason, b: SignalDock.InvalidReason) -> Swift.Bool
   public typealias AllCases = [SignalDock.InvalidReason]
-  nonisolated public static var allCases: [SignalDock.InvalidReason] {
+  public static var allCases: [SignalDock.InvalidReason] {
     get
   }
   public func hash(into hasher: inout Swift.Hasher)
@@ -104,7 +104,7 @@ public enum DeliveryErrorKind : Swift.String, Swift.Sendable, Swift.Equatable, S
   public init?(rawValue: Swift.String)
   public typealias AllCases = [SignalDock.DeliveryErrorKind]
   public typealias RawValue = Swift.String
-  nonisolated public static var allCases: [SignalDock.DeliveryErrorKind] {
+  public static var allCases: [SignalDock.DeliveryErrorKind] {
     get
   }
   public var rawValue: Swift.String {
@@ -148,7 +148,6 @@ final public class SignalDockSDK : Swift.Sendable {
   @objc deinit
 }
 extension SignalDock.LogLevel : Swift.Hashable {}
-extension SignalDock.LogLevel : Swift.RawRepresentable {}
 extension SignalDock.InvalidReason : Swift.Hashable {}
 extension SignalDock.DeliveryErrorKind : Swift.Hashable {}
 extension SignalDock.DeliveryErrorKind : Swift.RawRepresentable {}

@@ -170,7 +170,16 @@ jobs:
       - run: scripts/verify-ios.sh tsan
       - run: scripts/verify-ios.sh analyze
       - run: scripts/verify-ios.sh manifest
-      - run: scripts/verify-ios.sh api # public API against sdk-ios/api/SignalDock.swiftinterface (ADR-0047 D13 item 7)
+      # Public API against sdk-ios/api/SignalDock.swiftinterface (ADR-0047 D13 item 7). The compiler of this job is the
+      # source of truth (sdk-ios/api/compiler-version). On a mismatch the job fails and uploads the actual interface;
+      # take it with `scripts/verify-ios.sh api-update <downloaded directory>`.
+      - run: scripts/verify-ios.sh api
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: api-actual
+          path: sdk-ios/build/api-actual
+          if-no-files-found: ignore
 
   # A separate run with ASan and UBSan; TSan cannot be combined with them.
   ios-sanitize:

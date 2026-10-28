@@ -152,10 +152,14 @@ import Testing
   @Test func setOptOutIsNotUndoneByCancellation() async throws {
     let h = try await Harness.make()
     let sdk = h.sdk
-    let task = Task { () async -> Bool in await sdk.setOptOut(true) }
-    task.cancel()
-    #expect(await task.value)
+    // The task is cancelled before the call starts; setOptOut does not check cancellation and still applies.
+    guard case .success(let stored) = await runCancelled({ await sdk.setOptOut(true) }) else {
+      Issue.record("setOptOut must not throw")
+      return
+    }
+    #expect(stored)
     #expect(await sdk.isOptedOut())
+    #expect(FileManager.default.fileExists(atPath: h.sdkDirectory.appendingPathComponent("opt-out").path))
   }
 
   @Test func aClosedQueueIsAStorageFailureForAnActiveCallerNotCancellation() async throws {

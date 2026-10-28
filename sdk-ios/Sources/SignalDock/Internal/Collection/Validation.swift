@@ -28,11 +28,17 @@ internal func checkText(_ text: String, isName: Bool) -> InvalidReason? {
   return nil
 }
 
+/// Kotlin `String.isBlank()` (`Char.isWhitespace`): the Unicode White_Space set plus U+001C..U+001F, which Java counts
+/// as whitespace. Used for the collection key only; names use the fixed set above.
+internal func isBlankScalar(_ scalar: Unicode.Scalar) -> Bool {
+  scalar.properties.isWhitespace || (0x1C...0x1F).contains(scalar.value)
+}
+
 private let timeoutMillisLimit = Int64(Int32.max)
 
 /// Returns a message for the first problem, or `nil`. Messages never contain the collection key (Q115).
 internal func validateConfig(_ config: SignalDockConfig) -> String? {
-  if config.collectionKey.unicodeScalars.allSatisfy({ $0.properties.isWhitespace }) { return "collectionKey is blank" }
+  if config.collectionKey.unicodeScalars.allSatisfy(isBlankScalar) { return "collectionKey is blank" }
   guard let components = URLComponents(string: config.endpoint) else { return "endpoint is not a valid URI" }
   let scheme = components.scheme?.lowercased()
   guard let scheme, scheme == "http" || scheme == "https", !(components.host ?? "").isEmpty else {

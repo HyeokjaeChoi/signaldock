@@ -67,7 +67,8 @@ import Testing
     #expect(again === first)
   }
 
-  @Test func sameConfigCallsShareOneAttemptAndADifferentOneConflictsWhileItRuns() async throws {
+  @Test(.timeLimit(.minutes(1))) func sameConfigCallsShareOneAttemptAndADifferentOneConflictsWhileItRuns() async throws
+  {
     let gate = Gate()
     let builder = try Builder(gate: gate)
     let init1 = coordinator(builder)
@@ -87,7 +88,7 @@ import Testing
     #expect(builder.builds == 1)
   }
 
-  @Test func cancellingACallerCancelsOnlyItsOwnWait() async throws {
+  @Test(.timeLimit(.minutes(1))) func cancellingACallerCancelsOnlyItsOwnWait() async throws {
     let gate = Gate()
     let builder = try Builder(gate: gate)
     let init1 = coordinator(builder)
@@ -109,7 +110,7 @@ import Testing
     #expect(builder.builds == 1)
   }
 
-  @Test func theAttemptContinuesWhenEveryWaiterLeaves() async throws {
+  @Test(.timeLimit(.minutes(1))) func theAttemptContinuesWhenEveryWaiterLeaves() async throws {
     let gate = Gate()
     let builder = try Builder(gate: gate)
     let init1 = coordinator(builder)
@@ -260,10 +261,13 @@ import Testing
   }
 
   @Test func aBlankCollectionKeyIsRejectedFirstAndTheMessageNeverHoldsTheKey() {
-    for key in ["", " ", " \t\n"] {
+    // U+001C..U+001F are whitespace for Kotlin `isBlank()` (Java), not for Unicode White_Space.
+    for key in ["", " ", " \t\n", "\u{1C}", "\u{1D}\u{1E}\u{1F}", "\u{A0}", "\u{3000}"] {
       #expect(
         validateConfig(SignalDockConfig(endpoint: "https://e.com", collectionKey: key)) == "collectionKey is blank")
     }
+    // not all blank
+    #expect(validateConfig(SignalDockConfig(endpoint: "https://e.com", collectionKey: "\u{1C}k")) == nil)
     let secret = "super-secret-collection-key"
     let messages = [
       validateConfig(SignalDockConfig(endpoint: "http://e.com", collectionKey: secret)),

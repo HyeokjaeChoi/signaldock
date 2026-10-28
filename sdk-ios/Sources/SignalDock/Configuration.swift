@@ -2,7 +2,7 @@ import Foundation
 
 /// How much the SDK writes to the unified log (`os.Logger`, subsystem `local.signaldock`). The SDK never logs event
 /// content, event names, installation IDs, credentials, or HTTP bodies, at any level.
-public enum LogLevel: Int, Sendable, Equatable, CaseIterable {
+public enum LogLevel: Sendable, Equatable, CaseIterable {
   /// Writes debug, warning, and error messages (initialization, send start and finish, final delivery failure kind).
   case debug
 
@@ -20,7 +20,17 @@ public enum LogLevel: Int, Sendable, Equatable, CaseIterable {
 
   /// `true` when a message of `level` is written at this configured level. A message level is `.debug`, `.warn`, or
   /// `.error`.
-  internal func writes(_ level: LogLevel) -> Bool { self.rawValue <= level.rawValue }
+  internal func writes(_ level: LogLevel) -> Bool { order <= level.order }
+
+  private var order: Int {
+    switch self {
+    case .debug: 0
+    case .info: 1
+    case .warn: 2
+    case .error: 3
+    case .none: 4
+    }
+  }
 }
 
 /// The configuration of the SDK, fixed for its lifetime. Timeouts must be positive and finite.

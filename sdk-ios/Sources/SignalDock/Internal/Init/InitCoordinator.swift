@@ -33,7 +33,7 @@ internal actor InitCoordinator {
       attemptConfig = config
       let build = build
       // Not a child task: it must go on when every waiter has left (Q114). It does not hold this actor.
-      Task.detached { [self] in
+      Task.detached(priority: Task.currentPriority) { [self] in
         let result = await Self.run(build, config)
         await finish(result, config)
       }
