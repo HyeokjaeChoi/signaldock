@@ -23,18 +23,29 @@ import Testing
     #expect(InstallationIdStore.writeOptions.contains(.completeFileProtectionUntilFirstUserAuthentication))
   }
 
+  @Test func theConnectionUsesTheAndroidParityBusyTimeout() throws {
+    let db = try rawConnection(dir.url)
+    #expect(try db.query("PRAGMA busy_timeout") { $0.int(0) } == [2500])
+  }
+
+  /// The holder commits as soon as the waiter signals that it is about to write, so the wait is short on
+  /// any runner. The 2.5 s value itself is checked in the test above, not by the clock.
   @Test func aSecondConnectionWaitsForTheWriteLockInsteadOfFailing() async throws {
     let holder = try rawConnection(dir.url)
     try holder.executeScript("CREATE TABLE seed (a INTEGER)")
     try holder.executeScript("BEGIN IMMEDIATE")
     let path = dir.file("queue.db").path
+    let (signals, signal) = AsyncStream<Void>.makeStream()
     let waiter = Task.detached { () -> Bool in
+      // Ends the stream if the open throws, so the test fails instead of waiting forever.
+      defer { signal.finish() }
       let other = try SQLiteDatabase(path: path)
+      signal.yield()
       return (try? other.execute("CREATE TABLE waited (a INTEGER)")) != nil
     }
-    // The result does not depend on this delay: without a busy timeout the waiter fails at once; with it
-    // the waiter succeeds for any release time below 2.5 s.
-    try await Task.sleep(nanoseconds: 300_000_000)
+    for await _ in signals { break }
+    // A short pause lets the waiter reach the lock; the result is the same if it has not yet.
+    try await Task.sleep(nanoseconds: 50_000_000)
     try holder.executeScript("COMMIT")
     #expect(try await waiter.value)
   }
