@@ -10,7 +10,7 @@
 #    type-checks the dashboard, and runs the executable TS round-trip assertions.
 # 5. Evaluates the independent sdk/ and server/ Gradle builds.
 # 6. Checks the SDK public API dump (ADR-0019) and the published dependency baseline (ADR-0033).
-# 7. Tracking plan (ADR-0021): regenerates into a temp dir and diffs against
+# 7. Tracking plan (ADR-0021; Kotlin, TypeScript, and Swift outputs): regenerates into a temp dir and diffs against
 #    tracking-plan/generated/, then runs the generator and cross-language tests.
 # 8. iOS SDK (ADR-0047 D13; format lint, TSan, ASan, analyze, privacy manifest, public API diff against
 #    sdk-ios/api/SignalDock.swiftinterface): runs only with full Xcode and an iOS Simulator runtime (scripts/verify-ios.sh).
@@ -86,6 +86,11 @@ node "$ROOT/tracking-plan/generate.mjs" "$TMP_PLAN" > /dev/null
 if ! diff -rq "$ROOT/tracking-plan/generated" "$TMP_PLAN"; then
   echo "error: tracking-plan/generated/ drifted from tracking-plan/plan.json" >&2
   echo "run node tracking-plan/generate.mjs and commit the result" >&2
+  exit 1
+fi
+# The iOS tests compile the Swift output through this link (ADR-0047 amendment, ticket 11); step 8 builds it.
+if [ "$(readlink "$ROOT/sdk-ios/Tests/SignalDockTests/TrackingPlan.swift")" != "../../../tracking-plan/generated/swift/TrackingPlan.swift" ]; then
+  echo "error: sdk-ios/Tests/SignalDockTests/TrackingPlan.swift must be a link to tracking-plan/generated/swift/TrackingPlan.swift" >&2
   exit 1
 fi
 node --test "$ROOT/tracking-plan/generate.test.mjs"

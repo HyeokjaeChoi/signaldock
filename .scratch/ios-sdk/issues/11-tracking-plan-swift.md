@@ -1,6 +1,6 @@
 # 11. Tracking plan: Swift output
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: 08
 
