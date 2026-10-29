@@ -1,0 +1,77 @@
+{
+  "ticket": 16,
+  "adr": "ADR-0047 amendment (ticket 16), ADR-0020",
+  "run_utc": "2026-10-29T01:43:11Z",
+  "xcode": "Xcode 27.1 Build version 27A9275",
+  "swift": "Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)",
+  "macos": "26.6.2",
+  "machine": "Apple M2 Pro",
+  "cpus": "12",
+  "memory_bytes": 34359738368,
+  "simulator": {
+    "udid": "30C411C8-2441-4776-9A10-580EC4CF5751",
+    "device_type": "iPhone 18 Pro",
+    "runtime": "iOS 27.0"
+  },
+  "loadavg_start": [
+    87.64,
+    91.05,
+    142.98
+  ],
+  "loadavg_end": [
+    6.96,
+    83.45,
+    132.41
+  ],
+  "sdk_version": "0.1.0",
+  "release_zip": "signaldock-sdk-ios-0.1.0.zip",
+  "release_zip_sha256": "ee85713fb00640ab330a0b20e3576a9102d838f4157702b3e5ef2f29f4e36c3c",
+  "git_revision": "77151d4",
+  "git_dirty": false,
+  "parameters": {
+    "startup_runs_per_arm": 20,
+    "burst_runs_per_arm": 10,
+    "burst_track_calls": 500,
+    "idle_seconds_before_footprint": 5,
+    "warmup_launches_per_arm_not_counted": 2
+  },
+  "size_build": {
+    "configuration": "Release",
+    "sdk": "iphoneos",
+    "arch": "arm64",
+    "signing": "CODE_SIGNING_ALLOWED=NO",
+    "command": "xcodebuild archive"
+  },
+  "arms": {
+    "sdk": {
+      "binary_sha256": "e887ddc41611773286b7e2021baf9b4c60053aa97dad9fdb2cd733729abaf19f",
+      "app_bytes": 556698,
+      "binary_bytes": 552528,
+      "ipa_bytes": 201007,
+      "resource_bundle_bytes": 3149,
+      "text_segment_bytes": 409600,
+      "data_const_segment_bytes": 32768,
+      "data_segment_bytes": 49152,
+      "linkedit_segment_bytes": 81920,
+      "text_text_section_bytes": 284660,
+      "package_object_bytes": 318667,
+      "app_objects_bytes": 99644,
+      "frameworks_folder": false
+    },
+    "nosdk": {
+      "binary_sha256": "3743363eeda85f18dcbf91c102a5eebbf5c515e443deb8d3b5bd05173a23f4d3",
+      "app_bytes": 164917,
+      "binary_bytes": 163896,
+      "ipa_bytes": 47534,
+      "resource_bundle_bytes": 0,
+      "text_segment_bytes": 98304,
+      "data_const_segment_bytes": 16384,
+      "data_segment_bytes": 16384,
+      "linkedit_segment_bytes": 49152,
+      "text_text_section_bytes": 58500,
+      "package_object_bytes": 5031,
+      "app_objects_bytes": 79517,
+      "frameworks_folder": false
+    }
+  }
+}
