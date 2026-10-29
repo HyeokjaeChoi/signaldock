@@ -1,6 +1,6 @@
 # 16. iOS size and host-cost measurement
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: 14
 
