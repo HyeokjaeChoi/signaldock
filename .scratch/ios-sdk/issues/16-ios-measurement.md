@@ -1,6 +1,7 @@
 # 16. iOS size and host-cost measurement
 
-Status: claimed
+Status: resolved
+Execution: Done (PR #266, 2026-10-29 UTC)
 Type: task
 Blocked by: 14
 
