@@ -33,3 +33,6 @@ coverage/
 *.tfstate
 *.tfstate.*
 .terraform/
+
+# iOS consumer app: the unzipped release ZIP (scripts/verify-consumer-ios.sh)
+compatibility/consumer-ios/.sdk/

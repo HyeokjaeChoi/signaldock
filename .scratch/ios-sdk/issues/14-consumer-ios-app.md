@@ -1,6 +1,6 @@
 # 14. iOS consumer and demo app
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: 10, 11, 13
 
@@ -16,3 +16,12 @@ Spec D12. ADR-0009.
 
 Verification:
 - Both CI builds; a Simulator run against Compose: events reach the Dashboard with platform `ios` (screenshot in the issue file).
+
+## Verification run 2026-10-29
+
+Details and "decided here" choices: ADR-0047 "Ticket 14 results".
+
+- `IOS_WERROR=1 scripts/verify-consumer-ios.sh`: exit 0. Fresh ZIP, unzip to `compatibility/consumer-ios/.sdk`, Debug and Release `** BUILD SUCCEEDED **` for the iOS Simulator (Xcode 27.1).
+- `scripts/check-repo-rules.sh`: exit 0, no output. `IOS_WERROR=1 scripts/verify-ios.sh lint`: exit 0, no finding.
+- Simulator run against Compose (`docker compose -p sdverify14`, ports 18080/15432/15173): the Debug app (iPhone 18 Pro, iOS 27.0) launched with `SIMCTL_CHILD_SIGNALDOCK_AUTORUN=1` sent 4 events. `GET /v1/events?...&sdkPlatform=ios` returned `product_viewed`, `add_to_cart`, `checkout_started`, `purchase_completed`, all platform `ios`, version `0.1.0`, plan status `planned`. Diagnostics screen: `lastAck` accepted 4. Screenshot: [14-consumer-ios-simulator.png](14-consumer-ios-simulator.png). Stack removed with `down -v`; Simulator shut down.
+- Not run: the CI jobs on GitHub (`ios-consumer`, `release-ios.yml` step); a Dashboard screenshot (API queried instead); iOS 15 runtime.

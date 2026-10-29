@@ -68,6 +68,9 @@ jobs:
           # The privacy manifest (ADR-0047 D14) must be in the resource bundle that a host builds from the ZIP.
           test -n "$(find "$UNZIP/DerivedData" -path '*SignalDock_SignalDock.bundle/PrivacyInfo.xcprivacy')" \
             || { echo "error: PrivacyInfo.xcprivacy is not in the built SignalDock resource bundle" >&2; exit 1; }
+      # The independent consumer app (ADR-0047 D12, D13 item 9), Debug and Release, from this ZIP: parity with release.sh -> verify-consumer.sh.
+      - name: Build consumer-ios from the ZIP
+        run: scripts/verify-consumer-ios.sh "dist/signaldock-sdk-ios-${TAG#ios-v}.zip"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dist

@@ -1,6 +1,7 @@
 # 10. iOS client reports
 
-Status: claimed
+Status: resolved
+Execution: Done (PR #263, 2026-10-29 UTC)
 Type: task
 Blocked by: 03, 09
 
