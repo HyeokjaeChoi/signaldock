@@ -60,26 +60,20 @@ internal actor Sender {
   internal func run() async throws -> RunResult {
     var batches = 0
     var acked = false
-    let end: RunEnd
-    while true {
+    var end: RunEnd?
+    while end == nil {
       try Task.checkCancellation()
       switch try await sendLocked() {
-      case .empty:
-        end = .queueEmpty
-      case .wait(let at):
-        end = .waiting(untilMillis: at)
-      case .continue:
-        batches += 1
-        continue
+      case .empty: end = .queueEmpty
+      case .wait(let at): end = .waiting(untilMillis: at)
+      case .continue: batches += 1
       case .acked:
         batches += 1
         acked = true
-        continue
       }
-      break
     }
     if acked { try await sendClientReport() }
-    return RunResult(batches: batches, end: end)
+    return RunResult(batches: batches, end: end ?? .queueEmpty)
   }
 
   /// One report per send cycle, after the event batches, when a counter is not zero. It never touches the retry

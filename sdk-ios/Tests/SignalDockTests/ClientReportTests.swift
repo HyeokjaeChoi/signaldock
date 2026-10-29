@@ -171,7 +171,8 @@ import Testing
     #expect(
       body == #"{"discardedEvents":[{"count":3,"reason":"queue_full"},{"count":1,"reason":"storage_error"},"#
         + #"{"count":2,"reason":"invalid_event"},{"count":4,"reason":"event_too_large"},"#
-        + #"{"count":1000000,"reason":"server_rejected"}],"sdkPlatform":"ios","sdkVersion":"0.1.0"}"#)
+        + #"{"count":1000000,"reason":"server_rejected"}],"sdkPlatform":"ios","#
+        + #""sdkVersion":"\#(SignalDockSDK.version)"}"#)
     // Drift check with fixtures/roundtrip (the server tests post the same file).
     let built = try #require(try JSONSerialization.jsonObject(with: Data(body.utf8)) as? [String: Any])
     let fixture = try #require(
@@ -279,5 +280,27 @@ import Testing
     let result = try await rig.sender.run()
     #expect(result == RunResult(batches: 1, end: .queueEmpty))
     #expect(rig.logger.messages.contains(.clientReportFailed))
+  }
+
+  @Test func aCancellationDuringTheReportThrowsKeepsTheCountersAndLeavesTheRetryState() async throws {
+    let rig = try await SenderRig.make(replies: [.ack()], events: 1)
+    try await rig.queue.addDropped(reason: "queue_full", count: 2)
+    let sender = rig.sender
+    await rig.transport.onReport { sender.cancelInFlight() }  // the expiration of a background task
+    await rig.transport.enqueueReports(.http(HttpResult(status: 204)))
+    do {
+      _ = try await rig.sender.run()
+      Issue.record("expected CancellationError")
+    } catch is CancellationError {}
+    #expect(try await counts(rig.queue) == ["queue_full": 2])
+    try await expectRetryStateUntouched(rig, "cancelled report")
+  }
+
+  @Test func aCancelledTrackReturnsNoResultAndCountsNothing() async throws {
+    let h = try await Harness.make()
+    let sdk = h.sdk
+    let result = await runCancelled { try await sdk.track("e") }  // cancelled before storage starts: it throws
+    #expect(result.isFailure)
+    #expect(try await counts(h.sdk.queue).isEmpty)
   }
 }

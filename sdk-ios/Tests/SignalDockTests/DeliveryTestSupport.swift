@@ -115,6 +115,7 @@ actor FakeTransport: BatchTransport {
     reports.append(request)
     calls.append("report")
     await duringReport?()
+    if Task.isCancelled { throw CancellationError() }  // like the real transport
     return reportScript.isEmpty ? .failed(.network) : reportScript.removeFirst()
   }
 
