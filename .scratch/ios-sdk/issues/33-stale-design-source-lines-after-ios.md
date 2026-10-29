@@ -12,6 +12,7 @@ Found by the ticket 18 doc audit (`.scratch/ios-sdk/issues/18-ios-docs.md`, "Doc
 2. `docs/adr/0047-ios-sdk.md` D14: the `resources` example also names `.copy("Migrations")`, as `sdk-ios/Package.swift`.
 3. `docs/adr/0046-sdk-platform-field.md` "Not verified here" and `.scratch/ios-sdk/spec.md` status ("No product code exists yet"): dated status lines.
 4. `architecture.md` components, lifecycle, and distribution sections: add the iOS SDK (SQLite queue, delivery triggers, release ZIP), citing ADR-0047.
+5. Release 0.4.0 prep (found in PR review): the `architecture.md` and `docs/architecture/onepager-content.md` (and `signaldock-onepager.html`) lists of stored event fields and the duplicate comparison omit `sdkPlatform` (ADR-0046); add it, then raise the "Updated for SDK" stamp to 0.4.0.
 
 Verification:
 - `scripts/check-repo-rules.sh`; every cited path exists.

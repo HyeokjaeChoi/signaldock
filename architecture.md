@@ -2,7 +2,7 @@
 
 The SDK stores events on the device and retries with the same `eventId`. It removes acknowledged events only after the server commits them and the SDK validates the ACK.
 
-> **Design baseline: 2026-10-09 (Q127 approved). Updated for SDK 0.4.0: 2026-10-29 UTC.**
+> **Design baseline: 2026-10-09 (Q127 approved). Updated for SDK 0.3.0: 2026-10-21 UTC. The release coordinate names 0.4.0 (2026-10-29); the other sections do not describe `sdkPlatform` yet ([issue 33](.scratch/ios-sdk/issues/33-stale-design-source-lines-after-ios.md)).**
 > The product is implemented. The behavior below is the agreed design and the built behavior. Open items: no process-boundary script run, no release (R8) or Baseline Profile run on a physical device (one phone ran the instrumented tests, the debug device measurement, and the host-app cost with SDK 0.3.0, [issue 85](.scratch/signaldock/issues/85-device-verification-v0.3.0.md); the instrumented tests also ran with 0.2.0 code, [issue 73](.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md)), and the 216-run server matrix was not run (see [Independent distribution and verification](#independent-distribution-and-verification)).
 > See the [spec](.scratch/signaldock/spec.md) for the full contract and the [ADRs](docs/adr/) for the decisions.
 

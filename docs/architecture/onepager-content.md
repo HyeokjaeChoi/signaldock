@@ -1,6 +1,6 @@
 # SignalDock architecture onepager content
 
-Baseline: 2026-10-09, Q127. Updated for SDK 0.4.0: 2026-10-29 UTC. The product is implemented. No process-boundary script run, no release (R8) or Baseline Profile run on a physical device (one phone ran the instrumented tests, the debug device measurement, and the host-app cost with SDK 0.3.0, [issue 85](../../.scratch/signaldock/issues/85-device-verification-v0.3.0.md); the instrumented tests also ran with 0.2.0 code, [issue 73](../../.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md)), and the 216-run server matrix was not run (Q133, ADR-0013).
+Baseline: 2026-10-09, Q127. Updated for SDK 0.3.0: 2026-10-21 UTC. The release coordinate names 0.4.0 (2026-10-29); the other sections do not describe `sdkPlatform` yet ([issue 33](../../.scratch/ios-sdk/issues/33-stale-design-source-lines-after-ios.md)). The product is implemented. No process-boundary script run, no release (R8) or Baseline Profile run on a physical device (one phone ran the instrumented tests, the debug device measurement, and the host-app cost with SDK 0.3.0, [issue 85](../../.scratch/signaldock/issues/85-device-verification-v0.3.0.md); the instrumented tests also ran with 0.2.0 code, [issue 73](../../.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md)), and the 216-run server matrix was not run (Q133, ADR-0013).
 
 ## Summary
 

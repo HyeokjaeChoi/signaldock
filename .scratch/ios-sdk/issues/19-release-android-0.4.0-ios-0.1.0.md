@@ -29,5 +29,7 @@ Remaining owner steps, in order:
 1. Deploy the server and Dashboard with `sdkPlatform` support, including a `demo-v*` tag for the cloud demo (the VM must be on).
 2. Push `v0.4.0`.
 3. Push `ios-v0.1.0`.
-4. Run `gh attestation verify` on each downloaded ZIP (commands in the release notes) and do one consumer install from each ZIP (`scripts/verify-consumer.sh`, `scripts/verify-consumer-ios.sh <zip>`).
-5. Record the results in this file, then set `Status: resolved`, and update the README, integration guide section 13, and ADR-0047 lines that say no iOS release exists yet.
+4. Run `gh attestation verify` on each downloaded ZIP (commands in the release notes) and do one consumer install from each ZIP from the downloaded ZIP: Android: `unzip signaldock-sdk-android-0.4.0-maven.zip -d <new empty folder>`, then `compatibility/consumer-android/gradlew -p compatibility/consumer-android -Psignaldock.repo=<that folder> -Psignaldock.version=0.4.0 :app:assembleRelease --no-daemon` (`scripts/verify-consumer.sh` rebuilds from source and takes no ZIP); iOS: `scripts/verify-consumer-ios.sh <downloaded signaldock-sdk-ios-0.1.0.zip>`.
+5. Record the results in this file, then set `Status: resolved`. Update the lines that say no iOS release exists yet (README, integration guide section 13) and the README status and "Add the SDK to an app" sentences that say v0.4.0 is not tagged yet (`README.md`, `README.ko.md`). ADR-0047 gets a dated amendment, not an edit of its decision text.
+
+Checks that ran on the release branch (2026-10-29, JDK 21, `ANDROID_HOME` set): `scripts/check-repo-rules.sh` exit 0; `scripts/release.sh 0.4.0 --check` ok; `scripts/release.sh 0.4.0` exit 0 (builds the ZIP and the R8 consumer, writes `dist/`; no tag, no publish); `sdk/gradlew -p sdk :sdk-android:testDebugUnitTest :sdk-android:apiCheck :sdk-android:dependencyGuard` exit 0; `scripts/build-ios-release-zip.sh 0.1.0 --check` ok; `scripts/verify-consumer.sh` exit 0.

@@ -198,7 +198,7 @@ docker compose down --volumes           # RESET: deletes the DB volume and ALL s
 
 ## 앱에 SDK 추가
 
-Maven repository ZIP과 `.sha256` 파일은 GitHub Release [`v0.4.0`](https://github.com/HyeokjaeChoi/signaldock/releases/tag/v0.4.0)의 배포 파일입니다([릴리스 노트](docs/releases/v0.4.0.md), [변경 이력](CHANGELOG.md)). `scripts/release.sh 0.4.0`이 둘을 `dist/`에 만듭니다. ZIP을 검증한 뒤 폴더에 푸세요.
+소유자가 태그 `v0.4.0`을 푸시한 뒤에는 Maven repository ZIP과 `.sha256` 파일이 GitHub Release [`v0.4.0`](https://github.com/HyeokjaeChoi/signaldock/releases/tag/v0.4.0)의 배포 파일입니다([릴리스 노트](docs/releases/v0.4.0.md), [변경 이력](CHANGELOG.md)). 그때까지 릴리스된 최신 버전은 `v0.3.0`입니다. `scripts/release.sh 0.4.0`이 둘을 `dist/`에 만듭니다. ZIP을 검증한 뒤 폴더에 푸세요.
 
 ```sh
 shasum -a 256 -c signaldock-sdk-android-0.4.0-maven.zip.sha256   # 두 파일이 있는 폴더에서 실행

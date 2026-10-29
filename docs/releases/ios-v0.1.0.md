@@ -54,7 +54,7 @@ Method and limits: [ADR-0047](../adr/0047-ios-sdk.md), amendments "ticket 16, me
 | Main binary, bytes | 164,560 | 553,024 | +388,464 |
 | `.ipa` form (unencrypted), bytes | 49,263 | 202,566 | +153,303 |
 | Cold start to first view with `initialize()` inside, median ms (n=20) | 413.7 | 413.9 | paired median +1.1 |
-| Memory 5 s after launch, median MiB (n=20) | 21.34 | 21.69 | +0.38 |
+| Memory 5 s after launch, median MiB (n=20) | 21.34 | 21.69 | paired median +0.38 |
 | `initialize()` on the main thread, settled, median ms | floor 0.015 | 0.051 | |
 | `track()` on the main thread, median ms (n=5000) | not applicable | 0.035 | |
 
