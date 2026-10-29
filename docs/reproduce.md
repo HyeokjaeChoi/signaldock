@@ -1,6 +1,7 @@
 # Reproduction guide
 
 This guide continues the README section "Reproduce from a clean clone". Do steps 1 to 3 there first: toolchain, Compose stack with `.env`, and `scripts/verify-consumer.sh`.
+The Android steps need an Android SDK and an emulator. The iOS steps are in [iOS SDK build and tests](#ios-sdk-build-and-tests) and the two sections after it; they need macOS with Xcode.
 Marks: **ran** means the command ran in a fresh clone on 2026-10-13 (record: issue 25). **not verified here** means it did not run, with the reason.
 
 Set `ANDROID_HOME` first (`export ANDROID_HOME="$HOME/Library/Android/sdk"`). Start one emulator and keep it running. Use an even port:
@@ -46,6 +47,101 @@ The cases `airplane`, `fulldisk` and `workmanager` switch airplane mode, fill th
 
 It runs the SDK `androidTest` debug build. It needs no server. See [ADR-0011](adr/0011-sdk-device-test-harness.md). Only `offline` ran for this guide; the other cases have results in issue 20.
 
+## iOS SDK build and tests
+
+The iOS scripts need macOS with full Xcode (Swift 6 and `swift format`) and an iOS Simulator runtime of iOS 15 or later with an iPhone. A Command Line Tools shim of `xcodebuild` is not enough. CI uses Xcode 26.6 on `macos-26` ([ADR-0047](adr/0047-ios-sdk.md) D13). The iOS scripts need no Android SDK, JDK, or Docker, except where a step below says so.
+
+```sh
+scripts/verify-ios.sh available       # exit 0 only when Xcode and a Simulator runtime are usable
+IOS_WERROR=1 scripts/verify-ios.sh    # all gates; IOS_WERROR=1 is the CI setting (warnings are errors)
+```
+
+`scripts/verify-ios.sh [all|lint|tsan|asan|analyze|manifest|api|api-update [artifact-dir]|available]` runs the gates of ADR-0047 D13. The default is `all`.
+
+| Mode | What it runs |
+| --- | --- |
+| `lint` | `swift format lint --strict` on `Package.swift`, `Sources/`, and `Tests/` (not the generated models) |
+| `tsan` | Simulator unit tests under Thread Sanitizer |
+| `asan` | Simulator unit tests under Address Sanitizer and Undefined Behavior Sanitizer |
+| `analyze` | `xcodebuild analyze` (for this Swift-only package it is a build) |
+| `manifest` | Builds the package and checks that `PrivacyInfo.xcprivacy` is in the resource bundle |
+| `api` | Diffs the public API (`.swiftinterface`) with `sdk-ios/api/`. It runs only with the compiler named in `sdk-ios/api/compiler-version` (the CI compiler); with another compiler it prints a skip line |
+| `api-update <dir>` | Copies the interface and the compiler version from the CI artifact `api-actual` into `sdk-ios/api/` |
+
+The tests run on the oldest installed iOS Simulator runtime, because the GitHub runner has no iOS 15 runtime. The script prints a note when that runtime is not iOS 15. The package builds for iOS 15, but no test ran on an iOS 15 runtime (ADR-0047 "iOS 15 Simulator fallback").
+
+`scripts/check-repo-rules.sh` holds the repository-wide iOS rules (no package dependency, no `privacy: .public`, required-reason API use, frozen SQL migrations). `scripts/verify-contract.sh` regenerates the Swift models and checks for drift; it runs the Xcode steps only when `xcodebuild` exists.
+
+## iOS release ZIP and consumer app
+
+The release ZIP holds the SDK source as a Swift package. The first tag is `ios-v0.1.0`; only the owner pushes it, so no GitHub Release exists yet. Build the ZIP from `HEAD`:
+
+```sh
+scripts/build-ios-release-zip.sh 0.1.0     # dist/signaldock-sdk-ios-0.1.0.zip and .sha256
+scripts/verify-consumer-ios.sh             # builds a fresh ZIP, unzips it, builds consumer-ios in Debug and Release
+```
+
+The version must equal `SignalDockSDK.version`. The script reads the files of `HEAD` and not the working tree, so commit your change first. `scripts/verify-consumer-ios.sh [path/to/zip]` unzips into `compatibility/consumer-ios/.sdk/` (ignored by Git) and builds the app for the Simulator from that folder only. It checks that the privacy manifest is in the app. It starts no Simulator ([ADR-0047](adr/0047-ios-sdk.md) D12 and "Ticket 14 results").
+
+To send events from the consumer app to a local stack, start a separate Compose project with its own ports and an env file outside the repository. Do not use the project of your `.env` if it holds data you need.
+
+```sh
+umask 077
+IOS_PROJECT="signaldock-ios-$(date +%s)"
+IOS_ENV="$(mktemp)"
+cat > "$IOS_ENV" <<EOT
+SIGNALDOCK_COLLECTION_KEY=$(openssl rand -hex 24)
+SIGNALDOCK_QUERY_KEY=$(openssl rand -hex 24)
+SIGNALDOCK_DB_NAME=signaldock
+SIGNALDOCK_DB_USER=signaldock
+SIGNALDOCK_DB_PASSWORD=$(openssl rand -hex 24)
+SIGNALDOCK_DB_PORT=15432
+SIGNALDOCK_SERVER_PORT=18080
+SIGNALDOCK_DASHBOARD_PORT=15173
+EOT
+docker compose -p "$IOS_PROJECT" --env-file "$IOS_ENV" up -d --build --wait
+
+xcrun simctl list devices available          # pick an iPhone UDID
+UDID=<udid>
+xcrun simctl boot "$UDID"
+xcrun simctl install "$UDID" compatibility/consumer-ios/build/DerivedData/Build/Products/Debug-iphonesimulator/ConsumerIOS.app
+set -a; . "$IOS_ENV"; set +a
+SIMCTL_CHILD_SIGNALDOCK_ENDPOINT=http://127.0.0.1:18080 \
+SIMCTL_CHILD_SIGNALDOCK_COLLECTION_KEY="$SIGNALDOCK_COLLECTION_KEY" \
+SIMCTL_CHILD_SIGNALDOCK_AUTORUN=1 \
+  xcrun simctl launch "$UDID" local.signaldock.consumerios
+```
+
+`SIGNALDOCK_AUTORUN=1` (Debug build only) sends the shop flow once: `product_viewed`, `add_to_cart`, `checkout_started`, and `purchase_completed`. Without it, use the screens by hand. After about 15 seconds, open `http://127.0.0.1:15173`: the four events show with platform `ios`, and the platform filter works. The diagnostics screen of the app shows `lastAck`. The Simulator uses the network of the Mac, so `127.0.0.1` is the local stack. End with:
+
+```sh
+xcrun simctl shutdown "$UDID"
+docker compose -p "$IOS_PROJECT" --env-file "$IOS_ENV" down -v     # removes only this project and its volume
+rm -f "$IOS_ENV"
+```
+
+## iOS Simulator durability
+
+`scripts/simulator-durability.sh <simulator-udid> [case ...]` runs the SDK across process boundaries on an iOS Simulator ([ADR-0047](adr/0047-ios-sdk.md) D15, ADR-0011, ADR-0029). It is local only; CI does not run it. The cases are `kill_store kill_send restart update reinstall optout offline`. The default is all seven. Backup restore and full disk cannot run on a Simulator; the script prints them as `not run`.
+
+It needs a running stack (use the separate Compose project above), `sqlite3`, `python3`, `curl`, and full Xcode. It refuses a UDID that `xcrun simctl list devices` does not list as an iOS Simulator. It never runs `docker compose`.
+
+| Variable | Meaning |
+| --- | --- |
+| `SIGNALDOCK_COLLECTION_KEY` | Required. Collection key of the stack |
+| `SIGNALDOCK_QUERY_KEY` | Required. Query key of the stack |
+| `SIGNALDOCK_ENDPOINT` | Server URL. Default `http://127.0.0.1:${SIGNALDOCK_SERVER_PORT:-8080}` |
+| `SIMULATOR_DURABILITY_SKIP_BUILD=1` | Reuse the app that `scripts/verify-consumer-ios.sh` built earlier |
+| `IOS_WERROR=1` | Passed to the build |
+
+```sh
+set -a; . "$IOS_ENV"; set +a
+SIGNALDOCK_ENDPOINT=http://127.0.0.1:18080 scripts/simulator-durability.sh "$UDID" offline restart
+SIGNALDOCK_ENDPOINT=http://127.0.0.1:18080 scripts/simulator-durability.sh "$UDID"      # all cases
+```
+
+Pass means: every event that `track()` reported as stored reaches the server, the server holds no event that the app did not report (one in-flight event is allowed at a kill), and the queue is as the case expects. A resend after a kill shows as `duplicate` in the ACK; the script prints it and does not assert it. The offline state is the closed port `http://127.0.0.1:9`, so no network setting of the Mac changes. The Debug build of the consumer app holds the phase code (`SIGNALDOCK_PHASE`); the script checks that the Release binary does not. The recorded run is in `.scratch/ios-sdk/issues/15-simulator-durability.md`.
+
 ## Measurements
 
 SDK on a device (ADR-0014). It needs a separate Compose project with its own ports and an env file outside the repository:
@@ -71,6 +167,10 @@ docker compose -p "$MEASURE_PROJECT" --env-file "$MEASURE_ENV" down      # keeps
 
 It writes `perf/sdk-results/api<api>-<scenario>/` and `perf/sdk-results/summary.md` (the committed results came from the owner's runs; a new run overwrites that folder in your clone, so use a scratch clone). The `normal` scenario ran for this guide. `offline` and `burst` did not.
 By default it uses a debug build of the SDK and the emulator, so the numbers are not release numbers and not an SLA. For the R8 release build (ADR-0018) set `MEASURE_BUILD=release`; it needs an emulator image where `adb root` works (`google_apis`, not Google Play) and writes `perf/sdk-results/api<api>-release-<scenario>/`.
+
+### iOS measurement
+
+Measurement: see ticket 16 (pending). `.scratch/ios-sdk/issues/16-ios-measurement.md` plans the size and host-cost measurement on the Simulator; no script for it is in the repository yet.
 
 ### Physical phone (opt-in)
 

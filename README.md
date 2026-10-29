@@ -2,13 +2,15 @@
 
 [한국어](README.ko.md)
 
-An Android event SDK designed to save events on the device and confirm server receipt through an ACK after commit.
+Android and iOS event SDKs designed to save events on the device and confirm server receipt through an ACK after commit.
 
 This monorepo contains the SDK, a local data processing server, and their design.
 Review the path from an app's `track()` call through a durable queue, retries, server deduplication, and independent artifact installation.
 
 > **Status: 2026-10-21**
 > The first release scope is done, and SDK v0.3.0 is released. It adds a server collection kill switch, a Baseline Profile in the AAR, a build provenance attestation for the release ZIP, and Gradle dependency verification ([CHANGELOG.md](CHANGELOG.md)). The public API does not change from 0.2.0. The SDK, the server, the Android demo app, and the Dashboard are implemented. Delivery failure E2E, device durability, contract and DB change checks, server load measurement, and SDK device measurement have scripts and recorded results ([issues 20 to 24](.scratch/signaldock/issues/)). [Reproduce from a clean clone](#reproduce-from-a-clean-clone) lists the commands that were run in a fresh clone, and what was not verified: the process-boundary script, the release (R8) build and the Baseline Profile on a physical device (the instrumented tests, the debug device measurement, and the host-app cost ran on one phone with SDK 0.3.0, [issue 85](.scratch/signaldock/issues/85-device-verification-v0.3.0.md); the instrumented tests also ran with 0.2.0 code, [issue 73](.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md)), and the full server measurement matrix (not run, Q133).
+>
+> **iOS SDK 0.1.0: 2026-10-29.** The iOS SDK (`sdk-ios/`), its consumer and demo app, the Simulator durability script, and the release ZIP workflow are in the repository. No iOS release exists yet: the first tag, `ios-v0.1.0`, is pushed by the owner only, and Android SDK 0.4.0 (which sends `sdkPlatform`) is not tagged either. See [iOS SDK](#ios-sdk).
 
 ![The Dashboard with one stored event selected: the event list on the left, the event details and stored JSON on the right.](docs/images/dashboard.png)
 
@@ -77,10 +79,11 @@ The SDK counts the events it drops, by reason, and reports the counts to `POST /
 | Area | Choice |
 | --- | --- |
 | Android SDK | Kotlin · minSdk 24 · Coroutines · Room · Retrofit / OkHttp · kotlinx.serialization · WorkManager |
+| iOS SDK | Swift 6 · iOS 15 · Swift Concurrency · system SQLite · `URLSession` · no external dependency |
 | Demo app | Jetpack Compose · ViewModel. The SDK has no dependency on this UI stack |
 | Server | Kotlin / Ktor · PostgreSQL · jOOQ · JDBC / HikariCP · Flyway |
 | Verification Dashboard | React · TypeScript · Vite · Recharts |
-| Contracts and distribution | OpenAPI / JSON · generated sources tracked in Git · Docker Compose entry point · local Maven repository ZIP |
+| Contracts and distribution | OpenAPI / JSON · generated sources tracked in Git · Docker Compose entry point · local Maven repository ZIP · Swift package source ZIP |
 | CI and supply chain | GitHub Actions · CodeQL · Renovate · `dependency-guard` baseline · `binary-compatibility-validator` · Gradle wrapper validation · Gradle dependency verification · build provenance attestation |
 
 Exact versions are pinned in `gradle/libs.versions.toml`. [TOOLCHAIN.md](TOOLCHAIN.md) gives the reason for each pin and the build that verified it.
@@ -88,9 +91,9 @@ The first coordinate is `local.signaldock:sdk-android:0.3.0` (local only, not Ma
 
 ## Scope and verification
 
-The first release covers a native Android SDK and one local project.
+The first release covers a native Android SDK and one local project. The iOS SDK `0.1.0` (not released yet) has the same behavior for iOS apps.
 The demo follows product view, cart, and simulated purchase. The Dashboard helps verify SDK integration.
-iOS / Flutter, React Native / Flutter / Unity or WebView (native-web) bridges (Q150), automatic events, `identify`, campaign / push, funnels, multiple accounts, public internet operation, and Maven Central are outside this release.
+Flutter, React Native, Unity or WebView (native-web) bridges (Q150), automatic events, `identify`, campaign / push, funnels, multiple accounts, public internet operation, and Maven Central are outside this release.
 
 The [completion criteria](.scratch/signaldock/spec.md#7-completion-criteria-and-verification-plan) require environment records, source revision/hash, and event ID comparisons. Each implementation issue in `.scratch/signaldock/issues/` records what ran and what did not.
 Measured results are local environment records, not an SLA:
@@ -99,7 +102,7 @@ Measured results are local environment records, not an SLA:
 - SDK: normal, offline, and burst runs on API 24 and API 37 emulators with a debug build, and once more on the API 37 emulator with an R8 release build (debug-signed), in [`perf/sdk-results/summary.md`](perf/sdk-results/summary.md) ([ADR-0014](docs/adr/0014-sdk-device-measurement-harness.md), [ADR-0018](docs/adr/0018-sdk-release-r8-measurement.md), [issue 24](.scratch/signaldock/issues/24-sdk-device-measurement.md), [issue 33](.scratch/signaldock/issues/33-sdk-crash-safety-and-release-build.md)).
 - SDK cost for a host app, on the API 37 emulator with the R8 consumer app with and without the SDK: the APK grows by 616,829 bytes (dex by 966,108 bytes), cold start `TotalTime` p50 is 235 ms without and 238 ms with the SDK, `initialize()` takes 0.26 ms (p50) and 3.0 ms (p95) of the main thread, and PSS is 4.0 MiB higher after 5 s idle ([`perf/sdk-results/host-cost-api37/summary.md`](perf/sdk-results/host-cost-api37/summary.md), [ADR-0020](docs/adr/0020-sdk-host-app-cost.md), [issue 36](.scratch/signaldock/issues/36-sdk-host-app-cost.md)).
 - Baseline Profile of the SDK, on the API 37 emulator with Macrobenchmark (20 cold starts per row, metric: `initialize()`, 20 `track()` calls, and `diagnostics()` in a sample app): the p50 is 495 ms and 749 ms with no compilation and 358 ms and 351 ms with the profile in two runs (28 % and 53 % lower; a third run gave 413 ms and 410 ms). With the SDK rules removed it is 387 ms, so the SDK rules alone are inside the noise of an emulator, and the same mode varies by 50 % between runs. The Baseline Profile was not measured on a physical device ([`perf/sdk-results/baseline-profile-api37/`](perf/sdk-results/baseline-profile-api37/), [ADR-0040](docs/adr/0040-sdk-baseline-profile.md), [issue 70](.scratch/signaldock/issues/70-sdk-baseline-profile.md)).
-- CI: the `repo-rules` workflow has the jobs `check`, `verify-contract`, `sdk-test`, `consumer-r8`, `server-test`, `device-test`, `size-budget`, and `gradle-wrapper`. Other workflows are `pr-description` (`length` job), `codeql`, `release` (`build` and `publish` jobs), `claude-review` (`review` job, [ADR-0041](docs/adr/0041-claude-code-pr-review.md)), and `demo-deploy` (`build` and `wait-deployed` jobs; it runs only on `demo-v*` tags, [ADR-0043](docs/adr/0043-cloud-demo-hosting-and-deploy.md)). The `device-test` job runs the instrumented SDK tests on an API 34 `google_apis` x86_64 emulator: 33 tests start, 16 skip themselves (the phase classes need `-e phase`), and 17 run (job log of `repo-rules` run 39032066203 of PR #173, 2026-10-17 UTC). A size gate fails the build when the SDK adds more than 700,000 bytes to the R8 consumer APK (`size-budget` job). The process-boundary cases of `scripts/device-durability.sh` and the measurements stay local ([ADR-0023](docs/adr/0023-ci-device-tests-and-size-budget.md), [issue 40](.scratch/signaldock/issues/40-ci-device-tests-and-size-budget.md)).
+- CI: the `repo-rules` workflow has the jobs `check`, `verify-contract`, `sdk-test`, `consumer-r8`, `server-test`, `device-test`, `size-budget`, and `gradle-wrapper`. Other workflows are `pr-description` (`length` job), `codeql`, `release` (`build` and `publish` jobs), `claude-review` (`review` job, [ADR-0041](docs/adr/0041-claude-code-pr-review.md)), and `demo-deploy` (`build` and `wait-deployed` jobs; it runs only on `demo-v*` tags, [ADR-0043](docs/adr/0043-cloud-demo-hosting-and-deploy.md)). The `device-test` job runs the instrumented SDK tests on an API 34 `google_apis` x86_64 emulator: 33 tests start, 16 skip themselves (the phase classes need `-e phase`), and 17 run (job log of `repo-rules` run 39032066203 of PR #173, 2026-10-17 UTC). A size gate fails the build when the SDK adds more than 700,000 bytes to the R8 consumer APK (`size-budget` job). iOS jobs of `repo-rules` on a macOS runner: `ios-test` (lint, Thread Sanitizer tests, `xcodebuild analyze`, privacy manifest, public API check), `ios-sanitize` (Address and Undefined Behavior Sanitizer tests), and `ios-consumer` (builds `consumer-ios` in Debug and Release from the release ZIP); `codeql` also analyzes Swift, and `release-ios` (`build` and `publish` jobs) runs only on `ios-v*.*.*` tags ([ADR-0047](docs/adr/0047-ios-sdk.md) D13). The process-boundary cases of `scripts/device-durability.sh` and `scripts/simulator-durability.sh` and the measurements stay local ([ADR-0023](docs/adr/0023-ci-device-tests-and-size-budget.md), [issue 40](.scratch/signaldock/issues/40-ci-device-tests-and-size-budget.md)).
 - The [performance plan](.scratch/signaldock/performance-plan.md) holds the original targets and conditions.
 
 Steps to run, stop, and reset the stack, to build the Maven ZIP, and to run the consumer app are below.
@@ -110,7 +113,7 @@ The commands in this section were run in a fresh clone, except `docker compose d
 A short video of demo `track()` to Dashboard receipt is in [`.scratch/signaldock/evidence/25-demo-track-to-dashboard.mp4`](.scratch/signaldock/evidence/25-demo-track-to-dashboard.mp4).
 The first run downloads the JDK, Docker images, Gradle dependencies, and npm packages. It is not fully offline.
 
-You need: macOS or Linux, Docker with Compose, Python 3, `curl`, `openssl`, and an Android SDK with platform `android-36` (`ANDROID_HOME`). The demo app needs platform `android-37` (`demo-compileSdk` in `gradle/libs.versions.toml`). The device scripts also need an emulator (AVD). `scripts/device-measure.sh` also needs macOS.
+You need: macOS or Linux, Docker with Compose, Python 3, `curl`, `openssl`, and an Android SDK with platform `android-36` (`ANDROID_HOME`). The demo app needs platform `android-37` (`demo-compileSdk` in `gradle/libs.versions.toml`). The device scripts also need an emulator (AVD). `scripts/device-measure.sh` also needs macOS. The iOS steps need macOS with full Xcode and an iOS Simulator runtime, and no Android SDK.
 
 ### 1. Toolchain and hooks
 
@@ -168,6 +171,8 @@ Tap "Track consumer_ping", wait about 15 seconds, then tap "Show diagnostics": `
 ### 4. Demo app, E2E, device checks, and measurements
 
 See [docs/reproduce.md](docs/reproduce.md). The demo app builds with `sdk/gradlew -p sdk -Psignaldock.collectionKey=... :demo:app:assembleDebug`. `scripts/e2e-delivery.sh` runs the delivery failure cases. `scripts/device-durability.sh` and `scripts/device-measure.sh` run on an emulator. `perf/` holds the server load harness.
+
+iOS (macOS with Xcode): `scripts/verify-consumer-ios.sh` builds the iOS release ZIP and the consumer app `compatibility/consumer-ios/` from it. [docs/reproduce.md](docs/reproduce.md) shows how to send its events to a separate local stack and see them in the Dashboard with platform `ios`. `scripts/verify-ios.sh` runs the iOS gates, and `scripts/simulator-durability.sh` runs the durability cases on a Simulator.
 
 ### 5. Stop and reset
 
@@ -245,9 +250,42 @@ The SDK is before 1.0. Fixes are best effort. See [docs/versioning.md](docs/vers
 
 The [SDK integration guide](docs/integration-guide.md) ([한국어](docs/integration-guide.ko.md)) covers `track()` results, cancellation, offline and retry behavior, diagnostics, privacy, versions, and troubleshooting. Optional typed event functions generated from a tracking plan: see [`tracking-plan/`](tracking-plan/) and [ADR-0021](docs/adr/0021-tracking-plan-codegen.md). The server marks each stored event `planned`, `unplanned_event`, or `invalid_properties` against that plan and never rejects one ([ADR-0022](docs/adr/0022-server-tracking-plan-status.md)).
 
+### iOS SDK
+
+Status: the iOS SDK `0.1.0` is implemented in `sdk-ios/`, but no iOS release exists yet. The first tag, `ios-v0.1.0`, is pushed by the owner only, after the server with `sdkPlatform` support is deployed ([ADR-0046](docs/adr/0046-sdk-platform-field.md)). Until then, build the ZIP yourself: `scripts/build-ios-release-zip.sh 0.1.0` writes `dist/signaldock-sdk-ios-0.1.0.zip` and its `.sha256` file ([docs/reproduce.md](docs/reproduce.md)).
+
+Install from the release ZIP. A release `ios-vX.Y.Z` will have the assets `signaldock-sdk-ios-X.Y.Z.zip` and `signaldock-sdk-ios-X.Y.Z.zip.sha256` ([`release-ios.yml`](.github/workflows/release-ios.yml)). Check the hash with `shasum -a 256 -c`, unzip, and in Xcode choose File, Add Package Dependencies, Add Local. Select the unzipped `SignalDock/` folder and add the product `SignalDock` to your app target. There is no remote Swift Package Manager URL, no CocoaPods, and no XCFramework yet ([ADR-0047](docs/adr/0047-ios-sdk.md) D11).
+
+```swift
+import SignalDock
+
+switch try await SignalDockSDK.initialize(SignalDockConfig(endpoint: "https://events.example.com", collectionKey: "your-collection-key")) {
+case .success(let sdk): _ = try await sdk.track("product_viewed") { $0.property("product_id", "p-1") }
+case .failure(let error): print(error)
+}
+```
+
+Requirements and rules:
+
+- iOS 15 or later, and Xcode with Swift 6 (`swift-tools-version: 6.0`). Apps only: the entry points are unavailable in app extensions. The SDK has no external dependency. It uses the system SQLite.
+- Use an `https://` endpoint. An `http://` endpoint needs `allowInsecureEndpoint: true` and an App Transport Security exception for the host ([ADR-0035](docs/adr/0035-sdk-https-enforcement.md)).
+- **Use `default` in a `switch` over the public result enums** (`TrackResult`, `InvalidReason`, `InitError`, and the diagnostics enums). A minor version can add a case ([ADR-0047](docs/adr/0047-ios-sdk.md) amendment of 2026-10-28).
+- The SDK ships a privacy manifest (`PrivacyInfo.xcprivacy`) for the installation ID and the events. If your event properties hold other data types, declare them in your app's manifest.
+- The API is `initialize`, `track`, `setOptOut`, `isOptedOut`, `clearQueue`, and `diagnostics`. See the [integration guide, section 13](docs/integration-guide.md).
+
+Platform differences and known limits:
+
+- There is no periodic background send. The SDK sends in the foreground, once when the app enters the background (inside `beginBackgroundTask`), and at launch. Events left after a background kill go out at the next launch (D8).
+- The installation ID file and the queue are excluded from backup. Apple does not guarantee that an excluded file never appears on a restored device, so a restored device can rarely share an installation ID (D6).
+- Before the first unlock after a restart, the system can refuse the SDK files. Then `initialize` returns `storageFailure`; call it again later.
+- The Simulator cannot reproduce a backup restore or a full disk. Simulator numbers are not device numbers. Nothing ran on a physical iPhone.
+- The GitHub macOS runner has no iOS 15 Simulator runtime. The package builds for iOS 15, but the tests run on the oldest runtime that the runner has (iOS 26.2 on the last recorded run). The iOS 15 form of the executor is not run-tested.
+- The source ZIP is not code-signed. It has a SHA-256 file and a provenance attestation. The attestation has not run on a real iOS release yet.
+- Out of scope for `0.1.0` (deferred, not rejected): remote Swift Package Manager and Maven Central together, CocoaPods, XCFramework, app extensions, Objective-C and completion-handler APIs, `BGTaskScheduler`, measurement on a physical iPhone, and the connection of the iOS app to the cloud demo.
+
 ## Repository guide
 
-The repository holds design documents and product code under `sdk/`, `server/`, and `dashboard/`.
+The repository holds design documents and product code under `sdk/`, `sdk-ios/`, `server/`, and `dashboard/`.
 The spec, verification plans, and implementation issues in `.scratch/signaldock/` are the approved design sources tracked in Git. Personal conversations and résumé review records are excluded.
 
 | Path | Contents |
@@ -261,5 +299,8 @@ The spec, verification plans, and implementation issues in `.scratch/signaldock/
 | [.scratch/signaldock/dashboard-verification-defaults.md](.scratch/signaldock/dashboard-verification-defaults.md) | Dashboard query and display defaults |
 | [.scratch/signaldock/performance-plan.md](.scratch/signaldock/performance-plan.md) | Performance test conditions, criteria, and raw data plan |
 | [.scratch/signaldock/issues/](.scratch/signaldock/issues/) | Implementation tasks |
+| [sdk-ios/](sdk-ios/) | iOS SDK: Swift package, tests, public API dump, privacy manifest |
+| [compatibility/consumer-ios/](compatibility/consumer-ios/) | iOS consumer and demo app; builds from the release ZIP only |
+| [.scratch/ios-sdk/spec.md](.scratch/ios-sdk/spec.md) | iOS SDK design and completion criteria ([ADR-0046](docs/adr/0046-sdk-platform-field.md), [ADR-0047](docs/adr/0047-ios-sdk.md)) |
 
 This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE).

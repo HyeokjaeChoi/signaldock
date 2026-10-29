@@ -1,6 +1,6 @@
 # 18. iOS docs
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: 14, 15
 
