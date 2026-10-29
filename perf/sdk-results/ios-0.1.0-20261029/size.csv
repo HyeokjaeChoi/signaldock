@@ -1,0 +1,14 @@
+metric,without_sdk_bytes,with_sdk_bytes,delta_bytes
+app_bytes,165581,557194,391613
+binary_bytes,164560,553024,388464
+ipa_bytes,49263,202566,153303
+resource_bundle_bytes,0,3149,3149
+text_segment_bytes,98304,409600,311296
+data_const_segment_bytes,16384,32768,16384
+data_segment_bytes,16384,49152,32768
+linkedit_segment_bytes,49152,81920,32768
+text_text_section_bytes,60944,287240,226296
+package_object_bytes,4519,300603,296084
+app_objects_bytes,81032,101323,20291
+attributed_total_bytes,85551,401926,316375
+unattributed_bytes,79009,151098,72089
