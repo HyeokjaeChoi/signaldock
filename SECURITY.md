@@ -6,8 +6,8 @@ SignalDock is an open-source project. The stack is for local use. A public demo 
 
 | Platform | Version | Security fixes |
 | --- | --- | --- |
-| Android | 0.4.x | Best effort |
-| Android | 0.3.x | None (superseded by 0.4.x) |
+| Android | 0.4.x | Best effort, from the release `v0.4.0` (not released yet) |
+| Android | 0.3.x | Best effort until `v0.4.0` is released, then none (superseded by 0.4.x) |
 | Android | 0.2.x | None (superseded by 0.3.x) |
 | Android | 0.1.x | None (superseded by 0.2.x) |
 | iOS | 0.1.x | Best effort, from the release `ios-v0.1.0` (not released yet) |
@@ -47,6 +47,7 @@ If the **Report a vulnerability** button is not shown, open a public issue that 
 In scope:
 
 - The Android SDK (`sdk/sdk-android`): for example, events or the collection key exposed to other apps, or input that crashes the host app.
+- The iOS SDK (`sdk-ios`): for example, the queue or the installation ID readable by another app, a log line with private data, or input that crashes the host app.
 - The server (`server/`): for example, authentication bypass between the collection key and the query key, SQL injection, or an ACK sent before commit.
 - The Dashboard (`dashboard/`): for example, script injection through stored event data, or exposure of the query key to the browser.
 
