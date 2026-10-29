@@ -8,7 +8,7 @@
 # amendment in docs/adr/0047-ios-sdk.md (reason and new measured delta), and CHANGELOG.md [Unreleased]. Do not raise it only to make the job pass.
 set -euo pipefail
 
-# Ticket 16 measured 153,303 (.ipa form) and 388,464 (main binary) with Xcode 27.1; the CI number will be recorded in the ADR amendment from the first CI run.
+# Ticket 16 measured 153,303 (.ipa form) and 388,464 (main binary) with Xcode 27.1; CI (Xcode 26.6) measured 158,012 and 390,112 (ADR-0047 ticket 17 amendment).
 IPA_BUDGET_BYTES=175000
 BINARY_BUDGET_BYTES=440000
 

@@ -34,4 +34,13 @@ Verification:
   ```
 - Method, metrics, budgets, reason: ADR-0047 "Amendment (2026-10-29, ticket 17, size budget)". Row in `AGENTS.md`.
 - `actionlint` (without shellcheck: no output; with shellcheck: only the existing SC2010 and SC2155 warnings of other steps). `scripts/check-repo-rules.sh`: see the PR.
-- Not run: CI (Xcode 26.6 numbers come from the first CI run of `ios-size-budget`; the budgets may need a change then, see the ADR amendment); a physical device.
+- CI, Xcode 26.6 ([repo-rules run 40811470874](https://github.com/HyeokjaeChoi/signaldock/actions/runs/40811470874/job/123242533967), PR #268): `ios-size-budget` passed:
+  ```
+  ipa_bytes: without SDK 48416, with SDK 206428
+  delta ipa_bytes: 158012 bytes (budget 175000, ADR-0047 ticket 17)
+  binary_bytes: without SDK 163800, with SDK 553912
+  delta binary_bytes: 390112 bytes (budget 440000, ADR-0047 ticket 17)
+  OK: within budget
+  ```
+- The planted run was run again to capture the exit code: `exit=1`, same FAIL lines.
+- Not run: a physical device.
