@@ -1,8 +1,9 @@
 # 17. iOS size budget gate
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: 16
+Execution: Done (PR #268, 2026-10-29 UTC)
 
 ## Scope and completion criteria
 

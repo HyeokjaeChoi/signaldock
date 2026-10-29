@@ -1,8 +1,9 @@
 # 18. iOS docs
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: 14, 15
+Execution: Done (PR #267, 2026-10-29 UTC)
 
 ## Scope and completion criteria
 
