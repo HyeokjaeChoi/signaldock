@@ -47,7 +47,7 @@ fi
 [ -f "$ZIP" ] || { echo "error: $ZIP does not exist" >&2; exit 1; }
 # The version is the one inside the ZIP, also when the caller passes a ZIP.
 VERSION="$(unzip -p "$ZIP" SignalDock/Sources/SignalDock/SignalDockSDK.swift | sed -n "$VERSION_RE")"
-[ -n "$VERSION" ] || { echo "error: no SignalDockSDK.version in $ZIP" >&2; exit 1; }
+[[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "error: '$VERSION' (version in $ZIP) is not X.Y.Z" >&2; exit 1; }
 
 SIM=""
 if [ -n "${IOSCOST_DEVICE:-}" ]; then  # fail early, before any build
@@ -128,9 +128,18 @@ fi
 xcrun simctl list devices | grep "$SIM" | grep -q Booted || BOOTED_BY_US=1
 xcrun simctl boot "$SIM" 2> /dev/null || true
 xcrun simctl bootstatus "$SIM" -b > /dev/null
+if [ -z "$CREATED_SIM" ]; then  # the apps are uninstalled at the end: never touch an app of the caller
+  for id in local.signaldock.consumerios local.signaldock.consumerios.nosdk; do
+    if xcrun simctl get_app_container "$SIM" "$id" > /dev/null 2>&1; then
+      echo "error: $id is already installed on $SIM; the script would replace and then remove it. Uninstall it or use another Simulator" >&2
+      exit 1
+    fi
+  done
+fi
 echo "Simulator: $SIM"
 
 OUT="perf/sdk-results/ios-$VERSION-$(date -u +%Y%m%d)"
+[ "$(dirname "$OUT")" = perf/sdk-results ] || { echo "error: refusing to remove $OUT" >&2; exit 1; }
 rm -rf "$OUT"
 mkdir -p "$OUT"
 python3 -I perf/ios_host_cost.py size "$WORK" "$OUT"

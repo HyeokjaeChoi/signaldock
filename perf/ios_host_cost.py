@@ -134,6 +134,8 @@ def size(work, out):
             "text_text_section_bytes": sec.get("__TEXT.__text", 0),
             "package_object_bytes": objs.get("SignalDock.o", 0),
             "app_objects_bytes": sum(v for k, v in objs.items() if k != "SignalDock.o"),
+            "attributed_total_bytes": sum(objs.values()),
+            "unattributed_bytes": binary.stat().st_size - sum(objs.values()),
         }
         info[arm]["_objs"], info[arm]["_sec"] = objs, per_sec
         info[arm]["frameworks_folder"] = (app / "Frameworks").exists()
@@ -178,6 +180,7 @@ class Sim:
         self.loads = []  # 1-minute load average at each launch
 
     def install(self, arm, app):
+        sh("xcrun", "simctl", "uninstall", self.udid, BUNDLE[arm], check=False)  # every arm starts with a fresh container
         sh("xcrun", "simctl", "install", self.udid, str(app))
         self.data[arm] = Path(sh("xcrun", "simctl", "get_app_container", self.udid, BUNDLE[arm], "data").strip())
 
@@ -338,7 +341,7 @@ def run(work, out, udid, runs, burst_runs, burst, idle, version, zip_path):
     deps_text = (
         f"The SDK is linked statically into the main binary (`SignalDock.o`); the app has {'a' if embedded else 'no'} "
         "`Frameworks` folder, so no embedded or third-party dynamic library is added. "
-        + (f"The SDK makes the main binary link {len(added_libs)} more system libraries (they add no bytes to the app): "
+        + (f"The SDK makes the main binary link {len(added_libs)} more system libraries (their binaries are not embedded in the app, but the references and stubs to them make the main binary larger): "
            + ", ".join(f"`{Path(l).name}`" for l in added_libs) + " (`dependencies.txt`)." if added_libs
            else "No system library is added (`dependencies.txt`).")
     )
@@ -381,8 +384,9 @@ Both arms are the independent consumer app (`compatibility/consumer-ios`, Releas
 {row('`__DATA` segment, bytes', 'data_segment_bytes')}
 {row('`__LINKEDIT` segment, bytes', 'linkedit_segment_bytes')}
 {row('`__TEXT,__text` section (code), bytes', 'text_text_section_bytes')}
-{row('Link map: file-backed bytes of the package object `SignalDock.o` (zero-fill excluded)', 'package_object_bytes')}
-{row('Link map: file-backed bytes of all other objects', 'app_objects_bytes')}
+{row('Link map: attributed symbol bytes of the package object `SignalDock.o` (file-backed)', 'package_object_bytes')}
+{row('Link map: attributed symbol bytes of all other objects', 'app_objects_bytes')}
+{row('Main binary bytes not attributed to a symbol (headers, load commands, padding, `__LINKEDIT`, section gaps)', 'unattributed_bytes')}
 
 The baseline package object is the empty stand-in. {deps_text} Dead code stripping is on, so unused SDK code is not in these numbers. {obj_text} The `.ipa` here is not encrypted; an App Store build encrypts `__TEXT`, which compresses worse, so a store download is larger than this figure. Per-section and per-object data: `sdk-sections.csv`, `link-objects.csv`.
 
