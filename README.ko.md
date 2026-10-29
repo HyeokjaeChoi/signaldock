@@ -7,8 +7,8 @@
 이 모노레포에는 SDK, 로컬 데이터 처리 서버, 그리고 둘의 설계가 들어 있습니다.
 앱의 `track()` 호출에서 시작해 durable queue, 재시도, 서버 중복 제거, 독립 아티팩트 설치까지 이어지는 경로를 검토할 수 있습니다.
 
-> **상태: 2026-10-21**
-> 첫 릴리스 범위가 완료되었고, SDK v0.3.0이 릴리스되었습니다. v0.3.0은 서버 수집 kill switch, AAR의 Baseline Profile, 릴리스 ZIP의 build provenance attestation, Gradle 의존성 검증을 추가합니다([CHANGELOG.md](CHANGELOG.md)). 공개 API는 0.2.0과 같습니다. SDK, 서버, Android 데모 앱, Dashboard가 구현되어 있습니다. 전송 실패 E2E, 기기 내구성, 계약·DB 변경 검사, 서버 부하 측정, SDK 기기 측정은 스크립트와 기록된 결과가 있습니다([이슈 20~24](.scratch/signaldock/issues/)). [클린 클론에서 재현](#클린-클론에서-재현)에는 새 클론에서 실행한 명령과 검증하지 못한 항목이 정리되어 있습니다. 검증하지 못한 항목은 process 경계 스크립트, 릴리스(R8) 빌드와 Baseline Profile의 실기기 측정(instrumented test, debug 기기 측정, 호스트 앱 비용은 SDK 0.3.0으로 실기기 한 대에서 실행했습니다, [issue 85](.scratch/signaldock/issues/85-device-verification-v0.3.0.md); instrumented test는 0.2.0 코드로도 실행했습니다, [issue 73](.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md))와 서버 측정 matrix 전체(실행하지 않음, Q133)입니다.
+> **상태: 2026-10-29**
+> 첫 릴리스 범위가 완료되었습니다. SDK v0.3.0은 마지막으로 태그된 Android 릴리스이고, v0.4.0은 준비되어 소유자의 태그를 기다립니다. v0.4.0은 새 필드 `sdkPlatform`을 보내므로, `sdkPlatform`을 지원하는 서버가 먼저 실행 중이어야 합니다([릴리스 노트](docs/releases/v0.4.0.md), [CHANGELOG.md](CHANGELOG.md)). 공개 API는 0.3.0과 같습니다. SDK, 서버, Android 데모 앱, Dashboard가 구현되어 있습니다. 전송 실패 E2E, 기기 내구성, 계약·DB 변경 검사, 서버 부하 측정, SDK 기기 측정은 스크립트와 기록된 결과가 있습니다([이슈 20~24](.scratch/signaldock/issues/)). [클린 클론에서 재현](#클린-클론에서-재현)에는 새 클론에서 실행한 명령과 검증하지 못한 항목이 정리되어 있습니다. 검증하지 못한 항목은 process 경계 스크립트, 릴리스(R8) 빌드와 Baseline Profile의 실기기 측정(instrumented test, debug 기기 측정, 호스트 앱 비용은 SDK 0.3.0으로 실기기 한 대에서 실행했습니다, [issue 85](.scratch/signaldock/issues/85-device-verification-v0.3.0.md); instrumented test는 0.2.0 코드로도 실행했습니다, [issue 73](.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md))와 서버 측정 matrix 전체(실행하지 않음, Q133)입니다.
 >
 > **iOS SDK 0.1.0: 2026-10-29.** iOS SDK(`sdk-ios/`), consumer 및 데모 앱, Simulator durability 스크립트, 릴리스 ZIP workflow는 저장소에 있습니다. iOS 릴리스는 아직 없습니다. 첫 tag인 `ios-v0.1.0`은 push에 소유자의 승인이 필요하고, `sdkPlatform`을 보내는 Android SDK 0.4.0도 아직 tag가 없습니다. [iOS SDK](#ios-sdk)를 참고하세요.
 
@@ -89,7 +89,7 @@ SDK는 버린 이벤트를 사유별로 세어 `POST /v1/client-reports`로 보�
 | CI와 공급망 | GitHub Actions · CodeQL · Renovate · `dependency-guard` baseline · `binary-compatibility-validator` · Gradle wrapper 검증 · Gradle 의존성 검증 · 빌드 provenance attestation |
 
 정확한 버전은 `gradle/libs.versions.toml`에 고정되어 있습니다. [TOOLCHAIN.md](TOOLCHAIN.md)에 각 고정의 이유와 이를 검증한 빌드가 있습니다(영어).
-첫 좌표는 `local.signaldock:sdk-android:0.3.0`입니다(로컬 전용이며 Maven Central이 아닙니다). ZIP은 아래 설명대로 빌드합니다.
+첫 좌표는 `local.signaldock:sdk-android:0.4.0`입니다(로컬 전용이며 Maven Central이 아닙니다). ZIP은 아래 설명대로 빌드합니다.
 
 ## 범위와 검증
 
@@ -154,7 +154,7 @@ export ANDROID_HOME="$HOME/Library/Android/sdk"     # your Android SDK path
 scripts/verify-consumer.sh
 ```
 
-이 스크립트는 `signaldockMavenZip`을 빌드하고, 깨끗한 임시 폴더에 풀고, 그 폴더만 사용해 `compatibility/consumer-android/`를 좌표 `local.signaldock:sdk-android:0.3.0`으로 R8 release로 빌드합니다. AAR의 Kotlin metadata 버전을 확인하고 ZIP, 폴더, APK 경로를 출력합니다. 폴더를 남기려면 먼저 `SIGNALDOCK_REPO_DIR`을 새 빈 경로로 설정하세요. ZIP만 만들려면 `sdk/gradlew -p sdk :sdk-android:signaldockMavenZip --no-daemon`을 실행합니다(출력은 `sdk/sdk-android/build/distributions/signaldock-sdk-android-0.3.0-maven.zip`). [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md)를 참고하세요.
+이 스크립트는 `signaldockMavenZip`을 빌드하고, 깨끗한 임시 폴더에 풀고, 그 폴더만 사용해 `compatibility/consumer-android/`를 좌표 `local.signaldock:sdk-android:0.4.0`으로 R8 release로 빌드합니다. AAR의 Kotlin metadata 버전을 확인하고 ZIP, 폴더, APK 경로를 출력합니다. 폴더를 남기려면 먼저 `SIGNALDOCK_REPO_DIR`을 새 빈 경로로 설정하세요. ZIP만 만들려면 `sdk/gradlew -p sdk :sdk-android:signaldockMavenZip --no-daemon`을 실행합니다(출력은 `sdk/sdk-android/build/distributions/signaldock-sdk-android-0.4.0-maven.zip`). [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md)를 참고하세요.
 
 이제 R8 release APK를 에뮬레이터에서 실행해 서버에 연결합니다. collection key는 빌드 시점에 포함됩니다.
 
@@ -198,10 +198,10 @@ docker compose down --volumes           # RESET: deletes the DB volume and ALL s
 
 ## 앱에 SDK 추가
 
-Maven repository ZIP과 `.sha256` 파일은 GitHub Release [`v0.3.0`](https://github.com/HyeokjaeChoi/signaldock/releases/tag/v0.3.0)의 배포 파일입니다([릴리스 노트](docs/releases/v0.3.0.md), [변경 이력](CHANGELOG.md)). `scripts/release.sh 0.3.0`이 둘을 `dist/`에 만듭니다. ZIP을 검증한 뒤 폴더에 푸세요.
+소유자가 태그 `v0.4.0`을 푸시한 뒤에는 Maven repository ZIP과 `.sha256` 파일이 GitHub Release [`v0.4.0`](https://github.com/HyeokjaeChoi/signaldock/releases/tag/v0.4.0)의 배포 파일입니다([릴리스 노트](docs/releases/v0.4.0.md), [변경 이력](CHANGELOG.md)). 그때까지 릴리스된 최신 버전은 `v0.3.0`입니다. `scripts/release.sh 0.4.0`이 둘을 `dist/`에 만듭니다. ZIP을 검증한 뒤 폴더에 푸세요.
 
 ```sh
-shasum -a 256 -c signaldock-sdk-android-0.3.0-maven.zip.sha256   # 두 파일이 있는 폴더에서 실행
+shasum -a 256 -c signaldock-sdk-android-0.4.0-maven.zip.sha256   # 두 파일이 있는 폴더에서 실행
 ```
 
 `v0.3.0`부터의 릴리스(ADR-0039)에는 서명된 build provenance attestation도 있습니다. 이 저장소의 릴리스 workflow가 ZIP을 만들었다는 것을 보여 줍니다. [GitHub CLI](https://cli.github.com/)로 확인하세요.
@@ -228,10 +228,10 @@ dependencyResolutionManagement {
     }
 }
 // app/build.gradle.kts
-dependencies { implementation("local.signaldock:sdk-android:0.3.0") }
+dependencies { implementation("local.signaldock:sdk-android:0.4.0") }
 ```
 
-0.3.0 AAR의 요구 사항:
+0.4.0 AAR의 요구 사항:
 
 - `compileSdk` 36 이상(`aarMetadata.minCompileSdk=36`, [ADR-0006](docs/adr/0006-sdk-delivery-decisions.md)), `minSdk` 24 이상.
 - Kotlin 2.2 이상과 AGP 9.x. SDK metadata가 2.2이므로, AGP 9의 기본 built-in Kotlin으로 추가 Kotlin 플러그인 없이 동작합니다([ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md), Q132).
@@ -241,7 +241,7 @@ dependencies { implementation("local.signaldock:sdk-android:0.3.0") }
 
 ### 지원 버전
 
-| 항목 | 0.3.x |
+| 항목 | 0.4.x |
 | --- | --- |
 | 최소 Android API (`minSdk`) | 24 |
 | 호스트 앱의 `compileSdk` | 36 이상 |

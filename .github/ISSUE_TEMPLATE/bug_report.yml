@@ -9,14 +9,14 @@ body:
     id: component
     attributes:
       label: Component
-      options: [SDK (sdk-android), Server, Dashboard, Demo or consumer app, Scripts or build, Docs]
+      options: [SDK Android (sdk-android), SDK iOS (sdk-ios), Server, Dashboard, Demo or consumer app, Scripts or build, Docs]
     validations:
       required: true
   - type: input
     id: version
     attributes:
       label: Version or commit
-      description: SDK version (for example 0.3.0) or a commit hash.
+      description: SDK version with the platform (for example Android 0.4.0 or iOS 0.1.0) or a commit hash.
     validations:
       required: true
   - type: textarea
