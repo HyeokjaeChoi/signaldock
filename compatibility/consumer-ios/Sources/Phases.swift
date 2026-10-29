@@ -5,7 +5,8 @@
   /// Debug builds only (ADR-0047 "Amendment (2026-10-29, ticket 15, durability phases)"). With
   /// `SIMCTL_CHILD_SIGNALDOCK_PHASE=<name> xcrun simctl launch ...` the app runs one phase of the Simulator durability
   /// script (`scripts/simulator-durability.sh`) after `initialize()` and writes `Documents/phase-result.txt`. The script
-  /// kills, reinstalls, and relaunches the app between phases. Not in Release. Phase code uses the public API only.
+  /// kills, reinstalls, and relaunches the app between phases. Not in Release. Phase code calls the public API; the only
+  /// SDK internal it touches is a read of the file `Application Support/signaldock/installation-id` for the report.
   enum PhaseRun {
     private static let env = ProcessInfo.processInfo.environment
     private static let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]

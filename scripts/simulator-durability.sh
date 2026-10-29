@@ -36,22 +36,27 @@ done
 : "${SIGNALDOCK_QUERY_KEY:?set SIGNALDOCK_QUERY_KEY (query key of the verification stack)}"
 ENDPOINT="${SIGNALDOCK_ENDPOINT:-http://127.0.0.1:${SIGNALDOCK_SERVER_PORT:-8080}}"
 OFFLINE="http://127.0.0.1:9"
+# Keys travel in the environment, not in argv (visible in ps).
+export SIMCTL_CHILD_SIGNALDOCK_COLLECTION_KEY="$SIGNALDOCK_COLLECTION_KEY"
+export SD_QUERY_KEY="$SIGNALDOCK_QUERY_KEY"
 
 # Only a Simulator that simctl lists. A physical device is never in this list.
 devname="$(xcrun simctl list devices -j | python3 -c '
 import json, sys
 for runtime, devices in json.load(sys.stdin)["devices"].items():
     for d in devices:
-        if d["udid"] == sys.argv[1]:
+        if d["udid"] == sys.argv[1] and "SimRuntime.iOS-" in runtime:
             print(d["name"] + " / " + runtime.rsplit(".", 1)[-1])
 ' "$udid")"
-[ -n "$devname" ] || { echo "refusing $udid: not an iOS Simulator listed by 'xcrun simctl list devices'" >&2; exit 1; }
+[ -n "$devname" ] || { echo "refusing $udid: not an iOS Simulator (iOS runtime) listed by 'xcrun simctl list devices'" >&2; exit 1; }
 curl -fsS -o /dev/null "$ENDPOINT/ready" || { echo "error: server not ready at $ENDPOINT (start the verification stack first)" >&2; exit 1; }
 
+BUNDLE=""
 work="$(mktemp -d)"
 booted_here=0
 cleanup() {
   rm -rf "$work"
+  xcrun simctl terminate "$udid" "$BUNDLE" >/dev/null 2>&1 || true
   if [ "$booted_here" = 1 ]; then xcrun simctl shutdown "$udid" >/dev/null 2>&1 || true; fi
 }
 trap cleanup EXIT
@@ -71,15 +76,16 @@ APP="$PRODUCTS/Debug-iphonesimulator/ConsumerIOS.app"
 BUNDLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")"
 
 # Release must not contain the phase code (ADR-0047 amendment).
-if [ -d "$PRODUCTS/Release-iphonesimulator/ConsumerIOS.app" ]; then
-  if strings -a "$PRODUCTS/Release-iphonesimulator/ConsumerIOS.app/ConsumerIOS" | grep -q SIGNALDOCK_PHASE; then
-    echo "error: the Release binary contains the phase marker SIGNALDOCK_PHASE" >&2
-    exit 1
-  fi
-  echo "release check: no SIGNALDOCK_PHASE in the Release binary"
-else
-  echo "release check: no Release build found, skipped"
+# strings output goes to a file first: "strings | grep -q" under pipefail reads a SIGPIPE (141) as "not found".
+# With SIMULATOR_DURABILITY_SKIP_BUILD=1 this checks the Release product of the earlier build (it may be stale).
+REL="$PRODUCTS/Release-iphonesimulator/ConsumerIOS.app/ConsumerIOS"
+[ -f "$REL" ] || { echo "error: no Release product at $REL (run without SIMULATOR_DURABILITY_SKIP_BUILD)" >&2; exit 1; }
+strings -a "$REL" >"$work/release-strings.txt"
+if [ "$(grep -c SIGNALDOCK_PHASE "$work/release-strings.txt" || true)" != 0 ]; then
+  echo "error: the Release binary contains the phase marker SIGNALDOCK_PHASE" >&2
+  exit 1
 fi
+echo "release check: no SIGNALDOCK_PHASE in $REL ($(wc -l <"$work/release-strings.txt" | tr -d ' ') strings read; build skipped: ${SIMULATOR_DURABILITY_SKIP_BUILD:-0})"
 
 echo "simulator: $devname ($udid)   $(xcodebuild -version | tr '\n' ' ')"
 echo "commit: $(git rev-parse --short HEAD)   server: $ENDPOINT   app: $BUNDLE (Debug)"
@@ -106,7 +112,7 @@ launch() {
   local phase="$1" endpoint="$2" count="${3:-5}" name="${4:-dur_event}" want="${wait_for:-pass}" out
   rm -f "$(result_file)" 2>/dev/null || true
   out="$(env SIMCTL_CHILD_SIGNALDOCK_PHASE="$phase" SIMCTL_CHILD_SIGNALDOCK_ENDPOINT="$endpoint" \
-    SIMCTL_CHILD_SIGNALDOCK_COLLECTION_KEY="$SIGNALDOCK_COLLECTION_KEY" SIMCTL_CHILD_SIGNALDOCK_PHASE_COUNT="$count" \
+    SIMCTL_CHILD_SIGNALDOCK_PHASE_COUNT="$count" \
     SIMCTL_CHILD_SIGNALDOCK_PHASE_NAME="$name" SIMCTL_CHILD_SIGNALDOCK_PHASE_TIMEOUT="${PHASE_TIMEOUT:-240}" \
     xcrun simctl launch --terminate-running-process "$udid" "$BUNDLE")"
   pid="${out##*: }"
@@ -127,9 +133,10 @@ installation_id() { tr -d '[:space:]' <"$(sdk_dir)/installation-id"; }
 
 # Event IDs of one installation at the server, one per line, in order of receipt (a repeated ID shows up twice).
 server_ids() {
-  python3 - "$ENDPOINT" "$SIGNALDOCK_QUERY_KEY" "$1" "$FROM" "$TO" <<'EOF'
-import json, sys, urllib.parse, urllib.request
-base, key, inst, frm, to = sys.argv[1:6]
+  python3 - "$ENDPOINT" "$1" "$FROM" "$TO" <<'EOF'
+import json, os, sys, urllib.parse, urllib.request
+base, inst, frm, to = sys.argv[1:5]
+key = os.environ["SD_QUERY_KEY"]
 cursor = None
 while True:
     q = {"installationId": inst, "from": frm, "to": to, "sort": "receivedAt_asc", "limit": "100"}
@@ -145,16 +152,16 @@ while True:
 EOF
 }
 
-# server_matches <installationId> <expected-file> [allowed extra events]: no lost event, no duplicate, no unknown event.
+# server_matches <installationId> <expected-file> [allowed extra events]: no lost event and no event the app did not
+# report. A repeated event ID cannot be stored (the server ignores a conflicting insert), so the resends that a kill
+# causes show up only as "duplicate" in the drain ACK, which launch prints as lastAck.
 server_matches() {
   local inst="$1" expected="$2" extra="${3:-0}"
   server_ids "$inst" >"$work/server.txt"
-  local dup lost unknown
-  dup="$(sort "$work/server.txt" | uniq -d | wc -l | tr -d ' ')"
+  local lost unknown
   lost="$(comm -23 <(sort -u "$expected") <(sort -u "$work/server.txt") | wc -l | tr -d ' ')"
   unknown="$(comm -13 <(sort -u "$expected") <(sort -u "$work/server.txt") | wc -l | tr -d ' ')"
-  echo "  server: expected $(sort -u "$expected" | wc -l | tr -d ' '), stored $(wc -l <"$work/server.txt" | tr -d ' '), duplicates $dup, lost $lost, unknown $unknown (allowed $extra)"
-  [ "$dup" -eq 0 ] || fail "server holds a repeated event ID"
+  echo "  server: expected $(sort -u "$expected" | wc -l | tr -d ' '), stored $(wc -l <"$work/server.txt" | tr -d ' '), lost $lost, unknown $unknown (allowed $extra)"
   [ "$lost" -eq 0 ] || fail "$lost stored event(s) never reached the server"
   [ "$unknown" -le "$extra" ] || fail "$unknown event(s) at the server that the app did not report"
 }
@@ -205,17 +212,24 @@ case_kill_send() {
   echo "== kill_send: kill -9 while delivery of a burst is in progress (real server)"
   fresh_install
   wait_for=started launch burst "$ENDPOINT" 0 dur_kill_send
-  local bpid="$pid" inst_id n=0
-  until [ -f "$(sdk_dir)/installation-id" ]; do sleep 0.2; done
+  local bpid="$pid" inst_id n=0 stored deadline=$((SECONDS + 60))
+  until [ -f "$(sdk_dir)/installation-id" ]; do
+    [ $SECONDS -lt "$deadline" ] || fail "no installation ID within 60 s"
+    sleep 0.2
+  done
   inst_id="$(installation_id)"
   # Delivery has started when the server holds the first events; the burst keeps storing meanwhile.
   until [ "$n" -gt 0 ]; do
+    [ $SECONDS -lt "$deadline" ] || fail "no event reached the server within 60 s"
     sleep 0.2
     n="$(server_ids "$inst_id" | wc -l | tr -d ' ')"
   done
   sleep 1
   n="$(server_ids "$inst_id" | wc -l | tr -d ' ')"
-  echo "  at kill: pid $bpid, $n events at the server, $(wc -l <"$(data)/Documents/acked.log" | tr -d ' ') stored by the app"
+  stored="$(grep -cE '^[0-9a-f-]{36}$' "$(data)/Documents/acked.log" || true)"
+  echo "  at kill: pid $bpid, $n events at the server, $stored stored by the app"
+  # Evidence that delivery was under way and not finished: some events delivered, others still queued.
+  [ "$n" -gt 0 ] && [ "$n" -lt "$stored" ] || fail "delivery was not partial at kill time (server $n, stored $stored)"
   kill9 "$bpid"
   verify_burst deliver
 }
@@ -305,7 +319,10 @@ case_offline() {
   kill9 "$pid"
   diff <(queue_ids) "$work/seeded.txt" >/dev/null || fail "queue after the kill differs from the stored events"
   [ "$(server_ids "$inst" | wc -l | tr -d ' ')" -eq 0 ] || fail "events reached the server while offline"
-  echo "  retry state after the kill (failureCount, nextAttemptAtMillis): $(sqlite3 -readonly "$(queue_db)" 'select failureCount, nextAttemptAtMillis from retry_state')"
+  local failures
+  failures="$(sqlite3 -readonly "$(queue_db)" 'select failureCount from retry_state')"
+  [ "${failures:-0}" -ge 1 ] || fail "the failed offline send left no persisted retry state (failureCount '${failures:-}')"
+  echo "  persisted retry state after the kill: failureCount $failures, nextAttemptAtMillis $(sqlite3 -readonly "$(queue_db)" 'select nextAttemptAtMillis from retry_state')"
   deliver "$work/seeded.txt"
 }
 
