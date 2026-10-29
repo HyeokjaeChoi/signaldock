@@ -11,6 +11,7 @@
 		A10000000000000000000002 /* Shop.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* Shop.swift */; };
 		A10000000000000000000003 /* Screens.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* Screens.swift */; };
 		A10000000000000000000004 /* AutoRun.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* AutoRun.swift */; };
+		A1000000000000000000F015 /* Phases.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000F015 /* Phases.swift */; };
 		A10000000000000000000005 /* TrackingPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000005 /* TrackingPlan.swift */; };
 		A10000000000000000000006 /* SignalDock in Frameworks */ = {isa = PBXBuildFile; productRef = A60000000000000000000001 /* SignalDock */; };
 /* End PBXBuildFile section */
@@ -20,6 +21,7 @@
 		A20000000000000000000002 /* Shop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shop.swift; sourceTree = "<group>"; };
 		A20000000000000000000003 /* Screens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Screens.swift; sourceTree = "<group>"; };
 		A20000000000000000000004 /* AutoRun.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoRun.swift; sourceTree = "<group>"; };
+		A2000000000000000000F015 /* Phases.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Phases.swift; sourceTree = "<group>"; };
 		A20000000000000000000005 /* TrackingPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TrackingPlan.swift; path = ../../tracking-plan/generated/swift/TrackingPlan.swift; sourceTree = "<group>"; };
 		A20000000000000000000006 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A20000000000000000000007 /* ConsumerIOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ConsumerIOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -53,6 +55,7 @@
 				A20000000000000000000002 /* Shop.swift */,
 				A20000000000000000000003 /* Screens.swift */,
 				A20000000000000000000004 /* AutoRun.swift */,
+				A2000000000000000000F015 /* Phases.swift */,
 				A20000000000000000000006 /* Info.plist */,
 			);
 			path = Sources;
@@ -128,6 +131,7 @@
 				A10000000000000000000002 /* Shop.swift in Sources */,
 				A10000000000000000000003 /* Screens.swift in Sources */,
 				A10000000000000000000004 /* AutoRun.swift in Sources */,
+				A1000000000000000000F015 /* Phases.swift in Sources */,
 				A10000000000000000000005 /* TrackingPlan.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -69,6 +69,7 @@ final class AppModel: ObservableObject {
     }
     #if DEBUG
       await AutoRun.runIfRequested(self)
+      await PhaseRun.runIfRequested(self)
     #endif
   }
 
