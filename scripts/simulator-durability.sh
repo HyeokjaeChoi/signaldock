@@ -8,8 +8,8 @@
 # Sources/Phases.swift, Debug only: ADR-0047 "Amendment (2026-10-29, ticket 15, durability phases)"). Between phases
 # the script ends the process with kill -9, installs over the app (update), or uninstalls and installs. It reads the
 # queue from the app container (sqlite3, read only) and the stored events from the server query API.
-# Pass rule: every event that track() reported as stored reaches the server exactly once (no lost event, no server
-# duplicate by event ID), and the queue is as the case expects.
+# Pass rule: no lost event (every event that track() reported as stored reaches the server) and no unreported event,
+# and the queue is as the case expects. A resend shows only as `duplicate` in the ACK (ADR-0047 ticket 15 amendment).
 #
 # Needs: a running verification stack (docker compose, own project and ports), full Xcode with an iOS Simulator
 # runtime, sqlite3, python3, curl. Environment variables:
