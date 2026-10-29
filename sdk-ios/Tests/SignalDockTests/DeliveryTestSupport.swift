@@ -91,6 +91,11 @@ actor FakeTransport: BatchTransport {
   }
 
   private(set) var requests: [BatchHttpRequest] = []
+  /// The client report requests, and every call in order: `"batch"` or `"report"`.
+  private(set) var reports: [BatchHttpRequest] = []
+  private(set) var calls: [String] = []
+  private var reportScript: [TransportResult] = []
+  private var duringReport: (@Sendable () async -> Void)?
   private(set) var maxInFlight = 0
   private var inFlight = 0
   private var script: [Reply]
@@ -100,8 +105,22 @@ actor FakeTransport: BatchTransport {
 
   func enqueue(_ replies: Reply...) { script.append(contentsOf: replies) }
 
+  /// Scripts the answers to client reports. A report that is not scripted gets a network error.
+  func enqueueReports(_ results: TransportResult...) { reportScript.append(contentsOf: results) }
+
+  /// Runs while the next report is in flight (a test seam: a drop counted during the HTTP call).
+  func onReport(_ action: @escaping @Sendable () async -> Void) { duringReport = action }
+
+  func sendReport(_ request: BatchHttpRequest) async throws(CancellationError) -> TransportResult {
+    reports.append(request)
+    calls.append("report")
+    await duringReport?()
+    return reportScript.isEmpty ? .failed(.network) : reportScript.removeFirst()
+  }
+
   func send(_ request: BatchHttpRequest) async throws(CancellationError) -> TransportResult {
     requests.append(request)
+    calls.append("batch")
     inFlight += 1
     maxInFlight = max(maxInFlight, inFlight)
     defer { inFlight -= 1 }

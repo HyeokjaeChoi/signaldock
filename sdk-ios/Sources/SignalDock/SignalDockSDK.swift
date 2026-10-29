@@ -66,7 +66,19 @@ public final class SignalDockSDK: Sendable {
   public func track(
     isolation: isolated (any Actor)? = #isolation, _ name: String, _ build: (inout EventBuilder) -> Void = { _ in }
   ) async throws(CancellationError) -> TrackResult {
-    try await collector.track(name, isolation: isolation, build)
+    let result = try await collector.track(name, isolation: isolation, build)
+    // A dropped event is counted for the client report (ADR-0036). The count never changes the result.
+    if let reason = result.dropReason { await countDrop(reason) }
+    return result
+  }
+
+  /// Best effort: a failure to write the counter is logged and never reaches the host. Such a drop is not counted.
+  private func countDrop(_ reason: DiscardReason) async {
+    do {
+      try await queue.addDropped(reason: reason.rawValue, count: 1)
+    } catch {
+      logger.log(.dropCounterFailed)
+    }
   }
 
   /// Turns collection off or on. While `optedOut` is `true`, ``track(isolation:_:_:)`` stores nothing and returns
