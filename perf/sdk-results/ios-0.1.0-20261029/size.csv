@@ -10,3 +10,5 @@ linkedit_segment_bytes,49152,81920,32768
 text_text_section_bytes,60944,287240,226296
 package_object_bytes,4519,300603,296084
 app_objects_bytes,81032,101323,20291
+attributed_total_bytes,85551,401926,316375
+unattributed_bytes,79009,151098,72089

@@ -1,8 +1,8 @@
 # iOS SDK cost for a host app (ticket 16)
 
-Measured on a Simulator, not on a physical device: iPhone 18 Pro (iOS 27.0) on Apple M2 Pro, macOS 26.6.2, Xcode 27.1 Build version 27A9275. One shared host (load average in `meta.json`: start [63.52, 39.72, 55.43], end [7.48, 36.35, 53.52]). **The host load was high** (1-minute load average up to 205 on 12 CPUs at the launches): p95 and max are not meaningful and are shown only for completeness. Read the medians and the paired median. Numbers show the order of magnitude, not an SLA. Method and limits: ADR-0047 amendment "ticket 16, measurement method" and ADR-0020.
+Measured on a Simulator, not on a physical device: iPhone 18 Pro (iOS 27.0) on Apple M2 Pro, macOS 26.6.2, Xcode 27.1 Build version 27A9275. One shared host (load average in `meta.json`: start [81.07, 41.18, 51.85], end [4.28, 31.29, 48.41]). **The host load was high** (1-minute load average up to 260 on 12 CPUs at the launches): p95 and max are not meaningful and are shown only for completeness. Read the medians and the paired median. Numbers show the order of magnitude, not an SLA. Method and limits: ADR-0047 amendment "ticket 16, measurement method" and ADR-0020.
 
-Both arms are the independent consumer app (`compatibility/consumer-ios`, Release, Swift 6 mode). The SDK arm uses the SDK from the release ZIP `signaldock-sdk-ios-0.1.0.zip` of `0.1.0`. The baseline arm uses an empty package with the same public signatures (`perf/ios-host-cost/baseline`), so the app sources are identical and the baseline binary holds no SDK code. Run 2026-10-29T02:21:32Z, git 75b43cd.
+Both arms are the independent consumer app (`compatibility/consumer-ios`, Release, Swift 6 mode). The SDK arm uses the SDK from the release ZIP `signaldock-sdk-ios-0.1.0.zip` of `0.1.0`. The baseline arm uses an empty package with the same public signatures (`perf/ios-host-cost/baseline`), so the app sources are identical and the baseline binary holds no SDK code. Run 2026-10-29T02:31:07Z, git 91aece9.
 
 ## Size (`xcodebuild archive`, Release, iphoneos arm64, unsigned, stripped by the archive step)
 
@@ -17,21 +17,22 @@ Both arms are the independent consumer app (`compatibility/consumer-ios`, Releas
 | `__DATA` segment, bytes | 16,384 | 49,152 | +32,768 |
 | `__LINKEDIT` segment, bytes | 49,152 | 81,920 | +32,768 |
 | `__TEXT,__text` section (code), bytes | 60,944 | 287,240 | +226,296 |
-| Link map: file-backed bytes of the package object `SignalDock.o` (zero-fill excluded) | 4,519 | 300,603 | +296,084 |
-| Link map: file-backed bytes of all other objects | 81,032 | 101,323 | +20,291 |
+| Link map: attributed symbol bytes of the package object `SignalDock.o` (file-backed) | 4,519 | 300,603 | +296,084 |
+| Link map: attributed symbol bytes of all other objects | 81,032 | 101,323 | +20,291 |
+| Main binary bytes not attributed to a symbol (headers, load commands, padding, `__LINKEDIT`, section gaps) | 79,009 | 151,098 | +72,089 |
 
-The baseline package object is the empty stand-in. The SDK is linked statically into the main binary (`SignalDock.o`); the app has no `Frameworks` folder, so no embedded or third-party dynamic library is added. The SDK makes the main binary link 3 more system libraries (they add no bytes to the app): `CoreFoundation`, `UIKit`, `libsqlite3.dylib` (`dependencies.txt`). Dead code stripping is on, so unused SDK code is not in these numbers. The other link-map objects grow by +20,291 bytes together; the largest changes are `linker synthesized` +8,654, `ConsumerApp.o` +4,699, `libswiftCore.tbd` +2,420. `linker synthesized` holds stubs and other linker-made data. These bytes are part of the main binary delta and not of `SignalDock.o`. The `.ipa` here is not encrypted; an App Store build encrypts `__TEXT`, which compresses worse, so a store download is larger than this figure. Per-section and per-object data: `sdk-sections.csv`, `link-objects.csv`.
+The baseline package object is the empty stand-in. The SDK is linked statically into the main binary (`SignalDock.o`); the app has no `Frameworks` folder, so no embedded or third-party dynamic library is added. The SDK makes the main binary link 3 more system libraries (their binaries are not embedded in the app, but the references and stubs to them make the main binary larger): `CoreFoundation`, `UIKit`, `libsqlite3.dylib` (`dependencies.txt`). Dead code stripping is on, so unused SDK code is not in these numbers. The other link-map objects grow by +20,291 bytes together; the largest changes are `linker synthesized` +8,654, `ConsumerApp.o` +4,699, `libswiftCore.tbd` +2,420. `linker synthesized` holds stubs and other linker-made data. These bytes are part of the main binary delta and not of `SignalDock.o`. The `.ipa` here is not encrypted; an App Store build encrypts `__TEXT`, which compresses worse, so a store download is larger than this figure. Per-section and per-object data: `sdk-sections.csv`, `link-objects.csv`.
 
 ## Startup (20 cold starts per arm, interleaved; 2 warm-up launches not counted)
 
-Cold start launches (the 20 runs of this table): the app is the measurement build with `initialize()` at its shipped place, `AppModel.init`, before the first view (the probe adds no delay in these launches). Each run is `simctl launch --terminate-running-process`; the app writes the time from the kernel process start record to the first `onAppear` of the root view, so the SDK arm's `initialize()` work that runs before the first view is inside the figure. `launch wall` is the time of the `xcrun simctl launch` call itself. Memory after launch is read in these launches too. `initialize()` result-ready (wall) time in these launches: SDK arm median 31.1 ms, p95 176.2 ms (`startup.csv`, `init_wall_ms`).
+Cold start launches (the 20 runs of this table): the app is the measurement build with `initialize()` at its shipped place, `AppModel.init`, before the first view (the probe adds no delay in these launches). Each run is `simctl launch --terminate-running-process`; the app writes the time from the kernel process start record to the first `onAppear` of the root view, so the SDK arm's `initialize()` work that runs before the first view is inside the figure. `launch wall` is the time of the `xcrun simctl launch` call itself. Memory after launch is read in these launches too. `initialize()` result-ready (wall) time in these launches: SDK arm median 30.8 ms, p95 81.8 ms (`startup.csv`, `init_wall_ms`).
 
 | Metric (ms) | Without SDK p50 / p95 / max | With SDK p50 / p95 / max |
 | --- | --- | --- |
-| process start to first view | 416.3 / 449.7 / 471.2 | 421.6 / 453.1 / 505.7 |
-| `simctl launch` wall time | 170.8 / 336.2 / 390.2 | 161.8 / 330.9 / 581.4 |
+| process start to first view | 413.7 / 438.0 / 1179.9 | 413.9 / 440.9 / 499.4 |
+| `simctl launch` wall time | 159.3 / 248.9 / 981.7 | 160.2 / 236.5 / 1115.7 |
 
-Paired difference (with minus without, run by run), process start to first view: median -2.3 ms, min -49.5, max 62.2. `simctl launch` wall time: median -4.0 ms, min -76.7, max 399.3.
+Paired difference (with minus without, run by run), process start to first view: median 1.1 ms, min -739.0, max 80.1. `simctl launch` wall time: median 2.1 ms, min -745.3, max 866.8.
 
 ## `initialize()` and `track()` on the main thread (SDK arm)
 
@@ -39,18 +40,18 @@ Settled launches (separate launches, 20 per arm, interleaved; they are not used 
 
 | Call | n | main p50 / p95 / max, ms | wall p50 / p95 / max, ms |
 | --- | --- | --- | --- |
-| `SignalDockSDK.initialize` (settled launches) | 20 | 0.067 / 0.116 / 0.126 | 24.112 / 30.784 / 31.438 |
-| same probe around the empty stand-in `initialize` (floor of the method) | 20 | 0.016 / 0.026 / 0.042 | 0.016 / 0.026 / 0.042 |
-| `track` (`productViewed`, 500 calls per run, 10 runs, pooled) | 5000 | 0.036 / 0.055 / 2.819 | 0.394 / 0.689 / 13.512 |
+| `SignalDockSDK.initialize` (settled launches) | 20 | 0.051 / 0.094 / 0.107 | 22.988 / 28.713 / 32.140 |
+| same probe around the empty stand-in `initialize` (floor of the method) | 20 | 0.015 / 0.023 / 0.025 | 0.015 / 0.023 / 0.025 |
+| `track` (`productViewed`, 500 calls per run, 10 runs, pooled) | 5000 | 0.035 / 0.052 / 2.867 | 0.373 / 0.683 / 20.243 |
 
-The first `track` call of each burst run (main thread): p50 1.940 ms, max 2.819 ms. `track()` runs on the caller's actor (the main actor here) until it hands the work to the SDK; the numbers are the main-actor part of one call. Samples: `track-samples.csv`.
+The first `track` call of each burst run (main thread): p50 1.777 ms, max 2.867 ms. `track()` runs on the caller's actor (the main actor here) until it hands the work to the SDK; the numbers are the main-actor part of one call. Samples: `track-samples.csv`.
 
 ## Memory (`footprint`, physical footprint of the app process, MiB)
 
 | Moment | Without SDK median (min - max) | With SDK median (min - max) | Delta median (paired min - max) |
 | --- | --- | --- | --- |
-| 5s after launch (n=20) | 21.26 (21.06 - 21.55) | 21.99 (21.92 - 23.28) | +0.78 (+0.41 to +1.88) |
-| 5s after 500 `track()` calls (n=10) | 21.26 (21.13 - 21.50) | 22.06 (21.88 - 22.42) | +0.90 (+0.52 to +1.16) |
+| 5s after launch (n=20) | 21.34 (21.08 - 21.53) | 21.69 (21.50 - 24.31) | +0.38 (+0.16 to +2.78) |
+| 5s after 500 `track()` calls (n=10) | 21.32 (21.14 - 21.42) | 21.75 (21.61 - 22.06) | +0.53 (+0.38 to +0.73) |
 
 The endpoint was `http://127.0.0.1:9` (nothing answers) with a dummy key, so the SDK queued events and its delivery attempts failed, as in an app that is offline; no event left the Mac. The baseline arm's `track()` does nothing. Memory is the Simulator host process view (`footprint -j`), a sample of a moving value: read differences of the order of the spread or more.
 

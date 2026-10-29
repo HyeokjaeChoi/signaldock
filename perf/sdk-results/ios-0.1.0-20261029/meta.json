@@ -1,7 +1,7 @@
 {
   "ticket": 16,
   "adr": "ADR-0047 amendment (ticket 16), ADR-0020",
-  "run_utc": "2026-10-29T02:21:32Z",
+  "run_utc": "2026-10-29T02:31:07Z",
   "xcode": "Xcode 27.1 Build version 27A9275",
   "swift": "Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)",
   "macos": "26.6.2",
@@ -9,25 +9,25 @@
   "cpus": 12,
   "memory_bytes": 34359738368,
   "simulator": {
-    "udid": "5B66A3C6-2C7A-468D-A818-6E3418A424A7",
+    "udid": "A6F221D3-D85F-4365-9AD8-039B0AF1339B",
     "device_type": "iPhone 18 Pro",
     "runtime": "iOS 27.0"
   },
-  "loadavg_1min_max_at_launches": 204.7,
+  "loadavg_1min_max_at_launches": 259.7,
   "loadavg_start": [
-    63.52,
-    39.72,
-    55.43
+    81.07,
+    41.18,
+    51.85
   ],
   "loadavg_end": [
-    7.48,
-    36.35,
-    53.52
+    4.28,
+    31.29,
+    48.41
   ],
   "sdk_version": "0.1.0",
   "release_zip": "signaldock-sdk-ios-0.1.0.zip",
   "release_zip_sha256": "ee85713fb00640ab330a0b20e3576a9102d838f4157702b3e5ef2f29f4e36c3c",
-  "git_revision": "75b43cd",
+  "git_revision": "91aece9",
   "git_dirty": false,
   "parameters": {
     "startup_runs_per_arm": 20,
@@ -57,6 +57,8 @@
       "text_text_section_bytes": 287240,
       "package_object_bytes": 300603,
       "app_objects_bytes": 101323,
+      "attributed_total_bytes": 401926,
+      "unattributed_bytes": 151098,
       "frameworks_folder": false
     },
     "nosdk": {
@@ -72,6 +74,8 @@
       "text_text_section_bytes": 60944,
       "package_object_bytes": 4519,
       "app_objects_bytes": 81032,
+      "attributed_total_bytes": 85551,
+      "unattributed_bytes": 79009,
       "frameworks_folder": false
     }
   }
