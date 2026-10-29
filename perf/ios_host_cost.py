@@ -302,7 +302,7 @@ def run(work, out, udid, runs, burst_runs, burst, idle, version, zip_path):
         "loadavg_start": [round(x, 2) for x in load_start], "loadavg_end": [round(x, 2) for x in load_end],
         "sdk_version": version, "release_zip": Path(zip_path).name,
         "release_zip_sha256": sh("shasum", "-a", "256", str(zip_path)).split()[0],
-        "git_revision": git("rev-parse", "--short", "HEAD"), "git_dirty": bool(git("status", "--porcelain")),
+        "git_revision": git("rev-parse", "--short", "HEAD"), "git_dirty": bool(git("status", "--porcelain", "--", ".", ":!perf/sdk-results")),
         "parameters": {"startup_runs_per_arm": runs, "burst_runs_per_arm": burst_runs, "burst_track_calls": burst,
                        "idle_seconds_before_footprint": idle, "warmup_launches_per_arm_not_counted": WARMUP},
         "size_build": {"configuration": "Release", "sdk": "iphoneos", "arch": "arm64", "signing": "CODE_SIGNING_ALLOWED=NO",
