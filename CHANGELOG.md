@@ -4,7 +4,7 @@ All notable changes to SignalDock are listed here. The format follows [Keep a Ch
 
 ## [Unreleased]
 
-## [0.4.0] - 2026-10-29
+## [0.4.0] - 2026-10-30
 
 Fourth tagged release of the Android SDK. It has breaking changes before 1.0: see "Changed" and the upgrade steps in the [release notes](docs/releases/v0.4.0.md). The public API and the runtime dependency tree are the same as in 0.3.0. It sends the new field `sdkPlatform`, so deploy a server with `sdkPlatform` support first.
 
@@ -27,12 +27,13 @@ Fourth tagged release of the Android SDK. It has breaking changes before 1.0: se
 
 - The server accepts the shortest round-trip text of a subnormal double, such as `5e-324` (the Swift spelling), as well as the Java text (`4.9E-324`). The accepted set for normal doubles does not change ([ADR-0027](docs/adr/0027-request-400-contract-only.md) amendment 2026-10-28, PR #259).
 - The Dashboard image upgrades `brotli-libs` for CVE-2026-111497 (PR #217).
+- The server image upgrades `libbrotli1` for CVE-2026-111497 (the Trivy gate of `demo-deploy` failed on `demo-v0.1.4`).
 - The Dashboard image upgrades `curl` and `libcurl` for CVE-2026-92392 (PR #242).
 - The server retries the Flyway connect at start, 5 retries (PR #221).
 - `scripts/demo-seed.py` treats any 503 as uncertain, and a later-day rerun stops at the sentinel (PR #229).
 - The reset checks the 6 h guard again after it takes the lock (PR #230).
 
-## [iOS 0.1.0] - 2026-10-29
+## [iOS 0.1.0] - 2026-10-30
 
 First release of the iOS SDK, tag `ios-v0.1.0`. It is separate from the Android versions. See the [release notes](docs/releases/ios-v0.1.0.md).
 
