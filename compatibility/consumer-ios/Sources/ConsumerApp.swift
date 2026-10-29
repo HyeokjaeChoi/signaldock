@@ -69,7 +69,8 @@ final class AppModel: ObservableObject {
       state = .failed("cancelled")
     }
     #if DEBUG
-      await AutoRun.runIfRequested(self)
+      // A durability phase owns the run: the demo flow would add events to its counts.
+      if ProcessInfo.processInfo.environment["SIGNALDOCK_PHASE"] == nil { await AutoRun.runIfRequested(self) }
       await PhaseRun.runIfRequested(self)
     #endif
   }

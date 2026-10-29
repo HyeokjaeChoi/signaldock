@@ -41,3 +41,5 @@ It built a fresh ZIP and the Debug and Release consumer app (`BUILD SUCCEEDED` t
 Printed as `not run`: backup restore, full disk (spec section 5). A repeated event ID cannot be stored by the server, so "no server duplicate" is not asserted; see ADR-0047 "Ticket 15 results".
 
 Also: `scripts/check-repo-rules.sh` exit 0; `IOS_WERROR=1 scripts/verify-ios.sh lint` exit 0; `shellcheck scripts/simulator-durability.sh` clean.
+
+Re-run after PR 265 review fixes (drain needs `storageAvailable`, the auto run is off during a phase, `kill_send` kills at the first partial sample), 2026-10-29: `IOS_WERROR=1 scripts/simulator-durability.sh 9C45D335-A19B-43AD-A810-A2530B84B434` against Compose `-p sdverify265` (ports 18084/15436/15177): exit 0, all seven cases pass; `kill_send` killed at 295 events at the server of 354 stored; `offline` failureCount 2; Release check: no marker. `down -v` done.

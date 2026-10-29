@@ -111,7 +111,7 @@ res() { sed -n "s/^$1=//p" "$result" | head -1; }
 launch() {
   local phase="$1" endpoint="$2" count="${3:-5}" name="${4:-dur_event}" want="${wait_for:-pass}" out
   rm -f "$(result_file)" 2>/dev/null || true
-  out="$(env SIMCTL_CHILD_SIGNALDOCK_PHASE="$phase" SIMCTL_CHILD_SIGNALDOCK_ENDPOINT="$endpoint" \
+  out="$(env SIMCTL_CHILD_SIGNALDOCK_AUTORUN=0 SIMCTL_CHILD_SIGNALDOCK_PHASE="$phase" SIMCTL_CHILD_SIGNALDOCK_ENDPOINT="$endpoint" \
     SIMCTL_CHILD_SIGNALDOCK_PHASE_COUNT="$count" \
     SIMCTL_CHILD_SIGNALDOCK_PHASE_NAME="$name" SIMCTL_CHILD_SIGNALDOCK_PHASE_TIMEOUT="${PHASE_TIMEOUT:-240}" \
     xcrun simctl launch --terminate-running-process "$udid" "$BUNDLE")"
@@ -224,13 +224,16 @@ case_kill_send() {
     sleep 0.2
     n="$(server_ids "$inst_id" | wc -l | tr -d ' ')"
   done
-  sleep 1
-  n="$(server_ids "$inst_id" | wc -l | tr -d ' ')"
-  stored="$(grep -cE '^[0-9a-f-]{36}$' "$(data)/Documents/acked.log" || true)"
-  echo "  at kill: pid $bpid, $n events at the server, $stored stored by the app"
-  # Evidence that delivery was under way and not finished: some events delivered, others still queued.
-  [ "$n" -gt 0 ] && [ "$n" -lt "$stored" ] || fail "delivery was not partial at kill time (server $n, stored $stored)"
+  # Kill at the first sample where delivery is partial: some events delivered, others still queued.
+  while :; do
+    n="$(server_ids "$inst_id" | wc -l | tr -d ' ')"
+    stored="$(grep -cE '^[0-9a-f-]{36}$' "$(data)/Documents/acked.log" || true)"
+    [ "$n" -lt "$stored" ] && break
+    [ $SECONDS -lt "$deadline" ] || fail "delivery was not partial within 60 s (server $n, stored $stored)"
+    sleep 0.1
+  done
   kill9 "$bpid"
+  echo "  at kill: pid $bpid, $n events at the server, $stored stored by the app"
   verify_burst deliver
 }
 

@@ -52,7 +52,9 @@
           while try await sdk.diagnostics().queuedEvents > 0, Date() < deadline {
             try await Task.sleep(nanoseconds: 500_000_000)
           }
-          result["status"] = try await sdk.diagnostics().queuedEvents == 0 ? "pass" : "fail"
+          // An unreadable queue also reports 0 events.
+          let d = try await sdk.diagnostics()
+          result["status"] = d.storageAvailable && d.queuedEvents == 0 ? "pass" : "fail"
         case "optout_set":
           result["setOptOut"] = "\(await sdk.setOptOut(true))"
           result["track"] = try await trackText(sdk, name)
