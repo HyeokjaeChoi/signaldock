@@ -5,10 +5,10 @@
 # Usage: scripts/check-ios-size-budget.sh [path/to/signaldock-sdk-ios-X.Y.Z.zip]
 #
 # To raise a budget on purpose: change the constant below in the same PR that adds the size, and update the ticket 17
-# amendment in docs/adr/0047-ios-sdk.md (reason and new measured delta). Do not raise it only to make the job pass.
+# amendment in docs/adr/0047-ios-sdk.md (reason and new measured delta), and CHANGELOG.md [Unreleased]. Do not raise it only to make the job pass.
 set -euo pipefail
 
-# Ticket 16 measured 153,303 (.ipa form) and 388,464 (main binary) with Xcode 27.1; the ADR amendment has the CI number.
+# Ticket 16 measured 153,303 (.ipa form) and 388,464 (main binary) with Xcode 27.1; the CI number will be recorded in the ADR amendment from the first CI run.
 IPA_BUDGET_BYTES=175000
 BINARY_BUDGET_BYTES=440000
 
@@ -22,6 +22,7 @@ check() {  # <metric> <budget>
   local row delta
   row="$(grep "^$1," "$OUT/size.csv")" || { echo "error: no $1 in size.csv" >&2; exit 1; }
   delta="${row##*,}"
+  [[ "$delta" =~ ^-?[0-9]+$ ]] || { echo "error: bad delta '$delta' for $1 in size.csv" >&2; exit 1; }
   echo "$1: $(echo "$row" | awk -F, '{print "without SDK " $2 ", with SDK " $3}')"
   echo "delta $1: $delta bytes (budget $2, ADR-0047 ticket 17)"
   if [ "$delta" -le 0 ]; then

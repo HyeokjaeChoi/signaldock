@@ -6,6 +6,8 @@ All notable changes to SignalDock are listed here. The format follows [Keep a Ch
 
 ### Added
 
+- iOS SDK size budget gate: job `ios-size-budget`, `scripts/check-ios-size-budget.sh` ([ADR-0047](docs/adr/0047-ios-sdk.md) amendment "ticket 17, size budget"; ticket 17). It fails when the SDK adds more than 175,000 bytes (`.ipa` form) or 440,000 bytes (main binary) to the consumer Release build. No SDK change.
+
 - Cloud demo infrastructure: `infra/` (Terraform, host nginx, Compose override, VM scripts), the `demo-deploy` workflow, and `scripts/demo-seed.py` ([ADR-0043](docs/adr/0043-cloud-demo-hosting-and-deploy.md) to [ADR-0045](docs/adr/0045-cloud-demo-host-and-container-hardening.md), PRs #207 to #219 and #232 (Docker daemon hardening, Dashboard healthcheck)). The demo was deployed on 2026-10-25 UTC (tag `demo-v0.1.1`). No SDK change.
 
 - Server support for the SDK platform (`sdkPlatform`, [ADR-0046](docs/adr/0046-sdk-platform-field.md), iOS SDK ticket 02): migration `V4`, the default `android` for a missing field, a per-item rejection of an unknown value, the `platform:version` kill switch, the `sdkPlatform` filter on five query endpoints, and client report counts by (platform, version). Old `SIGNALDOCK_BLOCKED_SDK_VERSIONS` items keep their meaning (they mean `android`). Upgrade note: `V4` adds a column with a constant default (no table rewrite) and a CHECK constraint, which scans `events` once under an exclusive lock inside the Flyway run. The server starts only after Flyway, so the cost is start-up delay: expect a few seconds per million rows (estimate, not measured), and plan a restart window for very large tables.

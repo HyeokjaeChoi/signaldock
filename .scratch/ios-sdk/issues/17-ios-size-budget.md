@@ -25,7 +25,7 @@ Verification:
   OK: within budget
   ```
   Same numbers as ticket 16.
-- Planted increase: `scripts/check-ios-size-budget.sh <ZIP>` with a release ZIP whose `SignalDockSDK.swift` has `import Foundation` and a line in `initialize` that compares `ProcessInfo.processInfo.environment["PLANT"]` with an 80 KB random base64 string literal. Two lines of the failing output (the script exits 1):
+- Planted increase: `scripts/check-ios-size-budget.sh <ZIP>` with a release ZIP whose `SignalDockSDK.swift` has `import Foundation` and a line in `initialize` that compares `ProcessInfo.processInfo.environment["PLANT"]` with an 80 KB random base64 string literal. The failing output (the script exits 1):
   ```
   delta ipa_bytes: 215966 bytes (budget 175000, ADR-0047 ticket 17)
   FAIL: the SDK adds 40966 bytes (ipa_bytes) more than the budget. Remove the cause, or raise the budget on purpose (see the top of this script).

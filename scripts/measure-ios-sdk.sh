@@ -30,6 +30,7 @@ if [ "${1:-}" = --size-only ]; then
   [ -n "${2:-}" ] || { echo "error: --size-only needs an output directory" >&2; exit 1; }
   mkdir -p "$2"; SIZE_ONLY="$(cd "$2" && pwd)"; shift 2
 fi
+case "${1:-}" in -*) echo "error: unknown or misplaced option '$1' (only --size-only <dir>, first)" >&2; exit 1 ;; esac
 ZIP="${1:-}"
 [ -z "$ZIP" ] || [ ! -f "$ZIP" ] || ZIP="$(cd "$(dirname "$ZIP")" && pwd)/$(basename "$ZIP")"  # absolute before the cd
 cd "$ROOT"
