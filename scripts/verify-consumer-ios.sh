@@ -13,7 +13,10 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 APP="$ROOT/compatibility/consumer-ios"
 WERROR=()
 if [ "${IOS_WERROR:-0}" = 1 ]; then
-  WERROR=(SWIFT_TREAT_WARNINGS_AS_ERRORS=YES GCC_TREAT_WARNINGS_AS_ERRORS=YES)
+  # Only the app target reads CONSUMER_WERROR. A global SWIFT_TREAT_WARNINGS_AS_ERRORS also reaches the package
+  # target, and Xcode 26 then fails with "conflicting options '-warnings-as-errors' and '-suppress-warnings'"
+  # (it suppresses package warnings). The SDK warnings are gated by scripts/verify-ios.sh.
+  WERROR=(CONSUMER_WERROR=YES)
 fi
 
 ZIP="${1:-}"
