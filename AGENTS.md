@@ -42,7 +42,7 @@ Code enforces these. Do not restate them in prose; read the check when it fails.
 | Contract and generated code: codegen drift, `oasdiff` baseline, SDK public API dump, SDK dependency baseline, tracking plan codegen | `scripts/verify-contract.sh` (pre-push, CI `verify-contract`) |
 | iOS SDK public API: `sdk-ios/api/SignalDock.swiftinterface` equals the normalized interface of a check-only build with the compiler of CI (`sdk-ios/api/compiler-version`); take updates from the CI artifact `api-actual` with `scripts/verify-ios.sh api-update <dir>` | CI `ios-test` (`scripts/verify-ios.sh api`); on a Mac with another compiler `scripts/verify-contract.sh` step 8 skips it |
 | PR description is 3,500 characters or less (author text only; Dependabot and Renovate PRs exempt) | `.github/workflows/pr-description.yml` |
-| Builds, tests, device tests, SDK size budget, Gradle wrapper checksums | `.github/workflows/repo-rules.yml` |
+| Builds, tests, device tests, SDK size budget (Android `size-budget`, iOS `ios-size-budget`), Gradle wrapper checksums | `.github/workflows/repo-rules.yml` |
 
 When a mistake or the same kind of review finding repeats, add a check to `scripts/check-repo-rules.sh` or `scripts/verify-contract.sh` and a row here, not a sentence.
 

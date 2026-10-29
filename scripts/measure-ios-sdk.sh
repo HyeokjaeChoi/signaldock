@@ -1,8 +1,10 @@
 #!/bin/bash
 # What the iOS SDK costs a host app (ADR-0047 amendment "ticket 16, measurement method"; the iOS form of ADR-0020).
-# Local only: not run in CI. macOS with full Xcode and an iOS Simulator runtime.
+# Full run: local only. macOS with full Xcode and an iOS Simulator runtime.
 #
-# Usage: scripts/measure-ios-sdk.sh [path/to/signaldock-sdk-ios-X.Y.Z.zip]
+# Usage: scripts/measure-ios-sdk.sh [--size-only <out dir>] [path/to/signaldock-sdk-ios-X.Y.Z.zip]
+# --size-only: part 1 only (the two archives and the size CSV files into <out dir>); no Simulator, no probe build, nothing
+# written under perf/sdk-results. scripts/check-ios-size-budget.sh (CI job ios-size-budget, ADR-0047 ticket 17) uses it.
 # Without an argument it builds a fresh release ZIP of HEAD (scripts/build-ios-release-zip.sh), like verify-consumer-ios.sh.
 #
 # Two arms of the independent consumer app compatibility/consumer-ios, both built in temporary copies (the checked-in app
@@ -23,6 +25,11 @@ set -euo pipefail
 
 [ "$(uname)" = Darwin ] || { echo "error: this script needs macOS and Xcode" >&2; exit 1; }
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SIZE_ONLY=""
+if [ "${1:-}" = --size-only ]; then
+  [ -n "${2:-}" ] || { echo "error: --size-only needs an output directory" >&2; exit 1; }
+  mkdir -p "$2"; SIZE_ONLY="$(cd "$2" && pwd)"; shift 2
+fi
 ZIP="${1:-}"
 [ -z "$ZIP" ] || [ ! -f "$ZIP" ] || ZIP="$(cd "$(dirname "$ZIP")" && pwd)/$(basename "$ZIP")"  # absolute before the cd
 cd "$ROOT"
@@ -30,7 +37,7 @@ RUNS="${IOSCOST_RUNS:-20}"
 BURST_RUNS="${IOSCOST_BURST_RUNS:-10}"
 BURST="${IOSCOST_BURST:-500}"
 IDLE="${IOSCOST_IDLE:-5}"
-for n in RUNS BURST_RUNS BURST IDLE; do
+[ -n "$SIZE_ONLY" ] || for n in RUNS BURST_RUNS BURST IDLE; do
   [[ "${!n}" =~ ^[1-9][0-9]*$ ]] || { echo "error: IOSCOST_$n must be a positive integer, got '${!n}'" >&2; exit 1; }
 done
 command -v xcodebuild > /dev/null && xcrun --sdk iphoneos --show-sdk-path > /dev/null \
@@ -50,7 +57,7 @@ VERSION="$(unzip -p "$ZIP" SignalDock/Sources/SignalDock/SignalDockSDK.swift | s
 [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "error: '$VERSION' (version in $ZIP) is not X.Y.Z" >&2; exit 1; }
 
 SIM=""
-if [ -n "${IOSCOST_DEVICE:-}" ]; then  # fail early, before any build
+if [ -z "$SIZE_ONLY" ] && [ -n "${IOSCOST_DEVICE:-}" ]; then  # fail early, before any build
   SIM="$(python3 -I perf/ios_host_cost.py resolve "$IOSCOST_DEVICE")"
 fi
 
@@ -108,6 +115,12 @@ for arm in sdk nosdk; do
   [ -d "$WORK/size-$arm.xcarchive/Products/Applications/ConsumerIOS.app" ] || { echo "error: no .app in the $arm archive" >&2; exit 1; }
   echo "  $arm archive ok"
 done
+
+if [ -n "$SIZE_ONLY" ]; then
+  python3 -I perf/ios_host_cost.py size "$WORK" "$SIZE_ONLY"
+  echo "ok: size files in $SIZE_ONLY"
+  exit 0
+fi
 
 echo "=== 2. host cost: measurement builds (Release, iphonesimulator, arm64) ==="
 for arm in sdk nosdk; do
