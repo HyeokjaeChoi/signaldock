@@ -23,6 +23,8 @@ set -euo pipefail
 
 [ "$(uname)" = Darwin ] || { echo "error: this script needs macOS and Xcode" >&2; exit 1; }
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ZIP="${1:-}"
+[ -z "$ZIP" ] || [ ! -f "$ZIP" ] || ZIP="$(cd "$(dirname "$ZIP")" && pwd)/$(basename "$ZIP")"  # absolute before the cd
 cd "$ROOT"
 RUNS="${IOSCOST_RUNS:-20}"
 BURST_RUNS="${IOSCOST_BURST_RUNS:-10}"
@@ -34,20 +36,33 @@ done
 command -v xcodebuild > /dev/null && xcrun --sdk iphoneos --show-sdk-path > /dev/null \
   || { echo "error: full Xcode with the iOS SDK is needed" >&2; exit 1; }
 
-VERSION="$(git show HEAD:sdk-ios/Sources/SignalDock/SignalDockSDK.swift | sed -n 's/^  public static let version = "\(.*\)"$/\1/p')"
-[ -n "$VERSION" ] || { echo "error: no SignalDockSDK.version at HEAD" >&2; exit 1; }
-ZIP="${1:-}"
+VERSION_RE='s/^  public static let version = "\(.*\)"$/\1/p'
 if [ -z "$ZIP" ]; then
+  VERSION="$(git show HEAD:sdk-ios/Sources/SignalDock/SignalDockSDK.swift | sed -n "$VERSION_RE")"
+  [ -n "$VERSION" ] || { echo "error: no SignalDockSDK.version at HEAD" >&2; exit 1; }
   echo "=== 0. build a fresh release ZIP ==="
   scripts/build-ios-release-zip.sh "$VERSION"
   ZIP="$ROOT/dist/signaldock-sdk-ios-$VERSION.zip"
 fi
 [ -f "$ZIP" ] || { echo "error: $ZIP does not exist" >&2; exit 1; }
+# The version is the one inside the ZIP, also when the caller passes a ZIP.
+VERSION="$(unzip -p "$ZIP" SignalDock/Sources/SignalDock/SignalDockSDK.swift | sed -n "$VERSION_RE")"
+[ -n "$VERSION" ] || { echo "error: no SignalDockSDK.version in $ZIP" >&2; exit 1; }
+
+SIM=""
+if [ -n "${IOSCOST_DEVICE:-}" ]; then  # fail early, before any build
+  SIM="$(python3 -I perf/ios_host_cost.py resolve "$IOSCOST_DEVICE")"
+fi
 
 WORK="$(mktemp -d)"
 CREATED_SIM=""
+BOOTED_BY_US=0
 cleanup() {
   [ -n "$CREATED_SIM" ] && { xcrun simctl shutdown "$CREATED_SIM" 2> /dev/null || true; xcrun simctl delete "$CREATED_SIM" 2> /dev/null || true; }
+  if [ -z "$CREATED_SIM" ] && [ -n "$SIM" ]; then  # a Simulator of the caller: remove our apps; shut it down only if we booted it
+    for id in local.signaldock.consumerios local.signaldock.consumerios.nosdk; do xcrun simctl uninstall "$SIM" "$id" 2> /dev/null || true; done
+    [ "$BOOTED_BY_US" = 1 ] && { xcrun simctl shutdown "$SIM" 2> /dev/null || true; }
+  fi
   if [ "${IOSCOST_KEEP:-0}" = 1 ]; then echo "kept: $WORK"; else rm -rf "$WORK"; fi
 }
 trap cleanup EXIT
@@ -104,13 +119,13 @@ for arm in sdk nosdk; do
   echo "  $arm probe build ok"
 done
 
-SIM="${IOSCOST_DEVICE:-}"
 if [ -z "$SIM" ]; then
   runtime="$(xcrun simctl list runtimes available -j | python3 -I -c 'import json,sys; r=[x for x in json.load(sys.stdin)["runtimes"] if x["platform"]=="iOS"]; print(sorted(r,key=lambda x:[int(p) for p in x["version"].split(".")])[-1]["identifier"])')"
   devtype="$(xcrun simctl list devicetypes -j | python3 -I -c 'import json,re,sys; t=[d["identifier"] for d in json.load(sys.stdin)["devicetypes"] if re.search(r"iPhone-\d+-Pro$", d["identifier"])]; print(max(t, key=lambda i: int(re.search(r"iPhone-(\d+)", i).group(1))))')"
   SIM="$(xcrun simctl create "signaldock-ioscost-$$" "$devtype" "$runtime")"
   CREATED_SIM="$SIM"
 fi
+xcrun simctl list devices | grep "$SIM" | grep -q Booted || BOOTED_BY_US=1
 xcrun simctl boot "$SIM" 2> /dev/null || true
 xcrun simctl bootstatus "$SIM" -b > /dev/null
 echo "Simulator: $SIM"

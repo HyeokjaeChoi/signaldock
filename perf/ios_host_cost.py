@@ -18,6 +18,7 @@ from pathlib import Path
 
 ARMS = ("sdk", "nosdk")
 BUNDLE = {"sdk": "local.signaldock.consumerios", "nosdk": "local.signaldock.consumerios.nosdk"}
+ZERO_FILL = ("__bss", "__common", "__thread_bss")  # not file-backed
 WARMUP = 2  # launches per arm that are not counted (first start after install)
 
 
@@ -93,9 +94,11 @@ def linkmap(path):
                 continue
             idx, addr, size = int(m.group(1)), int(parts[0], 16), int(parts[1], 16)
             name = objects.get(idx, "?")
+            sec = next((r[2] for r in ranges if r[0] <= addr < r[1]), "?")
+            if sec.rsplit(".", 1)[-1] in ZERO_FILL:
+                continue  # zero-fill sections take no bytes in the file
             per_obj[name] = per_obj.get(name, 0) + size
             if name.endswith("/SignalDock.o"):
-                sec = next((r[2] for r in ranges if r[0] <= addr < r[1]), "?")
                 per_sec[sec] = per_sec.get(sec, 0) + size
     short = {}
     for name, size in per_obj.items():
@@ -160,8 +163,7 @@ def size(work, out):
             f.write("\n".join(info[arm]["_dylibs"]) + "\n")
         added = sorted(set(info["sdk"]["_dylibs"]) - set(info["nosdk"]["_dylibs"]))
         f.write("== linked with the SDK and not without it\n" + ("\n".join(added) if added else "(none)") + "\n")
-    json.dump({a: {k: v for k, v in info[a].items() if not k.startswith("_")} for a in ARMS},
-              open(out / ".size.json", "w"), indent=1)
+    json.dump(info, open(out / ".size.json", "w"), indent=1)
 
 
 # ---------------------------------------------------------------- run
@@ -172,19 +174,22 @@ class Sim:
         self.env["SIMCTL_CHILD_SIGNALDOCK_ENDPOINT"] = "http://127.0.0.1:9"  # nothing answers: no event leaves the Mac
         self.env["SIMCTL_CHILD_SIGNALDOCK_COLLECTION_KEY"] = "host-cost-dummy-key"
         self.data = {}
+        self.loads = []  # 1-minute load average at each launch
 
     def install(self, arm, app):
         sh("xcrun", "simctl", "install", self.udid, str(app))
         self.data[arm] = Path(sh("xcrun", "simctl", "get_app_container", self.udid, BUNDLE[arm], "data").strip())
 
-    def launch(self, arm, burst, idle):
+    def launch(self, arm, burst, idle, from_launch=False):
         """One cold start. Returns the probe record plus wall time of `simctl launch` and the footprint after the idle time."""
         result = self.data[arm] / "Documents/hostcost.json"
         result.unlink(missing_ok=True)
+        self.loads.append(os.getloadavg()[0])
         env = dict(self.env, SIMCTL_CHILD_HOSTCOST_BURST=str(burst))
         t0 = time.perf_counter()
         line = sh("xcrun", "simctl", "launch", "--terminate-running-process", self.udid, BUNDLE[arm], env=env)
         wall_ms = (time.perf_counter() - t0) * 1000
+        t_launched = time.perf_counter()
         pid = int(line.strip().rsplit(" ", 1)[1])
         rec = None
         for _ in range(240):
@@ -197,7 +202,9 @@ class Sim:
             time.sleep(0.25)
         else:
             sys.exit(f"error: the {arm} app did not finish (burst {burst}); record: {rec}")
-        time.sleep(idle)
+        # Memory is read `idle` seconds after the launch (startup runs) or after the burst finished (burst runs), the same
+        # moment for both arms (ADR-0020 item 5).
+        time.sleep(max(0, idle - (time.perf_counter() - t_launched)) if from_launch else idle)
         fp = self.footprint(pid)
         sh("xcrun", "simctl", "terminate", self.udid, BUNDLE[arm], check=False)
         rec["launch_wall_ms"] = wall_ms
@@ -236,7 +243,7 @@ def run(work, out, udid, runs, burst_runs, burst, idle, version, zip_path):
     startup = []
     for i in range(1, runs + 1):
         for arm in (ARMS if i % 2 else ARMS[::-1]):
-            r = sim.launch(arm, 0, idle)
+            r = sim.launch(arm, 0, idle, from_launch=True)
             if arm == "sdk" and r.get("init_result") != "success":
                 sys.exit(f"error: initialize() did not succeed in run {i}: {r.get('init_result')}")
             startup.append((arm, i, r))
@@ -297,9 +304,9 @@ def run(work, out, udid, runs, burst_runs, burst, idle, version, zip_path):
         "run_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "xcode": xcode, "swift": sh("swift", "--version").splitlines()[0],
         "macos": sh("sw_vers", "-productVersion").strip(), "machine": sh("sysctl", "-n", "machdep.cpu.brand_string").strip(),
-        "cpus": sh("sysctl", "-n", "hw.ncpu").strip(), "memory_bytes": int(sh("sysctl", "-n", "hw.memsize")),
+        "cpus": int(sh("sysctl", "-n", "hw.ncpu")), "memory_bytes": int(sh("sysctl", "-n", "hw.memsize")),
         "simulator": {"udid": udid, "device_type": sim_name, "runtime": sim_runtime},
-        "loadavg_start": [round(x, 2) for x in load_start], "loadavg_end": [round(x, 2) for x in load_end],
+        "loadavg_1min_max_at_launches": round(max(sim.loads), 1), "loadavg_start": [round(x, 2) for x in load_start], "loadavg_end": [round(x, 2) for x in load_end],
         "sdk_version": version, "release_zip": Path(zip_path).name,
         "release_zip_sha256": sh("shasum", "-a", "256", str(zip_path)).split()[0],
         "git_revision": git("rev-parse", "--short", "HEAD"), "git_dirty": bool(git("status", "--porcelain", "--", ".", ":!perf/sdk-results")),
@@ -307,18 +314,44 @@ def run(work, out, udid, runs, burst_runs, burst, idle, version, zip_path):
                        "idle_seconds_before_footprint": idle, "warmup_launches_per_arm_not_counted": WARMUP},
         "size_build": {"configuration": "Release", "sdk": "iphoneos", "arch": "arm64", "signing": "CODE_SIGNING_ALLOWED=NO",
                        "command": "xcodebuild archive"},
-        "arms": {a: {"binary_sha256": sz[a]["sha256_binary"], **{k: v for k, v in sz[a].items() if k != "sha256_binary"}}
+        "arms": {a: {"binary_sha256": sz[a]["sha256_binary"], **{k: v for k, v in sz[a].items() if k != "sha256_binary" and not k.startswith("_")}}
                  for a in ARMS},
     }
     json.dump(meta, open(out / "meta.json", "w"), indent=2)
     (out / "meta.json").write_text((out / "meta.json").read_text() + "\n")
+
+    added_libs = sorted(set(sz["sdk"]["_dylibs"]) - set(sz["nosdk"]["_dylibs"]))
+    embedded = sz["sdk"]["frameworks_folder"] or sz["nosdk"]["frameworks_folder"]
+    deps_text = (
+        f"The SDK is linked statically into the main binary (`SignalDock.o`); the app has {'a' if embedded else 'no'} "
+        "`Frameworks` folder, so no embedded or third-party dynamic library is added. "
+        + (f"The SDK makes the main binary link {len(added_libs)} more system libraries (they add no bytes to the app): "
+           + ", ".join(f"`{Path(l).name}`" for l in added_libs) + " (`dependencies.txt`)." if added_libs
+           else "No system library is added (`dependencies.txt`).")
+    )
+    ob, oa = sz["nosdk"]["_objs"], sz["sdk"]["_objs"]
+    od = sorted(((oa.get(k, 0) - ob.get(k, 0), k) for k in {*oa, *ob} if k != "SignalDock.o"), reverse=True)
+    others = sum(d for d, _ in od)
+    obj_text = (
+        f"The other link-map objects grow by {others:+,} bytes together; the largest changes are "
+        + ", ".join(f"`{k}` {d:+,}" for d, k in od[:3] if d)
+        + ". `linker synthesized` holds stubs and other linker-made data. These bytes are part of the main binary delta "
+        "and not of `SignalDock.o`."
+    )
+    busy = max(sim.loads) > meta["cpus"]
+    load_text = (
+        f"**The host load was high** (1-minute load average up to {max(sim.loads):.0f} on {meta['cpus']} CPUs at the "
+        "launches): p95 and max are not meaningful and are shown only for completeness. Read the medians and the paired median."
+        if busy else
+        f"The host load was moderate (1-minute load average up to {max(sim.loads):.1f} on {meta['cpus']} CPUs at the launches)."
+    )
 
     def row(label, k):
         return f"| {label} | {nd(k):,} | {sd(k):,} | {dl(k):+,} |"
 
     summary = f"""# iOS SDK cost for a host app (ticket 16)
 
-Measured on a Simulator, not on a physical device: {sim_name} ({sim_runtime}) on {meta['machine']}, macOS {meta['macos']}, {xcode}. One shared host (load average in `meta.json`: start {meta['loadavg_start']}, end {meta['loadavg_end']}). Numbers show the order of magnitude, not an SLA. Method and limits: ADR-0047 amendment "ticket 16, measurement method" and ADR-0020.
+Measured on a Simulator, not on a physical device: {sim_name} ({sim_runtime}) on {meta['machine']}, macOS {meta['macos']}, {xcode}. One shared host (load average in `meta.json`: start {meta['loadavg_start']}, end {meta['loadavg_end']}). {load_text} Numbers show the order of magnitude, not an SLA. Method and limits: ADR-0047 amendment "ticket 16, measurement method" and ADR-0020.
 
 Both arms are the independent consumer app (`compatibility/consumer-ios`, Release, Swift 6 mode). The SDK arm uses the SDK from the release ZIP `{meta['release_zip']}` of `{meta['sdk_version']}`. The baseline arm uses an empty package with the same public signatures (`perf/ios-host-cost/baseline`), so the app sources are identical and the baseline binary holds no SDK code. Run {meta['run_utc']}, git {meta['git_revision']}{' (dirty tree)' if meta['git_dirty'] else ''}.
 
@@ -335,14 +368,14 @@ Both arms are the independent consumer app (`compatibility/consumer-ios`, Releas
 {row('`__DATA` segment, bytes', 'data_segment_bytes')}
 {row('`__LINKEDIT` segment, bytes', 'linkedit_segment_bytes')}
 {row('`__TEXT,__text` section (code), bytes', 'text_text_section_bytes')}
-{row('Link map: bytes of the package object `SignalDock.o`', 'package_object_bytes')}
-{row('Link map: bytes of the app objects (ConsumerApp.o and others)', 'app_objects_bytes')}
+{row('Link map: file-backed bytes of the package object `SignalDock.o` (zero-fill excluded)', 'package_object_bytes')}
+{row('Link map: file-backed bytes of all other objects', 'app_objects_bytes')}
 
-The baseline package object is the empty stand-in. The SDK is linked statically into the main binary (`SignalDock.o`); no `Frameworks` folder is added and no dynamic library is added (`dependencies.txt`). Dead code stripping is on, so unused SDK code is not in these numbers. The app objects (mostly `ConsumerApp.o`) also differ, because the app code that calls the real SDK types is larger than the code that calls the empty stand-in; this part belongs to the cost of calling the SDK and is counted in the main binary delta, not in `SignalDock.o`. The `.ipa` here is not encrypted; an App Store build encrypts `__TEXT`, which compresses worse, so a store download is larger than this figure. Per-section and per-object data: `sdk-sections.csv`, `link-objects.csv`.
+The baseline package object is the empty stand-in. {deps_text} Dead code stripping is on, so unused SDK code is not in these numbers. {obj_text} The `.ipa` here is not encrypted; an App Store build encrypts `__TEXT`, which compresses worse, so a store download is larger than this figure. Per-section and per-object data: `sdk-sections.csv`, `link-objects.csv`.
 
 ## Startup ({runs} cold starts per arm, interleaved; {WARMUP} warm-up launches not counted)
 
-Cold start = `simctl terminate`/`launch`, then the app writes the time from the kernel process start record to the first `onAppear` of the root view. `launch wall` is the time of the `xcrun simctl launch` call itself.
+Cold start = `simctl launch --terminate-running-process`, then the app writes the time from the kernel process start record to the first `onAppear` of the root view. `launch wall` is the time of the `xcrun simctl launch` call itself.
 
 | Metric (ms) | Without SDK p50 / p95 / max | With SDK p50 / p95 / max |
 | --- | --- | --- |
@@ -353,7 +386,7 @@ Paired difference (with minus without, run by run), process start to first view:
 
 ## `initialize()` and `track()` on the main thread (SDK arm)
 
-Main-thread time follows ADR-0020: from the call until the calling task first suspends (a sentinel task queued on the main actor before the call runs at that moment). It includes call setup, the class loading the call causes, and any other main-actor job that is already queued ahead of the sentinel at that moment (at startup SwiftUI work is), so it is an upper bound for the SDK alone; the floor row shows what the same probe reads around an empty call. A `track()` call later in the run has no queue ahead of it. `wall` runs until the result is ready (mostly off the main thread).
+What "main" measures: the time on the main actor from the call until the calling task first suspends, or until the call returns if it never suspends (never more than wall). A sentinel task is queued on the main actor right before the call and runs when the caller first suspends. For `initialize()` the probe first waits for the first view plus a 500 ms settle time, so the main-actor queue is idle and the sentinel does not wait behind SwiftUI work; the floor row is the same probe around the empty stand-in and shows the cost of the method itself. This is the quantity of ADR-0020 item 2 (main-thread time until the first suspension). It includes call setup and the class loading the call causes, so it is an upper bound for the SDK alone. `wall` runs until the result is ready (mostly off the main thread).
 
 | Call | n | main p50 / p95 / max, ms | wall p50 / p95 / max, ms |
 | --- | --- | --- | --- |
@@ -367,7 +400,7 @@ The first `track` call of each burst run (main thread): p50 {median(first_calls)
 
 | Moment | Without SDK median (min - max) | With SDK median (min - max) | Delta median (paired min - max) |
 | --- | --- | --- | --- |
-| {idle}s after start (n={runs}) | {mb(median(fp('nosdk'))):.2f} ({mb(min(fp('nosdk'))):.2f} - {mb(max(fp('nosdk'))):.2f}) | {mb(median(fp('sdk'))):.2f} ({mb(min(fp('sdk'))):.2f} - {mb(max(fp('sdk'))):.2f}) | {mb(median(pd_fp)):+.2f} ({mb(min(pd_fp)):+.2f} to {mb(max(pd_fp)):+.2f}) |
+| {idle}s after launch (n={runs}) | {mb(median(fp('nosdk'))):.2f} ({mb(min(fp('nosdk'))):.2f} - {mb(max(fp('nosdk'))):.2f}) | {mb(median(fp('sdk'))):.2f} ({mb(min(fp('sdk'))):.2f} - {mb(max(fp('sdk'))):.2f}) | {mb(median(pd_fp)):+.2f} ({mb(min(pd_fp)):+.2f} to {mb(max(pd_fp)):+.2f}) |
 | {idle}s after {burst} `track()` calls (n={burst_runs}) | {mb(median(B('nosdk'))):.2f} ({mb(min(B('nosdk'))):.2f} - {mb(max(B('nosdk'))):.2f}) | {mb(median(B('sdk'))):.2f} ({mb(min(B('sdk'))):.2f} - {mb(max(B('sdk'))):.2f}) | {mb(median(pd_b)):+.2f} ({mb(min(pd_b)):+.2f} to {mb(max(pd_b)):+.2f}) |
 
 The endpoint was `http://127.0.0.1:9` (nothing answers) with a dummy key, so the SDK queued events and its delivery attempts failed, as in an app that is offline; no event left the Mac. The baseline arm's `track()` does nothing. Memory is the Simulator host process view (`footprint -j`), a sample of a moving value: read differences of the order of the spread or more.
@@ -378,5 +411,14 @@ Raw data: `size.csv`, `sdk-sections.csv`, `link-objects.csv`, `dependencies.txt`
     print(summary)
 
 
+def resolve(name_or_udid):
+    """Print the UDID of an available Simulator given by UDID or name; fail early if there is none or more than one."""
+    found = [d for ds in json.loads(sh("xcrun", "simctl", "list", "devices", "available", "-j"))["devices"].values()
+             for d in ds if name_or_udid in (d["udid"], d["name"])]
+    if len(found) != 1:
+        sys.exit(f"error: IOSCOST_DEVICE '{name_or_udid}' matches {len(found)} available Simulators; use a UDID")
+    print(found[0]["udid"])
+
+
 if __name__ == "__main__":
-    {"size": size, "run": run}[sys.argv[1]](*sys.argv[2:])
+    {"size": size, "run": run, "resolve": resolve}[sys.argv[1]](*sys.argv[2:])

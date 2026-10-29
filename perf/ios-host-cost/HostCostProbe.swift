@@ -3,9 +3,13 @@
 // `SignalDockSDK.initialize(config)` with `HostCostProbe.initialize(config)`, and adds `.onAppear` to the root view.
 // No checked-in app source and no Release build of the repository contains it.
 //
-// Main-thread time follows ADR-0020: the time from the call until the calling task first suspends (a sentinel task is
-// queued on the main actor before the call; it runs when the caller first suspends). It includes the call setup and the
-// class loading the call causes, so it is an upper bound for the SDK alone. Wall time runs until the result is ready.
+// What "main" measures: the time on the main actor from the call until the calling task first suspends, or until the
+// call returns if it never suspends (never more than wall time). Before each measured `initialize()` the probe waits for
+// the first view and a settle time of 500 ms, so the main-actor queue is idle and the sentinel task (queued on the main
+// actor right before the call; it runs when the caller first suspends) does not wait behind SwiftUI work. This is the same
+// quantity as the Android `main_ns` of ADR-0020 item 2 (main-thread time until the first suspension). It includes the call
+// setup and the class loading the call causes, so it is an upper bound for the SDK alone. `track()` calls run on the main
+// actor with an idle queue. Wall time runs until the result is ready.
 import Darwin
 import Foundation
 
@@ -46,7 +50,7 @@ enum HostCostProbe {
     let value = try await op()
     let t1 = now()
     await sentinel.value
-    return (value, max(box.stamp, t0) - t0, t1 - t0)
+    return (value, min(box.stamp, t1) - t0, t1 - t0)
   }
 
   static func firstView() {
@@ -58,6 +62,9 @@ enum HostCostProbe {
 
   static func initialize(_ config: SignalDockConfig) async throws(CancellationError) -> InitResult {
     let burst = Int(ProcessInfo.processInfo.environment["HOSTCOST_BURST"] ?? "") ?? 0
+    // Idle main-actor queue (see the header): first view, then a settle time.
+    while !firstViewDone { try? await Task.sleep(nanoseconds: 20_000_000) }
+    try? await Task.sleep(nanoseconds: 500_000_000)
     out["init_started_after_process_start_ms"] = Date().timeIntervalSince1970 * 1000 - processStartMs()
     let (result, mainNs, wallNs) = try await timed { () async throws(CancellationError) -> InitResult in
       try await SignalDockSDK.initialize(config)
