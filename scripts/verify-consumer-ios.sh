@@ -40,8 +40,8 @@ for CONFIG in Debug Release; do
   APP_PATH="$APP/build/DerivedData/Build/Products/$CONFIG-iphonesimulator/ConsumerIOS.app"
   [ -d "$APP_PATH" ] || { echo "error: no $APP_PATH" >&2; exit 1; }
   # The SDK must come from the unzipped package, and its privacy manifest must be in the app (ADR-0047 D14).
-  test -n "$(find "$APP/build/DerivedData/Build/Products/$CONFIG-iphonesimulator" -path '*SignalDock_SignalDock.bundle/PrivacyInfo.xcprivacy' | head -1)" \
-    || { echo "error: PrivacyInfo.xcprivacy is not in the built SignalDock resource bundle" >&2; exit 1; }
+  test -n "$(find "$APP_PATH" -path '*SignalDock_SignalDock.bundle/PrivacyInfo.xcprivacy' | head -1)" \
+    || { echo "error: PrivacyInfo.xcprivacy is not in the SignalDock resource bundle inside $APP_PATH" >&2; exit 1; }
   echo "APP ($CONFIG): $APP_PATH"
 done
 

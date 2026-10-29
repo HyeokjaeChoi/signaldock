@@ -1,6 +1,7 @@
 # 09. iOS delivery: sender, ACK, retry, triggers
 
-Status: claimed
+Status: resolved
+Execution: Done (PR #258, 2026-10-29 UTC)
 Type: task
 Blocked by: 02, 04, 08
 
@@ -25,4 +26,4 @@ Not run: the SDK itself against Compose. It needs a host app (ticket 14), so thi
 
 ## Follow-up 2026-10-29
 
-The SDK itself against Compose ran in ticket 14 (consumer app, Simulator, `-p sdverify14`): 4 events delivered, `lastAck` accepted 4, server platform `ios`. See ADR-0047 "Ticket 14 results". The ticket stays `claimed` until its PR number is known and recorded at merge.
+The last open check, the SDK itself against Compose, was done in ticket 14 (consumer app, Simulator, `-p sdverify14`): 4 events delivered, `lastAck` accepted 4, server platform `ios`. See ADR-0047 "Ticket 14 results". All completion criteria are met.
