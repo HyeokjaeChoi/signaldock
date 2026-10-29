@@ -1,6 +1,6 @@
 # 17. iOS size budget gate
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: 16
 
@@ -13,3 +13,34 @@ Spec D13 item 10, D15. ADR-0023.
 
 Verification:
 - CI run link; a planted size increase fails the job (output).
+
+## Verification (2026-10-29)
+
+- `scripts/check-ios-size-budget.sh` (fresh ZIP of HEAD, Xcode 27.1 local), exit 0, 24 s:
+  ```
+  ipa_bytes: without SDK 49263, with SDK 202566
+  delta ipa_bytes: 153303 bytes (budget 175000, ADR-0047 ticket 17)
+  binary_bytes: without SDK 164560, with SDK 553024
+  delta binary_bytes: 388464 bytes (budget 440000, ADR-0047 ticket 17)
+  OK: within budget
+  ```
+  Same numbers as ticket 16.
+- Planted increase: `scripts/check-ios-size-budget.sh <ZIP>` with a release ZIP whose `SignalDockSDK.swift` has `import Foundation` and a line in `initialize` that compares `ProcessInfo.processInfo.environment["PLANT"]` with an 80 KB random base64 string literal. The failing output (the script exits 1):
+  ```
+  delta ipa_bytes: 215966 bytes (budget 175000, ADR-0047 ticket 17)
+  FAIL: the SDK adds 40966 bytes (ipa_bytes) more than the budget. Remove the cause, or raise the budget on purpose (see the top of this script).
+  delta binary_bytes: 470504 bytes (budget 440000, ADR-0047 ticket 17)
+  FAIL: the SDK adds 30504 bytes (binary_bytes) more than the budget. Remove the cause, or raise the budget on purpose (see the top of this script).
+  ```
+- Method, metrics, budgets, reason: ADR-0047 "Amendment (2026-10-29, ticket 17, size budget)". Row in `AGENTS.md`.
+- `actionlint` (without shellcheck: no output; with shellcheck: only the existing SC2010 and SC2155 warnings of other steps). `scripts/check-repo-rules.sh`: see the PR.
+- CI, Xcode 26.6 ([repo-rules run 40811470874](https://github.com/HyeokjaeChoi/signaldock/actions/runs/40811470874/job/123242533967), PR #268): `ios-size-budget` passed:
+  ```
+  ipa_bytes: without SDK 48416, with SDK 206428
+  delta ipa_bytes: 158012 bytes (budget 175000, ADR-0047 ticket 17)
+  binary_bytes: without SDK 163800, with SDK 553912
+  delta binary_bytes: 390112 bytes (budget 440000, ADR-0047 ticket 17)
+  OK: within budget
+  ```
+- The planted run was run again to capture the exit code: `exit=1`, same FAIL lines.
+- Not run: a physical device.

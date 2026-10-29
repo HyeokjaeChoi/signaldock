@@ -208,6 +208,18 @@ jobs:
       - run: sudo xcode-select -s /Applications/Xcode_26.6.app # ADR-0047: the default of macos-26
       - run: scripts/verify-consumer-ios.sh
 
+  # The iOS SDK may add at most the budget to the consumer Release build (ADR-0047 amendment "ticket 17, size budget"; the iOS
+  # form of `size-budget`). Archive size only, no Simulator. The log prints both deltas and the budgets.
+  ios-size-budget:
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - run: sudo xcode-select -s /Applications/Xcode_26.6.app # ADR-0047: the default of macos-26
+      - run: scripts/check-ios-size-budget.sh
+
   # Checks every gradle-wrapper.jar in the checkout (sdk, server, contract-check, compatibility/consumer-android)
   # against Gradle's published checksums. A changed or unknown wrapper jar fails the job. Pinned by commit SHA (ADR-0024 item 4).
   gradle-wrapper:
