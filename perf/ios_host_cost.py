@@ -257,8 +257,8 @@ def run(work, out, udid, runs, burst_runs, burst, idle, version, zip_path):
                "footprint_idle_bytes"),
               [(a, i, f"{r['launch_wall_ms']:.1f}", f"{r['first_view_after_process_start_ms']:.1f}",
                 f"{r['init_started_after_process_start_ms']:.1f}", r["footprint_bytes"]) for a, i, r in startup])
-    write_csv(out / "init.csv", ("run", "init_main_ns", "init_wall_ns"),
-              [(i, r["init_main_ns"], r["init_wall_ns"]) for a, i, r in startup if a == "sdk"])
+    write_csv(out / "init.csv", ("arm", "run", "init_main_ns", "init_wall_ns"),
+              [(a, i, r["init_main_ns"], r["init_wall_ns"]) for a, i, r in startup])
     write_csv(out / "memory-burst.csv", ("arm", "run", "footprint_after_burst_bytes"),
               [(a, i, r["footprint_bytes"]) for a, i, r in bursts])
     samples = [(i, j, m, w) for a, i, r in bursts if a == "sdk" for j, (m, w) in enumerate(r["track_main_wall_ns"])]
@@ -274,6 +274,8 @@ def run(work, out, udid, runs, burst_runs, burst, idle, version, zip_path):
     fp = lambda arm: S(arm, lambda r: r["footprint_bytes"])
     init_main = [ms(r["init_main_ns"]) for a, _, r in startup if a == "sdk"]
     init_wall = [ms(r["init_wall_ns"]) for a, _, r in startup if a == "sdk"]
+    floor_main = [ms(r["init_main_ns"]) for a, _, r in startup if a == "nosdk"]
+    floor_wall = [ms(r["init_wall_ns"]) for a, _, r in startup if a == "nosdk"]
     tm = [ms(m) for _, _, m, _ in samples]
     tw = [ms(w) for _, _, _, w in samples]
     first_calls = [ms(r["track_main_wall_ns"][0][0]) for a, _, r in bursts if a == "sdk"]
@@ -351,11 +353,12 @@ Paired difference (with minus without, run by run), process start to first view:
 
 ## `initialize()` and `track()` on the main thread (SDK arm)
 
-Main-thread time follows ADR-0020: from the call until the calling task first suspends (a sentinel task queued on the main actor before the call runs at that moment). It includes call setup and the class loading the call causes, so it is an upper bound for the SDK alone. `wall` runs until the result is ready (mostly off the main thread).
+Main-thread time follows ADR-0020: from the call until the calling task first suspends (a sentinel task queued on the main actor before the call runs at that moment). It includes call setup, the class loading the call causes, and any other main-actor job that is already queued ahead of the sentinel at that moment (at startup SwiftUI work is), so it is an upper bound for the SDK alone; the floor row shows what the same probe reads around an empty call. A `track()` call later in the run has no queue ahead of it. `wall` runs until the result is ready (mostly off the main thread).
 
 | Call | n | main p50 / p95 / max, ms | wall p50 / p95 / max, ms |
 | --- | --- | --- | --- |
 | `SignalDockSDK.initialize` (cold start) | {len(init_main)} | {fmt(stats(init_main), 3)} | {fmt(stats(init_wall), 3)} |
+| same probe around the empty stand-in `initialize` (floor of the method) | {len(floor_main)} | {fmt(stats(floor_main), 3)} | {fmt(stats(floor_wall), 3)} |
 | `track` (`productViewed`, {burst} calls per run, {burst_runs} runs, pooled) | {len(tm)} | {fmt(stats(tm), 3)} | {fmt(stats(tw), 3)} |
 
 The first `track` call of each burst run (main thread): p50 {median(first_calls):.3f} ms, max {max(first_calls):.3f} ms. `track()` runs on the caller's actor (the main actor here) until it hands the work to the SDK; the numbers are the main-actor part of one call. Samples: `track-samples.csv`.
