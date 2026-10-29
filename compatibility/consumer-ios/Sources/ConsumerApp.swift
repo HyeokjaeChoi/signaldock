@@ -44,6 +44,7 @@ final class AppModel: ObservableObject {
   @Published var state = State.starting
   @Published var cart: [Product: Int] = [:]
   @Published var message = "Ready."
+  @Published var purchasing = false
 
   var itemCount: Int64 { Int64(cart.values.reduce(0, +)) }
   var totalMinor: Int64 { cart.reduce(0) { $0 + $1.key.priceMinor * Int64($1.value) } }
@@ -81,7 +82,8 @@ final class AppModel: ObservableObject {
     switch result {
     case .success(let id)?: message = "\(name): stored, eventId=\(id)"
     case let other?: message = "\(name): \(other)"
-    case nil: message = "\(name): SDK not ready"
+    // `try?` also turns CancellationError into nil.
+    case nil: message = "\(name): SDK not ready, or the call was cancelled"
     }
   }
 
@@ -108,13 +110,23 @@ final class AppModel: ObservableObject {
       message = "The cart is empty."
       return
     }
+    guard !purchasing else { return }
     guard succeed else {
       message = "Simulated payment declined. The cart is kept; no event is sent."
       return
     }
+    // One purchase at a time, for the cart as it is now; items added during the call stay in the cart.
+    purchasing = true
+    defer { purchasing = false }
+    let bought = cart
     let result = try? await sdk?.purchaseCompleted(
       orderId: "order-\(UUID().uuidString.prefix(8))", itemCount: itemCount, totalMinor: totalMinor, isSimulated: true)
-    if case .success? = result { cart = [:] }
+    if case .success? = result {
+      for (product, count) in bought {
+        let left = (cart[product] ?? 0) - count
+        cart[product] = left > 0 ? left : nil
+      }
+    }
     report("purchase_completed", result)
   }
 }

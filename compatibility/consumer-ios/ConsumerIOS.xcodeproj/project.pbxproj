@@ -175,11 +175,13 @@
 		AA0000000000000000000003 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_TREAT_WARNINGS_AS_ERRORS = "$(CONSUMER_WERROR)";
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Sources/Info.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = local.signaldock.consumerios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = "$(CONSUMER_WERROR)";
 				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
@@ -187,11 +189,13 @@
 		AA0000000000000000000004 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_TREAT_WARNINGS_AS_ERRORS = "$(CONSUMER_WERROR)";
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Sources/Info.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = local.signaldock.consumerios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = "$(CONSUMER_WERROR)";
 				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;

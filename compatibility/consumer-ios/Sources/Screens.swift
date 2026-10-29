@@ -64,6 +64,7 @@ struct CartView: View {
         HStack {
           Button("Start checkout") { Task { await model.startCheckout() } }
           Button("Purchase (success)") { Task { await model.purchase(succeed: true) } }
+            .disabled(model.purchasing)
           Button("Purchase (failure)") { Task { await model.purchase(succeed: false) } }
         }
         .buttonStyle(.bordered)
