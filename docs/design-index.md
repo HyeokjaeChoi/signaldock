@@ -178,7 +178,7 @@ ADRs:
 - ADR-0009 (`docs/adr/0009-maven-zip-and-consumer-app.md`)
 - ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for `src/sdk`, `src/nosdk`, and `-Psignaldock.sdk=false` (issue 36)
 - ADR-0023 (`docs/adr/0023-ci-device-tests-and-size-budget.md`), for the APK size budget that builds the consumer app with and without the SDK (issue 40)
-- ADR-0047 (`docs/adr/0047-ios-sdk.md`), for `consumer-ios` (D12, "Ticket 14 results"; `scripts/verify-consumer-ios.sh`, job `ios-consumer` in `.github/workflows/repo-rules.yml`, a step in `.github/workflows/release-ios.yml`; it uses the generated `tracking-plan/generated/swift/TrackingPlan.swift`) and its size budget (D15)
+- ADR-0047 (`docs/adr/0047-ios-sdk.md`), for `consumer-ios` (D12, "Ticket 14 results"; `scripts/verify-consumer-ios.sh`, job `ios-consumer` in `.github/workflows/repo-rules.yml`, a step in `.github/workflows/release-ios.yml`; it uses the generated `tracking-plan/generated/swift/TrackingPlan.swift`) and its size budget (D15); ADR-0047 "Amendment (2026-10-29, ticket 15, durability phases)" for the Debug-only `Sources/Phases.swift`
 
 Spec (`.scratch/signaldock/spec.md`):
 - 6. User screens and distribution, Reproduction and deliverables
@@ -265,6 +265,7 @@ ADRs:
 - ADR-0019 (`docs/adr/0019-sdk-public-api-check.md`), for the `apiCheck` step in `scripts/verify-contract.sh`
 - ADR-0033 (`docs/adr/0033-sdk-dependency-baseline.md`), for the `dependencyGuard` step in `scripts/verify-contract.sh` and `sdk/sdk-android/dependencies/` (issue 56)
 - ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for `scripts/host-cost-measure.sh` (issue 36)
+- ADR-0011 (`docs/adr/0011-sdk-device-test-harness.md`), ADR-0029, and ADR-0047 "Amendment (2026-10-29, ticket 15, durability phases)", for `scripts/simulator-durability.sh` (iOS ticket 15; the Android form is `scripts/device-durability.sh`)
 - ADR-0023 (`docs/adr/0023-ci-device-tests-and-size-budget.md`), for the `device-test` and `size-budget` jobs in `.github/workflows/repo-rules.yml` and `scripts/check-size-budget.sh` (issue 40)
 - ADR-0024 (`docs/adr/0024-release-workflow-and-dependency-updates.md`), for `.github/workflows/release.yml`, the `--check` flag of `scripts/release.sh`, and `docs/releases/README.md` (issue 41)
 - ADR-0031 (`docs/adr/0031-renovate-dependency-updates.md`), for `.github/renovate.json5` and the dependency-update section of `docs/releases/README.md`; it supersedes ADR-0024 items 5 and 6 (issue 52)
