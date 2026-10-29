@@ -2,13 +2,15 @@
 
 [English](README.md)
 
-기기에 이벤트를 저장하고, 서버가 commit 후 보내는 ACK로 수신을 확인하도록 설계한 Android 이벤트 SDK입니다.
+기기에 이벤트를 저장하고, 서버가 commit 후 보내는 ACK로 수신을 확인하도록 설계한 Android와 iOS 이벤트 SDK입니다.
 
 이 모노레포에는 SDK, 로컬 데이터 처리 서버, 그리고 둘의 설계가 들어 있습니다.
 앱의 `track()` 호출에서 시작해 durable queue, 재시도, 서버 중복 제거, 독립 아티팩트 설치까지 이어지는 경로를 검토할 수 있습니다.
 
 > **상태: 2026-10-21**
 > 첫 릴리스 범위가 완료되었고, SDK v0.3.0이 릴리스되었습니다. v0.3.0은 서버 수집 kill switch, AAR의 Baseline Profile, 릴리스 ZIP의 build provenance attestation, Gradle 의존성 검증을 추가합니다([CHANGELOG.md](CHANGELOG.md)). 공개 API는 0.2.0과 같습니다. SDK, 서버, Android 데모 앱, Dashboard가 구현되어 있습니다. 전송 실패 E2E, 기기 내구성, 계약·DB 변경 검사, 서버 부하 측정, SDK 기기 측정은 스크립트와 기록된 결과가 있습니다([이슈 20~24](.scratch/signaldock/issues/)). [클린 클론에서 재현](#클린-클론에서-재현)에는 새 클론에서 실행한 명령과 검증하지 못한 항목이 정리되어 있습니다. 검증하지 못한 항목은 process 경계 스크립트, 릴리스(R8) 빌드와 Baseline Profile의 실기기 측정(instrumented test, debug 기기 측정, 호스트 앱 비용은 SDK 0.3.0으로 실기기 한 대에서 실행했습니다, [issue 85](.scratch/signaldock/issues/85-device-verification-v0.3.0.md); instrumented test는 0.2.0 코드로도 실행했습니다, [issue 73](.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md))와 서버 측정 matrix 전체(실행하지 않음, Q133)입니다.
+>
+> **iOS SDK 0.1.0: 2026-10-29.** iOS SDK(`sdk-ios/`), consumer 및 데모 앱, Simulator durability 스크립트, 릴리스 ZIP workflow는 저장소에 있습니다. iOS 릴리스는 아직 없습니다. 첫 tag인 `ios-v0.1.0`은 push에 소유자의 승인이 필요하고, `sdkPlatform`을 보내는 Android SDK 0.4.0도 아직 tag가 없습니다. [iOS SDK](#ios-sdk)를 참고하세요.
 
 설계 문서, ADR, 이슈 파일, `docs/reproduce.md`는 영어로만 제공합니다. 이 README는 해당 문서로 연결합니다.
 
@@ -79,10 +81,11 @@ SDK는 버린 이벤트를 사유별로 세어 `POST /v1/client-reports`로 보�
 | 영역 | 선택 |
 | --- | --- |
 | Android SDK | Kotlin · minSdk 24 · Coroutines · Room · Retrofit / OkHttp · kotlinx.serialization · WorkManager |
+| iOS SDK | Swift 6 · iOS 15 · Swift Concurrency · 시스템 SQLite · `URLSession` · 외부 의존성 없음 |
 | 데모 앱 | Jetpack Compose · ViewModel. SDK는 이 UI 스택에 의존하지 않습니다 |
 | 서버 | Kotlin / Ktor · PostgreSQL · jOOQ · JDBC / HikariCP · Flyway |
 | 검증 Dashboard | React · TypeScript · Vite · Recharts |
-| 계약과 배포 | OpenAPI / JSON · Git으로 추적하는 생성 소스 · Docker Compose 진입점 · 로컬 Maven 저장소 ZIP |
+| 계약과 배포 | OpenAPI / JSON · Git으로 추적하는 생성 소스 · Docker Compose 진입점 · 로컬 Maven 저장소 ZIP · Swift package 소스 ZIP |
 | CI와 공급망 | GitHub Actions · CodeQL · Renovate · `dependency-guard` baseline · `binary-compatibility-validator` · Gradle wrapper 검증 · Gradle 의존성 검증 · 빌드 provenance attestation |
 
 정확한 버전은 `gradle/libs.versions.toml`에 고정되어 있습니다. [TOOLCHAIN.md](TOOLCHAIN.md)에 각 고정의 이유와 이를 검증한 빌드가 있습니다(영어).
@@ -90,9 +93,9 @@ SDK는 버린 이벤트를 사유별로 세어 `POST /v1/client-reports`로 보�
 
 ## 범위와 검증
 
-첫 릴리스는 네이티브 Android SDK 하나와 로컬 프로젝트 하나를 다룹니다.
+첫 릴리스는 네이티브 Android SDK 하나와 로컬 프로젝트 하나를 다룹니다. iOS SDK `0.1.0`(아직 릴리스 전)은 iOS 앱에서 같은 동작을 합니다.
 데모는 상품 조회, 장바구니, 모의 구매 흐름을 따릅니다. Dashboard는 SDK 연동을 검증하는 데 도움을 줍니다.
-iOS / Flutter, React Native / Flutter / Unity 또는 WebView(native-web) bridge(Q150), 자동 이벤트, `identify`, 캠페인 / push, 퍼널, 다중 계정, 공개 인터넷 운영, Maven Central은 이번 릴리스에 포함하지 않습니다.
+Flutter, React Native, Unity 또는 WebView(native-web) bridge(Q150), 자동 이벤트, `identify`, 캠페인 / push, 퍼널, 다중 계정, 공개 인터넷 운영, Maven Central은 이번 릴리스에 포함하지 않습니다.
 
 [완료 기준](.scratch/signaldock/spec.md#7-completion-criteria-and-verification-plan)은 환경 기록, 소스 revision / hash, 이벤트 ID 비교를 요구합니다. `.scratch/signaldock/issues/`의 각 구현 이슈는 무엇을 실행했고 무엇을 실행하지 않았는지 기록합니다.
 측정 결과는 로컬 환경 기록이며 SLA가 아닙니다.
@@ -101,18 +104,18 @@ iOS / Flutter, React Native / Flutter / Unity 또는 WebView(native-web) bridge(
 - SDK: debug 빌드로 API 24와 API 37 에뮬레이터에서 normal, offline, burst를 실행했고, API 37 에뮬레이터에서 R8 release 빌드(debug 서명)로 한 번 더 실행했습니다. 결과는 [`perf/sdk-results/summary.md`](perf/sdk-results/summary.md)에 있습니다([ADR-0014](docs/adr/0014-sdk-device-measurement-harness.md), [ADR-0018](docs/adr/0018-sdk-release-r8-measurement.md), [issue 24](.scratch/signaldock/issues/24-sdk-device-measurement.md), [issue 33](.scratch/signaldock/issues/33-sdk-crash-safety-and-release-build.md)).
 - 호스트 앱이 치르는 SDK 비용: API 37 에뮬레이터에서 SDK가 있는 R8 consumer 앱과 없는 앱을 비교했습니다. APK는 616,829 bytes(dex는 966,108 bytes) 커지고, 콜드 스타트 `TotalTime` p50은 SDK 없음 235 ms, 있음 238 ms이며, `initialize()`는 메인 스레드를 p50 0.26 ms, p95 3.0 ms 사용하고, 5초 유휴 후 PSS는 4.0 MiB 더 큽니다([`perf/sdk-results/host-cost-api37/summary.md`](perf/sdk-results/host-cost-api37/summary.md), [ADR-0020](docs/adr/0020-sdk-host-app-cost.md), [issue 36](.scratch/signaldock/issues/36-sdk-host-app-cost.md)).
 - SDK Baseline Profile: API 37 에뮬레이터에서 Macrobenchmark로 측정했습니다(행마다 콜드 스타트 20회, 지표는 샘플 앱의 `initialize()`, `track()` 20회, `diagnostics()`). 두 번의 실행에서 p50은 컴파일 없음 495 ms와 749 ms, 프로필 적용 358 ms와 351 ms로 각각 28 %와 53 % 낮았고, 세 번째 실행은 413 ms와 410 ms로 차이가 없었습니다. SDK 규칙을 뺀 대조군은 387 ms여서 SDK 규칙만의 효과는 에뮬레이터 잡음 안에 있고, 같은 모드도 실행마다 50 % 달라집니다. Baseline Profile은 실제 기기에서 측정하지 않았습니다([`perf/sdk-results/baseline-profile-api37/`](perf/sdk-results/baseline-profile-api37/), [ADR-0040](docs/adr/0040-sdk-baseline-profile.md), [issue 70](.scratch/signaldock/issues/70-sdk-baseline-profile.md)).
-- CI: `repo-rules` 워크플로에는 `check`, `verify-contract`, `sdk-test`, `consumer-r8`, `server-test`, `device-test`, `size-budget`, `gradle-wrapper` job이 있습니다. 다른 워크플로는 `pr-description`(`length` job), `codeql`, `release`(`build`, `publish` job), `claude-review`(`review` job, [ADR-0041](docs/adr/0041-claude-code-pr-review.md)), `demo-deploy`(`build`, `wait-deployed` job. `demo-v*` 태그에서만 실행, [ADR-0043](docs/adr/0043-cloud-demo-hosting-and-deploy.md))입니다. `device-test` job은 API 34 `google_apis` x86_64 에뮬레이터에서 계측 SDK 테스트를 실행합니다. 33개가 시작되고, 16개는 스스로 건너뛰며(phase 클래스는 `-e phase`가 필요합니다), 17개가 실행됩니다(PR #173의 `repo-rules` run 39032066203 job 로그, 2026-10-17 UTC). 또한 SDK가 R8 consumer APK를 700,000 bytes보다 더 키우면 빌드를 실패시키는 크기 게이트가 있습니다(`size-budget` job). `scripts/device-durability.sh`의 프로세스 경계 케이스와 측정은 로컬에서만 실행합니다([ADR-0023](docs/adr/0023-ci-device-tests-and-size-budget.md), [issue 40](.scratch/signaldock/issues/40-ci-device-tests-and-size-budget.md)).
+- CI: `repo-rules` 워크플로에는 `check`, `verify-contract`, `sdk-test`, `consumer-r8`, `server-test`, `device-test`, `size-budget`, `gradle-wrapper` job이 있습니다. 다른 워크플로는 `pr-description`(`length` job), `codeql`, `release`(`build`, `publish` job), `claude-review`(`review` job, [ADR-0041](docs/adr/0041-claude-code-pr-review.md)), `demo-deploy`(`build`, `wait-deployed` job. `demo-v*` 태그에서만 실행, [ADR-0043](docs/adr/0043-cloud-demo-hosting-and-deploy.md))입니다. `device-test` job은 API 34 `google_apis` x86_64 에뮬레이터에서 계측 SDK 테스트를 실행합니다. 33개가 시작되고, 16개는 스스로 건너뛰며(phase 클래스는 `-e phase`가 필요합니다), 17개가 실행됩니다(PR #173의 `repo-rules` run 39032066203 job 로그, 2026-10-17 UTC). 또한 SDK가 R8 consumer APK를 700,000 bytes보다 더 키우면 빌드를 실패시키는 크기 게이트가 있습니다(`size-budget` job). macOS runner의 `repo-rules` iOS job: `ios-test`(lint, Thread Sanitizer 테스트, `xcodebuild analyze`, privacy manifest, public API 검사), `ios-sanitize`(Address와 Undefined Behavior Sanitizer 테스트), `ios-consumer`(릴리스 ZIP에서 `consumer-ios`를 Debug와 Release로 빌드)가 있습니다. `codeql`은 Swift도 분석하고, `release-ios`(`build`, `publish` job)는 `ios-v*.*.*` 태그에서만 실행합니다([ADR-0047](docs/adr/0047-ios-sdk.md) D13). `scripts/device-durability.sh`와 `scripts/simulator-durability.sh`의 프로세스 경계 케이스와 측정은 로컬에서만 실행합니다([ADR-0023](docs/adr/0023-ci-device-tests-and-size-budget.md), [issue 40](.scratch/signaldock/issues/40-ci-device-tests-and-size-budget.md)).
 - [성능 계획](.scratch/signaldock/performance-plan.md)에는 처음의 목표와 조건이 있습니다.
 
 스택 실행, 중지, 초기화 방법과 Maven ZIP 빌드, consumer 앱 실행 방법은 아래에 있습니다.
 
 ## 클린 클론에서 재현
 
-이 절의 명령은 `docker compose down --volumes`(초기화)를 제외하고 모두 새 클론에서 실행했습니다. 초기화는 의도적으로 실행하지 않았습니다. 기록(명령, 결과, 소요 시간)은 [issue 25](.scratch/signaldock/issues/25-reproduction-readme-video.md)에 있습니다. 더 긴 안내(데모 앱, E2E, 기기 스크립트, 측정, 실기기, 초기화, 한계)는 [docs/reproduce.md](docs/reproduce.md)에 있습니다(영어).
+이 절의 명령은 `docker compose down --volumes`(초기화)를 제외하고 모두 새 클론에서 실행했습니다. 초기화는 의도적으로 실행하지 않았습니다. 기록(명령, 결과, 소요 시간)은 [issue 25](.scratch/signaldock/issues/25-reproduction-readme-video.md)에 있습니다. 더 긴 안내(데모 앱, E2E, 기기 스크립트, 측정, 실기기, 초기화, 한계)는 [docs/reproduce.md](docs/reproduce.md)에 있습니다(영어). iOS 단계는 그 실행에 포함되지 않았습니다. iOS 단계는 나중에 깨끗한 `git worktree`에서 실행했고 [issue 18](.scratch/ios-sdk/issues/18-ios-docs.md)에 기록했습니다. 실행한 것: 릴리스 ZIP, `scripts/verify-consumer-ios.sh`, 별도 스택에 대한 Simulator 실행, `offline`과 `restart` 케이스의 `scripts/simulator-durability.sh`, `scripts/verify-ios.sh`의 `lint`와 `manifest`. `tsan`, `asan`, `analyze`, 나머지 durability 케이스는 거기서 실행하지 않았습니다.
 데모의 `track()`부터 Dashboard 수신까지 보여 주는 짧은 영상은 [`.scratch/signaldock/evidence/25-demo-track-to-dashboard.mp4`](.scratch/signaldock/evidence/25-demo-track-to-dashboard.mp4)에 있습니다.
 처음 실행할 때는 JDK, Docker 이미지, Gradle 의존성, npm 패키지를 내려받습니다. 완전한 오프라인 실행은 아닙니다.
 
-필요한 것: macOS 또는 Linux, Compose가 있는 Docker, Python 3, `curl`, `openssl`, platform `android-36`이 있는 Android SDK(`ANDROID_HOME`). 데모 앱에는 platform `android-37`이 필요합니다(`gradle/libs.versions.toml`의 `demo-compileSdk`). 기기 스크립트에는 에뮬레이터(AVD)도 필요합니다. `scripts/device-measure.sh`는 macOS도 필요합니다.
+필요한 것: macOS 또는 Linux, Compose가 있는 Docker, Python 3, `curl`, `openssl`, platform `android-36`이 있는 Android SDK(`ANDROID_HOME`). 데모 앱에는 platform `android-37`이 필요합니다(`gradle/libs.versions.toml`의 `demo-compileSdk`). 기기 스크립트에는 에뮬레이터(AVD)도 필요합니다. `scripts/device-measure.sh`는 macOS도 필요합니다. iOS 단계에는 전체 Xcode가 있는 macOS와 iOS Simulator runtime이 필요하며 Android SDK는 필요 없습니다.
 
 ### 1. 툴체인과 hook
 
@@ -170,6 +173,8 @@ adb -s emulator-5584 shell am start -n local.signaldock.consumer/.MainActivity
 ### 4. 데모 앱, E2E, 기기 검사, 측정
 
 [docs/reproduce.md](docs/reproduce.md)를 참고하세요(영어). 데모 앱은 `sdk/gradlew -p sdk -Psignaldock.collectionKey=... :demo:app:assembleDebug`로 빌드합니다. `scripts/e2e-delivery.sh`는 전송 실패 사례를 실행합니다. `scripts/device-durability.sh`와 `scripts/device-measure.sh`는 에뮬레이터에서 실행합니다. `perf/`에는 서버 부하 harness가 있습니다.
+
+iOS(Xcode가 있는 macOS, 기록: [issue 18](.scratch/ios-sdk/issues/18-ios-docs.md)): `scripts/verify-consumer-ios.sh`는 iOS 릴리스 ZIP을 빌드하고 그 ZIP으로 consumer 앱 `compatibility/consumer-ios/`를 빌드합니다. 이 앱의 이벤트를 별도의 로컬 스택으로 보내 Dashboard에서 platform `ios`로 확인하는 방법은 [docs/reproduce.md](docs/reproduce.md)에 있습니다. `scripts/verify-ios.sh`는 iOS 게이트를 실행하고, `scripts/simulator-durability.sh`는 Simulator에서 durability 케이스를 실행합니다.
 
 ### 5. 중지와 초기화
 
@@ -247,9 +252,42 @@ SDK는 1.0 이전입니다. 수정은 가능한 범위에서 제공합니다(bes
 
 [SDK 통합 가이드](docs/integration-guide.ko.md)([English](docs/integration-guide.md))는 `track()` 결과, 취소, 오프라인과 재시도 동작, diagnostics, 개인정보, 버전, 문제 해결을 다룹니다. 선택 사항으로, tracking plan에서 생성한 타입 있는 이벤트 함수는 [`tracking-plan/`](tracking-plan/)과 [ADR-0021](docs/adr/0021-tracking-plan-codegen.md)을 참고하세요. 서버는 저장한 이벤트마다 그 plan과 비교해 `planned`, `unplanned_event`, `invalid_properties` 중 하나로 표시하며, 이벤트를 거부하지 않습니다([ADR-0022](docs/adr/0022-server-tracking-plan-status.md)).
 
+### iOS SDK
+
+상태: iOS SDK `0.1.0`은 `sdk-ios/`에 구현되어 있지만 iOS 릴리스는 아직 없습니다. 첫 tag인 `ios-v0.1.0`은 `sdkPlatform`을 지원하는 서버를 배포한 뒤 소유자의 승인을 받아 push합니다([ADR-0046](docs/adr/0046-sdk-platform-field.md)). 그 전에는 ZIP을 직접 빌드하세요. `scripts/build-ios-release-zip.sh 0.1.0`이 `dist/signaldock-sdk-ios-0.1.0.zip`과 `.sha256` 파일을 만듭니다([docs/reproduce.md](docs/reproduce.md)).
+
+릴리스 ZIP으로 설치합니다. 릴리스 `ios-vX.Y.Z`에는 `signaldock-sdk-ios-X.Y.Z.zip`과 `signaldock-sdk-ios-X.Y.Z.zip.sha256` 파일이 붙습니다([`release-ios.yml`](.github/workflows/release-ios.yml)). `shasum -a 256 -c`로 해시를 확인하고 압축을 푼 뒤, Xcode에서 File, Add Package Dependencies, Add Local을 선택합니다. 압축을 푼 `SignalDock/` 폴더를 고르고 앱 target에 product `SignalDock`을 추가합니다. 원격 Swift Package Manager URL, CocoaPods, XCFramework는 아직 없습니다([ADR-0047](docs/adr/0047-ios-sdk.md) D11).
+
+```swift
+import SignalDock
+
+switch try await SignalDockSDK.initialize(SignalDockConfig(endpoint: "https://events.example.com", collectionKey: "your-collection-key")) {
+case .success(let sdk): _ = try await sdk.track("product_viewed") { $0.property("product_id", "p-1") }
+case .failure(let error): print(error)
+}
+```
+
+요구 사항과 규칙:
+
+- iOS 15 이상, Swift 6가 있는 Xcode(`swift-tools-version: 6.0`). Xcode 26.6(Swift 6.3, CI toolchain)과 Xcode 27.1(Swift 6.4, 로컬 실행)에서 테스트했습니다. Gap: 더 오래된 Xcode와 Swift 버전은 테스트하지 않았습니다. 앱 전용입니다. 진입점은 app extension에서 쓸 수 없습니다. SDK에는 외부 의존성이 없고 시스템 SQLite를 씁니다.
+- `https://` endpoint를 사용하세요. `http://` endpoint는 `allowInsecureEndpoint: true`와 해당 host에 대한 App Transport Security 예외가 필요합니다([ADR-0035](docs/adr/0035-sdk-https-enforcement.md)).
+- **public 결과 enum(`TrackResult`, `InvalidReason`, `InitError`, diagnostics enum)을 `switch`할 때는 `default`를 쓰세요.** minor 버전이 case를 추가할 수 있습니다([ADR-0047](docs/adr/0047-ios-sdk.md) 2026-10-28 amendment).
+- SDK는 installation ID와 이벤트를 위한 privacy manifest(`PrivacyInfo.xcprivacy`)를 포함합니다. 이벤트 property에 다른 데이터 유형이 있으면 앱의 manifest에 선언하세요.
+- API는 `initialize`, `track`, `setOptOut`, `isOptedOut`, `clearQueue`, `diagnostics`입니다. [통합 가이드 13절](docs/integration-guide.ko.md)을 참고하세요.
+
+플랫폼 차이와 알려진 한계:
+
+- 주기적 백그라운드 전송이 없습니다. SDK는 foreground에서, 앱이 background로 들어갈 때 한 번(`beginBackgroundTask` 안에서), 그리고 실행 시작 때 전송합니다. background에서 종료된 뒤 남은 이벤트는 다음 실행 때 전송됩니다(D8).
+- installation ID 파일과 큐는 백업에서 제외됩니다. Apple은 제외한 파일이 복원된 기기에 절대 나타나지 않는다고 보장하지 않으므로, 복원된 기기가 드물게 같은 installation ID를 가질 수 있습니다(D6).
+- 재시작 뒤 첫 잠금 해제 전에는 시스템이 SDK 파일을 거부할 수 있습니다. 그러면 `initialize`가 `storageFailure`를 반환하므로 나중에 다시 호출하세요.
+- Simulator는 백업 복원과 디스크 가득 참을 재현할 수 없습니다. Simulator 수치는 실기기 수치가 아닙니다. 실제 iPhone에서는 실행하지 않았습니다.
+- GitHub macOS runner에는 iOS 15 Simulator runtime이 없습니다. 패키지는 iOS 15용으로 빌드하지만, 테스트는 runner에 있는 가장 오래된 runtime에서 실행합니다(마지막 기록된 실행에서는 iOS 26.2). executor의 iOS 15 형태는 실행 테스트를 하지 않았습니다.
+- source ZIP에는 코드 서명이 없습니다. SHA-256 파일과 provenance attestation이 있습니다. attestation은 아직 실제 iOS 릴리스에서 실행하지 않았습니다.
+- `0.1.0`의 범위 밖(보류, 거부 아님): 원격 Swift Package Manager와 Maven Central(함께 진행), CocoaPods, XCFramework, app extension, Objective-C와 completion-handler API, `BGTaskScheduler`, 실제 iPhone 측정, iOS 앱과 클라우드 데모의 연결.
+
 ## 저장소 안내
 
-저장소에는 설계 문서와, `sdk/`, `server/`, `dashboard/` 아래의 제품 코드가 있습니다.
+저장소에는 설계 문서와, `sdk/`, `sdk-ios/`, `server/`, `dashboard/` 아래의 제품 코드가 있습니다.
 `.scratch/signaldock/`의 spec, 검증 계획, 구현 이슈는 Git으로 추적하는 승인된 설계 소스입니다. 개인 대화와 이력서 검토 기록은 제외했습니다.
 
 | 경로 | 내용 |
@@ -263,5 +301,8 @@ SDK는 1.0 이전입니다. 수정은 가능한 범위에서 제공합니다(bes
 | [.scratch/signaldock/dashboard-verification-defaults.md](.scratch/signaldock/dashboard-verification-defaults.md) | Dashboard 조회와 표시 기본값 |
 | [.scratch/signaldock/performance-plan.md](.scratch/signaldock/performance-plan.md) | 성능 테스트 조건, 기준, 원시 데이터 계획 |
 | [.scratch/signaldock/issues/](.scratch/signaldock/issues/) | 구현 작업 |
+| [sdk-ios/](sdk-ios/) | iOS SDK: Swift package, 테스트, public API dump, privacy manifest |
+| [compatibility/consumer-ios/](compatibility/consumer-ios/) | iOS consumer 및 데모 앱. 릴리스 ZIP으로만 빌드 |
+| [.scratch/ios-sdk/spec.md](.scratch/ios-sdk/spec.md) | iOS SDK 설계와 완료 기준([ADR-0046](docs/adr/0046-sdk-platform-field.md), [ADR-0047](docs/adr/0047-ios-sdk.md)) |
 
 이 프로젝트는 Apache License 2.0을 따릅니다. [LICENSE](LICENSE)를 보세요.

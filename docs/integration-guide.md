@@ -2,7 +2,7 @@
 
 [한국어](integration-guide.ko.md)
 
-This guide tells an app developer how to add the SignalDock Android SDK to an app and how to use it.
+This guide tells an app developer how to add the SignalDock Android SDK to an app and how to use it. [Section 13](#13-ios-sdk) covers the iOS SDK.
 It adds no new behavior. Each statement names the source it comes from: the [spec](../.scratch/signaldock/spec.md) ("spec 3" means section 3), the [architecture](../architecture.md), or an [ADR](adr/).
 The SDK public API has KDoc on every public declaration. It agrees with this guide.
 
@@ -22,6 +22,7 @@ The SDK package is `local.signaldock`. The release version is `0.3.0`. The coord
 10. [Troubleshooting](#10-troubleshooting)
 11. [What the SDK does not do](#11-what-the-sdk-does-not-do)
 12. [Code samples](#12-code-samples)
+13. [iOS SDK](#13-ios-sdk)
 
 ## 1. Install
 
@@ -435,7 +436,7 @@ Use `LogLevel.DEBUG` only while you debug. `LogLevel.NONE` writes nothing.
 
 These are outside the first release (spec 1 "Goal and scope"):
 
-- No iOS or Flutter SDK.
+- No Flutter SDK. The iOS SDK is in [section 13](#13-ios-sdk).
 - No React Native, Flutter, or Unity bridge, and no WebView JavaScript bridge between native and web events (Q150).
 - No automatic events. Your app calls `track()`.
 - No `identify` or user identity.
@@ -460,3 +461,136 @@ The SDK also does not:
 The samples in this guide are copied from [`IntegrationGuideSamplesTest.kt`](../sdk/sdk-android/src/test/kotlin/local/signaldock/IntegrationGuideSamplesTest.kt). The text between its `sample:` and `end sample` markers is the text in this guide. The file compiles with the SDK, and `cd sdk && ./gradlew test` runs the track and diagnostics samples against a real Room database.
 
 A complete app that uses the SDK from the Maven ZIP is the [consumer app](../compatibility/consumer-android/): [`ConsumerApplication.kt`](../compatibility/consumer-android/app/src/sdk/kotlin/local/signaldock/consumer/ConsumerApplication.kt) and [`MainActivity.kt`](../compatibility/consumer-android/app/src/sdk/kotlin/local/signaldock/consumer/MainActivity.kt) (ADR-0009 decision 3).
+
+## 13. iOS SDK
+
+The iOS SDK has the same behavior as the Android SDK 0.3.0 (ADR-0047 D1). Sections 3 to 6, 8, and 9 apply to it, with the differences in this section. Section 7 (diagnostics) applies with one difference: on iOS `contractDeprecation` is part of the synthesized `==` of `Diagnostics`. Section 10 applies to the error kinds and the delivery table, but not to the log tags and messages (see Logging below), and `StorageFailure` holds codes (see Logging). Section 1 is replaced by Install below. The Swift type is `SignalDockSDK`, in the module `SignalDock`. The version is `0.1.0` (`SignalDockSDK.version`). The public API is in `sdk-ios/api/SignalDock.swiftinterface`; the declarations have DocC comments.
+
+**Status.** No iOS release exists yet. The first tag is `ios-v0.1.0`, and a tag push needs the owner's approval (ADR-0046 decision 8, spec section 4). Until then, build the ZIP yourself (see [reproduce.md](reproduce.md#ios-release-zip-and-consumer-app)).
+
+### Install
+
+1. Download `signaldock-sdk-ios-X.Y.Z.zip` and `signaldock-sdk-ios-X.Y.Z.zip.sha256` from the GitHub Release `ios-vX.Y.Z`. Check the hash with `shasum -a 256 -c signaldock-sdk-ios-X.Y.Z.zip.sha256` in the folder with both files. The release also gets a build provenance attestation (`gh attestation verify signaldock-sdk-ios-X.Y.Z.zip --repo HyeokjaeChoi/signaldock --signer-workflow HyeokjaeChoi/signaldock/.github/workflows/release-ios.yml`). Gap: this command has not run on an iOS ZIP yet (ADR-0047 ticket 13 results).
+2. Unzip. The ZIP has one folder, `SignalDock/`, with `Package.swift`, `Sources/`, and `LICENSE` (ADR-0047 ticket 13 results).
+3. In Xcode, choose File, Add Package Dependencies, Add Local, and select that folder. Add the product `SignalDock` to the app target. `compatibility/consumer-ios/` does the same with a local package reference.
+
+Requirements:
+
+- iOS 15 or later. The package manifest uses `swift-tools-version: 6.0`, so use Xcode with Swift 6 or later (`sdk-ios/Package.swift`). It was tested with Xcode 26.6 (Swift 6.3, the CI toolchain) and Xcode 27.1 (Swift 6.4, local runs). Gap: older Xcode and Swift versions were not tested.
+- No external dependency (ADR-0047 D7, D13). The SDK uses the system SQLite.
+- Apps only. The public entry points are marked `@available(iOSApplicationExtension, unavailable)` (ADR-0047 D9).
+- Use an `https://` endpoint. An `http://` endpoint needs `allowInsecureEndpoint: true`, and App Transport Security must allow the host (ADR-0035). The consumer app sets `NSAllowsLocalNetworking` for the local server.
+- The package includes `PrivacyInfo.xcprivacy` as a resource (ADR-0047 D14).
+
+### Initialize and track
+
+`SignalDockConfig` has the same fields as on Android. The timeouts are `TimeInterval` values in seconds (default 30 for the call and 10 each for connect, read, and write). `logLevel` defaults to `.warn`. `initialize(_:)` is `async`. It throws only `CancellationError` (ADR-0047 ticket 08 results; Q114).
+
+```swift
+import SignalDock
+
+func startSDK() async -> SignalDockSDK? {
+    let config = SignalDockConfig(endpoint: "https://events.example.com", collectionKey: "your-collection-key")
+    do {
+        switch try await SignalDockSDK.initialize(config) {
+        case .success(let sdk):
+            return sdk
+        case .failure(let error):
+            // invalidConfiguration, configurationConflict, storageFailure: see section 10.
+            print("SignalDock not ready: \(error)")
+            return nil
+        }
+    } catch {
+        return nil // CancellationError: the caller was cancelled
+    }
+}
+
+func onProductViewed(_ sdk: SignalDockSDK, productId: String) async {
+    let result = try? await sdk.track("product_viewed") {
+        $0.property("product_id", productId)
+        $0.property("price_minor", Int64(1999))
+    }
+    // result is nil only when the caller was cancelled. The event can still be stored.
+    _ = result
+}
+```
+
+- Call `initialize(_:)` once at launch, for example in a `Task` started from your `App` or `AppDelegate`. Calls with the same configuration share one attempt. A different configuration returns `configurationConflict`.
+- `track(isolation:_:_:)` takes the event name and a builder closure. The builder has `property(_:_:)` for `String`, `Bool`, `Int`, `Int64`, and `Double`. An integer outside plus or minus (2^53 - 1) returns `invalid(reason: .numberOutOfRange, ...)`.
+- Name and property rules are the same as on Android (section 3), with two differences that Swift forces (ADR-0047 ticket 08 results): a Swift `String` cannot hold a lone surrogate, so that `forbiddenCharacter` case cannot happen; and keys that Swift treats as equal (`é` as one code point and as `e` plus U+0301) are one key, so the call returns `duplicateKey`.
+- The tracking plan generator also writes Swift (`tracking-plan/generated/swift/TrackingPlan.swift`, ADR-0047 amendment of ticket 11). It adds one typed function per event in an extension of `SignalDockSDK`.
+
+### Results: use `default`
+
+`TrackResult` has the cases `success(eventId:)`, `invalid(reason:field:)`, `optedOut`, `queueFull`, and `storageError(message:)`.
+
+**A minor version can add a case to a public result enum** (`TrackResult`, `InvalidReason`, `InitError`, and the diagnostics enums). The enums are not `@frozen`. Android did the same when 0.2.0 added `OptedOut` (ADR-0047 amendment of 2026-10-28, "enum evolution"). Always add a `default` branch to a `switch` over these enums, so a new case does not break your build:
+
+```swift
+func describe(_ result: TrackResult) -> String {
+    switch result {
+    case .success(let eventId): return "stored \(eventId)"
+    case .optedOut: return "collection is off"
+    case .queueFull: return "queue is full"
+    default: return "not stored: \(result)" // invalid, storageError, and cases that a later version adds
+    }
+}
+```
+
+### Opt-out
+
+`setOptOut(_:)` is `async` and returns `false` if the state could not be stored. `isOptedOut()` is synchronous. `clearQueue()` returns the number of deleted events, or `nil` if storage failed. The rules are the same as on Android (section 8, ADR-0034): queued events stay and are still sent until you call `clearQueue()`. The state is a marker file in the `signaldock/` directory, which is excluded from backups.
+
+```swift
+func onUserWithdrawsConsent(_ sdk: SignalDockSDK) async throws -> Bool {
+    let stored = await sdk.setOptOut(true) // from now on, track() stores nothing and returns .optedOut
+    let deleted = try await sdk.clearQueue() // optional; nil means storage failed
+    return stored && deleted != nil
+}
+```
+
+### Diagnostics
+
+`diagnostics()` returns the `Diagnostics` struct with the same fields as on Android (section 7). Times are epoch milliseconds (`Int64`). `DeliveryErrorKind` has Swift case names (`.network`, `.rateLimited`, ...) and the Android names as raw values (`"NETWORK"`, `"RATE_LIMITED"`, ...).
+
+### Delivery on iOS
+
+Delivery follows section 6 with these differences (ADR-0047 D8 and ticket 09 results):
+
+- There is no WorkManager and no periodic background send. The SDK does not use `BGTaskScheduler`.
+- The SDK sends when 20 events are stored or 10 seconds after the first event, at launch, and when the app returns to the foreground.
+- When the app enters the background, the SDK starts one send inside `beginBackgroundTask`. If the system ends the task, the request is cancelled and the queue stays.
+- While the app is active, the SDK sets one timer for the saved next-attempt time. No timer runs in the background.
+- Events that remain after a background kill go out at the next launch.
+
+### Files and data protection
+
+The SDK keeps the installation ID, the queue database (with its `-wal`, `-shm`, and `-journal` files), and the opt-out marker in `Application Support/signaldock/`. The directory and the installation ID file are excluded from backups (`isExcludedFromBackup`). Apple does not guarantee that an excluded item never appears on a restored device, so a restored device can rarely share an installation ID (ADR-0047 D6 and its amendment of 2026-10-28). Deleting the app deletes the files, so a reinstall gets a new ID, and unsent events are lost.
+
+The SDK sets the Data Protection class `completeUntilFirstUserAuthentication` on these files (ADR-0047 amendment of issue 20). After a restart, the system does not let the app open them before the first unlock. If the app starts earlier (for example by a background launch), `initialize(_:)` returns `.failure(.storageFailure(message:))` and there is no instance. Events that you track in that window are dropped. Call `initialize(_:)` again after the first unlock. Gap: the Simulator does not enforce Data Protection, so this failure and the class on the files are not verified on a device (ADR-0047 ticket 07 results).
+
+### Privacy manifest
+
+The SDK ships `PrivacyInfo.xcprivacy` (ADR-0047 D14): no tracking, no tracking domains; collected data types `DeviceID` (the installation ID) and `ProductInteraction` (your events); both are not linked to the user, not used for tracking, and have the purpose Analytics. The SDK uses no required-reason API.
+
+**Event properties are your data.** The SDK cannot know what you put in `property(_:_:)`. If your properties carry another data type that Apple lists (for example an email address, a location, or a purchase history), declare that type in your own app's privacy manifest and in the App Store privacy answers. The manifest of the SDK covers only the data types above.
+
+### Logging
+
+The SDK logs with `os.Logger`, subsystem `local.signaldock`, category `SignalDock` (`sdk-ios/Sources/SignalDock/Internal/Init/Logging.swift`). Use Console.app or `log stream --predicate 'subsystem == "local.signaldock"'`. This replaces the Logcat tag of section 10. The messages are a closed set of fixed texts, so no message holds event content, event names, installation IDs, the collection key, HTTP bodies, or system error text. `logLevel` `.debug` writes debug, warning, and error messages; `.info` and `.warn` write warning and error; `.error` writes error; `.none` writes nothing. The default is `.warn`.
+
+| Level | Message |
+| --- | --- |
+| debug | `initialized`; `opt-out set`; `delivery attempt started`; `delivery attempt finished`; `delivery failed; see diagnostics for the kind` |
+| warning | `opt-out state could not be stored`; `installation id file is invalid; generating a new id`; `track storage failed`; `track cancelled during storage; the event may already be stored`; `diagnostics storage failed`; `clearQueue storage failed`; `delivery paused by a configuration, authentication or contract error; rechecking every 30 minutes`; `delivery resumed after a successful ACK`; `delivery run failed in storage; the queue is unchanged`; `drop counter could not be written; the drop is not counted`; `client report failed in storage; the counters are unchanged`; `server contract version is deprecated; see diagnostics for the dates` |
+
+There is no WorkManager message. The deprecation message has no date; read the dates from `diagnostics()`.
+
+`InitError.storageFailure(message:)` and `TrackResult.storageError(message:)` hold `StorageError(<kind>, <code>)` or the type name of another error: codes only, not the exception class name of Android (ADR-0047 ticket 08 results).
+
+### Known limits
+
+- No iOS 15 runtime was available for tests, so the SDK builds for iOS 15 but its tests ran on newer Simulator runtimes only (ADR-0047 "iOS 15 Simulator fallback").
+- Not verified on a physical device, and not for backup restore or a full disk (ADR-0047 "Known limits").
+- The source ZIP is not code-signed. Apple states the signature check for binary dependencies only (ADR-0047 "Known limits").
+- Out of scope for 0.1.0: remote SwiftPM, CocoaPods, XCFramework, app extensions, Objective-C and completion-handler APIs, `BGTaskScheduler`, and Flutter, React Native, Unity, or WebView bridges (ADR-0047 Context).

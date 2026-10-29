@@ -2,7 +2,7 @@
 
 [English](integration-guide.md)
 
-이 가이드는 앱 개발자가 SignalDock Android SDK를 앱에 추가하고 사용하는 방법을 설명합니다.
+이 가이드는 앱 개발자가 SignalDock Android SDK를 앱에 추가하고 사용하는 방법을 설명합니다. iOS SDK는 [13절](#13-ios-sdk)에서 다룹니다.
 새로운 동작은 추가하지 않습니다. 모든 문장은 출처를 밝힙니다. 출처는 [spec](../.scratch/signaldock/spec.md)("spec 3"은 3절), [architecture](../architecture.md), [ADR](adr/)입니다.
 SDK의 모든 public 선언에는 KDoc이 있습니다. KDoc은 이 가이드와 일치합니다.
 
@@ -22,6 +22,7 @@ SDK 패키지는 `local.signaldock`, 릴리스 버전은 `0.3.0`, 좌표는 `loc
 10. [문제 해결](#10-문제-해결)
 11. [SDK가 하지 않는 일](#11-sdk가-하지-않는-일)
 12. [코드 샘플](#12-코드-샘플)
+13. [iOS SDK](#13-ios-sdk)
 
 ## 1. 설치
 
@@ -435,7 +436,7 @@ tag는 `SignalDock`입니다. 기본 수준은 `WARN`이므로 기본값에서�
 
 다음은 첫 릴리스의 범위 밖입니다(spec 1 "Goal and scope").
 
-- iOS와 Flutter SDK 없음.
+- Flutter SDK 없음. iOS SDK는 [13절](#13-ios-sdk)에 있습니다.
 - React Native, Flutter, Unity bridge 없음. native와 web 이벤트를 잇는 WebView JavaScript bridge 없음(Q150).
 - 자동 이벤트 없음. 앱이 `track()`을 호출합니다.
 - `identify`와 사용자 식별 없음.
@@ -460,3 +461,136 @@ SDK는 또한 다음을 하지 않습니다.
 이 가이드의 샘플은 [`IntegrationGuideSamplesTest.kt`](../sdk/sdk-android/src/test/kotlin/local/signaldock/IntegrationGuideSamplesTest.kt)에서 복사했습니다. 이 파일의 `sample:`과 `end sample` 표시 사이의 텍스트가 이 가이드의 텍스트입니다. 이 파일은 SDK와 함께 컴파일되며, `cd sdk && ./gradlew test`가 track과 diagnostics 샘플을 실제 Room database에서 실행합니다.
 
 Maven ZIP의 SDK를 쓰는 완전한 앱은 [consumer 앱](../compatibility/consumer-android/)입니다. [`ConsumerApplication.kt`](../compatibility/consumer-android/app/src/sdk/kotlin/local/signaldock/consumer/ConsumerApplication.kt)와 [`MainActivity.kt`](../compatibility/consumer-android/app/src/sdk/kotlin/local/signaldock/consumer/MainActivity.kt)를 보세요(ADR-0009 결정 3).
+
+## 13. iOS SDK
+
+iOS SDK의 동작은 Android SDK 0.3.0과 같습니다(ADR-0047 D1). 이 절의 차이를 두고 3~6절, 8절, 9절이 iOS에도 적용됩니다. 7절(diagnostics)은 한 가지가 다릅니다. iOS에서는 `contractDeprecation`이 `Diagnostics`의 자동 생성 `==`에 포함됩니다. 10절의 오류 종류와 전송 표는 적용되지만 로그 tag와 메시지는 적용되지 않으며(아래 로그 참고), `StorageFailure`는 코드를 담습니다(로그 참고). 1절은 아래 설치가 대신합니다. Swift 타입은 `SignalDockSDK`이고 모듈은 `SignalDock`입니다. 버전은 `0.1.0`입니다(`SignalDockSDK.version`). public API는 `sdk-ios/api/SignalDock.swiftinterface`에 있고, 선언에는 DocC 주석이 있습니다.
+
+**상태.** iOS 릴리스는 아직 없습니다. 첫 tag는 `ios-v0.1.0`이며 tag push에는 owner의 승인이 필요합니다(ADR-0046 결정 8, spec 4절). 그 전에는 ZIP을 직접 빌드하세요([reproduce.md](reproduce.md#ios-release-zip-and-consumer-app) 참고).
+
+### 설치
+
+1. GitHub Release `ios-vX.Y.Z`에서 `signaldock-sdk-ios-X.Y.Z.zip`과 `signaldock-sdk-ios-X.Y.Z.zip.sha256`을 내려받습니다. 두 파일이 있는 폴더에서 `shasum -a 256 -c signaldock-sdk-ios-X.Y.Z.zip.sha256`으로 해시를 확인합니다. 릴리스에는 build provenance attestation도 붙습니다(`gh attestation verify signaldock-sdk-ios-X.Y.Z.zip --repo HyeokjaeChoi/signaldock --signer-workflow HyeokjaeChoi/signaldock/.github/workflows/release-ios.yml`). Gap: 이 명령은 아직 iOS ZIP에서 실행하지 않았습니다(ADR-0047 ticket 13 결과).
+2. 압축을 풉니다. ZIP에는 폴더 하나, `SignalDock/`이 있고 그 안에 `Package.swift`, `Sources/`, `LICENSE`가 있습니다(ADR-0047 ticket 13 결과).
+3. Xcode에서 File, Add Package Dependencies, Add Local을 선택하고 그 폴더를 고릅니다. 앱 target에 product `SignalDock`을 추가합니다. `compatibility/consumer-ios/`가 local package reference로 같은 일을 합니다.
+
+요구 사항:
+
+- iOS 15 이상. package manifest가 `swift-tools-version: 6.0`을 쓰므로 Swift 6 이상의 Xcode가 필요합니다(`sdk-ios/Package.swift`). Xcode 26.6(Swift 6.3, CI toolchain)과 Xcode 27.1(Swift 6.4, 로컬 실행)에서 테스트했습니다. Gap: 더 오래된 Xcode와 Swift 버전은 테스트하지 않았습니다.
+- 외부 의존성 없음(ADR-0047 D7, D13). SDK는 시스템 SQLite를 씁니다.
+- 앱 전용. public 진입점에 `@available(iOSApplicationExtension, unavailable)`가 붙어 있습니다(ADR-0047 D9).
+- `https://` endpoint를 쓰세요. `http://` endpoint는 `allowInsecureEndpoint: true`가 필요하고, App Transport Security도 그 호스트를 허용해야 합니다(ADR-0035). consumer 앱은 로컬 서버를 위해 `NSAllowsLocalNetworking`을 설정합니다.
+- package는 `PrivacyInfo.xcprivacy`를 resource로 포함합니다(ADR-0047 D14).
+
+### 초기화와 수집
+
+`SignalDockConfig`의 필드는 Android와 같습니다. timeout은 초 단위 `TimeInterval`입니다(기본값은 call 30초, connect, read, write 각 10초). `logLevel` 기본값은 `.warn`입니다. `initialize(_:)`는 `async`입니다. 던지는 것은 `CancellationError`뿐입니다(ADR-0047 ticket 08 결과, Q114).
+
+```swift
+import SignalDock
+
+func startSDK() async -> SignalDockSDK? {
+    let config = SignalDockConfig(endpoint: "https://events.example.com", collectionKey: "your-collection-key")
+    do {
+        switch try await SignalDockSDK.initialize(config) {
+        case .success(let sdk):
+            return sdk
+        case .failure(let error):
+            // invalidConfiguration, configurationConflict, storageFailure: 10절 참고.
+            print("SignalDock not ready: \(error)")
+            return nil
+        }
+    } catch {
+        return nil // CancellationError: 호출자가 취소됨
+    }
+}
+
+func onProductViewed(_ sdk: SignalDockSDK, productId: String) async {
+    let result = try? await sdk.track("product_viewed") {
+        $0.property("product_id", productId)
+        $0.property("price_minor", Int64(1999))
+    }
+    // result가 nil이면 호출자가 취소된 경우뿐입니다. 이벤트는 그래도 저장되었을 수 있습니다.
+    _ = result
+}
+```
+
+- `initialize(_:)`는 실행 시작 때 한 번 호출합니다. 예를 들어 `App`이나 `AppDelegate`에서 시작한 `Task`에서 호출합니다. 같은 설정의 호출은 한 번의 시도를 공유합니다. 다른 설정은 `configurationConflict`를 반환합니다.
+- `track(isolation:_:_:)`는 이벤트 이름과 builder closure를 받습니다. builder에는 `String`, `Bool`, `Int`, `Int64`, `Double`용 `property(_:_:)`가 있습니다. ±(2^53 - 1) 밖의 정수는 `invalid(reason: .numberOutOfRange, ...)`를 반환합니다.
+- 이름과 property 규칙은 Android와 같습니다(3절). Swift 때문에 생기는 차이가 둘 있습니다(ADR-0047 ticket 08 결과). Swift `String`은 짝 없는 surrogate를 담을 수 없어서 그 `forbiddenCharacter` 경우는 생기지 않습니다. Swift가 같다고 보는 key(`é`를 한 code point로 쓴 것과 `e` + U+0301로 쓴 것)는 한 key이므로 호출은 `duplicateKey`를 반환합니다.
+- tracking plan 생성기는 Swift도 만듭니다(`tracking-plan/generated/swift/TrackingPlan.swift`, ADR-0047 ticket 11 amendment). 이벤트마다 `SignalDockSDK` extension에 타입이 있는 함수를 하나 추가합니다.
+
+### 결과: `default`를 쓰세요
+
+`TrackResult`의 경우는 `success(eventId:)`, `invalid(reason:field:)`, `optedOut`, `queueFull`, `storageError(message:)`입니다.
+
+**minor 버전은 public 결과 enum에 case를 추가할 수 있습니다**(`TrackResult`, `InvalidReason`, `InitError`, diagnostics enum). 이 enum은 `@frozen`이 아닙니다. Android도 0.2.0에서 `OptedOut`을 추가했습니다(ADR-0047 2026-10-28 amendment, "enum evolution"). 이 enum을 `switch`할 때는 항상 `default` 분기를 두세요. 새 case가 생겨도 빌드가 깨지지 않습니다.
+
+```swift
+func describe(_ result: TrackResult) -> String {
+    switch result {
+    case .success(let eventId): return "stored \(eventId)"
+    case .optedOut: return "collection is off"
+    case .queueFull: return "queue is full"
+    default: return "not stored: \(result)" // invalid, storageError, 이후 버전이 추가하는 case
+    }
+}
+```
+
+### Opt-out
+
+`setOptOut(_:)`는 `async`이고, 상태를 저장하지 못하면 `false`를 반환합니다. `isOptedOut()`은 동기 함수입니다. `clearQueue()`는 지운 이벤트 수를 반환하고, 저장소가 실패하면 `nil`을 반환합니다. 규칙은 Android와 같습니다(8절, ADR-0034). 큐에 있는 이벤트는 남고, `clearQueue()`를 호출하기 전까지 계속 전송됩니다. 상태는 `signaldock/` 디렉터리의 marker 파일이며, 이 디렉터리는 백업에서 제외됩니다.
+
+```swift
+func onUserWithdrawsConsent(_ sdk: SignalDockSDK) async throws -> Bool {
+    let stored = await sdk.setOptOut(true) // 이제 track()은 아무것도 저장하지 않고 .optedOut을 반환합니다
+    let deleted = try await sdk.clearQueue() // 선택 사항. nil은 저장소 실패
+    return stored && deleted != nil
+}
+```
+
+### Diagnostics
+
+`diagnostics()`는 Android와 같은 필드를 가진 `Diagnostics` struct를 반환합니다(7절). 시각은 epoch millisecond(`Int64`)입니다. `DeliveryErrorKind`의 case 이름은 Swift 형식(`.network`, `.rateLimited`, ...)이고, raw value는 Android 이름(`"NETWORK"`, `"RATE_LIMITED"`, ...)입니다.
+
+### iOS의 전송
+
+전송은 6절을 따르되, 다음이 다릅니다(ADR-0047 D8, ticket 09 결과).
+
+- WorkManager가 없고, 주기적 백그라운드 전송도 없습니다. SDK는 `BGTaskScheduler`를 쓰지 않습니다.
+- SDK는 이벤트 20개가 저장되었을 때, 첫 이벤트 10초 뒤, 실행 시작 때, 앱이 foreground로 돌아올 때 전송합니다.
+- 앱이 background로 들어가면 SDK는 `beginBackgroundTask` 안에서 전송을 한 번 시작합니다. 시스템이 task를 끝내면 요청은 취소되고 큐는 그대로 남습니다.
+- 앱이 active인 동안 SDK는 저장된 다음 시도 시각에 timer를 하나 설정합니다. background에서는 timer가 돌지 않습니다.
+- background에서 종료된 뒤 남은 이벤트는 다음 실행 때 전송됩니다.
+
+### 파일과 데이터 보호
+
+SDK는 설치 ID, 큐 database(`-wal`, `-shm`, `-journal` 파일 포함), opt-out marker를 `Application Support/signaldock/`에 둡니다. 이 디렉터리와 설치 ID 파일은 백업에서 제외됩니다(`isExcludedFromBackup`). Apple은 제외한 항목이 복원된 기기에 절대 나타나지 않는다고 보장하지 않으므로, 복원된 기기가 드물게 같은 설치 ID를 가질 수 있습니다(ADR-0047 D6과 2026-10-28 amendment). 앱을 삭제하면 파일도 삭제되므로 재설치하면 새 ID를 받고, 전송하지 못한 이벤트는 사라집니다.
+
+SDK는 이 파일들에 Data Protection class `completeUntilFirstUserAuthentication`을 지정합니다(ADR-0047 issue 20 amendment). 재시작 뒤 첫 잠금 해제 전에는 시스템이 앱이 이 파일을 열게 하지 않습니다. 앱이 그보다 일찍 시작하면(예를 들어 background launch) `initialize(_:)`는 `.failure(.storageFailure(message:))`를 반환하고 instance는 없습니다. 이 구간에서 수집하려는 이벤트는 버려집니다. 첫 잠금 해제 뒤에 `initialize(_:)`를 다시 호출하세요. Gap: Simulator는 Data Protection을 적용하지 않으므로, 이 실패와 파일의 class는 실제 기기에서 확인하지 않았습니다(ADR-0047 ticket 07 결과).
+
+### Privacy manifest
+
+SDK는 `PrivacyInfo.xcprivacy`를 포함합니다(ADR-0047 D14). tracking 없음, tracking domain 없음. 수집 데이터 유형은 `DeviceID`(설치 ID)와 `ProductInteraction`(앱의 이벤트)이며, 둘 다 사용자와 연결되지 않고, tracking에 쓰이지 않으며, 목적은 Analytics입니다. SDK는 required-reason API를 쓰지 않습니다.
+
+**이벤트 property는 앱의 데이터입니다.** SDK는 `property(_:_:)`에 무엇을 넣는지 알 수 없습니다. property가 Apple이 정한 다른 데이터 유형(예: 이메일 주소, 위치, 구매 내역)을 담으면, 그 유형을 앱 자신의 privacy manifest와 App Store 개인정보 답변에 선언하세요. SDK의 manifest는 위의 데이터 유형만 다룹니다.
+
+### 로그
+
+SDK는 `os.Logger`로 기록하며 subsystem은 `local.signaldock`, category는 `SignalDock`입니다(`sdk-ios/Sources/SignalDock/Internal/Init/Logging.swift`). Console.app이나 `log stream --predicate 'subsystem == "local.signaldock"'`로 보세요. 10절의 Logcat tag를 대신합니다. 메시지는 고정 문구의 닫힌 집합이라서 이벤트 내용, 이벤트 이름, 설치 ID, collection key, HTTP body, 시스템 오류 문구를 담는 메시지는 없습니다. `logLevel` `.debug`는 debug, warning, error 메시지를 쓰고, `.info`와 `.warn`은 warning과 error, `.error`는 error만 쓰며, `.none`은 아무것도 쓰지 않습니다. 기본값은 `.warn`입니다.
+
+| 수준 | 메시지 |
+| --- | --- |
+| debug | `initialized`; `opt-out set`; `delivery attempt started`; `delivery attempt finished`; `delivery failed; see diagnostics for the kind` |
+| warning | `opt-out state could not be stored`; `installation id file is invalid; generating a new id`; `track storage failed`; `track cancelled during storage; the event may already be stored`; `diagnostics storage failed`; `clearQueue storage failed`; `delivery paused by a configuration, authentication or contract error; rechecking every 30 minutes`; `delivery resumed after a successful ACK`; `delivery run failed in storage; the queue is unchanged`; `drop counter could not be written; the drop is not counted`; `client report failed in storage; the counters are unchanged`; `server contract version is deprecated; see diagnostics for the dates` |
+
+WorkManager 메시지는 없습니다. deprecation 메시지에는 날짜가 없습니다. 날짜는 `diagnostics()`에서 읽으세요.
+
+`InitError.storageFailure(message:)`와 `TrackResult.storageError(message:)`는 `StorageError(<kind>, <code>)` 또는 다른 오류의 타입 이름을 담습니다. 코드만 담으며, Android처럼 예외 클래스 이름이 아닙니다(ADR-0047 ticket 08 결과).
+
+### 알려진 한계
+
+- 테스트에 쓸 iOS 15 runtime이 없었으므로, SDK는 iOS 15용으로 빌드되지만 테스트는 더 새로운 Simulator runtime에서만 실행했습니다(ADR-0047 "iOS 15 Simulator fallback").
+- 실제 기기에서는 확인하지 않았고, 백업 복원과 디스크 가득 참도 확인하지 않았습니다(ADR-0047 "Known limits").
+- source ZIP에는 코드 서명이 없습니다. Apple이 서명 확인을 명시한 대상은 binary 의존성뿐입니다(ADR-0047 "Known limits").
+- 0.1.0의 범위 밖: remote SwiftPM, CocoaPods, XCFramework, app extension, Objective-C와 completion-handler API, `BGTaskScheduler`, Flutter, React Native, Unity, WebView bridge(ADR-0047 Context).

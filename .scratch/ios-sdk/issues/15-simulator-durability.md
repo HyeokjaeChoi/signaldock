@@ -1,6 +1,7 @@
 # 15. Simulator durability script
 
-Status: claimed
+Status: resolved
+Execution: Done (PR #265, 2026-10-29 UTC)
 Type: task
 Blocked by: 14
 
