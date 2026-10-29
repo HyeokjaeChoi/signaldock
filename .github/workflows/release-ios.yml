@@ -1,0 +1,112 @@
+# iOS ticket 13 (ADR-0047 D11, D13 item 8): a pushed tag ios-vX.Y.Z builds the Swift package source ZIP and creates the
+# GitHub Release. Same shape as release.yml (ADR-0024) and the same attestation (ADR-0039). The glob 'v*.*.*' of
+# release.yml does not match a tag that starts with 'ios-', and this glob does not match 'vX.Y.Z'.
+name: release-ios
+
+on:
+  push:
+    tags: ['ios-v*.*.*']
+
+permissions: {}
+
+# One run per tag; a second run waits and never cancels the first (a cancelled publish could leave half a release).
+concurrency:
+  group: release-ios-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 75
+    permissions:
+      contents: read
+    env:
+      TAG: ${{ github.ref_name }}
+      IOS_WERROR: '1'
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! [[ "$TAG" =~ ^ios-v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "error: tag '$TAG' is not ios-vMAJOR.MINOR.PATCH (pre-release tags are not supported)" >&2; exit 1
+          fi
+          # Same comparison as a local run; exits before any gate or build.
+          scripts/build-ios-release-zip.sh "${TAG#ios-v}" --check
+          # Release only commits that are on main.
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main \
+            || { echo "error: $TAG is not on main" >&2; exit 1; }
+          [ -f "docs/releases/$TAG.md" ] \
+            || { echo "error: release notes docs/releases/$TAG.md are required; add them and move the tag" >&2; exit 1; }
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "error: a release for $TAG already exists; the workflow never overwrites one" >&2; exit 1
+          fi
+      - run: sudo xcode-select -s /Applications/Xcode_26.6.app # same as ios-test in repo-rules.yml
+      # The gates of ios-test and ios-sanitize (repo-rules.yml), run again on the tagged commit (ADR-0047 D13).
+      - run: scripts/verify-ios.sh lint
+      - run: scripts/verify-ios.sh tsan
+      - run: scripts/verify-ios.sh asan
+      - run: scripts/verify-ios.sh analyze
+      - run: scripts/verify-ios.sh manifest
+      - run: scripts/verify-ios.sh api
+      - name: Build ZIP and checksum
+        run: |
+          scripts/build-ios-release-zip.sh "${TAG#ios-v}"
+          cp "docs/releases/$TAG.md" dist/RELEASE_NOTES.md
+      # The ZIP must be a usable package: build the unzipped folder for the Simulator, as a host would.
+      - name: Build the unzipped package
+        run: |
+          UNZIP="$RUNNER_TEMP/unzipped"
+          mkdir "$UNZIP"
+          unzip -q "dist/signaldock-sdk-ios-${TAG#ios-v}.zip" -d "$UNZIP"
+          cd "$UNZIP/SignalDock"
+          xcodebuild build -scheme SignalDock -destination 'generic/platform=iOS Simulator' -derivedDataPath "$UNZIP/DerivedData"
+          # The privacy manifest (ADR-0047 D14) must be in the resource bundle that a host builds from the ZIP.
+          test -n "$(find "$UNZIP/DerivedData" -path '*SignalDock_SignalDock.bundle/PrivacyInfo.xcprivacy')" \
+            || { echo "error: PrivacyInfo.xcprivacy is not in the built SignalDock resource bundle" >&2; exit 1; }
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  # Separate job: only this one gets a write token, and it runs no project code.
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      id-token: write      # Sigstore signing certificate (OIDC)
+      attestations: write  # store the attestation
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: dist
+      # The tag must still point at the commit that was built (a moved tag would publish a ZIP of another commit).
+      - name: Check the tag still points to the built commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG_SHA="$(gh api "repos/$GITHUB_REPOSITORY/commits/$TAG" --jq .sha)"
+          [ "$TAG_SHA" = "$GITHUB_SHA" ] \
+            || { echo "error: $TAG now points to $TAG_SHA, but the ZIP was built from $GITHUB_SHA; tag again" >&2; exit 1; }
+      # Before the release is created: if this step fails, no release exists and the job can re-run.
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/*.zip
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # gh fails if the release exists; --verify-tag fails if the tag is not on the remote.
+          gh release create "$TAG" dist/*.zip dist/*.sha256 \
+            --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --title "SignalDock iOS SDK $TAG" --notes-file dist/RELEASE_NOTES.md

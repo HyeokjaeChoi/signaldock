@@ -34,6 +34,17 @@ gh attestation verify signaldock-sdk-android-X.Y.Z-maven.zip --repo HyeokjaeChoi
 
 Use GitHub CLI 2.102.0 or newer. Versions 2.51.0 to 2.101.0 match `--signer-workflow` as a prefix (GHSA-wjmr-j3rp-mh2g), and older versions have other attestation check flaws (GHSA-mm27-mwq9-fr5g). Both commands must exit 0. In a terminal they print `Verification succeeded!`; in a non-interactive shell they can print nothing, so check the exit code (add `--format json` to see the subject digest and the signer workflow, as in issue 78). Record the result in the PR or issue of the release. `v0.2.0` and earlier have no attestation. `v0.3.0` is the first release with an attestation. Its first run passed: release workflow run 39634744975 produced the attestation, and the stricter command passed on the released ZIP on 2026-10-21 UTC ([issue 78](../../.scratch/signaldock/issues/78-release-v0-3-0.md)).
 
+## iOS SDK release
+
+A pushed tag `ios-vX.Y.Z` builds `signaldock-sdk-ios-X.Y.Z.zip` (a Swift package source folder `SignalDock/`) with its `.sha256` file and creates the GitHub Release ([`release-ios.yml`](../../.github/workflows/release-ios.yml), [ADR-0047](../adr/0047-ios-sdk.md) D11 and "Ticket 13 results"). The Android workflow does not run on these tags.
+
+1. Change `SignalDockSDK.version` in `sdk-ios/Sources/SignalDock/SignalDockSDK.swift` to `X.Y.Z`. It is the one source of the iOS version.
+2. Write the release notes in `docs/releases/ios-vX.Y.Z.md` (required, like `vX.Y.Z.md`). Merge to `main`.
+3. Check locally: `scripts/build-ios-release-zip.sh X.Y.Z` writes `dist/`. The ZIP is reproducible: the same commit gives the same SHA-256.
+4. The owner approves the tag. Then `git tag ios-vX.Y.Z <merge-commit>` and `git push origin ios-vX.Y.Z`.
+
+The workflow fails, before any gate runs, when the tag is not `ios-vMAJOR.MINOR.PATCH`, differs from `SignalDockSDK.version`, is not on `main`, has no notes file, or already has a release. Then it runs the iOS gates, builds the ZIP, builds the unzipped package for the Simulator, and the `publish` job attests the ZIP and creates the release. Verify the attestation as in the section above, with `--signer-workflow HyeokjaeChoi/signaldock/.github/workflows/release-ios.yml`.
+
 ## Dependency updates
 
 Renovate proposes weekly updates ([`renovate.json5`](../../.github/renovate.json5), [ADR-0031](../adr/0031-renovate-dependency-updates.md)). It reads the shared catalog `gradle/libs.versions.toml`.
