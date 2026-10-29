@@ -163,7 +163,8 @@ def size(work, out):
             f.write("\n".join(info[arm]["_dylibs"]) + "\n")
         added = sorted(set(info["sdk"]["_dylibs"]) - set(info["nosdk"]["_dylibs"]))
         f.write("== linked with the SDK and not without it\n" + ("\n".join(added) if added else "(none)") + "\n")
-    json.dump(info, open(out / ".size.json", "w"), indent=1)
+    with open(out / ".size.json", "w") as f:
+        json.dump(info, f, indent=1)
 
 
 # ---------------------------------------------------------------- run
@@ -180,12 +181,12 @@ class Sim:
         sh("xcrun", "simctl", "install", self.udid, str(app))
         self.data[arm] = Path(sh("xcrun", "simctl", "get_app_container", self.udid, BUNDLE[arm], "data").strip())
 
-    def launch(self, arm, burst, idle, from_launch=False):
+    def launch(self, arm, burst, idle, from_launch=False, settle=False):
         """One cold start. Returns the probe record plus wall time of `simctl launch` and the footprint after the idle time."""
         result = self.data[arm] / "Documents/hostcost.json"
         result.unlink(missing_ok=True)
         self.loads.append(os.getloadavg()[0])
-        env = dict(self.env, SIMCTL_CHILD_HOSTCOST_BURST=str(burst))
+        env = dict(self.env, SIMCTL_CHILD_HOSTCOST_BURST=str(burst), SIMCTL_CHILD_HOSTCOST_SETTLE="1" if settle else "0")
         t0 = time.perf_counter()
         line = sh("xcrun", "simctl", "launch", "--terminate-running-process", self.udid, BUNDLE[arm], env=env)
         wall_ms = (time.perf_counter() - t0) * 1000
@@ -198,7 +199,7 @@ class Sim:
                 if rec.get("done") and "first_view_after_process_start_ms" in rec:
                     break
             except (FileNotFoundError, ValueError):
-                pass
+                pass  # the app has not written the file yet, or we read it half-written: poll again
             time.sleep(0.25)
         else:
             sys.exit(f"error: the {arm} app did not finish (burst {burst}); record: {rec}")
@@ -216,7 +217,8 @@ class Sim:
         tmp = f"/tmp/.ioscost-fp-{os.getpid()}.json"
         sh("footprint", "-j", tmp, str(pid))
         try:
-            return json.load(open(tmp))["processes"][0]["footprint"]
+            with open(tmp) as f:
+                return json.load(f)["processes"][0]["footprint"]
         finally:
             os.unlink(tmp)
 
@@ -248,11 +250,19 @@ def run(work, out, udid, runs, burst_runs, burst, idle, version, zip_path):
                 sys.exit(f"error: initialize() did not succeed in run {i}: {r.get('init_result')}")
             startup.append((arm, i, r))
         print(f"  run {i} done")
+    print("=== 3b. main-thread time of initialize() (%d settled launches per arm) ===" % runs)
+    inits = []
+    for i in range(1, runs + 1):
+        for arm in (ARMS if i % 2 else ARMS[::-1]):
+            r = sim.launch(arm, 0, 0, settle=True)
+            if arm == "sdk" and r.get("init_result") != "success":
+                sys.exit(f"error: initialize() did not succeed in settled run {i}: {r.get('init_result')}")
+            inits.append((arm, i, r))
     print("=== 4. memory and track() cost after %d track() calls (%d runs per arm) ===" % (burst, burst_runs))
     bursts = []
     for i in range(1, burst_runs + 1):
         for arm in (ARMS if i % 2 else ARMS[::-1]):
-            r = sim.launch(arm, burst, idle)
+            r = sim.launch(arm, burst, idle, settle=True)
             if arm == "sdk" and (r.get("init_result") != "success" or r.get("track_failed", 1) != 0):
                 sys.exit(f"error: initialize() or track() failed in burst run {i}: {r}")
             bursts.append((arm, i, r))
@@ -261,17 +271,18 @@ def run(work, out, udid, runs, burst_runs, burst, idle, version, zip_path):
 
     write_csv(out / "startup.csv",
               ("arm", "run", "launch_wall_ms", "first_view_after_process_start_ms", "init_started_after_process_start_ms",
-               "footprint_idle_bytes"),
+               "init_wall_ms", "footprint_idle_bytes"),
               [(a, i, f"{r['launch_wall_ms']:.1f}", f"{r['first_view_after_process_start_ms']:.1f}",
-                f"{r['init_started_after_process_start_ms']:.1f}", r["footprint_bytes"]) for a, i, r in startup])
+                f"{r['init_started_after_process_start_ms']:.1f}", f"{ms(r['init_wall_ns']):.2f}", r["footprint_bytes"]) for a, i, r in startup])
     write_csv(out / "init.csv", ("arm", "run", "init_main_ns", "init_wall_ns"),
-              [(a, i, r["init_main_ns"], r["init_wall_ns"]) for a, i, r in startup])
+              [(a, i, r["init_main_ns"], r["init_wall_ns"]) for a, i, r in inits])
     write_csv(out / "memory-burst.csv", ("arm", "run", "footprint_after_burst_bytes"),
               [(a, i, r["footprint_bytes"]) for a, i, r in bursts])
     samples = [(i, j, m, w) for a, i, r in bursts if a == "sdk" for j, (m, w) in enumerate(r["track_main_wall_ns"])]
     write_csv(out / "track-samples.csv", ("burst_run", "call", "main_ns", "wall_ns"), samples)
 
-    sz = json.load(open(out / ".size.json"))
+    with open(out / ".size.json") as f:
+        sz = json.load(f)
     (out / ".size.json").unlink()
     S = lambda arm, f: [f(r) for a, _, r in startup if a == arm]
     B = lambda arm: [r["footprint_bytes"] for a, _, r in bursts if a == arm]
@@ -279,10 +290,11 @@ def run(work, out, udid, runs, burst_runs, burst, idle, version, zip_path):
     first_view = lambda arm: S(arm, lambda r: r["first_view_after_process_start_ms"])
     wall = lambda arm: S(arm, lambda r: r["launch_wall_ms"])
     fp = lambda arm: S(arm, lambda r: r["footprint_bytes"])
-    init_main = [ms(r["init_main_ns"]) for a, _, r in startup if a == "sdk"]
-    init_wall = [ms(r["init_wall_ns"]) for a, _, r in startup if a == "sdk"]
-    floor_main = [ms(r["init_main_ns"]) for a, _, r in startup if a == "nosdk"]
-    floor_wall = [ms(r["init_wall_ns"]) for a, _, r in startup if a == "nosdk"]
+    init_main = [ms(r["init_main_ns"]) for a, _, r in inits if a == "sdk"]
+    cold_init_wall = [ms(r["init_wall_ns"]) for a, _, r in startup if a == "sdk"]
+    init_wall = [ms(r["init_wall_ns"]) for a, _, r in inits if a == "sdk"]
+    floor_main = [ms(r["init_main_ns"]) for a, _, r in inits if a == "nosdk"]
+    floor_wall = [ms(r["init_wall_ns"]) for a, _, r in inits if a == "nosdk"]
     tm = [ms(m) for _, _, m, _ in samples]
     tw = [ms(w) for _, _, _, w in samples]
     first_calls = [ms(r["track_main_wall_ns"][0][0]) for a, _, r in bursts if a == "sdk"]
@@ -317,7 +329,8 @@ def run(work, out, udid, runs, burst_runs, burst, idle, version, zip_path):
         "arms": {a: {"binary_sha256": sz[a]["sha256_binary"], **{k: v for k, v in sz[a].items() if k != "sha256_binary" and not k.startswith("_")}}
                  for a in ARMS},
     }
-    json.dump(meta, open(out / "meta.json", "w"), indent=2)
+    with open(out / "meta.json", "w") as f:
+        json.dump(meta, f, indent=2)
     (out / "meta.json").write_text((out / "meta.json").read_text() + "\n")
 
     added_libs = sorted(set(sz["sdk"]["_dylibs"]) - set(sz["nosdk"]["_dylibs"]))
@@ -375,7 +388,7 @@ The baseline package object is the empty stand-in. {deps_text} Dead code strippi
 
 ## Startup ({runs} cold starts per arm, interleaved; {WARMUP} warm-up launches not counted)
 
-Cold start = `simctl launch --terminate-running-process`, then the app writes the time from the kernel process start record to the first `onAppear` of the root view. `launch wall` is the time of the `xcrun simctl launch` call itself.
+Cold start launches (the {runs} runs of this table): the app is the measurement build with `initialize()` at its shipped place, `AppModel.init`, before the first view (the probe adds no delay in these launches). Each run is `simctl launch --terminate-running-process`; the app writes the time from the kernel process start record to the first `onAppear` of the root view, so the SDK arm's `initialize()` work that runs before the first view is inside the figure. `launch wall` is the time of the `xcrun simctl launch` call itself. Memory after launch is read in these launches too. `initialize()` result-ready (wall) time in these launches: SDK arm median {median(cold_init_wall):.1f} ms, p95 {pct(cold_init_wall, 95):.1f} ms (`startup.csv`, `init_wall_ms`).
 
 | Metric (ms) | Without SDK p50 / p95 / max | With SDK p50 / p95 / max |
 | --- | --- | --- |
@@ -386,11 +399,11 @@ Paired difference (with minus without, run by run), process start to first view:
 
 ## `initialize()` and `track()` on the main thread (SDK arm)
 
-What "main" measures: the time on the main actor from the call until the calling task first suspends, or until the call returns if it never suspends (never more than wall). A sentinel task is queued on the main actor right before the call and runs when the caller first suspends. For `initialize()` the probe first waits for the first view plus a 500 ms settle time, so the main-actor queue is idle and the sentinel does not wait behind SwiftUI work; the floor row is the same probe around the empty stand-in and shows the cost of the method itself. This is the quantity of ADR-0020 item 2 (main-thread time until the first suspension). It includes call setup and the class loading the call causes, so it is an upper bound for the SDK alone. `wall` runs until the result is ready (mostly off the main thread).
+Settled launches (separate launches, {runs} per arm, interleaved; they are not used for cold start or memory after launch): the probe waits for the first view and a 500 ms settle time, then calls `initialize()`, so the main-actor queue is idle. "main" is the time on the main actor from the call until the calling task first suspends, or until the call returns if it never suspends (never more than wall). A sentinel task is queued on the main actor right before the call and runs when the caller first suspends. In the cold-start launches the sentinel would wait behind SwiftUI work, which is why they are not used for this figure. This is the quantity of ADR-0020 item 2. It includes call setup and the class loading the call causes, so it is an upper bound for the SDK alone. The floor row is the same probe around the empty stand-in. The `track()` rows come from the burst launches, which use the same settled mode (idle queue). `wall` runs until the result is ready (mostly off the main thread).
 
 | Call | n | main p50 / p95 / max, ms | wall p50 / p95 / max, ms |
 | --- | --- | --- | --- |
-| `SignalDockSDK.initialize` (cold start) | {len(init_main)} | {fmt(stats(init_main), 3)} | {fmt(stats(init_wall), 3)} |
+| `SignalDockSDK.initialize` (settled launches) | {len(init_main)} | {fmt(stats(init_main), 3)} | {fmt(stats(init_wall), 3)} |
 | same probe around the empty stand-in `initialize` (floor of the method) | {len(floor_main)} | {fmt(stats(floor_main), 3)} | {fmt(stats(floor_wall), 3)} |
 | `track` (`productViewed`, {burst} calls per run, {burst_runs} runs, pooled) | {len(tm)} | {fmt(stats(tm), 3)} | {fmt(stats(tw), 3)} |
 

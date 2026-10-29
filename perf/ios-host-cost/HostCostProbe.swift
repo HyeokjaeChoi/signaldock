@@ -3,13 +3,16 @@
 // `SignalDockSDK.initialize(config)` with `HostCostProbe.initialize(config)`, and adds `.onAppear` to the root view.
 // No checked-in app source and no Release build of the repository contains it.
 //
-// What "main" measures: the time on the main actor from the call until the calling task first suspends, or until the
-// call returns if it never suspends (never more than wall time). Before each measured `initialize()` the probe waits for
-// the first view and a settle time of 500 ms, so the main-actor queue is idle and the sentinel task (queued on the main
-// actor right before the call; it runs when the caller first suspends) does not wait behind SwiftUI work. This is the same
-// quantity as the Android `main_ns` of ADR-0020 item 2 (main-thread time until the first suspension). It includes the call
-// setup and the class loading the call causes, so it is an upper bound for the SDK alone. `track()` calls run on the main
-// actor with an idle queue. Wall time runs until the result is ready.
+// Two modes, chosen by the launch environment (HOSTCOST_SETTLE):
+// - 0 (default): `initialize()` runs where the shipped app calls it (AppModel.init, before the first view). Used for
+//   cold start (process start to first view, with initialize inside, ADR-0020 item 4) and for memory after launch. The
+//   main/wall values of this mode are recorded but the main value is not used: the sentinel waits behind SwiftUI work.
+// - 1: the probe waits for the first view and a 500 ms settle time before it calls `initialize()`, so the main-actor
+//   queue is idle and the sentinel task (queued on the main actor right before the call; it runs when the caller first
+//   suspends) measures the main-thread time of the call: the time from the call until the caller first suspends, or
+//   until the call returns if it never suspends (never more than wall). This is ADR-0020 item 2. It includes call setup
+//   and the class loading the call causes, so it is an upper bound for the SDK alone. `track()` calls (burst runs) use
+//   this mode too, so they run with an idle queue. Wall time runs until the result is ready.
 import Darwin
 import Foundation
 
@@ -62,9 +65,12 @@ enum HostCostProbe {
 
   static func initialize(_ config: SignalDockConfig) async throws(CancellationError) -> InitResult {
     let burst = Int(ProcessInfo.processInfo.environment["HOSTCOST_BURST"] ?? "") ?? 0
-    // Idle main-actor queue (see the header): first view, then a settle time.
-    while !firstViewDone { try? await Task.sleep(nanoseconds: 20_000_000) }
-    try? await Task.sleep(nanoseconds: 500_000_000)
+    let settle = ProcessInfo.processInfo.environment["HOSTCOST_SETTLE"] == "1"
+    out["settled"] = settle
+    if settle {
+      while !firstViewDone { try? await Task.sleep(nanoseconds: 20_000_000) }
+      try? await Task.sleep(nanoseconds: 500_000_000)
+    }
     out["init_started_after_process_start_ms"] = Date().timeIntervalSince1970 * 1000 - processStartMs()
     let (result, mainNs, wallNs) = try await timed { () async throws(CancellationError) -> InitResult in
       try await SignalDockSDK.initialize(config)
