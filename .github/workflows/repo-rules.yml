@@ -194,6 +194,20 @@ jobs:
       - run: sudo xcode-select -s /Applications/Xcode_26.6.app # ADR-0047: the default of macos-26
       - run: scripts/verify-ios.sh asan
 
+  # The independent iOS consumer app (ADR-0047 D12, D13 item 9): a fresh release ZIP is unzipped and compatibility/consumer-ios
+  # builds in Debug and Release for the Simulator from that folder only. The iOS form of `consumer-r8`. No Simulator run.
+  ios-consumer:
+    runs-on: macos-26
+    timeout-minutes: 30
+    env:
+      IOS_WERROR: '1'
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - run: sudo xcode-select -s /Applications/Xcode_26.6.app # ADR-0047: the default of macos-26
+      - run: scripts/verify-consumer-ios.sh
+
   # Checks every gradle-wrapper.jar in the checkout (sdk, server, contract-check, compatibility/consumer-android)
   # against Gradle's published checksums. A changed or unknown wrapper jar fails the job. Pinned by commit SHA (ADR-0024 item 4).
   gradle-wrapper:

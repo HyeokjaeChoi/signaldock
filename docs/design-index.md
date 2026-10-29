@@ -178,7 +178,7 @@ ADRs:
 - ADR-0009 (`docs/adr/0009-maven-zip-and-consumer-app.md`)
 - ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for `src/sdk`, `src/nosdk`, and `-Psignaldock.sdk=false` (issue 36)
 - ADR-0023 (`docs/adr/0023-ci-device-tests-and-size-budget.md`), for the APK size budget that builds the consumer app with and without the SDK (issue 40)
-- ADR-0047 (`docs/adr/0047-ios-sdk.md`), for the planned `consumer-ios` app (D12) and its size budget (D15)
+- ADR-0047 (`docs/adr/0047-ios-sdk.md`), for `consumer-ios` (D12, "Ticket 14 results"; `scripts/verify-consumer-ios.sh`, job `ios-consumer` in `.github/workflows/repo-rules.yml`, a step in `.github/workflows/release-ios.yml`; it uses the generated `tracking-plan/generated/swift/TrackingPlan.swift`) and its size budget (D15)
 
 Spec (`.scratch/signaldock/spec.md`):
 - 6. User screens and distribution, Reproduction and deliverables

@@ -1,6 +1,7 @@
 # 09. iOS delivery: sender, ACK, retry, triggers
 
-Status: claimed
+Status: resolved
+Execution: Done (PR #258, 2026-10-29 UTC)
 Type: task
 Blocked by: 02, 04, 08
 
@@ -22,3 +23,7 @@ Verification:
 Corpus against a local Compose stack on origin/main (9d11c66 plus this PR's corpus change): `docker compose -p sdverify --env-file <.env.example copy, ports 18080/15432> up -d --build --wait db server`, then each of the 9 files in `fixtures/sdk-wire/ios/` as the body of `POST http://127.0.0.1:18080/v1/events:batch` (`Authorization: Bearer <collection key>`, `SignalDock-Contract-Version: 1`, `Content-Type: application/json`). All 9 answered HTTP 200 with every item `accepted` and none rejected (80 events: 1, 2, 16, 50, 4, 2, 1, 1, 3 per file in file name order). The `events` table had 80 rows, all `sdk_platform = 'ios'`; `double_tiny` of `all-property-types` is stored as the value 5E-324. A second send of the same files stored no new row. `docker compose -p sdverify down -v` removed the stack; the `signaldock-phone` project was not touched.
 
 Not run: the SDK itself against Compose. It needs a host app (ticket 14), so this ticket stays `claimed`.
+
+## Follow-up 2026-10-29
+
+The last open check, the SDK itself against Compose, was done in ticket 14 (consumer app, Simulator, `-p sdverify14`): 4 events delivered, `lastAck` accepted 4, server platform `ios`. See ADR-0047 "Ticket 14 results". All completion criteria are met.
