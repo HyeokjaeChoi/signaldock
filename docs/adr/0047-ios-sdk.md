@@ -345,3 +345,34 @@ Verification (2026-10-29, Xcode 27.1, Swift 6.4, macOS 26, iOS 27.0 Simulator):
 The Dashboard of the same stack lists the four events with platform `iOS` (screenshot in the ticket 14 file).
 
 Not verified here: the macOS runner steps (the new `ios-consumer` job and the `release-ios.yml` step have not run on GitHub; the runner has Xcode 26.6, local was Xcode 27.1); an iOS 15 runtime; a device; the size budget (D15).
+
+## Amendment (2026-10-29, ticket 16, measurement method)
+
+Code: `scripts/measure-ios-sdk.sh`, `perf/ios_host_cost.py`, `perf/ios-host-cost/` (probe and baseline package). Result: `perf/sdk-results/ios-0.1.0-20261029/` (`summary.md`, CSV files, `meta.json`). It is the iOS form of [ADR-0020](0020-sdk-host-app-cost.md) and follows D15. Choices marked "decided here" are for the owner to check; they add no product behavior and change no SDK code or checked-in app source.
+
+- **Baseline arm (decided here).** `perf/ios-host-cost/baseline` is an empty package named `SignalDock` with the same public signatures that the consumer app and the generated tracking plan use. The script puts it at `.sdk/SignalDock` in a temporary copy of `compatibility/consumer-ios`, so the app sources are byte-identical in both arms and the baseline binary holds no SDK code. A missing signature fails the baseline build. Rejected: removing the SDK calls from a source copy (the arms would differ in app code, and a patch of many lines breaks silently); editing the checked-in app or `project.pbxproj` (ticket 15 edits the same app).
+- **Size.** `xcodebuild archive`, Release, `generic/platform=iOS`, `ARCHS=arm64`, `CODE_SIGNING_ALLOWED=NO`, with a linker map. The archive step strips symbols, like a store build. Reported: `.app` folder bytes, main binary bytes, Mach-O segments (`size -m`), the `.ipa` form (the `.app` zipped in `Payload/`, level 9, unencrypted; a store download is larger, because FairPlay encryption makes `__TEXT` compress worse), the resource bundle, linked dynamic libraries (`otool -L`), and the SDK share from the link map (bytes the linker attributes to the package object `SignalDock.o`, by section). The SDK is a static link; the main binary delta is the number a budget gate (ticket 17) can use. No dynamic library or `Frameworks` folder is added by the SDK; it links UIKit, CoreFoundation, and system `libsqlite3`.
+- **Host cost on the Simulator (decided here: measurement build).** The checked-in Release app has no measurement hook. The script builds a separate measurement build of each arm (Release, iphonesimulator, arm64) from a temporary copy: it appends `perf/ios-host-cost/HostCostProbe.swift` to `ConsumerApp.swift`, replaces `SignalDockSDK.initialize(config)` with `HostCostProbe.initialize(config)`, and adds `.onAppear` to the root view. It fails if either anchor is not found exactly once. The probe writes `Documents/hostcost.json`. Rejected: `#if DEBUG` hooks (Debug is not the shipped code path) and measuring only from outside (`initialize()` and `track()` main-thread time is not visible from outside).
+- **Main-thread time.** As ADR-0020 item 2: time from the call until the calling task first suspends, taken with a sentinel task queued on the main actor before the call. `track()` runs on the caller's actor, so its main-actor part is measured. For `initialize()` at startup the sentinel can wait behind other main-actor jobs (SwiftUI work), so the figure is an upper bound; the same probe around the empty stand-in gives the floor of the method, and the summary prints both. 500 `track()` calls per burst run, 10 runs, pooled.
+- **Cold start and memory (outside the app).** Per run: `simctl launch --terminate-running-process`; the probe reports the time from the kernel process start record to the first `onAppear`; the wall time of `simctl launch` is also recorded. Memory is `footprint -j <pid>` (physical footprint) after 5 s idle (20 runs) and after the burst plus 5 s idle (10 runs). Runs alternate between arms (sdk first in odd runs), 2 warm-up launches per arm, p50 is the median, p95 is nearest rank, paired differences, as ADR-0020 item 4.
+- **Endpoint.** `http://127.0.0.1:9` and a dummy key, as ADR-0020: `initialize()` succeeds, nothing answers, no event leaves the Mac.
+- **Simulator.** The script creates and deletes its own Simulator (newest iPhone Pro type, latest iOS runtime) unless `IOSCOST_DEVICE` names one. Parameters: `IOSCOST_RUNS`, `IOSCOST_BURST_RUNS`, `IOSCOST_BURST`, `IOSCOST_IDLE`.
+
+Result (Simulator iPhone 18 Pro, iOS 27.0, Xcode 27.1, Apple M2 Pro, SDK 0.1.0, revision 77151d4 with a clean tree; the Mac was shared with other work, load average 88 at the start):
+
+| Metric | Without SDK | With SDK | Delta |
+| --- | --- | --- | --- |
+| `.app` bytes | 164,917 | 556,698 | +391,781 |
+| main binary bytes | 163,896 | 552,528 | +388,632 |
+| `.ipa` form bytes | 47,534 | 201,007 | +153,473 |
+| `SignalDock.o` in the link map, bytes | 5,031 (stand-in) | 318,667 | +313,636 |
+| resource bundle bytes | 0 | 3,149 | +3,149 |
+| process start to first view p50 / p95, ms (n=20) | 411.5 / 1556.1 | 414.2 / 442.6 | paired median -4.7 |
+| `initialize()` main thread p50 / p95 / max, ms (n=20) | floor 8.7 / 10.3 / 10.7 | 10.0 / 23.0 / 24.5 | |
+| `track()` main thread p50 / p95 / max, ms (n=5000) | not applicable | 0.033 / 0.044 / 7.3 | |
+| footprint 5 s after start, median MiB (n=20) | 21.26 | 21.76 | +0.52 (paired -1.67 to +2.95) |
+| footprint 5 s after 500 `track()`, median MiB (n=10) | 21.35 | 22.02 | +0.69 (paired +0.28 to +0.89) |
+
+An earlier full run of the same script (load average 450) gave the same sizes and, for `initialize()` main-thread time, p50 17.2 and p95 19.3 ms against a floor of 9.3 ms; the `track()` p50 was 0.038 ms. So `initialize()` costs about 1 to 8 ms of main-thread time above the floor at p50, depending on host load, and a `track()` call costs about 0.03 to 0.04 ms on the main actor (the first call of a run about 1.1 to 1.3 ms). Cold start shows no SDK effect at the median. The large p95 and max values of single arms (for example 1,556 ms for the baseline) come from the busy host, not from the SDK.
+
+Limits: Simulator numbers on a Mac that ran other work, not device numbers; the Simulator uses host CPU and host memory accounting. One Mac, two full runs. The size build is the archive of the unchanged app; the measurement build is not a shipped artifact. The baseline arm's app code is slightly smaller than the SDK arm's because it calls an empty stand-in. Not measured: a physical iPhone (D15), a signed store `.ipa`, App Thinning, time until the first event is sent. The size budget gate and its limit are ticket 17.
