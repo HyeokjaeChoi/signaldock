@@ -1,8 +1,9 @@
 # 03. Dashboard: platform display and filter
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: 01, 02
+Execution: Done (PR #249, 2026-10-28 UTC)
 
 ## Scope and completion criteria
 
@@ -17,3 +18,7 @@ Spec D5. ADR-0007, ADR-0015 (languages), ADR-0016 (style).
 Verification:
 - Dashboard test and build commands (counts in the PR).
 - Compose: an `ios` event and an `android` event show the right value; the filter narrows list and counts.
+
+## Verification run 2026-10-29
+
+In the Dashboard against a Compose stack: the platform column showed iOS and Android correctly. The iOS filter narrowed the event list, today count, by-name counts, and plan violations to the 2 iOS events. With the platform filter applied, the dropped-events table showed `iOS / 0.1.0 / queue_full / 3`.

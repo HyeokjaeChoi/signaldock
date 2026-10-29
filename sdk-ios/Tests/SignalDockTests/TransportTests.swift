@@ -139,6 +139,26 @@ final class StubURLProtocol: URLProtocol {
     #expect(seen.body == request.body)
   }
 
+  @Test func theReportRequestUsesTheReportPathTheBearerKeyTheContractHeaderTheJsonTypeAndTheExactBody() async throws {
+    let (transport, host) = make { _ in .respond(status: 204) }
+    let body = BatchHttpRequest(contractVersion: "1", body: Data(#"{"discardedEvents":[],"sdkVersion":"v"}"#.utf8))
+    let result = try await transport.sendReport(body)
+    #expect(result == .http(HttpResult(status: 204)))
+    let seen = try #require(StubRegistry.shared.requests(host: host).first)
+    #expect(seen.method == "POST")
+    #expect(seen.url.path == "/v1/client-reports")
+    #expect(seen.headers["Authorization"] == "Bearer key-123")
+    #expect(seen.headers["SignalDock-Contract-Version"] == "1")
+    #expect(seen.headers["Content-Type"] == "application/json")
+    #expect(seen.body == body.body)
+  }
+
+  @Test func theReportAnswerBodyIsNeverRead() async throws {
+    let (transport, _) = make { _ in .respond(status: 200, body: Data("body".utf8)) }
+    let result = try await transport.sendReport(request)
+    #expect(result == .http(HttpResult(status: 200)))
+  }
+
   @Test func aBasePathInTheEndpointIsKeptAndATrailingSlashIsNot() async throws {
     let (transport, host) = make(endpoint: "https://@HOST@/api/ingest//") { _ in .respond(status: 200) }
     _ = try await transport.send(request)

@@ -35,6 +35,9 @@ internal enum TransportResult: Sendable, Equatable {
 /// request and throws `CancellationError`; the queue is not touched.
 internal protocol BatchTransport: Sendable {
   func send(_ request: BatchHttpRequest) async throws(CancellationError) -> TransportResult
+
+  /// `POST /v1/client-reports` (ADR-0036): same key, headers, and cancellation rules; the answer is a status.
+  func sendReport(_ request: BatchHttpRequest) async throws(CancellationError) -> TransportResult
 }
 
 /// The ACK body is read only for status 200 and only up to this size.
@@ -46,6 +49,7 @@ internal let maxAckBytes = 1 << 20
 internal final class URLSessionBatchTransport: BatchTransport {
   internal let session: URLSession
   private let url: URL?
+  private let reportURL: URL?
   private let authorization: String
   private let ackLimit: Int
 
@@ -59,6 +63,7 @@ internal final class URLSessionBatchTransport: BatchTransport {
     var base = config.endpoint
     while base.hasSuffix("/") { base.removeLast() }
     url = URL(string: base + "/v1/events:batch")
+    reportURL = URL(string: base + "/v1/client-reports")
     let configuration = URLSessionConfiguration.ephemeral
     Self.apply(config, to: configuration)
     if let protocolClasses { configuration.protocolClasses = protocolClasses }
@@ -82,6 +87,16 @@ internal final class URLSessionBatchTransport: BatchTransport {
   }
 
   internal func send(_ request: BatchHttpRequest) async throws(CancellationError) -> TransportResult {
+    try await post(url, request, readsBody: true)
+  }
+
+  internal func sendReport(_ request: BatchHttpRequest) async throws(CancellationError) -> TransportResult {
+    try await post(reportURL, request, readsBody: false)  // the answer is 204 with no body
+  }
+
+  private func post(_ url: URL?, _ request: BatchHttpRequest, readsBody: Bool) async throws(CancellationError)
+    -> TransportResult
+  {
     if Task.isCancelled { throw CancellationError() }  // nothing leaves the device for a caller that is gone
     guard let url else { return .failed(.network) }
     var urlRequest = URLRequest(url: url)
@@ -94,7 +109,7 @@ internal final class URLSessionBatchTransport: BatchTransport {
     do {
       let (bytes, response) = try await session.bytes(for: urlRequest)
       guard let http = response as? HTTPURLResponse else { return .failed(.network) }
-      let body = http.statusCode == 200 ? try await Self.readCapped(bytes, limit: ackLimit) : nil
+      let body = readsBody && http.statusCode == 200 ? try await Self.readCapped(bytes, limit: ackLimit) : nil
       return .http(
         HttpResult(
           status: http.statusCode, body: body, retryAfter: http.value(forHTTPHeaderField: "Retry-After"),

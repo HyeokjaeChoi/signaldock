@@ -55,16 +55,45 @@ internal actor Sender {
     self.notice = notice
   }
 
-  /// Sends batches until the queue is empty or a wait applies.
+  /// Sends batches until the queue is empty or a wait applies. When the run applied a valid ACK, it then sends the
+  /// client report once (ADR-0036).
   internal func run() async throws -> RunResult {
     var batches = 0
-    while true {
+    var acked = false
+    var end: RunEnd?
+    while end == nil {
       try Task.checkCancellation()
       switch try await sendLocked() {
-      case .empty: return RunResult(batches: batches, end: .queueEmpty)
-      case .wait(let at): return RunResult(batches: batches, end: .waiting(untilMillis: at))
-      case .continue, .acked: batches += 1
+      case .empty: end = .queueEmpty
+      case .wait(let at): end = .waiting(untilMillis: at)
+      case .continue: batches += 1
+      case .acked:
+        batches += 1
+        acked = true
       }
+    }
+    if acked { try await sendClientReport() }
+    return RunResult(batches: batches, end: end ?? .queueEmpty)
+  }
+
+  /// One report per send cycle, after the event batches, when a counter is not zero. It never touches the retry
+  /// state, so a failed report cannot delay events. 2xx or a permanent answer (404 from an old server, another 4xx)
+  /// removes the sent counts; a transient failure keeps them for the next cycle. Only cancellation is thrown: a
+  /// storage failure is logged, so the batch result still reaches the scheduler.
+  private func sendClientReport() async throws {
+    try await acquire()
+    defer { release() }
+    do {
+      try Task.checkCancellation()
+      guard let report = try buildClientReport(try await queue.droppedCounts()) else { return }
+      let request = BatchHttpRequest(contractVersion: contractVersion, body: report.body)
+      let transport = transport
+      let result = try await transmit { try await transport.sendReport(request) }
+      if classifyReport(result) != .kept { try await queue.subtractDropped(report.rows) }
+    } catch is CancellationError {
+      throw CancellationError()
+    } catch {
+      logger.log(.clientReportFailed)
     }
   }
 
@@ -133,24 +162,30 @@ internal actor Sender {
     // A cancellation here leaves the queue untouched; the same IDs and bytes are sent again later.
     let request = BatchHttpRequest(contractVersion: batch.contractVersion, body: batch.body)
     let transport = transport
-    let task = Task<TransportResult, any Error> { try await transport.send(request) }
+    let result = try await transmit { try await transport.send(request) }
+    let after = clock.nowMillis()
+    logger.log(.deliveryAttemptFinished)
+    switch result {
+    case .failed(let kind): return try await fail(state, after, kind, status: nil, retryAfter: nil)
+    case .http(let http): return try await onHttp(state, batch, http, after)
+    }
+  }
+
+  /// Runs one request as a task that `cancelInFlight` can reach. Caller cancellation cancels the request.
+  private func transmit(_ call: @escaping @Sendable () async throws -> TransportResult) async throws
+    -> TransportResult
+  {
+    let task = Task<TransportResult, any Error> { try await call() }
     inFlight.set(task)
     defer { inFlight.set(nil) }
-    let result: TransportResult
     do {
-      result = try await withTaskCancellationHandler {
+      return try await withTaskCancellationHandler {
         try await task.value
       } onCancel: {
         task.cancel()
       }
     } catch {
       throw CancellationError()  // the transport throws nothing else
-    }
-    let after = clock.nowMillis()
-    logger.log(.deliveryAttemptFinished)
-    switch result {
-    case .failed(let kind): return try await fail(state, after, kind, status: nil, retryAfter: nil)
-    case .http(let http): return try await onHttp(state, batch, http, after)
     }
   }
 
