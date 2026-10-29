@@ -17,6 +17,8 @@ internal enum LogMessage: Sendable, Equatable {
   case deliveryPaused
   case deliveryResumed
   case deliveryRunFailed
+  case dropCounterFailed
+  case clientReportFailed
   case contractDeprecated
 
   internal var level: LogLevel {
@@ -24,7 +26,7 @@ internal enum LogMessage: Sendable, Equatable {
     case .initialized, .optOutSet, .deliveryAttemptStarted, .deliveryAttemptFinished, .deliveryFailed: .debug
     case .optOutNotStored, .installationIdInvalid, .trackStorageFailed, .trackCancelledDuringStorage,
       .diagnosticsStorageFailed, .clearQueueStorageFailed, .deliveryPaused, .deliveryResumed, .deliveryRunFailed,
-      .contractDeprecated:
+      .contractDeprecated, .dropCounterFailed, .clientReportFailed:
       .warn
     }
   }
@@ -64,6 +66,8 @@ internal struct OSLogSink: SDKLogger {
         "delivery paused by a configuration, authentication or contract error; rechecking every 30 minutes")
     case .deliveryResumed: logger.warning("delivery resumed after a successful ACK")
     case .deliveryRunFailed: logger.warning("delivery run failed in storage; the queue is unchanged")
+    case .dropCounterFailed: logger.warning("drop counter could not be written; the drop is not counted")
+    case .clientReportFailed: logger.warning("client report failed in storage; the counters are unchanged")
     case .contractDeprecated:
       logger.warning("server contract version is deprecated; see diagnostics for the dates")
     }

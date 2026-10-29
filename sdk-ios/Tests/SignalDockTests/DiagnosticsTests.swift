@@ -108,7 +108,8 @@ import Testing
   @Test func everyMessageHasALevelAndTheSinkWritesWithoutCrashing() {
     let cases: [LogMessage] = [
       .initialized, .optOutSet, .optOutNotStored, .installationIdInvalid, .trackStorageFailed,
-      .trackCancelledDuringStorage, .diagnosticsStorageFailed, .clearQueueStorageFailed,
+      .trackCancelledDuringStorage, .diagnosticsStorageFailed, .clearQueueStorageFailed, .dropCounterFailed,
+      .clientReportFailed,
     ]
     for level in LogLevel.allCases {
       let sink = OSLogSink(level: level)

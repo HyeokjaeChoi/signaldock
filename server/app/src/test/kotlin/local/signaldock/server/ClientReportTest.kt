@@ -146,6 +146,21 @@ class ClientReportTest {
     }
 
     @Test
+    fun `server accepts the request body the iOS SDK builds and stores the platform ios`() = testApplication {
+        useModules()
+        val file = File("../../fixtures/roundtrip/client-report-request-ios.json")
+        assertEquals(HttpStatusCode.NoContent, client.report(file.readBytes()).status)
+        assertEquals(
+            listOf("queue_full" to 3, "storage_error" to 1, "invalid_event" to 2, "event_too_large" to 4, "server_rejected" to 1_000_000),
+            rows().map { it.second to it.third },
+        )
+        val platforms = runBlocking {
+            database.transaction { query { selectFrom(CLIENT_REPORTS).fetch { it.sdkPlatform!! }.toSet() } }
+        }
+        assertEquals(setOf("ios"), platforms)
+    }
+
+    @Test
     fun `a body of exactly 4096 bytes is accepted and one more byte is too large`() = testApplication {
         useModules()
         assertEquals(HttpStatusCode.NoContent, client.report(valid + " ".repeat(4096 - valid.length)).status)
