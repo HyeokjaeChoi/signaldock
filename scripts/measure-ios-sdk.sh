@@ -27,10 +27,11 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SIZE_ONLY=""
 if [ "${1:-}" = --size-only ]; then
-  [ -n "${2:-}" ] || { echo "error: --size-only needs an output directory" >&2; exit 1; }
+  case "${2:-}" in ""|-*) echo "error: --size-only needs an output directory" >&2; exit 1 ;; esac
   mkdir -p "$2"; SIZE_ONLY="$(cd "$2" && pwd)"; shift 2
 fi
 case "${1:-}" in -*) echo "error: unknown or misplaced option '$1' (only --size-only <dir>, first)" >&2; exit 1 ;; esac
+[ $# -le 1 ] || { echo "error: too many arguments (usage: [--size-only <dir>] [zip])" >&2; exit 1; }
 ZIP="${1:-}"
 [ -z "$ZIP" ] || [ ! -f "$ZIP" ] || ZIP="$(cd "$(dirname "$ZIP")" && pwd)/$(basename "$ZIP")"  # absolute before the cd
 cd "$ROOT"
