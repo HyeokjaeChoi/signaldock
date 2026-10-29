@@ -239,7 +239,7 @@ ADRs:
 - ADR-0014 (`docs/adr/0014-sdk-device-measurement-harness.md`), for the SDK results that `perf/report/` shows
 - ADR-0018 (`docs/adr/0018-sdk-release-r8-measurement.md`), for the release-build SDK results (issue 33)
 - ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for `scripts/host-cost-measure.sh` and `perf/sdk-results/host-cost-api37/` (issue 36)
-- ADR-0047 (`docs/adr/0047-ios-sdk.md`), "Amendment (2026-10-29, ticket 16, measurement method)", for `scripts/measure-ios-sdk.sh`, `perf/ios_host_cost.py`, `perf/ios-host-cost/` (probe and baseline package), and `perf/sdk-results/ios-*/` (iOS ticket 16)
+- ADR-0047 (`docs/adr/0047-ios-sdk.md`), "Amendment (2026-10-29, ticket 16, measurement method)", for `scripts/measure-ios-sdk.sh`, `perf/ios_host_cost.py`, `perf/ios-host-cost/` (probe and baseline package), and `perf/sdk-results/ios-*/` (iOS ticket 16); "Amendment (2026-10-29, ticket 17, size budget)" for its `--size-only` mode
 - ADR-0015 (`docs/adr/0015-web-ui-languages.md`), for the report page languages and `web-shared/`
 - ADR-0016 (`docs/adr/0016-telemetry-style-ui.md`), for the KPI strip, the table of contents, the overload bands, and the shared tokens (issue 28)
 
@@ -268,6 +268,7 @@ ADRs:
 - ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for `scripts/host-cost-measure.sh` (issue 36)
 - ADR-0011 (`docs/adr/0011-sdk-device-test-harness.md`), ADR-0029, and ADR-0047 "Amendment (2026-10-29, ticket 15, durability phases)", for `scripts/simulator-durability.sh` (iOS ticket 15; the Android form is `scripts/device-durability.sh`)
 - ADR-0023 (`docs/adr/0023-ci-device-tests-and-size-budget.md`), for the `device-test` and `size-budget` jobs in `.github/workflows/repo-rules.yml` and `scripts/check-size-budget.sh` (issue 40)
+- ADR-0047 (`docs/adr/0047-ios-sdk.md`), "Amendment (2026-10-29, ticket 17, size budget)", for the `ios-size-budget` job in `.github/workflows/repo-rules.yml` and `scripts/check-ios-size-budget.sh` (budgets and the raise rule)
 - ADR-0024 (`docs/adr/0024-release-workflow-and-dependency-updates.md`), for `.github/workflows/release.yml`, the `--check` flag of `scripts/release.sh`, and `docs/releases/README.md` (issue 41)
 - ADR-0031 (`docs/adr/0031-renovate-dependency-updates.md`), for `.github/renovate.json5` and the dependency-update section of `docs/releases/README.md`; it supersedes ADR-0024 items 5 and 6 (issue 52)
 - ADR-0032 (`docs/adr/0032-codeql-advanced-setup.md`), for `.github/workflows/codeql.yml` (issue 54)
