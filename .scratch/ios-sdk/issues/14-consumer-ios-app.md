@@ -24,4 +24,5 @@ Details and "decided here" choices: ADR-0047 "Ticket 14 results".
 - `IOS_WERROR=1 scripts/verify-consumer-ios.sh`: exit 0. Fresh ZIP, unzip to `compatibility/consumer-ios/.sdk`, Debug and Release `** BUILD SUCCEEDED **` for the iOS Simulator (Xcode 27.1).
 - `scripts/check-repo-rules.sh`: exit 0, no output. `IOS_WERROR=1 scripts/verify-ios.sh lint`: exit 0, no finding.
 - Simulator run against Compose (`docker compose -p sdverify14`, ports 18080/15432/15173): the Debug app (iPhone 18 Pro, iOS 27.0) launched with `SIMCTL_CHILD_SIGNALDOCK_AUTORUN=1` sent 4 events. `GET /v1/events?...&sdkPlatform=ios` returned `product_viewed`, `add_to_cart`, `checkout_started`, `purchase_completed`, all platform `ios`, version `0.1.0`, plan status `planned`. Diagnostics screen: `lastAck` accepted 4. Screenshot: [14-consumer-ios-simulator.png](14-consumer-ios-simulator.png). Stack removed with `down -v`; Simulator shut down.
-- Not run: the CI jobs on GitHub (`ios-consumer`, `release-ios.yml` step); a Dashboard screenshot (API queried instead); iOS 15 runtime.
+- Dashboard (same stack, `http://127.0.0.1:15173/`, period "today"): the four events are listed with SDK platform `iOS`, version `0.1.0`, plan status planned. Screenshot: [14-dashboard-ios-events.jpg](14-dashboard-ios-events.jpg).
+- Not run: the CI jobs on GitHub (`ios-consumer`, `release-ios.yml` step); iOS 15 runtime.
