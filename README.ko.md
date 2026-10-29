@@ -10,7 +10,7 @@
 > **상태: 2026-10-21**
 > 첫 릴리스 범위가 완료되었고, SDK v0.3.0이 릴리스되었습니다. v0.3.0은 서버 수집 kill switch, AAR의 Baseline Profile, 릴리스 ZIP의 build provenance attestation, Gradle 의존성 검증을 추가합니다([CHANGELOG.md](CHANGELOG.md)). 공개 API는 0.2.0과 같습니다. SDK, 서버, Android 데모 앱, Dashboard가 구현되어 있습니다. 전송 실패 E2E, 기기 내구성, 계약·DB 변경 검사, 서버 부하 측정, SDK 기기 측정은 스크립트와 기록된 결과가 있습니다([이슈 20~24](.scratch/signaldock/issues/)). [클린 클론에서 재현](#클린-클론에서-재현)에는 새 클론에서 실행한 명령과 검증하지 못한 항목이 정리되어 있습니다. 검증하지 못한 항목은 process 경계 스크립트, 릴리스(R8) 빌드와 Baseline Profile의 실기기 측정(instrumented test, debug 기기 측정, 호스트 앱 비용은 SDK 0.3.0으로 실기기 한 대에서 실행했습니다, [issue 85](.scratch/signaldock/issues/85-device-verification-v0.3.0.md); instrumented test는 0.2.0 코드로도 실행했습니다, [issue 73](.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md))와 서버 측정 matrix 전체(실행하지 않음, Q133)입니다.
 >
-> **iOS SDK 0.1.0: 2026-10-29.** iOS SDK(`sdk-ios/`), consumer 및 데모 앱, Simulator durability 스크립트, 릴리스 ZIP workflow는 저장소에 있습니다. iOS 릴리스는 아직 없습니다. 첫 tag인 `ios-v0.1.0`은 소유자만 push하고, `sdkPlatform`을 보내는 Android SDK 0.4.0도 아직 tag가 없습니다. [iOS SDK](#ios-sdk)를 참고하세요.
+> **iOS SDK 0.1.0: 2026-10-29.** iOS SDK(`sdk-ios/`), consumer 및 데모 앱, Simulator durability 스크립트, 릴리스 ZIP workflow는 저장소에 있습니다. iOS 릴리스는 아직 없습니다. 첫 tag인 `ios-v0.1.0`은 push에 소유자의 승인이 필요하고, `sdkPlatform`을 보내는 Android SDK 0.4.0도 아직 tag가 없습니다. [iOS SDK](#ios-sdk)를 참고하세요.
 
 설계 문서, ADR, 이슈 파일, `docs/reproduce.md`는 영어로만 제공합니다. 이 README는 해당 문서로 연결합니다.
 
@@ -111,7 +111,7 @@ Flutter, React Native, Unity 또는 WebView(native-web) bridge(Q150), 자동 이
 
 ## 클린 클론에서 재현
 
-이 절의 명령은 `docker compose down --volumes`(초기화)를 제외하고 모두 새 클론에서 실행했습니다. 초기화는 의도적으로 실행하지 않았습니다. 기록(명령, 결과, 소요 시간)은 [issue 25](.scratch/signaldock/issues/25-reproduction-readme-video.md)에 있습니다. 더 긴 안내(데모 앱, E2E, 기기 스크립트, 측정, 실기기, 초기화, 한계)는 [docs/reproduce.md](docs/reproduce.md)에 있습니다(영어).
+이 절의 명령은 `docker compose down --volumes`(초기화)를 제외하고 모두 새 클론에서 실행했습니다. 초기화는 의도적으로 실행하지 않았습니다. 기록(명령, 결과, 소요 시간)은 [issue 25](.scratch/signaldock/issues/25-reproduction-readme-video.md)에 있습니다. 더 긴 안내(데모 앱, E2E, 기기 스크립트, 측정, 실기기, 초기화, 한계)는 [docs/reproduce.md](docs/reproduce.md)에 있습니다(영어). iOS 단계는 그 실행에 포함되지 않았습니다. iOS 단계는 나중에 깨끗한 `git worktree`에서 실행했고 [issue 18](.scratch/ios-sdk/issues/18-ios-docs.md)에 기록했습니다. 실행한 것: 릴리스 ZIP, `scripts/verify-consumer-ios.sh`, 별도 스택에 대한 Simulator 실행, `offline`과 `restart` 케이스의 `scripts/simulator-durability.sh`, `scripts/verify-ios.sh`의 `lint`와 `manifest`. `tsan`, `asan`, `analyze`, 나머지 durability 케이스는 거기서 실행하지 않았습니다.
 데모의 `track()`부터 Dashboard 수신까지 보여 주는 짧은 영상은 [`.scratch/signaldock/evidence/25-demo-track-to-dashboard.mp4`](.scratch/signaldock/evidence/25-demo-track-to-dashboard.mp4)에 있습니다.
 처음 실행할 때는 JDK, Docker 이미지, Gradle 의존성, npm 패키지를 내려받습니다. 완전한 오프라인 실행은 아닙니다.
 
@@ -174,7 +174,7 @@ adb -s emulator-5584 shell am start -n local.signaldock.consumer/.MainActivity
 
 [docs/reproduce.md](docs/reproduce.md)를 참고하세요(영어). 데모 앱은 `sdk/gradlew -p sdk -Psignaldock.collectionKey=... :demo:app:assembleDebug`로 빌드합니다. `scripts/e2e-delivery.sh`는 전송 실패 사례를 실행합니다. `scripts/device-durability.sh`와 `scripts/device-measure.sh`는 에뮬레이터에서 실행합니다. `perf/`에는 서버 부하 harness가 있습니다.
 
-iOS(Xcode가 있는 macOS): `scripts/verify-consumer-ios.sh`는 iOS 릴리스 ZIP을 빌드하고 그 ZIP으로 consumer 앱 `compatibility/consumer-ios/`를 빌드합니다. 이 앱의 이벤트를 별도의 로컬 스택으로 보내 Dashboard에서 platform `ios`로 확인하는 방법은 [docs/reproduce.md](docs/reproduce.md)에 있습니다. `scripts/verify-ios.sh`는 iOS 게이트를 실행하고, `scripts/simulator-durability.sh`는 Simulator에서 durability 케이스를 실행합니다.
+iOS(Xcode가 있는 macOS, 기록: [issue 18](.scratch/ios-sdk/issues/18-ios-docs.md)): `scripts/verify-consumer-ios.sh`는 iOS 릴리스 ZIP을 빌드하고 그 ZIP으로 consumer 앱 `compatibility/consumer-ios/`를 빌드합니다. 이 앱의 이벤트를 별도의 로컬 스택으로 보내 Dashboard에서 platform `ios`로 확인하는 방법은 [docs/reproduce.md](docs/reproduce.md)에 있습니다. `scripts/verify-ios.sh`는 iOS 게이트를 실행하고, `scripts/simulator-durability.sh`는 Simulator에서 durability 케이스를 실행합니다.
 
 ### 5. 중지와 초기화
 
@@ -254,7 +254,7 @@ SDK는 1.0 이전입니다. 수정은 가능한 범위에서 제공합니다(bes
 
 ### iOS SDK
 
-상태: iOS SDK `0.1.0`은 `sdk-ios/`에 구현되어 있지만 iOS 릴리스는 아직 없습니다. 첫 tag인 `ios-v0.1.0`은 `sdkPlatform`을 지원하는 서버를 배포한 뒤 소유자만 push합니다([ADR-0046](docs/adr/0046-sdk-platform-field.md)). 그 전에는 ZIP을 직접 빌드하세요. `scripts/build-ios-release-zip.sh 0.1.0`이 `dist/signaldock-sdk-ios-0.1.0.zip`과 `.sha256` 파일을 만듭니다([docs/reproduce.md](docs/reproduce.md)).
+상태: iOS SDK `0.1.0`은 `sdk-ios/`에 구현되어 있지만 iOS 릴리스는 아직 없습니다. 첫 tag인 `ios-v0.1.0`은 `sdkPlatform`을 지원하는 서버를 배포한 뒤 소유자의 승인을 받아 push합니다([ADR-0046](docs/adr/0046-sdk-platform-field.md)). 그 전에는 ZIP을 직접 빌드하세요. `scripts/build-ios-release-zip.sh 0.1.0`이 `dist/signaldock-sdk-ios-0.1.0.zip`과 `.sha256` 파일을 만듭니다([docs/reproduce.md](docs/reproduce.md)).
 
 릴리스 ZIP으로 설치합니다. 릴리스 `ios-vX.Y.Z`에는 `signaldock-sdk-ios-X.Y.Z.zip`과 `signaldock-sdk-ios-X.Y.Z.zip.sha256` 파일이 붙습니다([`release-ios.yml`](.github/workflows/release-ios.yml)). `shasum -a 256 -c`로 해시를 확인하고 압축을 푼 뒤, Xcode에서 File, Add Package Dependencies, Add Local을 선택합니다. 압축을 푼 `SignalDock/` 폴더를 고르고 앱 target에 product `SignalDock`을 추가합니다. 원격 Swift Package Manager URL, CocoaPods, XCFramework는 아직 없습니다([ADR-0047](docs/adr/0047-ios-sdk.md) D11).
 
@@ -269,7 +269,7 @@ case .failure(let error): print(error)
 
 요구 사항과 규칙:
 
-- iOS 15 이상, Swift 6가 있는 Xcode(`swift-tools-version: 6.0`). 앱 전용입니다. 진입점은 app extension에서 쓸 수 없습니다. SDK에는 외부 의존성이 없고 시스템 SQLite를 씁니다.
+- iOS 15 이상, Swift 6가 있는 Xcode(`swift-tools-version: 6.0`). Xcode 26.6(Swift 6.3, CI toolchain)과 Xcode 27.1(Swift 6.4, 로컬 실행)에서 테스트했습니다. Gap: 더 오래된 Xcode와 Swift 버전은 테스트하지 않았습니다. 앱 전용입니다. 진입점은 app extension에서 쓸 수 없습니다. SDK에는 외부 의존성이 없고 시스템 SQLite를 씁니다.
 - `https://` endpoint를 사용하세요. `http://` endpoint는 `allowInsecureEndpoint: true`와 해당 host에 대한 App Transport Security 예외가 필요합니다([ADR-0035](docs/adr/0035-sdk-https-enforcement.md)).
 - **public 결과 enum(`TrackResult`, `InvalidReason`, `InitError`, diagnostics enum)을 `switch`할 때는 `default`를 쓰세요.** minor 버전이 case를 추가할 수 있습니다([ADR-0047](docs/adr/0047-ios-sdk.md) 2026-10-28 amendment).
 - SDK는 installation ID와 이벤트를 위한 privacy manifest(`PrivacyInfo.xcprivacy`)를 포함합니다. 이벤트 property에 다른 데이터 유형이 있으면 앱의 manifest에 선언하세요.

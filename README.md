@@ -10,7 +10,7 @@ Review the path from an app's `track()` call through a durable queue, retries, s
 > **Status: 2026-10-21**
 > The first release scope is done, and SDK v0.3.0 is released. It adds a server collection kill switch, a Baseline Profile in the AAR, a build provenance attestation for the release ZIP, and Gradle dependency verification ([CHANGELOG.md](CHANGELOG.md)). The public API does not change from 0.2.0. The SDK, the server, the Android demo app, and the Dashboard are implemented. Delivery failure E2E, device durability, contract and DB change checks, server load measurement, and SDK device measurement have scripts and recorded results ([issues 20 to 24](.scratch/signaldock/issues/)). [Reproduce from a clean clone](#reproduce-from-a-clean-clone) lists the commands that were run in a fresh clone, and what was not verified: the process-boundary script, the release (R8) build and the Baseline Profile on a physical device (the instrumented tests, the debug device measurement, and the host-app cost ran on one phone with SDK 0.3.0, [issue 85](.scratch/signaldock/issues/85-device-verification-v0.3.0.md); the instrumented tests also ran with 0.2.0 code, [issue 73](.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md)), and the full server measurement matrix (not run, Q133).
 >
-> **iOS SDK 0.1.0: 2026-10-29.** The iOS SDK (`sdk-ios/`), its consumer and demo app, the Simulator durability script, and the release ZIP workflow are in the repository. No iOS release exists yet: the first tag, `ios-v0.1.0`, is pushed by the owner only, and Android SDK 0.4.0 (which sends `sdkPlatform`) is not tagged either. See [iOS SDK](#ios-sdk).
+> **iOS SDK 0.1.0: 2026-10-29.** The iOS SDK (`sdk-ios/`), its consumer and demo app, the Simulator durability script, and the release ZIP workflow are in the repository. No iOS release exists yet: the first tag, `ios-v0.1.0`, needs the owner's approval to push, and Android SDK 0.4.0 (which sends `sdkPlatform`) is not tagged either. See [iOS SDK](#ios-sdk).
 
 ![The Dashboard with one stored event selected: the event list on the left, the event details and stored JSON on the right.](docs/images/dashboard.png)
 
@@ -109,7 +109,7 @@ Steps to run, stop, and reset the stack, to build the Maven ZIP, and to run the 
 
 ## Reproduce from a clean clone
 
-The commands in this section were run in a fresh clone, except `docker compose down --volumes` (the reset), which was not run on purpose. The record (commands, results, wall times) is in [issue 25](.scratch/signaldock/issues/25-reproduction-readme-video.md). The longer guide (demo app, E2E, device scripts, measurements, physical device, reset, limits) is [docs/reproduce.md](docs/reproduce.md).
+The commands in this section were run in a fresh clone, except `docker compose down --volumes` (the reset), which was not run on purpose. The record (commands, results, wall times) is in [issue 25](.scratch/signaldock/issues/25-reproduction-readme-video.md). The longer guide (demo app, E2E, device scripts, measurements, physical device, reset, limits) is [docs/reproduce.md](docs/reproduce.md). The iOS steps were not part of that run. They ran later in a clean `git worktree`, recorded in [issue 18](.scratch/ios-sdk/issues/18-ios-docs.md): the release ZIP, `scripts/verify-consumer-ios.sh`, the Simulator launch against a separate stack, `scripts/simulator-durability.sh` with the cases `offline` and `restart`, and `scripts/verify-ios.sh` `lint` and `manifest`. `tsan`, `asan`, `analyze`, and the other durability cases did not run there.
 A short video of demo `track()` to Dashboard receipt is in [`.scratch/signaldock/evidence/25-demo-track-to-dashboard.mp4`](.scratch/signaldock/evidence/25-demo-track-to-dashboard.mp4).
 The first run downloads the JDK, Docker images, Gradle dependencies, and npm packages. It is not fully offline.
 
@@ -172,7 +172,7 @@ Tap "Track consumer_ping", wait about 15 seconds, then tap "Show diagnostics": `
 
 See [docs/reproduce.md](docs/reproduce.md). The demo app builds with `sdk/gradlew -p sdk -Psignaldock.collectionKey=... :demo:app:assembleDebug`. `scripts/e2e-delivery.sh` runs the delivery failure cases. `scripts/device-durability.sh` and `scripts/device-measure.sh` run on an emulator. `perf/` holds the server load harness.
 
-iOS (macOS with Xcode): `scripts/verify-consumer-ios.sh` builds the iOS release ZIP and the consumer app `compatibility/consumer-ios/` from it. [docs/reproduce.md](docs/reproduce.md) shows how to send its events to a separate local stack and see them in the Dashboard with platform `ios`. `scripts/verify-ios.sh` runs the iOS gates, and `scripts/simulator-durability.sh` runs the durability cases on a Simulator.
+iOS (macOS with Xcode; record: [issue 18](.scratch/ios-sdk/issues/18-ios-docs.md)): `scripts/verify-consumer-ios.sh` builds the iOS release ZIP and the consumer app `compatibility/consumer-ios/` from it. [docs/reproduce.md](docs/reproduce.md) shows how to send its events to a separate local stack and see them in the Dashboard with platform `ios`. `scripts/verify-ios.sh` runs the iOS gates, and `scripts/simulator-durability.sh` runs the durability cases on a Simulator.
 
 ### 5. Stop and reset
 
@@ -252,7 +252,7 @@ The [SDK integration guide](docs/integration-guide.md) ([한국어](docs/integra
 
 ### iOS SDK
 
-Status: the iOS SDK `0.1.0` is implemented in `sdk-ios/`, but no iOS release exists yet. The first tag, `ios-v0.1.0`, is pushed by the owner only, after the server with `sdkPlatform` support is deployed ([ADR-0046](docs/adr/0046-sdk-platform-field.md)). Until then, build the ZIP yourself: `scripts/build-ios-release-zip.sh 0.1.0` writes `dist/signaldock-sdk-ios-0.1.0.zip` and its `.sha256` file ([docs/reproduce.md](docs/reproduce.md)).
+Status: the iOS SDK `0.1.0` is implemented in `sdk-ios/`, but no iOS release exists yet. The first tag, `ios-v0.1.0`, needs the owner's approval to push, after the server with `sdkPlatform` support is deployed ([ADR-0046](docs/adr/0046-sdk-platform-field.md)). Until then, build the ZIP yourself: `scripts/build-ios-release-zip.sh 0.1.0` writes `dist/signaldock-sdk-ios-0.1.0.zip` and its `.sha256` file ([docs/reproduce.md](docs/reproduce.md)).
 
 Install from the release ZIP. A release `ios-vX.Y.Z` will have the assets `signaldock-sdk-ios-X.Y.Z.zip` and `signaldock-sdk-ios-X.Y.Z.zip.sha256` ([`release-ios.yml`](.github/workflows/release-ios.yml)). Check the hash with `shasum -a 256 -c`, unzip, and in Xcode choose File, Add Package Dependencies, Add Local. Select the unzipped `SignalDock/` folder and add the product `SignalDock` to your app target. There is no remote Swift Package Manager URL, no CocoaPods, and no XCFramework yet ([ADR-0047](docs/adr/0047-ios-sdk.md) D11).
 
@@ -267,7 +267,7 @@ case .failure(let error): print(error)
 
 Requirements and rules:
 
-- iOS 15 or later, and Xcode with Swift 6 (`swift-tools-version: 6.0`). Apps only: the entry points are unavailable in app extensions. The SDK has no external dependency. It uses the system SQLite.
+- iOS 15 or later, and Xcode with Swift 6 (`swift-tools-version: 6.0`); tested with Xcode 26.6 (Swift 6.3, the CI toolchain) and Xcode 27.1 (Swift 6.4, local runs). Gap: older Xcode and Swift versions were not tested. Apps only: the entry points are unavailable in app extensions. The SDK has no external dependency. It uses the system SQLite.
 - Use an `https://` endpoint. An `http://` endpoint needs `allowInsecureEndpoint: true` and an App Transport Security exception for the host ([ADR-0035](docs/adr/0035-sdk-https-enforcement.md)).
 - **Use `default` in a `switch` over the public result enums** (`TrackResult`, `InvalidReason`, `InitError`, and the diagnostics enums). A minor version can add a case ([ADR-0047](docs/adr/0047-ios-sdk.md) amendment of 2026-10-28).
 - The SDK ships a privacy manifest (`PrivacyInfo.xcprivacy`) for the installation ID and the events. If your event properties hold other data types, declare them in your app's manifest.

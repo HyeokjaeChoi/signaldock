@@ -464,9 +464,9 @@ A complete app that uses the SDK from the Maven ZIP is the [consumer app](../com
 
 ## 13. iOS SDK
 
-The iOS SDK has the same behavior as the Android SDK 0.3.0 (ADR-0047 D1). Sections 3 to 10 apply to it, except the differences in this section. The Swift type is `SignalDockSDK`, in the module `SignalDock`. The version is `0.1.0` (`SignalDockSDK.version`). The public API is in `sdk-ios/api/SignalDock.swiftinterface`; the declarations have DocC comments.
+The iOS SDK has the same behavior as the Android SDK 0.3.0 (ADR-0047 D1). Sections 3 to 6, 8, and 9 apply to it, with the differences in this section. Section 7 (diagnostics) applies with one difference: on iOS `contractDeprecation` is part of the synthesized `==` of `Diagnostics`. Section 10 applies to the error kinds and the delivery table, but not to the log tags and messages (see Logging below), and `StorageFailure` holds codes (see Logging). Section 1 is replaced by Install below. The Swift type is `SignalDockSDK`, in the module `SignalDock`. The version is `0.1.0` (`SignalDockSDK.version`). The public API is in `sdk-ios/api/SignalDock.swiftinterface`; the declarations have DocC comments.
 
-**Status.** No iOS release exists yet. The first tag is `ios-v0.1.0`, and only the owner pushes it (ADR-0046 decision 8, spec section 4). Until then, build the ZIP yourself (see [reproduce.md](reproduce.md#ios-sdk-build-and-tests)).
+**Status.** No iOS release exists yet. The first tag is `ios-v0.1.0`, and a tag push needs the owner's approval (ADR-0046 decision 8, spec section 4). Until then, build the ZIP yourself (see [reproduce.md](reproduce.md#ios-release-zip-and-consumer-app)).
 
 ### Install
 
@@ -476,7 +476,7 @@ The iOS SDK has the same behavior as the Android SDK 0.3.0 (ADR-0047 D1). Sectio
 
 Requirements:
 
-- iOS 15 or later. The package manifest uses `swift-tools-version: 6.0`, so use Xcode with Swift 6 or later (`sdk-ios/Package.swift`).
+- iOS 15 or later. The package manifest uses `swift-tools-version: 6.0`, so use Xcode with Swift 6 or later (`sdk-ios/Package.swift`). It was tested with Xcode 26.6 (Swift 6.3, the CI toolchain) and Xcode 27.1 (Swift 6.4, local runs). Gap: older Xcode and Swift versions were not tested.
 - No external dependency (ADR-0047 D7, D13). The SDK uses the system SQLite.
 - Apps only. The public entry points are marked `@available(iOSApplicationExtension, unavailable)` (ADR-0047 D9).
 - Use an `https://` endpoint. An `http://` endpoint needs `allowInsecureEndpoint: true`, and App Transport Security must allow the host (ADR-0035). The consumer app sets `NSAllowsLocalNetworking` for the local server.
@@ -516,7 +516,7 @@ func onProductViewed(_ sdk: SignalDockSDK, productId: String) async {
 ```
 
 - Call `initialize(_:)` once at launch, for example in a `Task` started from your `App` or `AppDelegate`. Calls with the same configuration share one attempt. A different configuration returns `configurationConflict`.
-- `track(_:_:)` takes the event name and a builder closure. The builder has `property(_:_:)` for `String`, `Bool`, `Int`, `Int64`, and `Double`. An integer outside plus or minus (2^53 - 1) returns `invalid(reason: .numberOutOfRange, ...)`.
+- `track(isolation:_:_:)` takes the event name and a builder closure. The builder has `property(_:_:)` for `String`, `Bool`, `Int`, `Int64`, and `Double`. An integer outside plus or minus (2^53 - 1) returns `invalid(reason: .numberOutOfRange, ...)`.
 - Name and property rules are the same as on Android (section 3), with two differences that Swift forces (ADR-0047 ticket 08 results): a Swift `String` cannot hold a lone surrogate, so that `forbiddenCharacter` case cannot happen; and keys that Swift treats as equal (`é` as one code point and as `e` plus U+0301) are one key, so the call returns `duplicateKey`.
 - The tracking plan generator also writes Swift (`tracking-plan/generated/swift/TrackingPlan.swift`, ADR-0047 amendment of ticket 11). It adds one typed function per event in an extension of `SignalDockSDK`.
 
@@ -577,7 +577,16 @@ The SDK ships `PrivacyInfo.xcprivacy` (ADR-0047 D14): no tracking, no tracking d
 
 ### Logging
 
-The SDK logs with `os.Logger`, subsystem `local.signaldock`. The messages are fixed text. Event content, names, installation IDs, and the collection key are never logged (ADR-0047 ticket 08 results).
+The SDK logs with `os.Logger`, subsystem `local.signaldock`, category `SignalDock` (`sdk-ios/Sources/SignalDock/Internal/Init/Logging.swift`). Use Console.app or `log stream --predicate 'subsystem == "local.signaldock"'`. This replaces the Logcat tag of section 10. The messages are a closed set of fixed texts, so no message holds event content, event names, installation IDs, the collection key, HTTP bodies, or system error text. `logLevel` `.debug` writes debug, warning, and error messages; `.info` and `.warn` write warning and error; `.error` writes error; `.none` writes nothing. The default is `.warn`.
+
+| Level | Message |
+| --- | --- |
+| debug | `initialized`; `opt-out set`; `delivery attempt started`; `delivery attempt finished`; `delivery failed; see diagnostics for the kind` |
+| warning | `opt-out state could not be stored`; `installation id file is invalid; generating a new id`; `track storage failed`; `track cancelled during storage; the event may already be stored`; `diagnostics storage failed`; `clearQueue storage failed`; `delivery paused by a configuration, authentication or contract error; rechecking every 30 minutes`; `delivery resumed after a successful ACK`; `delivery run failed in storage; the queue is unchanged`; `drop counter could not be written; the drop is not counted`; `client report failed in storage; the counters are unchanged`; `server contract version is deprecated; see diagnostics for the dates` |
+
+There is no WorkManager message. The deprecation message has no date; read the dates from `diagnostics()`.
+
+`InitError.storageFailure(message:)` and `TrackResult.storageError(message:)` hold `StorageError(<kind>, <code>)` or the type name of another error: codes only, not the exception class name of Android (ADR-0047 ticket 08 results).
 
 ### Known limits
 

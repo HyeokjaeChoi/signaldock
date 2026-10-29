@@ -2,6 +2,7 @@
 
 This guide continues the README section "Reproduce from a clean clone". Do steps 1 to 3 there first: toolchain, Compose stack with `.env`, and `scripts/verify-consumer.sh`.
 The Android steps need an Android SDK and an emulator. The iOS steps are in [iOS SDK build and tests](#ios-sdk-build-and-tests) and the two sections after it; they need macOS with Xcode.
+The iOS sections were not part of that run; their record is [issue 18](../.scratch/ios-sdk/issues/18-ios-docs.md) (clean `git worktree`, 2026-10-29): ZIP, `verify-consumer-ios.sh`, Simulator launch against a separate stack, `simulator-durability.sh offline restart`, and `verify-ios.sh lint` and `manifest` ran. `tsan`, `asan`, `analyze`, and the other durability cases did not run there.
 Marks: **ran** means the command ran in a fresh clone on 2026-10-13 (record: issue 25). **not verified here** means it did not run, with the reason.
 
 Set `ANDROID_HOME` first (`export ANDROID_HOME="$HOME/Library/Android/sdk"`). Start one emulator and keep it running. Use an even port:
@@ -49,10 +50,10 @@ It runs the SDK `androidTest` debug build. It needs no server. See [ADR-0011](ad
 
 ## iOS SDK build and tests
 
-The iOS scripts need macOS with full Xcode (Swift 6 and `swift format`) and an iOS Simulator runtime of iOS 15 or later with an iPhone. A Command Line Tools shim of `xcodebuild` is not enough. CI uses Xcode 26.6 on `macos-26` ([ADR-0047](adr/0047-ios-sdk.md) D13). The iOS scripts need no Android SDK, JDK, or Docker, except where a step below says so.
+The iOS scripts need macOS with full Xcode (Swift 6 and `swift format`) and an iOS Simulator runtime of iOS 15 or later with an iPhone. A Command Line Tools shim of `xcodebuild` is not enough. CI uses Xcode 26.6 on `macos-26` ([ADR-0047](adr/0047-ios-sdk.md) "iOS 15 Simulator fallback"); local runs used Xcode 27.1. Gap: older Xcode versions were not tested. The iOS scripts need no Android SDK, JDK, or Docker, except where a step below says so.
 
 ```sh
-scripts/verify-ios.sh available       # exit 0 only when Xcode and a Simulator runtime are usable
+scripts/verify-ios.sh available       # exit 0 only when full Xcode (Swift 6+, swift format) and an iOS 15+ Simulator runtime are usable
 IOS_WERROR=1 scripts/verify-ios.sh    # all gates; IOS_WERROR=1 is the CI setting (warnings are errors)
 ```
 
@@ -66,15 +67,15 @@ IOS_WERROR=1 scripts/verify-ios.sh    # all gates; IOS_WERROR=1 is the CI settin
 | `analyze` | `xcodebuild analyze` (for this Swift-only package it is a build) |
 | `manifest` | Builds the package and checks that `PrivacyInfo.xcprivacy` is in the resource bundle |
 | `api` | Diffs the public API (`.swiftinterface`) with `sdk-ios/api/`. It runs only with the compiler named in `sdk-ios/api/compiler-version` (the CI compiler); with another compiler it prints a skip line |
-| `api-update <dir>` | Copies the interface and the compiler version from the CI artifact `api-actual` into `sdk-ios/api/` |
+| `api-update [dir]` | Copies the interface and the compiler version from the CI artifact `api-actual` into `sdk-ios/api/`. Without a directory it builds with the local compiler and prints a warning: the file must come from the CI compiler |
 
 The tests run on the oldest installed iOS Simulator runtime, because the GitHub runner has no iOS 15 runtime. The script prints a note when that runtime is not iOS 15. The package builds for iOS 15, but no test ran on an iOS 15 runtime (ADR-0047 "iOS 15 Simulator fallback").
 
-`scripts/check-repo-rules.sh` holds the repository-wide iOS rules (no package dependency, no `privacy: .public`, required-reason API use, frozen SQL migrations). `scripts/verify-contract.sh` regenerates the Swift models and checks for drift; it runs the Xcode steps only when `xcodebuild` exists.
+`scripts/check-repo-rules.sh` holds the repository-wide iOS rules (no package dependency, no `privacy: .public`, required-reason API use, frozen SQL migrations). `scripts/verify-contract.sh` regenerates the Swift models and checks for drift; it runs the Xcode steps only when `scripts/verify-ios.sh available` succeeds (full Xcode with Swift 6 and `swift format`, and an iOS 15 or later Simulator runtime with an iPhone); otherwise it prints a skip line.
 
 ## iOS release ZIP and consumer app
 
-The release ZIP holds the SDK source as a Swift package. The first tag is `ios-v0.1.0`; only the owner pushes it, so no GitHub Release exists yet. Build the ZIP from `HEAD`:
+The release ZIP holds the SDK source as a Swift package. The first tag is `ios-v0.1.0`; a tag push needs the owner's approval ([ADR-0046](adr/0046-sdk-platform-field.md) decision 8), so no GitHub Release exists yet. Build the ZIP from `HEAD`:
 
 ```sh
 scripts/build-ios-release-zip.sh 0.1.0     # dist/signaldock-sdk-ios-0.1.0.zip and .sha256
@@ -112,13 +113,7 @@ SIMCTL_CHILD_SIGNALDOCK_AUTORUN=1 \
   xcrun simctl launch "$UDID" local.signaldock.consumerios
 ```
 
-`SIGNALDOCK_AUTORUN=1` (Debug build only) sends the shop flow once: `product_viewed`, `add_to_cart`, `checkout_started`, and `purchase_completed`. Without it, use the screens by hand. After about 15 seconds, open `http://127.0.0.1:15173`: the four events show with platform `ios`, and the platform filter works. The diagnostics screen of the app shows `lastAck`. The Simulator uses the network of the Mac, so `127.0.0.1` is the local stack. End with:
-
-```sh
-xcrun simctl shutdown "$UDID"
-docker compose -p "$IOS_PROJECT" --env-file "$IOS_ENV" down -v     # removes only this project and its volume
-rm -f "$IOS_ENV"
-```
+`SIGNALDOCK_AUTORUN=1` (Debug build only) sends the shop flow once: `product_viewed`, `add_to_cart`, `checkout_started`, and `purchase_completed`. Without it, use the screens by hand. After about 15 seconds, open `http://127.0.0.1:15173`: the four events show with platform `ios`, and the platform filter works. The diagnostics screen of the app shows `lastAck`. The Simulator uses the network of the Mac, so `127.0.0.1` is the local stack. Keep the stack and the env file for the durability section below. Its last paragraph has the cleanup commands.
 
 ## iOS Simulator durability
 
@@ -141,6 +136,14 @@ SIGNALDOCK_ENDPOINT=http://127.0.0.1:18080 scripts/simulator-durability.sh "$UDI
 ```
 
 Pass means: every event that `track()` reported as stored reaches the server, the server holds no event that the app did not report (one in-flight event is allowed at a kill), and the queue is as the case expects. A resend after a kill shows as `duplicate` in the ACK; the script prints it and does not assert it. The offline state is the closed port `http://127.0.0.1:9`, so no network setting of the Mac changes. The Debug build of the consumer app holds the phase code (`SIGNALDOCK_PHASE`); the script checks that the Release binary does not. The recorded run is in `.scratch/ios-sdk/issues/15-simulator-durability.md`.
+
+When you finish, clean up (this removes only this project and its volume):
+
+```sh
+xcrun simctl shutdown "$UDID"
+docker compose -p "$IOS_PROJECT" --env-file "$IOS_ENV" down -v     # removes only this project and its volume
+rm -f "$IOS_ENV"
+```
 
 ## Measurements
 

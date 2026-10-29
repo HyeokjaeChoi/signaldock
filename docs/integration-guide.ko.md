@@ -464,9 +464,9 @@ Maven ZIP의 SDK를 쓰는 완전한 앱은 [consumer 앱](../compatibility/cons
 
 ## 13. iOS SDK
 
-iOS SDK의 동작은 Android SDK 0.3.0과 같습니다(ADR-0047 D1). 이 절의 차이를 제외하면 3절부터 10절까지가 iOS에도 적용됩니다. Swift 타입은 `SignalDockSDK`이고 모듈은 `SignalDock`입니다. 버전은 `0.1.0`입니다(`SignalDockSDK.version`). public API는 `sdk-ios/api/SignalDock.swiftinterface`에 있고, 선언에는 DocC 주석이 있습니다.
+iOS SDK의 동작은 Android SDK 0.3.0과 같습니다(ADR-0047 D1). 이 절의 차이를 두고 3~6절, 8절, 9절이 iOS에도 적용됩니다. 7절(diagnostics)은 한 가지가 다릅니다. iOS에서는 `contractDeprecation`이 `Diagnostics`의 자동 생성 `==`에 포함됩니다. 10절의 오류 종류와 전송 표는 적용되지만 로그 tag와 메시지는 적용되지 않으며(아래 로그 참고), `StorageFailure`는 코드를 담습니다(로그 참고). 1절은 아래 설치가 대신합니다. Swift 타입은 `SignalDockSDK`이고 모듈은 `SignalDock`입니다. 버전은 `0.1.0`입니다(`SignalDockSDK.version`). public API는 `sdk-ios/api/SignalDock.swiftinterface`에 있고, 선언에는 DocC 주석이 있습니다.
 
-**상태.** iOS 릴리스는 아직 없습니다. 첫 tag는 `ios-v0.1.0`이며 owner만 push합니다(ADR-0046 결정 8, spec 4절). 그 전에는 ZIP을 직접 빌드하세요([reproduce.md](reproduce.md#ios-sdk-build-and-tests) 참고).
+**상태.** iOS 릴리스는 아직 없습니다. 첫 tag는 `ios-v0.1.0`이며 tag push에는 owner의 승인이 필요합니다(ADR-0046 결정 8, spec 4절). 그 전에는 ZIP을 직접 빌드하세요([reproduce.md](reproduce.md#ios-release-zip-and-consumer-app) 참고).
 
 ### 설치
 
@@ -476,7 +476,7 @@ iOS SDK의 동작은 Android SDK 0.3.0과 같습니다(ADR-0047 D1). 이 절의 
 
 요구 사항:
 
-- iOS 15 이상. package manifest가 `swift-tools-version: 6.0`을 쓰므로 Swift 6 이상의 Xcode가 필요합니다(`sdk-ios/Package.swift`).
+- iOS 15 이상. package manifest가 `swift-tools-version: 6.0`을 쓰므로 Swift 6 이상의 Xcode가 필요합니다(`sdk-ios/Package.swift`). Xcode 26.6(Swift 6.3, CI toolchain)과 Xcode 27.1(Swift 6.4, 로컬 실행)에서 테스트했습니다. Gap: 더 오래된 Xcode와 Swift 버전은 테스트하지 않았습니다.
 - 외부 의존성 없음(ADR-0047 D7, D13). SDK는 시스템 SQLite를 씁니다.
 - 앱 전용. public 진입점에 `@available(iOSApplicationExtension, unavailable)`가 붙어 있습니다(ADR-0047 D9).
 - `https://` endpoint를 쓰세요. `http://` endpoint는 `allowInsecureEndpoint: true`가 필요하고, App Transport Security도 그 호스트를 허용해야 합니다(ADR-0035). consumer 앱은 로컬 서버를 위해 `NSAllowsLocalNetworking`을 설정합니다.
@@ -516,7 +516,7 @@ func onProductViewed(_ sdk: SignalDockSDK, productId: String) async {
 ```
 
 - `initialize(_:)`는 실행 시작 때 한 번 호출합니다. 예를 들어 `App`이나 `AppDelegate`에서 시작한 `Task`에서 호출합니다. 같은 설정의 호출은 한 번의 시도를 공유합니다. 다른 설정은 `configurationConflict`를 반환합니다.
-- `track(_:_:)`는 이벤트 이름과 builder closure를 받습니다. builder에는 `String`, `Bool`, `Int`, `Int64`, `Double`용 `property(_:_:)`가 있습니다. ±(2^53 - 1) 밖의 정수는 `invalid(reason: .numberOutOfRange, ...)`를 반환합니다.
+- `track(isolation:_:_:)`는 이벤트 이름과 builder closure를 받습니다. builder에는 `String`, `Bool`, `Int`, `Int64`, `Double`용 `property(_:_:)`가 있습니다. ±(2^53 - 1) 밖의 정수는 `invalid(reason: .numberOutOfRange, ...)`를 반환합니다.
 - 이름과 property 규칙은 Android와 같습니다(3절). Swift 때문에 생기는 차이가 둘 있습니다(ADR-0047 ticket 08 결과). Swift `String`은 짝 없는 surrogate를 담을 수 없어서 그 `forbiddenCharacter` 경우는 생기지 않습니다. Swift가 같다고 보는 key(`é`를 한 code point로 쓴 것과 `e` + U+0301로 쓴 것)는 한 key이므로 호출은 `duplicateKey`를 반환합니다.
 - tracking plan 생성기는 Swift도 만듭니다(`tracking-plan/generated/swift/TrackingPlan.swift`, ADR-0047 ticket 11 amendment). 이벤트마다 `SignalDockSDK` extension에 타입이 있는 함수를 하나 추가합니다.
 
@@ -577,7 +577,16 @@ SDK는 `PrivacyInfo.xcprivacy`를 포함합니다(ADR-0047 D14). tracking 없음
 
 ### 로그
 
-SDK는 `os.Logger`로 기록하며 subsystem은 `local.signaldock`입니다. 메시지는 고정 문구입니다. 이벤트 내용, 이름, 설치 ID, collection key는 기록하지 않습니다(ADR-0047 ticket 08 결과).
+SDK는 `os.Logger`로 기록하며 subsystem은 `local.signaldock`, category는 `SignalDock`입니다(`sdk-ios/Sources/SignalDock/Internal/Init/Logging.swift`). Console.app이나 `log stream --predicate 'subsystem == "local.signaldock"'`로 보세요. 10절의 Logcat tag를 대신합니다. 메시지는 고정 문구의 닫힌 집합이라서 이벤트 내용, 이벤트 이름, 설치 ID, collection key, HTTP body, 시스템 오류 문구를 담는 메시지는 없습니다. `logLevel` `.debug`는 debug, warning, error 메시지를 쓰고, `.info`와 `.warn`은 warning과 error, `.error`는 error만 쓰며, `.none`은 아무것도 쓰지 않습니다. 기본값은 `.warn`입니다.
+
+| 수준 | 메시지 |
+| --- | --- |
+| debug | `initialized`; `opt-out set`; `delivery attempt started`; `delivery attempt finished`; `delivery failed; see diagnostics for the kind` |
+| warning | `opt-out state could not be stored`; `installation id file is invalid; generating a new id`; `track storage failed`; `track cancelled during storage; the event may already be stored`; `diagnostics storage failed`; `clearQueue storage failed`; `delivery paused by a configuration, authentication or contract error; rechecking every 30 minutes`; `delivery resumed after a successful ACK`; `delivery run failed in storage; the queue is unchanged`; `drop counter could not be written; the drop is not counted`; `client report failed in storage; the counters are unchanged`; `server contract version is deprecated; see diagnostics for the dates` |
+
+WorkManager 메시지는 없습니다. deprecation 메시지에는 날짜가 없습니다. 날짜는 `diagnostics()`에서 읽으세요.
+
+`InitError.storageFailure(message:)`와 `TrackResult.storageError(message:)`는 `StorageError(<kind>, <code>)` 또는 다른 오류의 타입 이름을 담습니다. 코드만 담으며, Android처럼 예외 클래스 이름이 아닙니다(ADR-0047 ticket 08 결과).
 
 ### 알려진 한계
 
