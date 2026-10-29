@@ -356,3 +356,15 @@ Ticket 15 item 0: how `scripts/simulator-durability.sh` drives SDK steps across 
 - **Phases.** `store` (N events), `burst` (events until killed), `snapshot` (initialize and report), `drain` (initialize, wait for an empty queue, report), `optout_set`, `optout_check`, `optout_off`. They map to the Android `offline_store`, `kill_burst_store`, `install_seed`, `install_check`, `offline_recover`, and `optout_*`. The kill is `kill -9` on the process ID that `simctl launch` prints (a Simulator app is a host process); `simctl terminate` is used only to end a finished phase.
 - **Pass rule.** Every event ID that `track()` reported as stored is at the server exactly once after recovery; the server list for the installation has no repeated event ID and no ID that the app did not report (the one event in flight at a kill may be stored without a log line); queue contents match the case.
 - **Not run (spec section 5).** Backup restore and full disk. The script prints them as `not run`.
+
+## Ticket 15 results (2026-10-29, Simulator durability)
+
+Code: `scripts/simulator-durability.sh`, `compatibility/consumer-ios/Sources/Phases.swift` (Debug only). It follows D15 and the amendment above.
+
+- **Cases.** `kill_store`, `kill_send`, `restart`, `update`, `reinstall`, `optout`, `offline`; backup restore and full disk are printed as `not run`. The script refuses a UDID that `xcrun simctl list devices -j` does not list, builds with `scripts/verify-consumer-ios.sh`, and fails if the Release binary contains `SIGNALDOCK_PHASE`.
+- **Decided here.** The kill is `kill -9` of the PID that `simctl launch` prints. Offline is the endpoint `http://127.0.0.1:9` (a closed port), so the Mac network is never touched. "Kill during send" kills a burst that is storing and sending at the same time, once the server holds its first events; the kill lands at a different point in each run, and the pass rule holds at every point. "Update install" installs the same Debug app over itself (as the Android `adb install -r`). The server list is read per `installationId` with `GET /v1/events` (the header `SignalDock-Contract-Version: 1` is required). The queue is read with `sqlite3 -readonly` on `queue.db`, an SDK internal that the Android harness also reads.
+- **Allowed difference.** The one event in flight at a kill may be stored without a log line, so a burst case allows one server event beyond the reported ones. All other cases allow none.
+- **A resend is not a server duplicate.** After a kill during send, the client resends events that the server had already committed; the server answers `duplicate` (seen in the drain ACK) and stores each event ID once. The rule is on what the server stores.
+- Run and environment: the ticket 15 file (`.scratch/ios-sdk/issues/15-simulator-durability.md`).
+
+Not verified here: an iOS 15 runtime, a physical device, backup restore, full disk, the GitHub runner (the script is local only).
