@@ -220,41 +220,45 @@ done
 # demo-deploy.yml also has no OIDC token, no write-all, and no secrets context, even in comments.
 # ponytail: skipped when a file is absent (teardown deletes demo-deploy.yml); a rename escapes this check.
 for pair in .github/workflows/demo-deploy.yml:demo-v .github/workflows/release-ios.yml:ios-v; do
-demo="${pair%%:*}"
-tagprefix="${pair##*:}"
-if git cat-file -e ":$demo" 2>/dev/null; then
-  msgs="$(wf "$demo" | awk -v k="$ONK" -v pre="^$tagprefix" '
-    function items(s,   n, a, i, v) {
-      gsub(/[\[\]]/, "", s); n = split(s, a, ",")
-      for (i = 1; i <= n; i++) {
-        v = a[i]; sub(/^[ ]*-?[ ]*/, "", v); gsub(/["\047 ]/, "", v)
-        if (v != "" && v !~ pre) print "tag pattern \047" v "\047 does not start with " substr(pre, 2)
+  wfile="${pair%%:*}"
+  tagprefix="${pair##*:}"
+  if git cat-file -e ":$wfile" 2>/dev/null; then
+    msgs="$(wf "$wfile" | awk -v k="$ONK" -v pre="^$tagprefix" '
+      function items(s,   n, a, i, v) {
+        gsub(/[\[\]]/, "", s); n = split(s, a, ",")
+        for (i = 1; i <= n; i++) {
+          v = a[i]; sub(/^[ ]*-?[ ]*/, "", v); gsub(/["\047 ]/, "", v)
+          if (v != "" && v !~ pre) print "tag pattern \047" v "\047 does not start with " substr(pre, 2)
+        }
       }
-    }
-    $0 ~ k { if ($0 !~ k "[ ]*$") print "on: must be a block with only push:"; p = 1; next }
-    /^[^ ]/ { p = 0 }
-    !p { next }
-    { match($0, /^ */); ind = RLENGTH; t = substr($0, ind + 1)
-      if (!i1) i1 = ind
-      if (ind == i1) { if (t != "push:") print "trigger other than push: " t; next }
-      if (!i2) i2 = ind
-      if (ind == i2) {
-        intags = (t ~ /^tags:/)
-        if (!intags) { print "push: has key other than tags: " t; next }
-        ntags++; v = t; sub(/^tags:[ ]*/, "", v); items(v); next }
-      if (intags) items(t)
-    }
-    END { if (!ntags) print "push: has no tags:" }')"
-  if [ -n "$msgs" ]; then
-    echo "$msgs" | sed "s|^|error: $demo: |" >&2
-    fail=1
+      $0 ~ k { if ($0 !~ k "[ ]*$") print "on: must be a block with only push:"; p = 1; next }
+      /^[^ ]/ { p = 0 }
+      !p { next }
+      { match($0, /^ */); ind = RLENGTH; t = substr($0, ind + 1)
+        if (!i1) i1 = ind
+        if (ind == i1) { if (t != "push:") print "trigger other than push: " t; next }
+        if (!i2) i2 = ind
+        if (ind == i2) {
+          intags = (t ~ /^tags:/)
+          if (!intags) { print "push: has key other than tags: " t; next }
+          ntags++; v = t; sub(/^tags:[ ]*/, "", v); items(v); next }
+        if (intags) items(t)
+      }
+      END { if (!ntags) print "push: has no tags:" }')"
+    if [ -n "$msgs" ]; then
+      echo "$msgs" | sed "s|^|error: $wfile: |" >&2
+      fail=1
+    fi
+    if [ "$tagprefix" = demo-v ] && git show ":$wfile" | grep -niE 'id-token|write-all|(^|[^A-Za-z0-9_-])secrets([^A-Za-z0-9_-]|$)' >&2; then
+      echo "error: $wfile above must not use id-token, write-all, or the secrets context (the VM pulls images; GitHub holds no credentials)" >&2
+      fail=1
+    fi
   fi
-  if [ "$tagprefix" = demo-v ] && git show ":$demo" | grep -niE 'id-token|write-all|(^|[^A-Za-z0-9_-])secrets([^A-Za-z0-9_-]|$)' >&2; then
-    echo "error: $demo above must not use id-token, write-all, or the secrets context (the VM pulls images; GitHub holds no credentials)" >&2
-    fail=1
-  fi
-fi
 done
+
+# The iOS release ZIP removes the SignalDockTests line from Package.swift (ADR-0047 Ticket 13). If the manifest changes
+# that line, the release would fail only at tag time; this finds it in the PR.
+scripts/build-ios-release-zip.sh --check-manifest > /dev/null || fail=1
 
 # The wire constant SDK_VERSION must equal sdkVersion of the Maven publication (release.sh and the tag use sdkVersion).
 sdk_gradle_version="$(sed -n 's/^val sdkVersion = "\(.*\)"$/\1/p' sdk/sdk-android/build.gradle.kts)"

@@ -6,7 +6,13 @@ name: release-ios
 on:
   push:
     tags: ['ios-v*.*.*']
+
 permissions: {}
+
+# One run per tag; a second run waits and never cancels the first (a cancelled publish could leave half a release).
+concurrency:
+  group: release-ios-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -16,7 +22,6 @@ jobs:
       contents: read
     env:
       TAG: ${{ github.ref_name }}
-      GH_TOKEN: ${{ github.token }}
       IOS_WERROR: '1'
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -24,6 +29,8 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Verify tag
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           if ! [[ "$TAG" =~ ^ios-v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "error: tag '$TAG' is not ios-vMAJOR.MINOR.PATCH (pre-release tags are not supported)" >&2; exit 1
@@ -58,6 +65,9 @@ jobs:
           unzip -q "dist/signaldock-sdk-ios-${TAG#ios-v}.zip" -d "$UNZIP"
           cd "$UNZIP/SignalDock"
           xcodebuild build -scheme SignalDock -destination 'generic/platform=iOS Simulator' -derivedDataPath "$UNZIP/DerivedData"
+          # The privacy manifest (ADR-0047 D14) must be in the resource bundle that a host builds from the ZIP.
+          test -n "$(find "$UNZIP/DerivedData" -path '*SignalDock_SignalDock.bundle/PrivacyInfo.xcprivacy')" \
+            || { echo "error: PrivacyInfo.xcprivacy is not in the built SignalDock resource bundle" >&2; exit 1; }
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dist
@@ -75,17 +85,26 @@ jobs:
       attestations: write  # store the attestation
     env:
       TAG: ${{ github.ref_name }}
-      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: dist
           path: dist
+      # The tag must still point at the commit that was built (a moved tag would publish a ZIP of another commit).
+      - name: Check the tag still points to the built commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG_SHA="$(gh api "repos/$GITHUB_REPOSITORY/commits/$TAG" --jq .sha)"
+          [ "$TAG_SHA" = "$GITHUB_SHA" ] \
+            || { echo "error: $TAG now points to $TAG_SHA, but the ZIP was built from $GITHUB_SHA; tag again" >&2; exit 1; }
       # Before the release is created: if this step fails, no release exists and the job can re-run.
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: dist/*.zip
       - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           # gh fails if the release exists; --verify-tag fails if the tag is not on the remote.
           gh release create "$TAG" dist/*.zip dist/*.sha256 \

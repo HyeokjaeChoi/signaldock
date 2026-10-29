@@ -37,6 +37,7 @@ Code enforces these. Do not restate them in prose; read the check when it fails.
 | No workflow triggers on `pull_request_target` or `workflow_run` | `scripts/check-repo-rules.sh` |
 | Every workflow has a top-level `permissions:` key | `scripts/check-repo-rules.sh` |
 | `demo-deploy.yml` runs only on `push` of `demo-v*` tags; `release-ios.yml` runs only on `push` of `ios-v*` tags (ADR-0047 D11) | `scripts/check-repo-rules.sh` |
+| `sdk-ios/Package.swift` has the `SignalDockTests` line exactly as `scripts/build-ios-release-zip.sh` removes it for the release ZIP (ADR-0047 Ticket 13) | `scripts/check-repo-rules.sh` (`--check-manifest`) |
 | `demo-deploy.yml` has no `id-token`, `write-all`, or `secrets` context | `scripts/check-repo-rules.sh` |
 | Contract and generated code: codegen drift, `oasdiff` baseline, SDK public API dump, SDK dependency baseline, tracking plan codegen | `scripts/verify-contract.sh` (pre-push, CI `verify-contract`) |
 | iOS SDK public API: `sdk-ios/api/SignalDock.swiftinterface` equals the normalized interface of a check-only build with the compiler of CI (`sdk-ios/api/compiler-version`); take updates from the CI artifact `api-actual` with `scripts/verify-ios.sh api-update <dir>` | CI `ios-test` (`scripts/verify-ios.sh api`); on a Mac with another compiler `scripts/verify-contract.sh` step 8 skips it |
