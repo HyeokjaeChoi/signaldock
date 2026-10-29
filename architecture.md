@@ -2,7 +2,7 @@
 
 The SDK stores events on the device and retries with the same `eventId`. It removes acknowledged events only after the server commits them and the SDK validates the ACK.
 
-> **Design baseline: 2026-10-09 (Q127 approved). Updated for SDK 0.3.0: 2026-10-21 UTC.**
+> **Design baseline: 2026-10-09 (Q127 approved). Updated for SDK 0.4.0: 2026-10-29 UTC.**
 > The product is implemented. The behavior below is the agreed design and the built behavior. Open items: no process-boundary script run, no release (R8) or Baseline Profile run on a physical device (one phone ran the instrumented tests, the debug device measurement, and the host-app cost with SDK 0.3.0, [issue 85](.scratch/signaldock/issues/85-device-verification-v0.3.0.md); the instrumented tests also ran with 0.2.0 code, [issue 73](.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md)), and the 216-run server matrix was not run (see [Independent distribution and verification](#independent-distribution-and-verification)).
 > See the [spec](.scratch/signaldock/spec.md) for the full contract and the [ADRs](docs/adr/) for the decisions.
 
@@ -188,7 +188,7 @@ Configure the server to preserve its DB volume across normal shutdown and restar
 ## Independent distribution and verification
 
 The artifact is a Maven repository ZIP with an AAR, POM, and metadata. It is a GitHub Release artifact (`scripts/release.sh`, `.github/workflows/release.yml`).
-Coordinate: `local.signaldock:sdk-android:0.3.0`. Public Kotlin package: `local.signaldock`. Build it with `sdk/gradlew -p sdk :sdk-android:signaldockMavenZip` (see the README and [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md)).
+Coordinate: `local.signaldock:sdk-android:0.4.0`. Public Kotlin package: `local.signaldock`. Build it with `sdk/gradlew -p sdk :sdk-android:signaldockMavenZip` (see the README and [ADR-0009](docs/adr/0009-maven-zip-and-consumer-app.md)).
 Install by coordinate in an independent Gradle consumer app; verify an R8 release build, execution, and server integration without an SDK source project dependency.
 Android and server use separate Gradle builds. The Dashboard and consumer app also keep independent builds.
 The [README](README.md) documents the entry point. Reproduction that includes initial dependency downloads is not fully offline.

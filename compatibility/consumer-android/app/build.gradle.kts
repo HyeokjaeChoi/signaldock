@@ -1,4 +1,4 @@
-// Consumer of local.signaldock:sdk-android:0.3.0 from a folder repository (no source dependency).
+// Consumer of local.signaldock:sdk-android:0.4.0 from a folder repository (no source dependency).
 // compileSdk 36 / minSdk 24 / targetSdk 36 as the SDK requires (ADR-0006 decision 1).
 import java.util.Properties
 
@@ -57,9 +57,9 @@ android {
 kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
 
 dependencies {
-    // scripts/verify-consumer.sh passes the SDK version; 0.3.0 is the default for a manual build.
+    // scripts/verify-consumer.sh passes the SDK version; 0.4.0 is the default for a manual build.
     if (withSdk) {
-        implementation("local.signaldock:sdk-android:${providers.gradleProperty("signaldock.version").getOrElse("0.3.0")}")
+        implementation("local.signaldock:sdk-android:${providers.gradleProperty("signaldock.version").getOrElse("0.4.0")}")
         implementation(libs.kotlinx.coroutines.android)
     }
 }

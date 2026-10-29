@@ -1,6 +1,6 @@
 # SignalDock architecture onepager content
 
-Baseline: 2026-10-09, Q127. Updated for SDK 0.3.0: 2026-10-21 UTC. The product is implemented. No process-boundary script run, no release (R8) or Baseline Profile run on a physical device (one phone ran the instrumented tests, the debug device measurement, and the host-app cost with SDK 0.3.0, [issue 85](../../.scratch/signaldock/issues/85-device-verification-v0.3.0.md); the instrumented tests also ran with 0.2.0 code, [issue 73](../../.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md)), and the 216-run server matrix was not run (Q133, ADR-0013).
+Baseline: 2026-10-09, Q127. Updated for SDK 0.4.0: 2026-10-29 UTC. The product is implemented. No process-boundary script run, no release (R8) or Baseline Profile run on a physical device (one phone ran the instrumented tests, the debug device measurement, and the host-app cost with SDK 0.3.0, [issue 85](../../.scratch/signaldock/issues/85-device-verification-v0.3.0.md); the instrumented tests also ran with 0.2.0 code, [issue 73](../../.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md)), and the 216-run server matrix was not run (Q133, ADR-0013).
 
 ## Summary
 
@@ -25,7 +25,7 @@ SignalDock is an open-source Android SDK from Stackline. I designed it to extend
 1. Generate Kotlin models for the SDK and Ktor, and TypeScript models for the Dashboard, from OpenAPI. Keep the public SDK API, Room entities, jOOQ records, and transport DTOs separate by role.
 2. Apply Flyway SQL migrations to a temporary PostgreSQL schema, generate jOOQ sources, then compile the server. Do not reset the runtime database for code generation.
 3. Track generated Kotlin, TypeScript, and jOOQ sources in Git. Regenerate into an empty temporary output directory and compare file lists and contents. Compilation does not overwrite generated files. Keep schema diffs, fixtures, and integration checks.
-4. Package an AAR, POM, and metadata in a Maven repository ZIP. The ZIP is a GitHub Release artifact. Install `local.signaldock:sdk-android:0.3.0` in an independent Gradle consumer app. Verify artifact installation and an R8 release run without an SDK source project dependency.
+4. Package an AAR, POM, and metadata in a Maven repository ZIP. The ZIP is a GitHub Release artifact. Install `local.signaldock:sdk-android:0.4.0` in an independent Gradle consumer app. Verify artifact installation and an R8 release run without an SDK source project dependency.
 
 ## Event flow and storage responsibility
 

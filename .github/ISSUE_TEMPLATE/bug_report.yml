@@ -16,7 +16,7 @@ body:
     id: version
     attributes:
       label: Version or commit
-      description: SDK version (for example 0.3.0) or a commit hash.
+      description: SDK version (for example 0.4.0) or a commit hash.
     validations:
       required: true
   - type: textarea
