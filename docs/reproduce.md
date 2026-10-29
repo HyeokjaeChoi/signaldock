@@ -1,7 +1,7 @@
 # Reproduction guide
 
 This guide continues the README section "Reproduce from a clean clone". Do steps 1 to 3 there first: toolchain, Compose stack with `.env`, and `scripts/verify-consumer.sh`.
-The Android steps need an Android SDK and an emulator. The iOS steps are in [iOS SDK build and tests](#ios-sdk-build-and-tests) and the two sections after it; they need macOS with Xcode.
+The Android steps need an Android SDK and an emulator. The iOS steps are in [iOS SDK build and tests](#ios-sdk-build-and-tests) and the three sections after it; they need macOS with Xcode.
 The iOS sections were not part of that run; their record is [issue 18](../.scratch/ios-sdk/issues/18-ios-docs.md) (clean `git worktree`, 2026-10-29): ZIP, `verify-consumer-ios.sh`, Simulator launch against a separate stack, `simulator-durability.sh offline restart`, and `verify-ios.sh lint` and `manifest` ran. `tsan`, `asan`, `analyze`, and the other durability cases did not run there.
 Marks: **ran** means the command ran in a fresh clone on 2026-10-13 (record: issue 25). **not verified here** means it did not run, with the reason.
 
@@ -115,6 +115,31 @@ SIMCTL_CHILD_SIGNALDOCK_AUTORUN=1 \
 
 `SIGNALDOCK_AUTORUN=1` (Debug build only) sends the shop flow once: `product_viewed`, `add_to_cart`, `checkout_started`, and `purchase_completed`. Without it, use the screens by hand. After about 15 seconds, open `http://127.0.0.1:15173`: the four events show with platform `ios`, and the platform filter works. The diagnostics screen of the app shows `lastAck`. The Simulator uses the network of the Mac, so `127.0.0.1` is the local stack. Keep the stack and the env file for the durability section below. Its last paragraph has the cleanup commands.
 
+## iOS measurement
+
+`scripts/measure-ios-sdk.sh [path/to/signaldock-sdk-ios-X.Y.Z.zip]` measures what the iOS SDK costs a host app ([ADR-0047](adr/0047-ios-sdk.md) amendment "ticket 16, measurement method"; the iOS form of [ADR-0020](adr/0020-sdk-host-app-cost.md)). It is local only; CI does not run it. It needs macOS with full Xcode and an iOS Simulator runtime, and no server or Docker. Without an argument it builds a fresh release ZIP of `HEAD`, like `scripts/verify-consumer-ios.sh`.
+
+```sh
+scripts/measure-ios-sdk.sh                       # temporary Simulator, 20 runs per arm
+IOSCOST_DEVICE=<udid-or-name> IOSCOST_RUNS=5 scripts/measure-ios-sdk.sh
+```
+
+It builds two arms of the consumer app `compatibility/consumer-ios` in temporary copies (the checked-in app is not edited): `sdk` uses the SDK from the unzipped ZIP, and `nosdk` uses `perf/ios-host-cost/baseline`, an empty package with the same public signatures.
+
+- **Size:** `xcodebuild archive`, Release, `iphoneos` arm64, unsigned, with a link map. It reports the app folder, the main binary, the Mach-O segments, an unencrypted IPA zip, and the SDK share of the binary.
+- **Host cost on the Simulator:** a separate measurement build of each arm. It times `initialize()` and `track()` on the main thread (p50, p95, max), cold start (process start to first view and `simctl launch` wall time), and memory (`footprint`) 5 seconds after launch and after a burst of `track()` calls. The probe `perf/ios-host-cost/HostCostProbe.swift` is added to the temporary copy only. The endpoint is `http://127.0.0.1:9`, so nothing leaves the Mac.
+
+| Variable | Meaning |
+| --- | --- |
+| `IOSCOST_DEVICE` | Simulator UDID or name. Default: a temporary Simulator that the script creates and deletes |
+| `IOSCOST_RUNS` | Startup and idle-memory runs per arm. Default 20 |
+| `IOSCOST_BURST_RUNS` | Burst runs. Default 10 |
+| `IOSCOST_BURST` | `track()` calls per burst run. Default 500 |
+| `IOSCOST_IDLE` | Seconds before memory is read. Default 5 |
+| `IOSCOST_KEEP=1` | Keep the temporary build folder, to debug |
+
+Results go to `perf/sdk-results/ios-<sdk version>-<UTC date>/`: CSV files, `meta.json` (environment record), and `summary.md`. The committed run is [`perf/sdk-results/ios-0.1.0-20261029/summary.md`](../perf/sdk-results/ios-0.1.0-20261029/summary.md). It is a Simulator run on one shared Mac with a high load average, not a device run and not an SLA. A new run in your clone writes a new folder.
+
 ## iOS Simulator durability
 
 `scripts/simulator-durability.sh <simulator-udid> [case ...]` runs the SDK across process boundaries on an iOS Simulator ([ADR-0047](adr/0047-ios-sdk.md) D15, ADR-0011, ADR-0029). It is local only; CI does not run it. The cases are `kill_store kill_send restart update reinstall optout offline`. The default is all seven. Backup restore and full disk cannot run on a Simulator; the script prints them as `not run`.
@@ -170,10 +195,6 @@ docker compose -p "$MEASURE_PROJECT" --env-file "$MEASURE_ENV" down      # keeps
 
 It writes `perf/sdk-results/api<api>-<scenario>/` and `perf/sdk-results/summary.md` (the committed results came from the owner's runs; a new run overwrites that folder in your clone, so use a scratch clone). The `normal` scenario ran for this guide. `offline` and `burst` did not.
 By default it uses a debug build of the SDK and the emulator, so the numbers are not release numbers and not an SLA. For the R8 release build (ADR-0018) set `MEASURE_BUILD=release`; it needs an emulator image where `adb root` works (`google_apis`, not Google Play) and writes `perf/sdk-results/api<api>-release-<scenario>/`.
-
-### iOS measurement
-
-Measurement: see ticket 16 (pending). `.scratch/ios-sdk/issues/16-ios-measurement.md` plans the size and host-cost measurement on the Simulator; no script for it is in the repository yet.
 
 ### Physical phone (opt-in)
 
