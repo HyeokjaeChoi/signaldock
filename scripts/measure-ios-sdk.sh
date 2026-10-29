@@ -57,10 +57,11 @@ fi
 WORK="$(mktemp -d)"
 CREATED_SIM=""
 BOOTED_BY_US=0
+OURS=0  # set once the caller's Simulator is known to hold none of our bundle IDs
 cleanup() {
   [ -n "$CREATED_SIM" ] && { xcrun simctl shutdown "$CREATED_SIM" 2> /dev/null || true; xcrun simctl delete "$CREATED_SIM" 2> /dev/null || true; }
   if [ -z "$CREATED_SIM" ] && [ -n "$SIM" ]; then  # a Simulator of the caller: remove our apps; shut it down only if we booted it
-    for id in local.signaldock.consumerios local.signaldock.consumerios.nosdk; do xcrun simctl uninstall "$SIM" "$id" 2> /dev/null || true; done
+    [ "$OURS" = 1 ] && for id in local.signaldock.consumerios local.signaldock.consumerios.nosdk; do xcrun simctl uninstall "$SIM" "$id" 2> /dev/null || true; done
     [ "$BOOTED_BY_US" = 1 ] && { xcrun simctl shutdown "$SIM" 2> /dev/null || true; }
   fi
   if [ "${IOSCOST_KEEP:-0}" = 1 ]; then echo "kept: $WORK"; else rm -rf "$WORK"; fi
@@ -135,6 +136,7 @@ if [ -z "$CREATED_SIM" ]; then  # the apps are uninstalled at the end: never tou
       exit 1
     fi
   done
+  OURS=1
 fi
 echo "Simulator: $SIM"
 
