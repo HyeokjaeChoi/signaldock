@@ -18,7 +18,7 @@ SignalDock is an Android event collection SDK. It stores events on the device, r
 
 ### 60-second introduction
 
-SignalDock is an open-source Android SDK from Stackline. I designed it to extend my app development experience into public APIs, durable queues, failure recovery, contract management, and artifact distribution. A successful track call means Room has committed the event. Foreground triggers and WorkManager share one sender. The server checks eventId and content for duplicates, then sends an ACK after database commit. If the ACK is lost, the SDK resends the same ID. It updates the queue only after validating the full ACK. CI checks cover OpenAPI generated-source drift, and a script checks Maven ZIP installation in an independent R8 consumer app.
+SignalDock is an open-source Android SDK. I designed it to extend my app development experience into public APIs, durable queues, failure recovery, contract management, and artifact distribution. A successful track call means Room has committed the event. Foreground triggers and WorkManager share one sender. The server checks eventId and content for duplicates, then sends an ACK after database commit. If the ACK is lost, the SDK resends the same ID. It updates the queue only after validating the full ACK. CI checks cover OpenAPI generated-source drift, and a script checks Maven ZIP installation in an independent R8 consumer app.
 
 ## Contract generation and distribution
 

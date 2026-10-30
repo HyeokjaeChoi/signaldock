@@ -4,7 +4,7 @@
 
 ## Purpose and evaluation flow
 
-As an open-source release from Stackline, demonstrate Android SDK public API design, persistent storage, failure recovery, contract management, and independent distribution. The Dashboard helps verify results received by the server.
+As an open-source release, demonstrate Android SDK public API design, persistent storage, failure recovery, contract management, and independent distribution. The Dashboard helps verify results received by the server.
 
 1. The evaluator starts the local server, DB, and Dashboard. After SDK initialization succeeds, the demo app collects product-view, cart, and simulated-purchase events.
 2. Successful track means persistent storage in Room. Collection works offline, and explicit results report queue limits or invalid input.
