@@ -466,11 +466,11 @@ A complete app that uses the SDK from the Maven ZIP is the [consumer app](../com
 
 The iOS SDK has the same behavior as the Android SDK 0.3.0 (ADR-0047 D1). Sections 3 to 6, 8, and 9 apply to it, with the differences in this section. Section 7 (diagnostics) applies with one difference: on iOS `contractDeprecation` is part of the synthesized `==` of `Diagnostics`. Section 10 applies to the error kinds and the delivery table, but not to the log tags and messages (see Logging below), and `StorageFailure` holds codes (see Logging). Section 1 is replaced by Install below. The Swift type is `SignalDockSDK`, in the module `SignalDock`. The version is `0.1.0` (`SignalDockSDK.version`). The public API is in `sdk-ios/api/SignalDock.swiftinterface`; the declarations have DocC comments.
 
-**Status.** No iOS release exists yet. The first tag is `ios-v0.1.0`, and a tag push needs the owner's approval (ADR-0046 decision 8, spec section 4). Until then, build the ZIP yourself (see [reproduce.md](reproduce.md#ios-release-zip-and-consumer-app)).
+**Status.** The iOS SDK `0.1.0` is released as [`ios-v0.1.0`](https://github.com/HyeokjaeChoi/signaldock/releases/tag/ios-v0.1.0) (2026-10-29). To build the ZIP yourself, see [reproduce.md](reproduce.md#ios-release-zip-and-consumer-app).
 
 ### Install
 
-1. Download `signaldock-sdk-ios-X.Y.Z.zip` and `signaldock-sdk-ios-X.Y.Z.zip.sha256` from the GitHub Release `ios-vX.Y.Z`. Check the hash with `shasum -a 256 -c signaldock-sdk-ios-X.Y.Z.zip.sha256` in the folder with both files. The release also gets a build provenance attestation (`gh attestation verify signaldock-sdk-ios-X.Y.Z.zip --repo HyeokjaeChoi/signaldock --signer-workflow HyeokjaeChoi/signaldock/.github/workflows/release-ios.yml`). Gap: this command has not run on an iOS ZIP yet (ADR-0047 ticket 13 results).
+1. Download `signaldock-sdk-ios-X.Y.Z.zip` and `signaldock-sdk-ios-X.Y.Z.zip.sha256` from the GitHub Release `ios-vX.Y.Z`. Check the hash with `shasum -a 256 -c signaldock-sdk-ios-X.Y.Z.zip.sha256` in the folder with both files. The release also gets a build provenance attestation (`gh attestation verify signaldock-sdk-ios-X.Y.Z.zip --repo HyeokjaeChoi/signaldock --signer-workflow HyeokjaeChoi/signaldock/.github/workflows/release-ios.yml`). The command passed on the `ios-v0.1.0` ZIP (ADR-0047 amendment 2026-10-30).
 2. Unzip. The ZIP has one folder, `SignalDock/`, with `Package.swift`, `Sources/`, and `LICENSE` (ADR-0047 ticket 13 results).
 3. In Xcode, choose File, Add Package Dependencies, Add Local, and select that folder. Add the product `SignalDock` to the app target. `compatibility/consumer-ios/` does the same with a local package reference.
 

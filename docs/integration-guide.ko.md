@@ -466,11 +466,11 @@ Maven ZIP의 SDK를 쓰는 완전한 앱은 [consumer 앱](../compatibility/cons
 
 iOS SDK의 동작은 Android SDK 0.3.0과 같습니다(ADR-0047 D1). 이 절의 차이를 두고 3~6절, 8절, 9절이 iOS에도 적용됩니다. 7절(diagnostics)은 한 가지가 다릅니다. iOS에서는 `contractDeprecation`이 `Diagnostics`의 자동 생성 `==`에 포함됩니다. 10절의 오류 종류와 전송 표는 적용되지만 로그 tag와 메시지는 적용되지 않으며(아래 로그 참고), `StorageFailure`는 코드를 담습니다(로그 참고). 1절은 아래 설치가 대신합니다. Swift 타입은 `SignalDockSDK`이고 모듈은 `SignalDock`입니다. 버전은 `0.1.0`입니다(`SignalDockSDK.version`). public API는 `sdk-ios/api/SignalDock.swiftinterface`에 있고, 선언에는 DocC 주석이 있습니다.
 
-**상태.** iOS 릴리스는 아직 없습니다. 첫 tag는 `ios-v0.1.0`이며 tag push에는 owner의 승인이 필요합니다(ADR-0046 결정 8, spec 4절). 그 전에는 ZIP을 직접 빌드하세요([reproduce.md](reproduce.md#ios-release-zip-and-consumer-app) 참고).
+**상태.** iOS SDK `0.1.0`은 [`ios-v0.1.0`](https://github.com/HyeokjaeChoi/signaldock/releases/tag/ios-v0.1.0)으로 릴리스했습니다(2026-10-29). ZIP을 직접 빌드하려면 [reproduce.md](reproduce.md#ios-release-zip-and-consumer-app)를 참고하세요.
 
 ### 설치
 
-1. GitHub Release `ios-vX.Y.Z`에서 `signaldock-sdk-ios-X.Y.Z.zip`과 `signaldock-sdk-ios-X.Y.Z.zip.sha256`을 내려받습니다. 두 파일이 있는 폴더에서 `shasum -a 256 -c signaldock-sdk-ios-X.Y.Z.zip.sha256`으로 해시를 확인합니다. 릴리스에는 build provenance attestation도 붙습니다(`gh attestation verify signaldock-sdk-ios-X.Y.Z.zip --repo HyeokjaeChoi/signaldock --signer-workflow HyeokjaeChoi/signaldock/.github/workflows/release-ios.yml`). Gap: 이 명령은 아직 iOS ZIP에서 실행하지 않았습니다(ADR-0047 ticket 13 결과).
+1. GitHub Release `ios-vX.Y.Z`에서 `signaldock-sdk-ios-X.Y.Z.zip`과 `signaldock-sdk-ios-X.Y.Z.zip.sha256`을 내려받습니다. 두 파일이 있는 폴더에서 `shasum -a 256 -c signaldock-sdk-ios-X.Y.Z.zip.sha256`으로 해시를 확인합니다. 릴리스에는 build provenance attestation도 붙습니다(`gh attestation verify signaldock-sdk-ios-X.Y.Z.zip --repo HyeokjaeChoi/signaldock --signer-workflow HyeokjaeChoi/signaldock/.github/workflows/release-ios.yml`). 이 명령은 `ios-v0.1.0` ZIP에서 통과했습니다(ADR-0047 2026-10-30 추가 기록).
 2. 압축을 풉니다. ZIP에는 폴더 하나, `SignalDock/`이 있고 그 안에 `Package.swift`, `Sources/`, `LICENSE`가 있습니다(ADR-0047 ticket 13 결과).
 3. Xcode에서 File, Add Package Dependencies, Add Local을 선택하고 그 폴더를 고릅니다. 앱 target에 product `SignalDock`을 추가합니다. `compatibility/consumer-ios/`가 local package reference로 같은 일을 합니다.
 

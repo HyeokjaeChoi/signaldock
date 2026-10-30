@@ -4,7 +4,7 @@ All notable changes to SignalDock are listed here. The format follows [Keep a Ch
 
 ## [Unreleased]
 
-## [0.4.0] - 2026-10-30
+## [0.4.0] - 2026-10-29
 
 Fourth tagged release of the Android SDK. It has breaking changes before 1.0: see "Changed" and the upgrade steps in the [release notes](docs/releases/v0.4.0.md). The public API and the runtime dependency tree are the same as in 0.3.0. It sends the new field `sdkPlatform`, so deploy a server with `sdkPlatform` support first.
 
@@ -33,7 +33,7 @@ Fourth tagged release of the Android SDK. It has breaking changes before 1.0: se
 - `scripts/demo-seed.py` treats any 503 as uncertain, and a later-day rerun stops at the sentinel (PR #229).
 - The reset checks the 6 h guard again after it takes the lock (PR #230).
 
-## [iOS 0.1.0] - 2026-10-30
+## [iOS 0.1.0] - 2026-10-29
 
 First release of the iOS SDK, tag `ios-v0.1.0`. It is separate from the Android versions. See the [release notes](docs/releases/ios-v0.1.0.md).
 

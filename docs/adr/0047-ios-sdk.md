@@ -417,3 +417,12 @@ Code: `scripts/simulator-durability.sh`, `compatibility/consumer-ios/Sources/Pha
 - Run and environment: the ticket 15 file (`.scratch/ios-sdk/issues/15-simulator-durability.md`).
 
 Not verified here: an iOS 15 runtime, a physical device, backup restore, full disk, the GitHub runner (the script is local only).
+
+## Amendment (2026-10-30, ticket 19, first release)
+
+The ticket 13 results ("Reproducible", under D11) say the hash of the CI run is recorded after the first real run (ticket 19). This is that record. The decision text is unchanged.
+
+- `ios-v0.1.0` was released on 2026-10-29 (run 40904073430). The CI ZIP SHA-256 is `ee85713fb00640ab330a0b20e3576a9102d838f4157702b3e5ef2f29f4e36c3c`. The downloaded ZIP has the same value, and `shasum -a 256 -c` passed.
+- `gh attestation verify` with `--signer-workflow HyeokjaeChoi/signaldock/.github/workflows/release-ios.yml` exit code 0. The Gap lines about this command (README, integration guide section 13) are removed.
+- `scripts/verify-consumer-ios.sh` on the downloaded ZIP: exit code 0 (Debug and Release build).
+- Live demo check: the consumer app (Debug, iPhone 18 Pro Max Simulator, iOS 27.0) sent 8 events to the cloud demo. The last ACK was accepted 4, duplicate 0, rejected 0, with no queued events. The server stored 8 events with `sdkPlatform` `ios`, `sdkVersion` `0.1.0`, and `planStatus` `planned`. Record: `.scratch/ios-sdk/issues/19-release-android-0.4.0-ios-0.1.0.md`.

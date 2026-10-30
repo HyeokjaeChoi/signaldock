@@ -6,11 +6,11 @@ SignalDock is an open-source project. The stack is for local use. A public demo 
 
 | Platform | Version | Security fixes |
 | --- | --- | --- |
-| Android | 0.4.x | Best effort, from the release `v0.4.0` (not released yet) |
-| Android | 0.3.x | Best effort until `v0.4.0` is released, then none (superseded by 0.4.x) |
+| Android | 0.4.x | Best effort, from the release `v0.4.0` |
+| Android | 0.3.x | None (superseded by 0.4.x) |
 | Android | 0.2.x | None (superseded by 0.3.x) |
 | Android | 0.1.x | None (superseded by 0.2.x) |
-| iOS | 0.1.x | Best effort, from the release `ios-v0.1.0` (not released yet) |
+| iOS | 0.1.x | Best effort, from the release `ios-v0.1.0` |
 | Earlier than 0.1.0 | | None (no release exists) |
 
 The project is before 1.0 and has one maintainer. There is no fixed response time and no SLA. See [docs/versioning.md](docs/versioning.md) for the support window.
