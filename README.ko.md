@@ -7,10 +7,10 @@
 이 모노레포에는 SDK, 로컬 데이터 처리 서버, 그리고 둘의 설계가 들어 있습니다.
 앱의 `track()` 호출에서 시작해 durable queue, 재시도, 서버 중복 제거, 독립 아티팩트 설치까지 이어지는 경로를 검토할 수 있습니다.
 
-> **상태: 2026-10-29**
-> 첫 릴리스 범위가 완료되었습니다. SDK v0.3.0은 마지막으로 태그된 Android 릴리스이고, v0.4.0은 준비되어 소유자의 태그를 기다립니다. v0.4.0은 새 필드 `sdkPlatform`을 보내므로, `sdkPlatform`을 지원하는 서버가 먼저 실행 중이어야 합니다([릴리스 노트](docs/releases/v0.4.0.md), [CHANGELOG.md](CHANGELOG.md)). 공개 API는 0.3.0과 같습니다. SDK, 서버, Android 데모 앱, Dashboard가 구현되어 있습니다. 전송 실패 E2E, 기기 내구성, 계약·DB 변경 검사, 서버 부하 측정, SDK 기기 측정은 스크립트와 기록된 결과가 있습니다([이슈 20~24](.scratch/signaldock/issues/)). [클린 클론에서 재현](#클린-클론에서-재현)에는 새 클론에서 실행한 명령과 검증하지 못한 항목이 정리되어 있습니다. 검증하지 못한 항목은 process 경계 스크립트, 릴리스(R8) 빌드와 Baseline Profile의 실기기 측정(instrumented test, debug 기기 측정, 호스트 앱 비용은 SDK 0.3.0으로 실기기 한 대에서 실행했습니다, [issue 85](.scratch/signaldock/issues/85-device-verification-v0.3.0.md); instrumented test는 0.2.0 코드로도 실행했습니다, [issue 73](.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md))와 서버 측정 matrix 전체(실행하지 않음, Q133)입니다.
+> **상태: 2026-10-30**
+> 첫 릴리스 범위가 완료되었습니다. SDK [v0.4.0](https://github.com/HyeokjaeChoi/signaldock/releases/tag/v0.4.0)은 최신 Android 릴리스입니다(2026-10-29). 새 필드 `sdkPlatform`을 보내므로, `sdkPlatform`을 지원하는 서버가 먼저 실행 중이어야 합니다. 라이브 데모는 `demo-v0.1.5`부터 이 서버를 실행합니다([릴리스 노트](docs/releases/v0.4.0.md), [CHANGELOG.md](CHANGELOG.md)). 공개 API는 0.3.0과 같습니다. SDK, 서버, Android 데모 앱, Dashboard가 구현되어 있습니다. 전송 실패 E2E, 기기 내구성, 계약·DB 변경 검사, 서버 부하 측정, SDK 기기 측정은 스크립트와 기록된 결과가 있습니다([이슈 20~24](.scratch/signaldock/issues/)). [클린 클론에서 재현](#클린-클론에서-재현)에는 새 클론에서 실행한 명령과 검증하지 못한 항목이 정리되어 있습니다. 검증하지 못한 항목은 process 경계 스크립트, 릴리스(R8) 빌드와 Baseline Profile의 실기기 측정(instrumented test, debug 기기 측정, 호스트 앱 비용은 SDK 0.3.0으로 실기기 한 대에서 실행했습니다, [issue 85](.scratch/signaldock/issues/85-device-verification-v0.3.0.md); instrumented test는 0.2.0 코드로도 실행했습니다, [issue 73](.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md))와 서버 측정 matrix 전체(실행하지 않음, Q133)입니다.
 >
-> **iOS SDK 0.1.0: 2026-10-29.** iOS SDK(`sdk-ios/`), consumer 및 데모 앱, Simulator durability 스크립트, 릴리스 ZIP workflow는 저장소에 있습니다. iOS 릴리스는 아직 없습니다. 첫 tag인 `ios-v0.1.0`은 push에 소유자의 승인이 필요하고, `sdkPlatform`을 보내는 Android SDK 0.4.0도 아직 tag가 없습니다. [iOS SDK](#ios-sdk)를 참고하세요.
+> **iOS SDK 0.1.0: 2026-10-30.** iOS SDK(`sdk-ios/`), consumer 및 데모 앱, Simulator durability 스크립트, 릴리스 ZIP workflow는 저장소에 있습니다. 첫 iOS 릴리스 [`ios-v0.1.0`](https://github.com/HyeokjaeChoi/signaldock/releases/tag/ios-v0.1.0)을 2026-10-29에 게시했습니다. [iOS SDK](#ios-sdk)를 참고하세요.
 
 설계 문서, ADR, 이슈 파일, `docs/reproduce.md`는 영어로만 제공합니다. 이 README는 해당 문서로 연결합니다.
 
@@ -21,13 +21,17 @@
 스크린샷은 테스트 이벤트 120개를 넣은 Dashboard와, `perf/results/`에 기록된 실행을 보여 주는 벤치마크 보고서입니다.
 데모 `track()`부터 Dashboard 수신까지 보여 주는 짧은 영상: [25-demo-track-to-dashboard.mp4](.scratch/signaldock/evidence/25-demo-track-to-dashboard.mp4).
 
-아래 스크린샷 세 장은 2026-10-26 UTC에 라이브 클라우드 데모에서 찍었으며, 시드 데이터(`scripts/demo-seed.py`)를 보여 줍니다.
+아래 처음 스크린샷 세 장은 2026-10-26 UTC에 라이브 클라우드 데모에서 찍었으며, 시드 데이터(`scripts/demo-seed.py`)를 보여 줍니다.
 
 ![라이브 데모 Dashboard 개요: 핵심 수치(오늘 수신 이벤트 501개, 계획 위반 28건), 필터, 이벤트 목록.](docs/images/demo-overview.png)
 
 ![Plan status 필터를 Invalid properties로 설정한 라이브 데모 Dashboard: product_viewed 이벤트 하나를 선택했고, 상세에 product_id가 숫자 12345로, 옆에 저장된 JSON이 보입니다.](docs/images/demo-plan-violations.png)
 
 ![라이브 데모 Dashboard: 이름별·시간별 이벤트 수와, SDK 클라이언트 보고를 버전과 사유별로 보여 주는 Dropped events 패널(총 81건).](docs/images/demo-dropped-events.png)
+
+![iOS 0.1.0 consumer 앱의 이벤트 8개가 맨 위에, Android 이벤트가 그 아래에 있는 라이브 데모 Dashboard 이벤트 목록. 핵심 수치는 오늘 수신 406개, 계획 위반 22건입니다.](docs/images/demo-ios-events.png)
+
+마지막 스크린샷은 2026-10-30에 라이브 데모에서 찍었습니다. iOS Simulator에서 실행한 iOS 0.1.0 consumer 앱의 이벤트를 보여 줍니다.
 
 ## 여기서 시작
 
@@ -93,7 +97,7 @@ SDK는 버린 이벤트를 사유별로 세어 `POST /v1/client-reports`로 보�
 
 ## 범위와 검증
 
-첫 릴리스는 네이티브 Android SDK 하나와 로컬 프로젝트 하나를 다룹니다. iOS SDK `0.1.0`(아직 릴리스 전)은 iOS 앱에서 같은 동작을 합니다.
+첫 릴리스는 네이티브 Android SDK 하나와 로컬 프로젝트 하나를 다룹니다. iOS SDK `0.1.0`은 iOS 앱에서 같은 동작을 합니다.
 데모는 상품 조회, 장바구니, 모의 구매 흐름을 따릅니다. Dashboard는 SDK 연동을 검증하는 데 도움을 줍니다.
 Flutter, React Native, Unity 또는 WebView(native-web) bridge(Q150), 자동 이벤트, `identify`, 캠페인 / push, 퍼널, 다중 계정, 공개 인터넷 운영, Maven Central은 이번 릴리스에 포함하지 않습니다.
 
@@ -198,7 +202,7 @@ docker compose down --volumes           # RESET: deletes the DB volume and ALL s
 
 ## 앱에 SDK 추가
 
-소유자가 태그 `v0.4.0`을 푸시한 뒤에는 Maven repository ZIP과 `.sha256` 파일이 GitHub Release [`v0.4.0`](https://github.com/HyeokjaeChoi/signaldock/releases/tag/v0.4.0)의 배포 파일입니다([릴리스 노트](docs/releases/v0.4.0.md), [변경 이력](CHANGELOG.md)). 그때까지 릴리스된 최신 버전은 `v0.3.0`입니다. `scripts/release.sh 0.4.0`이 둘을 `dist/`에 만듭니다. ZIP을 검증한 뒤 폴더에 푸세요.
+Maven repository ZIP과 `.sha256` 파일이 GitHub Release [`v0.4.0`](https://github.com/HyeokjaeChoi/signaldock/releases/tag/v0.4.0)의 배포 파일입니다([릴리스 노트](docs/releases/v0.4.0.md), [변경 이력](CHANGELOG.md)). 이 버전이 최신 릴리스입니다. `scripts/release.sh 0.4.0`이 둘을 `dist/`에 만듭니다. ZIP을 검증한 뒤 폴더에 푸세요.
 
 ```sh
 shasum -a 256 -c signaldock-sdk-android-0.4.0-maven.zip.sha256   # 두 파일이 있는 폴더에서 실행
@@ -254,9 +258,9 @@ SDK는 1.0 이전입니다. 수정은 가능한 범위에서 제공합니다(bes
 
 ### iOS SDK
 
-상태: iOS SDK `0.1.0`은 `sdk-ios/`에 구현되어 있지만 iOS 릴리스는 아직 없습니다. 첫 tag인 `ios-v0.1.0`은 `sdkPlatform`을 지원하는 서버를 배포한 뒤 소유자의 승인을 받아 push합니다([ADR-0046](docs/adr/0046-sdk-platform-field.md)). 그 전에는 ZIP을 직접 빌드하세요. `scripts/build-ios-release-zip.sh 0.1.0`이 `dist/signaldock-sdk-ios-0.1.0.zip`과 `.sha256` 파일을 만듭니다([docs/reproduce.md](docs/reproduce.md)).
+상태: iOS SDK `0.1.0`은 [`ios-v0.1.0`](https://github.com/HyeokjaeChoi/signaldock/releases/tag/ios-v0.1.0)으로 릴리스했습니다(2026-10-29). `sdkPlatform`을 지원하는 서버를 먼저 배포했습니다([ADR-0046](docs/adr/0046-sdk-platform-field.md)). ZIP을 직접 빌드하려면 `scripts/build-ios-release-zip.sh 0.1.0`을 실행하세요. 이 스크립트가 `dist/signaldock-sdk-ios-0.1.0.zip`과 `.sha256` 파일을 만듭니다([docs/reproduce.md](docs/reproduce.md)).
 
-릴리스 ZIP으로 설치합니다. 릴리스 `ios-vX.Y.Z`에는 `signaldock-sdk-ios-X.Y.Z.zip`과 `signaldock-sdk-ios-X.Y.Z.zip.sha256` 파일이 붙습니다([`release-ios.yml`](.github/workflows/release-ios.yml)). `shasum -a 256 -c`로 해시를 확인하고 압축을 푼 뒤, Xcode에서 File, Add Package Dependencies, Add Local을 선택합니다. 압축을 푼 `SignalDock/` 폴더를 고르고 앱 target에 product `SignalDock`을 추가합니다. 원격 Swift Package Manager URL, CocoaPods, XCFramework는 아직 없습니다([ADR-0047](docs/adr/0047-ios-sdk.md) D11).
+릴리스 ZIP으로 설치합니다. 릴리스 `ios-vX.Y.Z`에는 `signaldock-sdk-ios-X.Y.Z.zip`과 `signaldock-sdk-ios-X.Y.Z.zip.sha256` 파일이 있습니다([`release-ios.yml`](.github/workflows/release-ios.yml)). `shasum -a 256 -c`로 해시를 확인하고 압축을 푼 뒤, Xcode에서 File, Add Package Dependencies, Add Local을 선택합니다. 압축을 푼 `SignalDock/` 폴더를 고르고 앱 target에 product `SignalDock`을 추가합니다. 원격 Swift Package Manager URL, CocoaPods, XCFramework는 아직 없습니다([ADR-0047](docs/adr/0047-ios-sdk.md) D11).
 
 ```swift
 import SignalDock
@@ -282,8 +286,8 @@ case .failure(let error): print(error)
 - 재시작 뒤 첫 잠금 해제 전에는 시스템이 SDK 파일을 거부할 수 있습니다. 그러면 `initialize`가 `storageFailure`를 반환하므로 나중에 다시 호출하세요.
 - Simulator는 백업 복원과 디스크 가득 참을 재현할 수 없습니다. Simulator 수치는 실기기 수치가 아닙니다. 실제 iPhone에서는 실행하지 않았습니다.
 - GitHub macOS runner에는 iOS 15 Simulator runtime이 없습니다. 패키지는 iOS 15용으로 빌드하지만, 테스트는 runner에 있는 가장 오래된 runtime에서 실행합니다(마지막 기록된 실행에서는 iOS 26.2). executor의 iOS 15 형태는 실행 테스트를 하지 않았습니다.
-- source ZIP에는 코드 서명이 없습니다. SHA-256 파일과 provenance attestation이 있습니다. attestation은 아직 실제 iOS 릴리스에서 실행하지 않았습니다.
-- `0.1.0`의 범위 밖(보류, 거부 아님): 원격 Swift Package Manager와 Maven Central(함께 진행), CocoaPods, XCFramework, app extension, Objective-C와 completion-handler API, `BGTaskScheduler`, 실제 iPhone 측정, iOS 앱과 클라우드 데모의 연결.
+- source ZIP에는 코드 서명이 없습니다. SHA-256 파일과 provenance attestation이 있습니다. `ios-v0.1.0` ZIP에서 `gh attestation verify`가 통과했습니다.
+- `0.1.0`의 범위 밖(보류, 거부 아님): 원격 Swift Package Manager와 Maven Central(함께 진행), CocoaPods, XCFramework, app extension, Objective-C와 completion-handler API, `BGTaskScheduler`, 실제 iPhone 측정, iOS 앱에 내장된 클라우드 데모 연결(2026-10-30에 Simulator에서 한 번 수동으로 이벤트를 보냄. 위 스크린샷 참고).
 
 ## 저장소 안내
 

@@ -7,10 +7,10 @@ Android and iOS event SDKs designed to save events on the device and confirm ser
 This monorepo contains the SDK, a local data processing server, and their design.
 Review the path from an app's `track()` call through a durable queue, retries, server deduplication, and independent artifact installation.
 
-> **Status: 2026-10-29**
-> The first release scope is done. SDK v0.3.0 is the last tagged Android release; v0.4.0 is prepared and waits for the owner's tag. It sends the new field `sdkPlatform`, so a server with `sdkPlatform` support must run first ([release notes](docs/releases/v0.4.0.md), [CHANGELOG.md](CHANGELOG.md)). The public API does not change from 0.3.0. The SDK, the server, the Android demo app, and the Dashboard are implemented. Delivery failure E2E, device durability, contract and DB change checks, server load measurement, and SDK device measurement have scripts and recorded results ([issues 20 to 24](.scratch/signaldock/issues/)). [Reproduce from a clean clone](#reproduce-from-a-clean-clone) lists the commands that were run in a fresh clone, and what was not verified: the process-boundary script, the release (R8) build and the Baseline Profile on a physical device (the instrumented tests, the debug device measurement, and the host-app cost ran on one phone with SDK 0.3.0, [issue 85](.scratch/signaldock/issues/85-device-verification-v0.3.0.md); the instrumented tests also ran with 0.2.0 code, [issue 73](.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md)), and the full server measurement matrix (not run, Q133).
+> **Status: 2026-10-30**
+> The first release scope is done. SDK [v0.4.0](https://github.com/HyeokjaeChoi/signaldock/releases/tag/v0.4.0) is the latest Android release (2026-10-29). It sends the new field `sdkPlatform`, so a server with `sdkPlatform` support must run first; the live demo has run it since `demo-v0.1.5` ([release notes](docs/releases/v0.4.0.md), [CHANGELOG.md](CHANGELOG.md)). The public API does not change from 0.3.0. The SDK, the server, the Android demo app, and the Dashboard are implemented. Delivery failure E2E, device durability, contract and DB change checks, server load measurement, and SDK device measurement have scripts and recorded results ([issues 20 to 24](.scratch/signaldock/issues/)). [Reproduce from a clean clone](#reproduce-from-a-clean-clone) lists the commands that were run in a fresh clone, and what was not verified: the process-boundary script, the release (R8) build and the Baseline Profile on a physical device (the instrumented tests, the debug device measurement, and the host-app cost ran on one phone with SDK 0.3.0, [issue 85](.scratch/signaldock/issues/85-device-verification-v0.3.0.md); the instrumented tests also ran with 0.2.0 code, [issue 73](.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md)), and the full server measurement matrix (not run, Q133).
 >
-> **iOS SDK 0.1.0: 2026-10-29.** The iOS SDK (`sdk-ios/`), its consumer and demo app, the Simulator durability script, and the release ZIP workflow are in the repository. No iOS release exists yet: the first tag, `ios-v0.1.0`, needs the owner's approval to push, and Android SDK 0.4.0 (which sends `sdkPlatform`) is not tagged either. See [iOS SDK](#ios-sdk).
+> **iOS SDK 0.1.0: 2026-10-30.** The iOS SDK (`sdk-ios/`), its consumer and demo app, the Simulator durability script, and the release ZIP workflow are in the repository. The first iOS release, [`ios-v0.1.0`](https://github.com/HyeokjaeChoi/signaldock/releases/tag/ios-v0.1.0), was published on 2026-10-29. See [iOS SDK](#ios-sdk).
 
 ![The Dashboard with one stored event selected: the event list on the left, the event details and stored JSON on the right.](docs/images/dashboard.png)
 
@@ -26,6 +26,10 @@ These three screenshots are from the live cloud demo on 2026-10-26 UTC. They sho
 ![The live demo Dashboard with the Plan status filter set to Invalid properties: one product_viewed event is selected, and the details show product_id as the number 12345 next to the stored JSON.](docs/images/demo-plan-violations.png)
 
 ![The live demo Dashboard: event counts by name and by hour, and the Dropped events panel with SDK client reports by version and reason (81 in total).](docs/images/demo-dropped-events.png)
+
+![The live demo Dashboard event list with eight events from the iOS 0.1.0 consumer app at the top and Android events below; key figures show 406 events received today and 22 plan violations.](docs/images/demo-ios-events.png)
+
+The last screenshot is from the live demo on 2026-10-30. It shows events from the iOS 0.1.0 consumer app that ran on the iOS Simulator.
 
 ## Start here
 
@@ -91,7 +95,7 @@ The first coordinate is `local.signaldock:sdk-android:0.4.0` (local only, not Ma
 
 ## Scope and verification
 
-The first release covers a native Android SDK and one local project. The iOS SDK `0.1.0` (not released yet) has the same behavior for iOS apps.
+The first release covers a native Android SDK and one local project. The iOS SDK `0.1.0` has the same behavior for iOS apps.
 The demo follows product view, cart, and simulated purchase. The Dashboard helps verify SDK integration.
 Flutter, React Native, Unity or WebView (native-web) bridges (Q150), automatic events, `identify`, campaign / push, funnels, multiple accounts, public internet operation, and Maven Central are outside this release.
 
@@ -196,7 +200,7 @@ Warning: `--volumes` deletes the PostgreSQL data. You cannot undo it. Use it onl
 
 ## Add the SDK to an app
 
-After the owner pushes the tag `v0.4.0`, the Maven repository ZIP and its `.sha256` file are release artifacts of the GitHub Release [`v0.4.0`](https://github.com/HyeokjaeChoi/signaldock/releases/tag/v0.4.0) ([release notes](docs/releases/v0.4.0.md), [changelog](CHANGELOG.md)); the latest released version is `v0.3.0` until then. `scripts/release.sh 0.4.0` builds both into `dist/`. Verify the ZIP, then unzip it into a folder:
+The Maven repository ZIP and its `.sha256` file are release artifacts of the GitHub Release [`v0.4.0`](https://github.com/HyeokjaeChoi/signaldock/releases/tag/v0.4.0) ([release notes](docs/releases/v0.4.0.md), [changelog](CHANGELOG.md)); it is the latest released version. `scripts/release.sh 0.4.0` builds both into `dist/`. Verify the ZIP, then unzip it into a folder:
 
 ```sh
 shasum -a 256 -c signaldock-sdk-android-0.4.0-maven.zip.sha256   # run in the folder with both files
@@ -252,9 +256,9 @@ The [SDK integration guide](docs/integration-guide.md) ([한국어](docs/integra
 
 ### iOS SDK
 
-Status: the iOS SDK `0.1.0` is implemented in `sdk-ios/`, but no iOS release exists yet. The first tag, `ios-v0.1.0`, needs the owner's approval to push, after the server with `sdkPlatform` support is deployed ([ADR-0046](docs/adr/0046-sdk-platform-field.md)). Until then, build the ZIP yourself: `scripts/build-ios-release-zip.sh 0.1.0` writes `dist/signaldock-sdk-ios-0.1.0.zip` and its `.sha256` file ([docs/reproduce.md](docs/reproduce.md)).
+Status: the iOS SDK `0.1.0` is released as [`ios-v0.1.0`](https://github.com/HyeokjaeChoi/signaldock/releases/tag/ios-v0.1.0) (2026-10-29), after the server with `sdkPlatform` support was deployed ([ADR-0046](docs/adr/0046-sdk-platform-field.md)). To build the ZIP yourself, run `scripts/build-ios-release-zip.sh 0.1.0`; it writes `dist/signaldock-sdk-ios-0.1.0.zip` and its `.sha256` file ([docs/reproduce.md](docs/reproduce.md)).
 
-Install from the release ZIP. A release `ios-vX.Y.Z` will have the assets `signaldock-sdk-ios-X.Y.Z.zip` and `signaldock-sdk-ios-X.Y.Z.zip.sha256` ([`release-ios.yml`](.github/workflows/release-ios.yml)). Check the hash with `shasum -a 256 -c`, unzip, and in Xcode choose File, Add Package Dependencies, Add Local. Select the unzipped `SignalDock/` folder and add the product `SignalDock` to your app target. There is no remote Swift Package Manager URL, no CocoaPods, and no XCFramework yet ([ADR-0047](docs/adr/0047-ios-sdk.md) D11).
+Install from the release ZIP. A release `ios-vX.Y.Z` has the assets `signaldock-sdk-ios-X.Y.Z.zip` and `signaldock-sdk-ios-X.Y.Z.zip.sha256` ([`release-ios.yml`](.github/workflows/release-ios.yml)). Check the hash with `shasum -a 256 -c`, unzip, and in Xcode choose File, Add Package Dependencies, Add Local. Select the unzipped `SignalDock/` folder and add the product `SignalDock` to your app target. There is no remote Swift Package Manager URL, no CocoaPods, and no XCFramework yet ([ADR-0047](docs/adr/0047-ios-sdk.md) D11).
 
 ```swift
 import SignalDock
@@ -280,8 +284,8 @@ Platform differences and known limits:
 - Before the first unlock after a restart, the system can refuse the SDK files. Then `initialize` returns `storageFailure`; call it again later.
 - The Simulator cannot reproduce a backup restore or a full disk. Simulator numbers are not device numbers. Nothing ran on a physical iPhone.
 - The GitHub macOS runner has no iOS 15 Simulator runtime. The package builds for iOS 15, but the tests run on the oldest runtime that the runner has (iOS 26.2 on the last recorded run). The iOS 15 form of the executor is not run-tested.
-- The source ZIP is not code-signed. It has a SHA-256 file and a provenance attestation. The attestation has not run on a real iOS release yet.
-- Out of scope for `0.1.0` (deferred, not rejected): remote Swift Package Manager and Maven Central together, CocoaPods, XCFramework, app extensions, Objective-C and completion-handler APIs, `BGTaskScheduler`, measurement on a physical iPhone, and the connection of the iOS app to the cloud demo.
+- The source ZIP is not code-signed. It has a SHA-256 file and a provenance attestation. `gh attestation verify` passed on the `ios-v0.1.0` ZIP.
+- Out of scope for `0.1.0` (deferred, not rejected): remote Swift Package Manager and Maven Central together, CocoaPods, XCFramework, app extensions, Objective-C and completion-handler APIs, `BGTaskScheduler`, measurement on a physical iPhone, and a built-in connection of the iOS app to the cloud demo (one manual Simulator run sent events to it on 2026-10-30; see the screenshot above).
 
 ## Repository guide
 
