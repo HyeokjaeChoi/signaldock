@@ -19,7 +19,7 @@ Review the path from an app's `track()` call through a durable queue, retries, s
 The screenshots show the Dashboard and the benchmark report with 120 seeded test events and the recorded runs in `perf/results/`.
 A short video of demo `track()` to Dashboard receipt: [25-demo-track-to-dashboard.mp4](.scratch/signaldock/evidence/25-demo-track-to-dashboard.mp4).
 
-These three screenshots are from the live cloud demo on 2026-10-26 UTC. They show its seed data (`scripts/demo-seed.py`).
+The first three screenshots below are from the live cloud demo on 2026-10-26 UTC. They show its seed data (`scripts/demo-seed.py`).
 
 ![The live demo Dashboard overview: key figures (501 events received today, 28 plan violations), filters, and the event list.](docs/images/demo-overview.png)
 
