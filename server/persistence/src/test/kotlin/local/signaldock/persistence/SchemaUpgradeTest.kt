@@ -50,7 +50,8 @@ class SchemaUpgradeTest {
     private val c = UUID.fromString("33333333-3333-4333-8333-333333333333")
     private val d = UUID.fromString("44444444-4444-4444-8444-444444444444")
     private val installation = UUID.fromString("47c4d89f-352a-41da-9b31-529ea756515a")
-    private val october = Period(Instant.parse("2026-10-01T00:00:00Z"), Instant.parse("2026-10-31T00:00:00Z"))
+    // Ends far in the future: the empty-database test stores a row with receivedAt = now, which must stay in the window.
+    private val window = Period(Instant.parse("2026-10-01T00:00:00Z"), Instant.parse("2100-01-01T00:00:00Z"))
     private val noFilter = EventFilter(null, null, null)
 
     @AfterTest
@@ -60,8 +61,8 @@ class SchemaUpgradeTest {
     fun `empty database migrates to head and serves ingestion and queries`() = runBlocking {
         val database = freshDatabase()
         database.migrate()
-        assertEquals(0, QueryStore(database).countByName(CountQuery(october, noFilter)).items.size)
-        assertEquals(0, QueryStore(database).countClientReports(ClientReportCountQuery(october, null)).items.size)
+        assertEquals(0, QueryStore(database).countByName(CountQuery(window, noFilter)).items.size)
+        assertEquals(0, QueryStore(database).countClientReports(ClientReportCountQuery(window, null)).items.size)
         assertEquals(ReceiptStatus.ACCEPTED, store(database, a, "n").status)
         assertEquals(1, QueryStore(database).list(listQuery()).items.size)
     }
@@ -94,14 +95,14 @@ class SchemaUpgradeTest {
         assertEquals(PropertyValue.Flag(true), detail.properties["in_stock"])
         assertEquals(
             setOf("product_viewed" to 3L, "purchase_completed" to 1L),
-            query.countByName(CountQuery(october, noFilter)).items.map { it.name to it.count }.toSet(),
+            query.countByName(CountQuery(window, noFilter)).items.map { it.name to it.count }.toSet(),
         )
 
         // Plan status (V2): rows written at V1 are "not checked" (null); the row written at V2 keeps its status.
         assertNull(detail.summary.planStatus)
         assertEquals(PlanStatus.PLANNED, assertNotNull(query.find(c)).summary.planStatus)
-        assertEquals(PlanStatusCounts(planned = 1, unplannedEvent = 0, invalidProperties = 0, notChecked = 3), query.countByPlanStatus(CountQuery(october, noFilter)))
-        assertEquals(listOf(c), query.list(ListQuery(october, EventFilter(null, null, null, PlanStatus.PLANNED), SortOrder.NEWEST_FIRST, 50, null)).items.map { it.eventId })
+        assertEquals(PlanStatusCounts(planned = 1, unplannedEvent = 0, invalidProperties = 0, notChecked = 3), query.countByPlanStatus(CountQuery(window, noFilter)))
+        assertEquals(listOf(c), query.list(ListQuery(window, EventFilter(null, null, null, PlanStatus.PLANNED), SortOrder.NEWEST_FIRST, 50, null)).items.map { it.eventId })
 
         // Client reports (V3): rows written at V3 are counted, and a new report adds to them (ADR-0036).
         assertEquals(
@@ -110,18 +111,18 @@ class SchemaUpgradeTest {
                 ClientReportCount(SdkPlatform.ANDROID, "0.1.0", DiscardReason.QUEUE_FULL, 3),
                 ClientReportCount(SdkPlatform.ANDROID, "0.1.0", DiscardReason.STORAGE_ERROR, 2),
             ),
-            query.countClientReports(ClientReportCountQuery(october, null)).items,
+            query.countClientReports(ClientReportCountQuery(window, null)).items,
         )
 
         // Platform (V4, ADR-0046): rows written before V4 are `android`; the row written at V4 keeps `ios`.
         assertEquals(SdkPlatform.ANDROID, assertNotNull(query.find(a)).summary.sdkPlatform)
         assertEquals(SdkPlatform.IOS, assertNotNull(query.find(d)).summary.sdkPlatform)
-        fun platform(p: SdkPlatform) = ListQuery(october, EventFilter(null, null, null, sdkPlatform = p), SortOrder.OLDEST_FIRST, 50, null)
+        fun platform(p: SdkPlatform) = ListQuery(window, EventFilter(null, null, null, sdkPlatform = p), SortOrder.OLDEST_FIRST, 50, null)
         assertEquals(listOf(a, b, c), query.list(platform(SdkPlatform.ANDROID)).items.map { it.eventId })
         assertEquals(listOf(d), query.list(platform(SdkPlatform.IOS)).items.map { it.eventId })
         assertEquals(
             listOf(ClientReportCount(SdkPlatform.ANDROID, "0.1.0", DiscardReason.QUEUE_FULL, 3), ClientReportCount(SdkPlatform.ANDROID, "0.1.0", DiscardReason.STORAGE_ERROR, 2)),
-            query.countClientReports(ClientReportCountQuery(october, SdkPlatform.ANDROID)).items,
+            query.countClientReports(ClientReportCountQuery(window, SdkPlatform.ANDROID)).items,
         )
         // The V4 migration dropped the column default: a row stored without a platform fails (ADR-0046: the ingest rules set it).
         assertFailsWith<Exception> {
@@ -142,7 +143,7 @@ class SchemaUpgradeTest {
         assertEquals(5, database.transaction { query { fetchCount(EVENTS) } })
     }
 
-    private fun listQuery(order: SortOrder = SortOrder.NEWEST_FIRST) = ListQuery(october, noFilter, order, 50, null)
+    private fun listQuery(order: SortOrder = SortOrder.NEWEST_FIRST) = ListQuery(window, noFilter, order, 50, null)
 
     private suspend fun store(database: Database, id: UUID, name: String) = store(database,
         StoredEvent(id, installation, name, Instant.parse("2026-10-01T00:00:00.123Z"), "0.1.0", SdkPlatform.ANDROID, emptyMap()))
