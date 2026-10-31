@@ -18,17 +18,15 @@ DECISIONS = (
     "127.0.0.1:8080); 5-10-20-40-80 req/s of 20 events; 30 s warm-up + 180 s measure; collection API only (ADR-0048)."
 )
 CONTAINERS = ["signaldock-server-1", "signaldock-db-1", "signaldock-dashboard-1", "sd-k6"]
-MAX_NON_OK, P95_FACTOR, K6_CPU_MAX = 0.01, 2.0, 50.0
+MAX_NON_OK, P95_FACTOR, K6_CPU_MEAN = 0.01, 2.0, 45.0  # 90% of the 0.5 CPU quota of k6
 
 
 def verdicts(stages):
     """ADR-0048 Decision 4 with the clarification of 2026-10-31: `invalid` only when k6 itself was at its CPU limit."""
     base = stages[0]["p95_ms"]
     for s in stages:
-        k6 = s.get("k6_cpu_max_full_run")
-        if k6 is None:
-            k6 = s["cpu_pct"]["sd-k6"]["max"]
-        k6_limit = k6 >= K6_CPU_MAX
+        # Mean over the measure window: one docker stats sample can be above the --cpus quota, so a max is not a limit.
+        k6_limit = s["cpu_pct"]["sd-k6"]["mean"] >= K6_CPU_MEAN
         why = []
         if s["non_ok_share"] > MAX_NON_OK:
             why.append("non-200 share above 1%")
@@ -37,7 +35,7 @@ def verdicts(stages):
         if s["dropped_iterations"] > 0:
             why.append("dropped iterations (50 VU cap reached)")
         if k6_limit:
-            why.append("k6 CPU max (full run) at or above 50%")
+            why.append("k6 CPU mean (measure window) at or above 45%")
         # Server hit: non-200 or p95 rule, or dropped iterations while k6 was under its limit.
         s["server_rule_hit"] = (s["non_ok_share"] > MAX_NON_OK or s["p95_ms"] > P95_FACTOR * base
                                 or (s["dropped_iterations"] > 0 and not k6_limit))
@@ -76,7 +74,7 @@ def table(stages):
         other = ", ".join(f"{k} {v}" for k, v in s["outcomes"].items() if k != "ok") or "-"
         out.append(f"| {s['rate']} | {s['rate'] * 20} | {s['measure_requests']} | {s['outcomes'].get('ok', 0)} | {other} | "
                    f"{s['p50_ms']} | {s['p95_ms']} | {s['p99_ms']} | {s['max_ms']} | {s['dropped_iterations']} | {'yes' if s['server_rule_hit'] else 'no'} | {s['verdict']} |")
-    out += ["", "CPU in percent of one CPU, mean / max of `docker stats` samples (about 7 s apart) in the measure window only (a sample can exceed the `--cpus` quota). The k6 limit check uses the max of the full run.", "",
+    out += ["", "CPU in percent of one CPU, mean / max of `docker stats` samples (about 7 s apart) in the measure window only (a sample can exceed the `--cpus` quota). The k6 limit check uses the k6 mean in this window.", "",
             "| req/s | " + " | ".join(c.replace("signaldock-", "").replace("-1", "") for c in CONTAINERS) + " |",
             "|---:|" + "---:|" * len(CONTAINERS)]
     for s in stages:
@@ -98,7 +96,7 @@ This file is written by `python3 perf/demo-vm/report.py perf/results/{run_id}`. 
 
 Target: {VM}. Load: k6 on the same VM, 20 events (about 1 KiB each) per request, 30 s warm-up and 180 s measure per stage, collection API only.
 Rules: non-200 share above 1%, p95 above 2x the first stage ({stages[0]['p95_ms']} ms), or dropped iterations above 0 (the 50 VU cap was reached because the server is slow) = a server rule hit.
-`pass` = no rule hit. `fail` = a server rule hit and k6 was under its limit. `invalid` = k6 CPU max over the full run was at or above 50%, so the stage is not a server latency number. `server rule hit` is shown for every stage, also for `invalid` ones.
+`pass` = no rule hit. `fail` = a server rule hit and k6 was under its limit. `invalid` = the k6 CPU mean in the measure window was at or above 45% (90% of its quota), so the stage is not a server latency number. `server rule hit` is shown for every stage, also for `invalid` ones.
 
 ## Stages
 
