@@ -166,7 +166,7 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--index", help="also write one JSON file with all given runs for perf/report/ (per-run values only)")
     a = ap.parse_args()
-    runs = [load(r) for r in a.runs]
+    runs = [load(r) for r in a.runs if (Path(r) / "manifest.json").exists()]  # skips perf/results/demo-vm-*/ (perf/demo-vm/report.py)
     over = [r for r in runs if r[1].get("kind") == "overload"]
     over.sort(key=lambda r: parse_ts(r[1]["times"]["test_start_wall"]))  # the report takes the last one as the latest
     runs = [r for r in runs if r[1].get("kind") != "overload"]
@@ -174,8 +174,11 @@ def main():
     latency_csv(runs + over, out.parent)
     if a.index:
         runs.sort(key=lambda r: (not r[1]["pilot"], r[1]["run_id"]))  # pilots first, then by id
-        Path(a.index).write_text(json.dumps({"targets_p95_ms": TARGET, "runs": [index_entry(*r) for r in runs],
-                                       "overload": [overload_entry(*r) for r in over]}, separators=(",", ":")) + "\n")
+        keep = json.loads(Path(a.index).read_text()).get("demo_vm") if Path(a.index).exists() else None  # written by perf/demo-vm/report.py
+        idx = {"targets_p95_ms": TARGET, "runs": [index_entry(*r) for r in runs], "overload": [overload_entry(*r) for r in over]}
+        if keep:
+            idx["demo_vm"] = keep
+        Path(a.index).write_text(json.dumps(idx, separators=(",", ":")) + "\n")
     L = ["# Server load measurement summary", "",
          "Source: `perf/summarize.py`. Values come from `summary.json` and `requests.csv` of each run. "
          "Targets are project targets set before measurement, not an SLA. Latency is HTTP start to completion as seen by k6 "

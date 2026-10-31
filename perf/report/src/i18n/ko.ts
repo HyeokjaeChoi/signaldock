@@ -12,7 +12,7 @@ export const ko = {
   },
   language: { label: "언어", en: "English", ko: "한국어" },
   theme: { label: "테마", dark: "어둡게", light: "밝게" },
-  toc: { label: "섹션", runs: "실행", overload: "과부하", sdk: "SDK", latency: "지연" },
+  toc: { label: "섹션", runs: "실행", overload: "과부하", sdk: "SDK", latency: "지연", demoVm: "데모 VM" },
   kpi: {
     label: "핵심 수치",
     verdict: "판정",
@@ -125,6 +125,20 @@ export const ko = {
       "마지막 30초: 수집/프로브 요청 {{requests}}건 중 200이 아닌 응답 {{non200}}건, 수집 p95 {{p95}} ms (기준 {{baseline}} ms, 한도 {{limit}} ms).",
     storage:
       "ACK한 (200) 수집 요청: {{ok}}건, 전부 저장되지 않은 요청: {{notStored}}건. 차단한 (503) 요청: {{shed}}건, 그 요청으로 저장된 행: {{shedRows}}건. 그 밖의 응답: {{other}}건. DB의 중복 ID: {{duplicates}}건. 누락된 k6 반복: {{dropped}}회.",
+  },
+  demoVm: {
+    title: "라이브 데모 VM 용량",
+    note: "출처: perf/results/index.json의 demo_vm (perf/demo-vm/report.py가 생성, ADR-0048). 같은 VM에서 k6, 수집 API만, 요청당 이벤트 20개, 배포된 그대로의 데모입니다. invalid 단계는 k6 자체가 한계에 닿은 것이므로 지연은 서버 값이 아니며 그래프에 그리지 않습니다. 지연 열: p50 / p95 / p99 / max (ms). CPU 열: 평균 / 최대 (CPU 1개 기준 %).",
+    rate: "req/s",
+    requests: "요청 수",
+    nonOk: "비정상 응답 비율",
+    latency: "지연 ms",
+    dropped: "누락",
+    cpu: "CPU {{name}}",
+    verdict: "판정",
+    latencyChart: "요청률별 p95와 p99 (ms)",
+    nonOkChart: "요청률별 비정상 응답 비율 (%)",
+    rateAxis: "초당 요청 수",
   },
   sdk: {
     title: "SDK 기기 측정 결과",

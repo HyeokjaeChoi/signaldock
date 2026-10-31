@@ -240,6 +240,7 @@ ADRs:
 - ADR-0018 (`docs/adr/0018-sdk-release-r8-measurement.md`), for the release-build SDK results (issue 33)
 - ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for `scripts/host-cost-measure.sh` and `perf/sdk-results/host-cost-api37/` (issue 36)
 - ADR-0047 (`docs/adr/0047-ios-sdk.md`), "Amendment (2026-10-29, ticket 16, measurement method)", for `scripts/measure-ios-sdk.sh`, `perf/ios_host_cost.py`, `perf/ios-host-cost/` (probe and baseline package), and `perf/sdk-results/ios-*/` (iOS ticket 16); "Amendment (2026-10-29, ticket 17, size budget)" for its `--size-only` mode
+- ADR-0048 (`docs/adr/0048-demo-vm-capacity-measurement.md`), for `perf/demo-vm/`, `perf/results/demo-vm-*/`, and the `demo_vm` section of `perf/report/`
 - ADR-0015 (`docs/adr/0015-web-ui-languages.md`), for the report page languages and `web-shared/`
 - ADR-0016 (`docs/adr/0016-telemetry-style-ui.md`), for the KPI strip, the table of contents, the overload bands, and the shared tokens (issue 28)
 

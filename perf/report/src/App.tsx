@@ -30,7 +30,14 @@ type Overload = {
   recovery: { first_clean_5s_window_after_overload_s: number | null; last_30s_collect_p95_ms: number | null; baseline_collect_p95_ms: number; limit_ms: number; last_30s_requests: number; last_30s_non_200: number };
   reconciliation: Record<string, number>; dropped_iterations: number;
 };
-type Data = { targets_p95_ms: Record<string, number>; runs: Run[]; overload?: Overload[] };
+// perf/demo-vm/report.py writes demo_vm into index.json: one entry per run dir of the live demo VM measurement (ADR-0048).
+type DemoStage = {
+  rate: number; measure_requests: number; outcomes: Record<string, number>; non_ok_share: number;
+  p50_ms: number; p95_ms: number; p99_ms: number; max_ms: number; dropped_iterations: number;
+  cpu_pct: Record<string, { mean: number; max: number }>; verdict: string; reasons: string[];
+};
+type DemoVmRun = { run_id: string; date: string; vm: string; decisions: string; stages: DemoStage[] };
+type Data = { targets_p95_ms: Record<string, number>; runs: Run[]; overload?: Overload[]; demo_vm?: DemoVmRun[] };
 // perf/results/sdk-index.json, written by `perf/sdk_summarize.py --index` (issue 27): committed values of perf/sdk-results/*/run.json.
 type SdkRun = {
   run_id: string; avd: string; build_type?: string; scenario: "normal" | "burst" | "offline"; verdict: string; reasons: string[]; git_revision: string; started_utc: string;
@@ -439,6 +446,68 @@ function useJson<D>(initial: D | undefined, url: string, noResults: string): [D 
 
 const worstVerdict = (verdicts: string[]) => (verdicts.includes("fail") ? "fail" : verdicts.length > 0 && verdicts.every((v) => v === "pass") ? "pass" : "invalid");
 
+const DEMO_CPU = ["signaldock-server-1", "signaldock-db-1", "sd-k6"];
+
+/** Live demo VM capacity (ADR-0048). Latency lines skip stages marked invalid: k6 itself was at its limit there. */
+function DemoVmResults({ runs }: { runs: DemoVmRun[] }) {
+  const { t, f1, n, pct } = useFmt();
+  return (
+    <section className="card section" id="demo-vm">
+      <h2>{t("demoVm.title")}</h2>
+      <p className="note">{t("demoVm.note")}</p>
+      {runs.map((r) => {
+        const valid = r.stages.filter((s) => s.verdict !== "invalid");
+        const cell = (s: DemoStage, c: string) => (s.cpu_pct[c] ? `${f1(s.cpu_pct[c].mean)} / ${f1(s.cpu_pct[c].max)}` : t("common.na"));
+        return (
+          <div key={r.run_id} className="stack">
+            <h3>{r.run_id} ({r.date})</h3>
+            <p className="note">{r.vm}. {r.decisions}</p>
+            <div className="table-wrap"><table>
+              <caption className="sr-only">{r.run_id}</caption>
+              <thead><tr>
+                <th scope="col" className="num">{t("demoVm.rate")}</th><th scope="col" className="num">{t("demoVm.requests")}</th><th scope="col" className="num">{t("demoVm.nonOk")}</th>
+                <th scope="col">{t("demoVm.latency")}</th><th scope="col" className="num">{t("demoVm.dropped")}</th>
+                {DEMO_CPU.map((c) => <th key={c} scope="col">{t("demoVm.cpu", { name: c })}</th>)}
+                <th scope="col">{t("demoVm.verdict")}</th>
+              </tr></thead>
+              <tbody>{r.stages.map((s) => (
+                <tr key={s.rate}>
+                  <td className="num">{n(s.rate)}</td><td className="num">{n(s.measure_requests)}</td><td className="num">{pct(s.non_ok_share * 100)}</td>
+                  <td className="nowrap">{f1(s.p50_ms)} / {f1(s.p95_ms)} / {f1(s.p99_ms)} / {f1(s.max_ms)}</td><td className="num">{n(s.dropped_iterations)}</td>
+                  {DEMO_CPU.map((c) => <td key={c} className="nowrap">{cell(s, c)}</td>)}
+                  <td><span className={`badge ${s.verdict}`}>{verdictText(t, s.verdict)}</span>{s.reasons.map((x) => <div key={x} className="reason">{x}</div>)}</td>
+                </tr>))}</tbody>
+            </table></div>
+            <div className="grid">
+              <Chart title={t("demoVm.latencyChart")}>
+                <LineChart data={valid.map((s) => ({ rate: s.rate, p95: s.p95_ms, p99: s.p99_ms }))}>
+                  <CartesianGrid {...GRID} />
+                  <XAxis {...AXIS} dataKey="rate" type="number" domain={["dataMin", "dataMax"]} height={AXIS_LABEL_HEIGHT} label={axisLabel(t("demoVm.rateAxis"))} />
+                  <YAxis {...AXIS} {...niceY(valid.flatMap((s) => [s.p95_ms, s.p99_ms]))} />
+                  <Tooltip {...TOOLTIP} />
+                  <Legend {...LEGEND} />
+                  <Line dataKey="p95" stroke={SERIES[0]} strokeDasharray={SERIES_DASH[0]} strokeWidth={2} isAnimationActive={false} />
+                  <Line dataKey="p99" stroke={SERIES[1]} strokeDasharray={SERIES_DASH[1]} strokeWidth={2} isAnimationActive={false} />
+                </LineChart>
+              </Chart>
+              <Chart title={t("demoVm.nonOkChart")}>
+                <BarChart data={r.stages.map((s) => ({ rate: String(s.rate), share: Math.round(s.non_ok_share * 1000) / 10 }))}>
+                  <PatternDefs />
+                  <CartesianGrid {...GRID} />
+                  <XAxis {...AXIS} dataKey="rate" height={AXIS_LABEL_HEIGHT} label={axisLabel(t("demoVm.rateAxis"))} />
+                  <YAxis {...AXIS} {...niceY([0, ...r.stages.map((s) => s.non_ok_share * 100)])} />
+                  <Tooltip {...TOOLTIP} />
+                  <Bar dataKey="share" name={t("demoVm.nonOk")} isAnimationActive={false} fill={BAR_FILL.p95} />
+                </BarChart>
+              </Chart>
+            </div>
+          </div>
+        );
+      })}
+    </section>
+  );
+}
+
 function Toc({ items }: { items: { id: string; label: string }[] }) {
   const { t } = useTranslation();
   const [active, setActive] = useState(items[0]?.id ?? "");
@@ -527,6 +596,7 @@ export function App() {
     { id: "runs", label: t("toc.runs") },
     ...(overload.length ? [{ id: "overload", label: t("toc.overload") }] : []),
     { id: "sdk", label: t("toc.sdk") },
+    ...((data.demo_vm ?? []).length ? [{ id: "demo-vm", label: t("toc.demoVm") }] : []),
     ...(current ? [{ id: "latency", label: t("toc.latency") }] : []),
   ];
   return (
@@ -554,6 +624,7 @@ export function App() {
           </section>
           {overload.length > 0 && <div id="overload" className="stack">{overload.map((o) => <OverloadRun key={o.run_id} o={o} />)}</div>}
           <SdkResults data={sdk} error={sdkError} />
+          {(data.demo_vm ?? []).length > 0 && <DemoVmResults runs={data.demo_vm!} />}
           {current && <div id="latency" className="stack"><Compare runs={data.runs} targets={data.targets_p95_ms} /><Detail r={current} /></div>}
         </div>
       </div>

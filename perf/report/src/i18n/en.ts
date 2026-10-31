@@ -14,7 +14,7 @@ export const en = {
   },
   language: { label: "Language", en: "English", ko: "한국어" },
   theme: { label: "Theme", dark: "Dark", light: "Light" },
-  toc: { label: "Sections", runs: "Runs", overload: "Overload", sdk: "SDK", latency: "Latency" },
+  toc: { label: "Sections", runs: "Runs", overload: "Overload", sdk: "SDK", latency: "Latency", demoVm: "Demo VM" },
   kpi: {
     label: "Key numbers",
     verdict: "Verdict",
@@ -128,6 +128,20 @@ export const en = {
       "Last 30 s: {{requests}} collection/probe requests, {{non200}} not 200; collection p95 {{p95}} ms (baseline {{baseline}} ms, limit {{limit}} ms).",
     storage:
       "ACKed (200) collection requests: {{ok}}, not fully stored: {{notStored}}. Shed (503): {{shed}}, rows stored for them: {{shedRows}}. Other answers: {{other}}. Duplicate IDs in DB: {{duplicates}}. Dropped k6 iterations: {{dropped}}.",
+  },
+  demoVm: {
+    title: "Live demo VM capacity",
+    note: "Source: demo_vm in perf/results/index.json, written by perf/demo-vm/report.py (ADR-0048). k6 on the same VM, collection API only, 20 events per request, the demo as deployed. A stage marked invalid hit the limit of k6 itself: its latency is not a server number and is not drawn. Latency columns: p50 / p95 / p99 / max in ms. CPU columns: mean / max in percent of one CPU.",
+    rate: "req/s",
+    requests: "Requests",
+    nonOk: "Non-OK share",
+    latency: "Latency ms",
+    dropped: "Dropped",
+    cpu: "CPU {{name}}",
+    verdict: "Verdict",
+    latencyChart: "p95 and p99 (ms) by request rate",
+    nonOkChart: "Non-OK share (%) by request rate",
+    rateAxis: "requests per second",
   },
   sdk: {
     title: "SDK device results",
