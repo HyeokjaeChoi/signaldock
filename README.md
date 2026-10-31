@@ -16,6 +16,8 @@ Review the path from an app's `track()` call through a durable queue, retries, s
 
 ![The benchmark report: verdict, collection latency, and the 503 share of one overload run.](docs/images/perf-report.png)
 
+![The benchmark report section for the live demo VM: per-rate table (5 to 80 req/s) with latency, CPU, and verdict, and charts of p95 and p99 and of the non-OK share by request rate.](docs/images/perf-report-demo-vm.png)
+
 The screenshots show the Dashboard and the benchmark report with 120 seeded test events and the recorded runs in `perf/results/`.
 A short video of demo `track()` to Dashboard receipt: [25-demo-track-to-dashboard.mp4](.scratch/signaldock/evidence/25-demo-track-to-dashboard.mp4).
 
