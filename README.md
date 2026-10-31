@@ -54,7 +54,7 @@ open docs/architecture/signaldock-onepager.html
 
 An SDK's success response tells the host app what it can do next.
 SignalDock separates durable device storage from server receipt, with recovery rules for each stage.
-This open-source release from Stackline covers public API design, lifecycle management, recovery, compatibility, and independent distribution.
+This open-source release covers public API design, lifecycle management, recovery, compatibility, and independent distribution.
 
 | Design concern | Decision | Recorded evidence |
 | --- | --- | --- |

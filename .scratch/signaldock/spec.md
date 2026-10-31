@@ -6,7 +6,7 @@ Baseline date: 2026-10-09. Q127 approved entry into implementation. This baselin
 
 ## 1. Goal and scope
 
-SignalDock is an open-source release from Stackline. It shows SDK API design, delivery reliability, independent distribution, and compatibility management, built on existing app-development experience. Collect events in an Android customer app, store them on a local server, and inspect the results in a web Dashboard.
+SignalDock is an open-source release. It shows SDK API design, delivery reliability, independent distribution, and compatibility management, built on existing app-development experience. Collect events in an Android customer app, store them on a local server, and inspect the results in a web Dashboard.
 
 - Target date: a first complete version by 2026-10-22. The user's available work time is 10 to 15 hours per week, 20 to 30 hours total. This is not an estimate that guarantees completion.
 - First release of an Android native SDK. The customer app explicitly calls `track()`.
