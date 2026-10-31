@@ -13,26 +13,27 @@
  "max_ms": 1275.3,
  "p95_ok_ms": 686.1,
  "dropped_iterations": 843,
+ "k6_cpu_max_full_run": 87.2,
  "cpu_pct": {
   "sd-k6": {
-   "mean": 39.7,
+   "mean": 41.5,
    "max": 87.2,
-   "samples": 29
+   "samples": 24
   },
   "signaldock-dashboard-1": {
    "mean": 1.3,
    "max": 9.2,
-   "samples": 29
+   "samples": 24
   },
   "signaldock-db-1": {
-   "mean": 92.7,
+   "mean": 97.3,
    "max": 168.7,
-   "samples": 29
+   "samples": 24
   },
   "signaldock-server-1": {
-   "mean": 94.5,
+   "mean": 98.3,
    "max": 145.5,
-   "samples": 29
+   "samples": 24
   }
  }
 }

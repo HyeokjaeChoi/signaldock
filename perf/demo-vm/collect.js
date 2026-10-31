@@ -32,12 +32,16 @@ export const options = {
 
 const eventId = (n) => `${SALT}-0000-4000-8000-${n.toString(16).padStart(12, '0')}`;
 const ID = /"eventId":"ffffffff-0000-4000-8000-([0-9a-f]{12})"/g;
+const idAt = (seq, t, hex) => eventId(seq * EPB + (parseInt(hex, 16) - t * EPB));
 
 export default function () {
   const seq = exec.scenario.iterationInTest;
   const t = seq % T;
-  const body = templates[t].replace(ID, (_, hex) => `"eventId":"${eventId(seq * EPB + (parseInt(hex, 16) - t * EPB))}"`);
-  const phase = seq < WARM * RATE ? 'warmup' : 'measure';
+  const body = templates[t].replace(ID, (_, hex) => `"eventId":"${idAt(seq, t, hex)}"`);
+  // Phase by elapsed wall time at request start, so a late iteration is not tagged by its index (README: tool change after the 2026-10-31 run).
+  const elapsed = exec.instance.currentTestRunDuration;
+  const sent = [...body.matchAll(/"eventId":"([0-9a-f-]{36})"/g)].map((m) => m[1]);
+  const phase = elapsed < WARM * 1000 ? 'warmup' : elapsed < TOTAL_S * 1000 ? 'measure' : 'tail';
   const res = http.post(`${E.BASE_URL}/v1/events:batch`, body, {
     headers: { 'Content-Type': 'application/json', 'SignalDock-Contract-Version': '1', Authorization: `Bearer ${E.COLLECTION_KEY}` },
     timeout: '5s', tags: { phase },
@@ -46,7 +50,7 @@ export default function () {
   if (outcome === 'ok') {
     let results = null;
     try { results = res.json('results'); } catch (_) { /* ack_bad */ }
-    const good = Array.isArray(results) && results.length === EPB && results.every((r) => r.status === 'accepted');
+    const good = Array.isArray(results) && results.length === EPB && results.every((r, j) => r.status === 'accepted' && r.index === j && r.eventId === sent[j]);
     if (good) accepted.add(EPB, { phase }); else { outcome = 'ack_bad'; notAccepted.add(1, { phase }); }
   }
   reqMs.add(res.timings.duration, { phase, outcome });

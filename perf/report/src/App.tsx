@@ -34,7 +34,7 @@ type Overload = {
 type DemoStage = {
   rate: number; measure_requests: number; outcomes: Record<string, number>; non_ok_share: number;
   p50_ms: number; p95_ms: number; p99_ms: number; max_ms: number; dropped_iterations: number;
-  cpu_pct: Record<string, { mean: number; max: number }>; verdict: string; reasons: string[];
+  cpu_pct: Record<string, { mean: number; max: number }>; verdict: string; reasons: string[]; server_rule_hit: boolean;
 };
 type DemoVmRun = { run_id: string; date: string; vm: string; decisions: string; stages: DemoStage[] };
 type Data = { targets_p95_ms: Record<string, number>; runs: Run[]; overload?: Overload[]; demo_vm?: DemoVmRun[] };
@@ -466,14 +466,14 @@ function DemoVmResults({ runs }: { runs: DemoVmRun[] }) {
               <caption className="sr-only">{r.run_id}</caption>
               <thead><tr>
                 <th scope="col" className="num">{t("demoVm.rate")}</th><th scope="col" className="num">{t("demoVm.requests")}</th><th scope="col" className="num">{t("demoVm.nonOk")}</th>
-                <th scope="col">{t("demoVm.latency")}</th><th scope="col" className="num">{t("demoVm.dropped")}</th>
+                <th scope="col">{t("demoVm.latency")}</th><th scope="col" className="num">{t("demoVm.dropped")}</th><th scope="col">{t("demoVm.serverHit")}</th>
                 {DEMO_CPU.map((c) => <th key={c} scope="col">{t("demoVm.cpu", { name: c })}</th>)}
                 <th scope="col">{t("demoVm.verdict")}</th>
               </tr></thead>
               <tbody>{r.stages.map((s) => (
                 <tr key={s.rate}>
                   <td className="num">{n(s.rate)}</td><td className="num">{n(s.measure_requests)}</td><td className="num">{pct(s.non_ok_share * 100)}</td>
-                  <td className="nowrap">{f1(s.p50_ms)} / {f1(s.p95_ms)} / {f1(s.p99_ms)} / {f1(s.max_ms)}</td><td className="num">{n(s.dropped_iterations)}</td>
+                  <td className="nowrap">{f1(s.p50_ms)} / {f1(s.p95_ms)} / {f1(s.p99_ms)} / {f1(s.max_ms)}</td><td className="num">{n(s.dropped_iterations)}</td><td>{t(s.server_rule_hit ? "demoVm.yes" : "demoVm.no")}</td>
                   {DEMO_CPU.map((c) => <td key={c} className="nowrap">{cell(s, c)}</td>)}
                   <td><span className={`badge ${s.verdict}`}>{verdictText(t, s.verdict)}</span>{s.reasons.map((x) => <div key={x} className="reason">{x}</div>)}</td>
                 </tr>))}</tbody>

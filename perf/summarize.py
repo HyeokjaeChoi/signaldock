@@ -166,7 +166,7 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--index", help="also write one JSON file with all given runs for perf/report/ (per-run values only)")
     a = ap.parse_args()
-    runs = [load(r) for r in a.runs if (Path(r) / "manifest.json").exists()]  # skips perf/results/demo-vm-*/ (perf/demo-vm/report.py)
+    runs = [load(r) for r in a.runs if not Path(r).resolve().name.startswith("demo-vm-")]  # skips only perf/results/demo-vm-*/ (perf/demo-vm/report.py); other dirs without manifest.json still fail
     over = [r for r in runs if r[1].get("kind") == "overload"]
     over.sort(key=lambda r: parse_ts(r[1]["times"]["test_start_wall"]))  # the report takes the last one as the latest
     runs = [r for r in runs if r[1].get("kind") != "overload"]
