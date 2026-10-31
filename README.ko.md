@@ -18,6 +18,8 @@
 
 ![벤치마크 보고서: 판정, 수집 지연, 과부하 실행 하나의 503 비율.](docs/images/perf-report.png)
 
+![라이브 데모 VM 섹션의 벤치마크 보고서: 요청률(5~80 req/s)별 지연, CPU, 판정 표와, 요청률별 p95·p99 및 비정상 응답 비율 차트.](docs/images/perf-report-demo-vm.png)
+
 스크린샷은 테스트 이벤트 120개를 넣은 Dashboard와, `perf/results/`에 기록된 실행을 보여 주는 벤치마크 보고서입니다.
 데모 `track()`부터 Dashboard 수신까지 보여 주는 짧은 영상: [25-demo-track-to-dashboard.mp4](.scratch/signaldock/evidence/25-demo-track-to-dashboard.mp4).
 

@@ -447,6 +447,7 @@ function useJson<D>(initial: D | undefined, url: string, noResults: string): [D 
 const worstVerdict = (verdicts: string[]) => (verdicts.includes("fail") ? "fail" : verdicts.length > 0 && verdicts.every((v) => v === "pass") ? "pass" : "invalid");
 
 const DEMO_CPU = ["signaldock-server-1", "signaldock-db-1", "sd-k6"];
+const cpuLabel = (c: string) => c.replace(/^(signaldock-|sd-)/, "").replace(/-1$/, "");
 
 /** Live demo VM capacity (ADR-0048). Latency lines skip stages marked invalid: k6 itself was at its limit there. */
 function DemoVmResults({ runs }: { runs: DemoVmRun[] }) {
@@ -467,7 +468,7 @@ function DemoVmResults({ runs }: { runs: DemoVmRun[] }) {
               <thead><tr>
                 <th scope="col" className="num">{t("demoVm.rate")}</th><th scope="col" className="num">{t("demoVm.requests")}</th><th scope="col" className="num">{t("demoVm.nonOk")}</th>
                 <th scope="col">{t("demoVm.latency")}</th><th scope="col" className="num">{t("demoVm.dropped")}</th><th scope="col">{t("demoVm.serverHit")}</th>
-                {DEMO_CPU.map((c) => <th key={c} scope="col">{t("demoVm.cpu", { name: c })}</th>)}
+                {DEMO_CPU.map((c) => <th key={c} scope="col" className="nowrap">{t("demoVm.cpu", { name: cpuLabel(c) })}</th>)}
                 <th scope="col">{t("demoVm.verdict")}</th>
               </tr></thead>
               <tbody>{r.stages.map((s) => (
@@ -475,9 +476,11 @@ function DemoVmResults({ runs }: { runs: DemoVmRun[] }) {
                   <td className="num">{n(s.rate)}</td><td className="num">{n(s.measure_requests)}</td><td className="num">{pct(s.non_ok_share * 100)}</td>
                   <td className="nowrap">{f1(s.p50_ms)} / {f1(s.p95_ms)} / {f1(s.p99_ms)} / {f1(s.max_ms)}</td><td className="num">{n(s.dropped_iterations)}</td><td>{t(s.server_rule_hit ? "demoVm.yes" : "demoVm.no")}</td>
                   {DEMO_CPU.map((c) => <td key={c} className="nowrap">{cell(s, c)}</td>)}
-                  <td><span className={`badge ${s.verdict}`}>{verdictText(t, s.verdict)}</span>{s.reasons.map((x) => <div key={x} className="reason">{x}</div>)}</td>
+                  <td><span className={`badge ${s.verdict}`}>{verdictText(t, s.verdict)}</span></td>
                 </tr>))}</tbody>
             </table></div>
+            {r.stages.filter((s) => s.reasons.length > 0).map((s) => (
+              <p key={s.rate} className="reason">{n(s.rate)} {t("demoVm.rate")}: {s.reasons.join("; ")}</p>))}
             <div className="grid">
               <Chart title={t("demoVm.latencyChart")}>
                 <LineChart data={valid.map((s) => ({ rate: s.rate, p95: s.p95_ms, p99: s.p99_ms }))}>
