@@ -1,0 +1,38 @@
+{
+ "rate": 10,
+ "salt": "01fb1add",
+ "measure_requests": 1801,
+ "outcomes": {
+  "ok": 1801
+ },
+ "non_ok_share": 0.0,
+ "p50_ms": 17.8,
+ "p95_ms": 24.8,
+ "p99_ms": 36.5,
+ "max_ms": 191.0,
+ "p95_ok_ms": 24.8,
+ "dropped_iterations": 0,
+ "k6_cpu_max_full_run": 5.6,
+ "cpu_pct": {
+  "sd-k6": {
+   "mean": 3.2,
+   "max": 5.6,
+   "samples": 25
+  },
+  "signaldock-dashboard-1": {
+   "mean": 0.4,
+   "max": 5.1,
+   "samples": 25
+  },
+  "signaldock-db-1": {
+   "mean": 11.1,
+   "max": 14.9,
+   "samples": 25
+  },
+  "signaldock-server-1": {
+   "mean": 14.9,
+   "max": 37.8,
+   "samples": 25
+  }
+ }
+}
