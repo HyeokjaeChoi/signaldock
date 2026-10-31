@@ -6,6 +6,7 @@ Reads rate-*/stage.json (written by summarize.py). Other keys of index.json stay
 import glob
 import json
 import os
+from pathlib import Path
 import re
 import sys
 
@@ -55,7 +56,7 @@ def table(stages):
 
 def main(run_dir):
     run_id = os.path.basename(os.path.normpath(run_dir))
-    stages = sorted((json.load(open(p)) for p in glob.glob(os.path.join(run_dir, "rate-*", "stage.json"))), key=lambda s: s["rate"])
+    stages = sorted((json.loads(Path(p).read_text()) for p in glob.glob(os.path.join(run_dir, "rate-*", "stage.json"))), key=lambda s: s["rate"])
     verdicts(stages)
     m = re.search(r"(\d{4})(\d{2})(\d{2})$", run_id)
     date = "-".join(m.groups()) if m else ""
@@ -88,9 +89,9 @@ Stop rule: non-200 share above 1%, p95 above 2x the first stage ({stages[0]['p95
 
 Dashboard queries during load, the public path through host nginx (its rate limit is 5 r/s with burst 10 per IP), the WAN, other VM types, and long runs. The test events stay in the demo database until the daily 04:00 Asia/Seoul reset.
 """
-    open(os.path.join(run_dir, "report.md"), "w").write(body)
+    Path(run_dir, "report.md").write_text(body)
     entry = {"run_id": run_id, "date": date, "vm": VM, "decisions": DECISIONS, "stages": stages}
-    idx = json.load(open(INDEX))
+    idx = json.loads(Path(INDEX).read_text())
     lst = [e for e in idx.get("demo_vm", []) if e["run_id"] != run_id] + [entry]
     idx["demo_vm"] = sorted(lst, key=lambda e: e["run_id"])
     with open(INDEX, "w") as f:

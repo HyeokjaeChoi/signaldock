@@ -8,6 +8,7 @@ import gzip
 import json
 import os
 import sys
+from pathlib import Path
 
 
 def pct(xs, p):
@@ -30,9 +31,9 @@ with gzip.open(os.path.join(d, "raw.json.gz"), "rt") as f:
         if o == "ok":
             ok.append(v)
 
-m = json.load(open(os.path.join(d, "summary.json")))["metrics"]
+m = json.loads(Path(d, "summary.json").read_text())["metrics"]
 cpu = collections.defaultdict(list)
-for line in open(os.path.join(d, "stats.csv")):
+for line in Path(d, "stats.csv").read_text().splitlines():
     parts = line.strip().split(",")
     if len(parts) >= 3 and parts[2].endswith("%"):
         cpu[parts[1]].append(float(parts[2][:-1]))
@@ -40,7 +41,7 @@ for line in open(os.path.join(d, "stats.csv")):
 n = len(durs)
 out = {
     "rate": int(os.path.basename(d).split("-")[1]),
-    "salt": open(os.path.join(d, "salt")).read().strip(),
+    "salt": Path(d, "salt").read_text().strip(),
     "measure_requests": n,
     "outcomes": dict(outcomes),
     "non_ok_share": round(1 - outcomes["ok"] / n, 4) if n else None,
@@ -49,5 +50,5 @@ out = {
     "dropped_iterations": (m.get("dropped_iterations") or {}).get("count", 0),
     "cpu_pct": {k: {"mean": round(sum(v) / len(v), 1), "max": round(max(v), 1), "samples": len(v)} for k, v in sorted(cpu.items())},
 }
-json.dump(out, open(os.path.join(d, "stage.json"), "w"), indent=1)
+Path(d, "stage.json").write_text(json.dumps(out, indent=1))
 print(json.dumps(out))
