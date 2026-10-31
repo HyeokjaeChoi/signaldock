@@ -18,8 +18,8 @@ Measure how many collection requests per second the demo accepts as deployed. `p
 
 Run from the repository root. `<vm>` is the demo VM. Use your own `gcloud` settings.
 
-1. Copy the files:
-   `gcloud compute scp perf/demo-vm/collect.js perf/demo-vm/run-stage.sh <vm>:/tmp/sd-perf/`
+1. Make the work folder and copy the files:
+   `gcloud compute ssh <vm> --command 'mkdir -p /tmp/sd-perf'` then `gcloud compute scp perf/demo-vm/collect.js perf/demo-vm/run-stage.sh <vm>:/tmp/sd-perf/`
 2. Make the request templates and copy them:
    `python3 perf/demo-vm/gen_templates.py /tmp/templates.jsonl` then `gcloud compute scp /tmp/templates.jsonl <vm>:/tmp/sd-perf/`
 3. On the VM, run one stage at a time, from low to high rate:
