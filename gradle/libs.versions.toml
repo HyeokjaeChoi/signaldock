@@ -52,13 +52,13 @@ androidx-test-runner = "1.7.0"
 androidx-test-ext-junit = "1.3.0"
 
 # Server (doc-pinned; server build verified in issue #2)
-ktor = "3.6.0"
+ktor = "3.6.1"
 jooq = "3.21.9"
-flyway = "13.10.0"
-hikari = "7.0.2"
-postgresql = "42.7.12"
+flyway = "13.12.0"
+hikari = "7.1.0"
+postgresql = "42.7.14"
 testcontainers = "2.0.5"
-slf4j = "2.0.17"
+slf4j = "2.0.20"
 
 # Dashboard (doc-pinned; TS compile of generated models verified in issue #1)
 typescript = "7.0.2"
