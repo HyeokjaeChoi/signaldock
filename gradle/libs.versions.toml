@@ -2,7 +2,7 @@
 # Toolchain (verified by build in issue #1 unless noted)
 jdk = "21"
 gradle = "9.8.2"
-agp = "9.4.1"
+agp = "9.5.1"
 kotlin = "2.4.21"
 kotlinx-serialization = "1.11.0"
 openapi-generator = "7.26.0"
@@ -11,7 +11,7 @@ oasdiff = "1.33.0"
 # KSP has no 2.4.x release as of 2026-10-09 (latest is 2.3.12; KSP 2.3+ is
 # versioned independently of Kotlin). Pinned in issue 03 and verified with
 # Kotlin 2.4.21 + Room 2.8.5 (see docs/adr/0003-sdk-storage-decisions.md).
-ksp = "2.3.12"
+ksp = "2.3.13"
 
 # Public API check (issue 35, ADR-0019). The Kotlin built-in abiValidation dumps nothing for an AGP library.
 binary-compatibility-validator = "0.18.2"
@@ -23,7 +23,7 @@ dependency-guard = "0.5.0"
 # the profile app only; the SDK does not depend on it.
 baselineprofile = "1.5.0"
 benchmark-macro = "1.5.0"
-androidx-uiautomator = "2.4.0"
+androidx-uiautomator = "2.4.1"
 profileinstaller = "1.4.1"
 
 # Android (doc-pinned; full AGP compilation verified in later issues)
