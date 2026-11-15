@@ -16,6 +16,7 @@ Architecture (`architecture.md`):
 - Contracts, generated sources, and JSON
 
 ADRs:
+- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), for the nightly durability and power-loss gates, StrictMode and Main Thread Checker, the coverage ratchet, and the API semver check (it amends ADR-0011 decision 10, ADR-0029 "Limits", and ADR-0047 D13)
 - ADR-0001 (`docs/adr/0001-installation-scoped-identity.md`)
 - ADR-0002 (`docs/adr/0002-openapi-json-contract.md`)
 - ADR-0003 (`docs/adr/0003-sdk-storage-decisions.md`)
@@ -140,6 +141,7 @@ Architecture (`architecture.md`):
 - Independent distribution and verification
 
 ADRs:
+- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), for the nightly durability and power-loss gates, StrictMode and Main Thread Checker, the coverage ratchet, and the API semver check (it amends ADR-0011 decision 10, ADR-0029 "Limits", and ADR-0047 D13)
 - ADR-0047 (`docs/adr/0047-ios-sdk.md`), D9 (language level), D11 (distribution), D13 (CI gates), and "iOS 15 Simulator fallback"; the Android SDK is the parity reference
 - ADR-0032 (`docs/adr/0032-codeql-advanced-setup.md`), for the Swift entry of `.github/workflows/codeql.yml`
 - ADR-0002 and ADR-0047 D10, for `sdk-ios/Sources/SignalDock/Generated`, the Swift wire models that `scripts/codegen.sh` writes (ticket 06; the drift check is step 1 of `scripts/verify-contract.sh`)
