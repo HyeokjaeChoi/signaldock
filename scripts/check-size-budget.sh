@@ -15,7 +15,8 @@ BUDGET_BYTES=700000
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 if [ -z "${JAVA_HOME:-}" ]; then
-  export JAVA_HOME="$ROOT/.tools/$(ls "$ROOT/.tools" | grep '^jdk-')"
+  jdks=("$ROOT"/.tools/jdk-*)
+  export JAVA_HOME="${jdks[0]}"
 fi
 [ -x "$JAVA_HOME/bin/java" ] || { echo "error: no JDK at $JAVA_HOME; run scripts/setup-toolchain.sh or set JAVA_HOME" >&2; exit 1; }
 [ -n "${ANDROID_HOME:-}${ANDROID_SDK_ROOT:-}" ] || { echo "error: set ANDROID_HOME to the Android SDK (platform android-36)" >&2; exit 1; }

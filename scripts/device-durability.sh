@@ -26,8 +26,8 @@ adb_bin="${ANDROID_HOME:+$ANDROID_HOME/platform-tools/}adb"
 adb() { "$adb_bin" -s "$serial" "$@"; }
 
 if [ -z "${JAVA_HOME:-}" ]; then
-  JAVA_HOME="$PWD/.tools/$(ls .tools | grep '^jdk-')"
-  export JAVA_HOME
+  jdks=("$PWD"/.tools/jdk-*)
+  export JAVA_HOME="${jdks[0]}"
 fi
 sdk/gradlew -p sdk :sdk-android:assembleDebugAndroidTest --no-daemon -q
 

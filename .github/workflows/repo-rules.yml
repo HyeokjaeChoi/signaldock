@@ -20,6 +20,9 @@ jobs:
       # The freeze checks compare with origin/main; a depth-1 checkout has no such ref.
       - run: git fetch --no-tags --depth=1 origin main:refs/remotes/origin/main
       - run: scripts/check-repo-rules.sh
+      # Pinned shellcheck and actionlint (ADR-0049 D1, D2); `lint` skips the JDK download.
+      - run: scripts/setup-toolchain.sh lint
+      - run: scripts/check-shell-lint.sh
       - run: python3 -I -m unittest discover -s scripts -p 'test_*.py'  # scripts/test_demo_seed.py
       - run: python3 -I -m unittest discover -s perf -p 'test_*.py'  # perf/test_seed.py (seed CSV matches the events columns)
 

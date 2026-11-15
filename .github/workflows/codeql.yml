@@ -61,7 +61,8 @@ jobs:
       - name: Build (java-kotlin)
         if: matrix.language == 'java-kotlin'
         run: |
-          export JAVA_HOME="$PWD/.tools/$(ls .tools | grep '^jdk-')"
+          jdks=("$PWD"/.tools/jdk-*)
+          export JAVA_HOME="${jdks[0]}"
           # The CodeQL Kotlin extractor runs inside the compiler. The Gradle default heap of 512 MiB (server) is too small
           # for it (the server persistence module hit "garbage collector is thrashing"), so raise it here only.
           OPTS=(--no-daemon --no-build-cache '-Dorg.gradle.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8')
