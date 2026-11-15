@@ -54,6 +54,27 @@ Renovate proposes weekly updates ([`renovate.json5`](../../.github/renovate.json
 - A Renovate Gradle PR fails the Gradle CI jobs with "Dependency verification failed", because Renovate does not update `gradle/verification-metadata.xml` in this repo ([ADR-0038](../adr/0038-gradle-dependency-verification.md)). Check out the PR branch, run `scripts/update-gradle-verification.sh`, check that the new entries match the update, and push the changed files once. The script runs `dependencyGuardBaseline`, so it also rewrites `sdk/sdk-android/dependencies/` when the SDK release classpath changed: commit that change and add the `CHANGELOG.md` line (see "Change the SDK dependency tree").
 - A new major of a runtime image (JDK, Node, nginx, PostgreSQL) or of `@types/node` is never proposed. Change it by hand in its own PR (`TOOLCHAIN.md`).
 
+## Vulnerability scan
+
+`scripts/osv-scan.sh` runs OSV-Scanner over the npm lockfiles and the four `gradle/verification-metadata.xml` files (CI job `osv-scan`, and the nightly job of the same name on `main`, [ADR-0049](../adr/0049-production-quality-gates.md) decision 9). A finding that is not in [`osv-scanner.toml`](../../osv-scanner.toml) fails the run. The metadata files list the whole resolved Gradle tree, including the Gradle plugin classpath that the SDK and the server do not ship.
+
+- To fix a finding, update the dependency. To ignore one, add an `[[IgnoredVulns]]` entry with `id`, `reason` (why it does not affect the product), and `ignoreUntil` (at most 30 days after today). `scripts/check-repo-rules.sh` rejects the entry otherwise. When the date passes, the finding fails again; renew it only in a PR that says why.
+- Locally: `scripts/setup-toolchain.sh osv`, then `scripts/osv-scan.sh` (needs the network).
+
+## Ruleset for `main`
+
+[`.github/rulesets/main.json`](../../.github/rulesets/main.json) is the ruleset for `main`: a pull request is required with squash as the only merge method, the required checks are the PR jobs by exact context name, the branch must be up to date before merge, and force push and deletion are blocked. It has no bypass actor. `scripts/check_ruleset.py static` (in `scripts/check-repo-rules.sh`) fails when a required context is not a job of a workflow, or a PR job is not required. When you add or rename a PR job, change the file in the same PR, and then apply it again.
+
+The owner applies the file. Nothing in CI changes the repository settings. First time:
+
+```sh
+gh api --method POST repos/HyeokjaeChoi/signaldock/rulesets --input .github/rulesets/main.json
+```
+
+After a change, find the id with `gh api repos/HyeokjaeChoi/signaldock/rulesets --jq '.[] | select(.name == "main") | .id'` and send `--method PUT repos/HyeokjaeChoi/signaldock/rulesets/<id>` with the same `--input`.
+
+The nightly job `ruleset-drift` compares the live ruleset with the file and fails on a difference, and fails with "no branch ruleset named main" until the file is applied. Apply the new file only after the PR that changes it has merged, or the PR itself waits for a check that does not exist yet.
+
 ## Change the SDK dependency tree
 
 `scripts/verify-contract.sh` fails when the release runtime or compile classpath of `:sdk-android` differs from `sdk/sdk-android/dependencies/` ([ADR-0033](../adr/0033-sdk-dependency-baseline.md)). A dependency bump, a Renovate PR, or a transitive change can cause it. To accept the change:

@@ -1,7 +1,8 @@
 # 11. Dependency and repository gates: Renovate validator, OSV-Scanner, main ruleset
 
-Status: ready-for-agent
+Status: claimed
 Type: task
+Execution: In progress (PR pending)
 Blocked by: 03
 
 ## Scope and completion criteria

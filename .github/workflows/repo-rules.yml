@@ -23,8 +23,27 @@ jobs:
       # Pinned shellcheck and actionlint (ADR-0049 D1, D2); `lint` skips the JDK download.
       - run: scripts/setup-toolchain.sh lint
       - run: scripts/check-shell-lint.sh
+      # Gate R1 (ADR-0049 decision 9): a Renovate config error silently stops all update and security PRs. No argument: the
+      # validator then checks .github/renovate.json5 as a repo config (a file argument is read as global config).
+      # Renovate keeps the exact version below current (customManagers in .github/renovate.json5).
+      - name: renovate-config-validator --strict
+        env:
+          RENOVATE_VERSION: "44.239.1"
+        run: npx --yes --package "renovate@${RENOVATE_VERSION}" -- renovate-config-validator --strict
       - run: python3 -I -m unittest discover -s scripts -p 'test_*.py'  # scripts/test_demo_seed.py
       - run: python3 -I -m unittest discover -s perf -p 'test_*.py'  # perf/test_seed.py (seed CSV matches the events columns)
+
+  # Gate R2 (ADR-0049 decision 9): known vulnerabilities in the npm lockfiles and the Gradle verification metadata.
+  # The nightly job of the same name rescans `main`, because advisories appear without a code change.
+  osv-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - run: scripts/setup-toolchain.sh osv
+      - run: scripts/osv-scan.sh
 
   verify-contract:
     runs-on: ubuntu-latest
