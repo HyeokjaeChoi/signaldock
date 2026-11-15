@@ -68,7 +68,8 @@ export default tseslint.config(
     ...jsxA11y.flatConfigs.strict,
   },
   {
-    files: ["**/*.tsx"],
+    // `.ts` too: usePolledQuery, useTranslation, and useTheme live in .ts files.
+    files: ["**/*.{ts,tsx}"],
     ...reactHooks.configs.flat["recommended-latest"],
   },
   {

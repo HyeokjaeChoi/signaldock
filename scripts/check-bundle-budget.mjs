@@ -12,9 +12,10 @@
 // perf/report/ is built with `vite build` here, not `npm run build`: its `copy-data.mjs` step writes the result data as
 // dist/index.js, which grows with each measurement run and is not code.
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
 
 export const HEADROOM = 1.1;
@@ -43,7 +44,7 @@ export function verdict(total, budget) {
 function build() {
   const out = mkdtempSync(join(tmpdir(), "signaldock-budget-"));
   try {
-    execFileSync("node_modules/.bin/vite", ["build", "--outDir", out, "--emptyOutDir"], { stdio: "ignore" });
+    execFileSync("node_modules/.bin/vite", ["build", "--outDir", out, "--emptyOutDir"], { stdio: ["ignore", "ignore", "inherit"] });
     return gzipSizes(out);
   } finally {
     rmSync(out, { recursive: true, force: true });
@@ -74,4 +75,5 @@ function main() {
   console.log(`ok: within the budget of ${budgetGzipBytes} bytes (measured at budget time: ${measuredGzipBytes})`);
 }
 
-if (import.meta.url === new URL(process.argv[1] ?? "", "file:").href) main();
+// Compare real paths: a link or a `#` in the checkout path must not turn the CLI into a silent no-op that exits 0.
+if (process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))) main();

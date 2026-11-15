@@ -143,14 +143,18 @@ export function usePolledQuery<T>(
   auto = true,
   env: PollEnv = browserEnv,
 ): { state: QueryState<T>; refresh: () => void } {
+  // The latest fetcher, for the running query. It is written after the commit; the key effect below runs after it.
   const fetcherRef = useRef(fetcher);
-  fetcherRef.current = fetcher;
+  useEffect(() => {
+    fetcherRef.current = fetcher;
+  });
   const queryRef = useRef<PollingQuery<T>>(undefined);
   const [state, setState] = useState<QueryState<T>>({ stopped: false, loading: false });
 
   useEffect(() => {
     if (key === null) {
       queryRef.current = undefined;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- a disabled query (null key) must drop the data of its last key; the state belongs to this hook, not to a parent
       setState({ stopped: false, loading: false });
       return;
     }

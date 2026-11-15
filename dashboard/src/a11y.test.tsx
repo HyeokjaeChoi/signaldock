@@ -114,6 +114,20 @@ describe.each<Language>(["en", "ko"])("axe-core: Dashboard views (%s)", (lang) =
     expect(await seriousViolations()).toEqual([]);
   });
 
+  it("stopped polling after a contract version error, with the reload button", async () => {
+    const unsupported = new QueryError("Unsupported", 400, "CONTRACT_VERSION_UNSUPPORTED");
+    open(fakeApi({ listEvents: failing(unsupported), countsByName: failing(unsupported) }));
+    await screen.findAllByRole("button", { name: t("status.reload") });
+    expect(await seriousViolations()).toEqual([]);
+  });
+
+  it("event details not found", async () => {
+    open(fakeApi({ getEvent: failing(new QueryError("Not found", 404, "EVENT_NOT_FOUND")) }));
+    fireEvent.click(await loaded());
+    await screen.findByText(t("details.notFound"));
+    expect(await seriousViolations()).toEqual([]);
+  });
+
   it("custom period without dates", async () => {
     open(fakeApi());
     await loaded();
