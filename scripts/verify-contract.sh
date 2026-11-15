@@ -10,11 +10,13 @@
 #    and the gzip bundle budget (W3) of dashboard/ and perf/report/; the bundle-has-no-query-key check (Q129) and the
 #    executable TS round-trip assertions of the dashboard.
 # 5. Evaluates the independent sdk/ and server/ Gradle builds.
-# 6. Checks the SDK public API dump (ADR-0019) and the published dependency baseline (ADR-0033).
+# 6. Checks the SDK public API dump (ADR-0019), its semver rule against the last release tag (ADR-0049 A7), and the
+#    published dependency baseline (ADR-0033).
 # 7. Tracking plan (ADR-0021; Kotlin, TypeScript, and Swift outputs): regenerates into a temp dir and diffs against
 #    tracking-plan/generated/, then runs the generator and cross-language tests.
 # 8. iOS SDK (ADR-0047 D13; format lint, TSan, ASan, analyze, privacy manifest, public API diff against
 #    sdk-ios/api/SignalDock.swiftinterface): runs only with full Xcode and an iOS Simulator runtime (scripts/verify-ios.sh).
+#    The semver rule of that interface against the last ios-v* tag (ADR-0049 I3) always runs.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -69,6 +71,7 @@ echo "=== 4. web packages: lint, format, type check, tests with axe-core, bundle
 (cd "$ROOT/dashboard" && npm run typecheck && npm test && npm run contract-check && npm run check-bundle-key && npm run check-bundle-budget)
 (cd "$ROOT/perf/report" && npm run typecheck && npm test && npm run check-bundle-budget)
 node --test "$ROOT/scripts/check-bundle-budget.test.mjs"
+"$ROOT/scripts/check-api-semver.test.sh"
 
 echo "=== 5. independent sdk/ and server/ builds ==="
 (cd "$ROOT/sdk" && ./gradlew help --no-daemon -q)
@@ -82,6 +85,8 @@ if [ -z "${ANDROID_HOME:-}" ] && [ -z "${ANDROID_SDK_ROOT:-}" ] && ! grep -q '^s
   exit 1
 fi
 (cd "$ROOT/sdk" && ./gradlew :sdk-android:apiCheck --no-daemon -q)
+# Semver (ADR-0049 A7): a removed or changed line against the last `v*` tag needs a MAJOR (before 1.0 MINOR) bump.
+"$ROOT/scripts/check-api-semver.sh" android
 # Dependency baseline (ADR-0033): fails when the release runtime or compile classpath of :sdk-android
 # differs from sdk/sdk-android/dependencies/. Update: ./gradlew :sdk-android:dependencyGuardBaseline
 (cd "$ROOT/sdk" && ./gradlew :sdk-android:dependencyGuard --no-daemon -q)
@@ -110,5 +115,8 @@ if "$ROOT/scripts/verify-ios.sh" available; then
 else
   echo "skip: no full Xcode with an iOS Simulator runtime; the iOS steps run in CI (ios-test, ios-sanitize)"
 fi
+
+# Semver (ADR-0049 I3): as step 6, against the last `ios-v*` tag. It reads only committed files, so it runs without Xcode.
+"$ROOT/scripts/check-api-semver.sh" ios
 
 echo "ALL CONTRACT CHECKS PASSED"
