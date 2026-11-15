@@ -195,3 +195,41 @@ Gates A3, A4, A5, and A6 are built. Evidence: the `device-test` run of this PR f
 - **A4.** `MeasurePhases.main_thread` times 1,000 `track()` calls made from a coroutine on the main thread (endpoint unreachable, as `offline_store`); the wall time of a call bounds from above how long the call keeps the main thread. Case `maincost` gates p99. Measured p99 on the CI emulators, 17 values: API 24: 10,033, 6,860, 10,079, 7,821, 7,119, 7,963, 9,428, and in the nightly dispatch runs 7,230, 8,109, 6,359; API 37.0: 55,155, 5,790, 14,344, 4,143, 5,002, 4,351, 33,751, and in the dispatch runs 84,401, 36,643, 77,782 microseconds (p50: 0.7 to 5.0 ms). The spread is one order of magnitude on a shared runner. The first budget (110,000, 2 x 55,155) was set from 14 values; the three dispatch runs on the `nightly.yml` job reached 84,401, so it left too little room. The rule stays, with the new base: budget = 2 x the worst measured p99, rounded = 170,000 microseconds, `MAIN_THREAD_P99_BUDGET_US` in the script. A local run on a loaded Mac (123,557 microseconds) is not a base: the runner class decides (decision 2). The gate measures the wall time of the suspend `track()`, which includes the Room insert on `Dispatchers.IO`. So it catches a call that gets slower by about 2 x the worst run, but it cannot see an insert that moves onto the main thread: gate A3 (StrictMode) catches that. It does not claim to measure ANR risk (the ANR limit is 5 s). Change it only with a new measured base and an amendment.
 - **Counts.** `device-test` now starts 38 methods: 20 skip themselves without `-e phase`, 18 run (the new ones: `StrictModeDeviceTest` runs; `PowerLossPhases` has 3 and `MeasurePhases.main_thread` 1 that skip). ADR-0023 and ADR-0029 carry matching amendments.
 
+
+## Amendment (2026-11-15, ticket 01, static analysis)
+
+Gates A1, A2, B1 and D3 of the plan. The first measured values are here; the decisions above stand.
+
+What runs, where:
+- Android Lint for the 8 Android modules that have a `lint` task (`sdk-android`, the 5 demo modules, `measure-app`, `profile-app`), with `warningsAsErrors`, `abortOnError`, and a committed `lint-baseline.xml` in each. `baseline-profile` is a `com.android.test` module and has no lint task. CI: step "Android Lint and detekt" of `sdk-test` (`sdk/gradlew -p sdk lint detekt`).
+- detekt with the ktlint rule set for all 9 `sdk/` modules and the 4 `server/` modules, one `detekt-baseline.xml` each, one config `gradle/detekt.yml` (`buildUponDefaultConfig`). CI: the same step of `sdk-test`, and step "detekt" of `server-test`. Both tools are also part of `build`, so `scripts/update-gradle-verification.sh` resolves their configurations (ADR-0038); the plugin and its dependencies are pinned in `gradle/libs.versions.toml`.
+- `scripts/check-baselines.py`, called by `scripts/check-repo-rules.sh`: a baseline file may have no entry that `origin/main` lacks (decision 3). Line numbers are not part of a lint entry. A baseline file that is new on a branch counts as empty on main. When main has no baseline of a kind, that kind is skipped: this is the PR that adds the first baselines, and the check applies from the next PR on. `scripts/test_check_baselines.py` (run by `check`) adds an entry to a sample baseline and expects the failure.
+- `claude-review.yml` now names Android Lint and detekt. shellcheck is not named: no job runs it yet (ticket 03).
+
+Decisions:
+1. detekt 2.0.0-alpha.6, an alpha. It is the only line built against Kotlin 2.4 (its compiler is 2.4.10; this repo uses 2.4.21). The stable 1.23.8 embeds the Kotlin 2.0 compiler. The ktlint rules come from `detekt-rules-ktlint-wrapper`; in 2.x the rule set is `ktlint`, not `formatting` as in the ticket text. Renovate updates the version (ADR-0031); a new detekt version that finds more must fix the findings, not grow a baseline. When a Kotlin upgrade moves past the compiler of the detekt release, wait for a detekt release.
+2. detekt runs without type resolution (the `detekt` task only). Rules that need it do not run. Upgrade path: the `detektMain` and `detektTest` tasks, when a finding class that matters needs it.
+3. Config from a measured run (2026-11-15; 14,289 Kotlin lines in `sdk/` and `server/`; with the defaults: 5,598 findings, 4,823 (86%) from the 12 rules that are off below):
+   - Off: the 11 ktlint layout rules that this repo breaks by design (`ArgumentListWrapping` 2,807 findings, `StatementWrapping`, `FunctionLiteral`, `BinaryExpressionWrapping`, `Wrapping`, `FunctionSignature`, `ParameterListWrapping`, `ClassSignature`, `PropertyWrapping`, `MultiLineIfElse`, `BlankLineBetweenWhenConditions`), and ktlint `MaximumLineLength`, which counts the same lines as detekt `MaxLineLength`. The code wraps argument lists and lambdas by hand. Reformatting about 4,800 sites would be a separate change that buries `git blame`; a baseline that large would never shrink. The other ktlint rules (indentation, import order, unused imports, spacing, trailing commas) stay on.
+   - `MaxLineLength` is 160: longest line 268; 520 lines over 120, 174 over 140, 50 over 160, 7 over 200. 160 is the smallest multiple of 20 with under 0.5% of lines over it.
+   - `FunctionNaming` ignores `@Composable` (10 findings, all on Compose functions, which the Compose guidelines name in PascalCase).
+   - Not fixed by autocorrect: trailing commas, `catch` on its own line, and `;` after enum entries gave worse code than the current code (`)),)`, a joined line over the limit). Those findings are in the baselines.
+   - Autocorrect fixed 41 findings in 30 files (+70 -73 lines): 28 import order, 7 double spaces, 4 unused imports, 1 string template, 1 braces on a one-line loop. No other change.
+4. Lint: the 3 checks that compare a version with the newest one on the network (`AndroidGradlePluginVersion`, `GradleDependency`, `NewerVersionAvailable`) are off. The first one found "a newer Gradle than 9.8.2 is available" in `sdk-android`: a green build would turn red when Gradle 9.9.2 comes out, with no change in the repo. Renovate owns freshness (ADR-0031). Android Lint does not check test sources (default).
+
+Baselines (committed files, counted on this branch):
+
+| Tool | Entries | Where |
+|---|---|---|
+| Android Lint | 11 | `demo:app` 2 (`DataExtractionRules`, `MissingApplicationIcon`), `demo:feature:shop` 2 (`VisibleForTests`), `measure-app` 2, `profile-app` 5; `sdk-android`, `demo:core:data`, `demo:core:ui`, `demo:feature:diagnostics` 0 (empty file) |
+| detekt, `sdk/` | 132 | `sdk-android` 122, `demo:feature:shop` 4, `demo:feature:diagnostics` 3, `baseline-profile` 1, `measure-app` 1, `profile-app` 1; the 3 other demo modules have no baseline file |
+| detekt, `server/` | 94 | `app` 46, `persistence` 30, `ingestion` 13, `query` 5 |
+
+The 226 detekt entries by rule: `MagicNumber` 67, `MaxLineLength` 47, `TrailingCommaOnCallSite` 18, `ReturnCount` 18, `TooGenericExceptionCaught` 14, `SwallowedException` 14, `ThrowsCount` 7, `TooManyFunctions` 6, `CyclomaticComplexMethod` 6, 17 others. `sdk-android` has no Android Lint finding. 11 of the 14 `TooGenericExceptionCaught` entries are in `sdk-android`, whose public calls must not throw into the host app (ADR-0017); each entry stays until its site has a comment with the reason or a narrower exception type.
+
+Job times, from `repo-rules` runs (a job covers its checkout, toolchain setup, and Gradle run):
+
+| Job | Before (main runs 41196701656, 41198632341, 41200224841) | After (PR run) |
+|---|---|---|
+| `sdk-test` | 203 s, 161 s, 234 s | <<SDK_AFTER>> |
+| `server-test` | 129 s, 112 s, 140 s | <<SERVER_AFTER>> |

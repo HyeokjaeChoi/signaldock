@@ -17,7 +17,7 @@ You also need Docker with Compose, Python 3, Node (see [TOOLCHAIN.md](TOOLCHAIN.
 
 ## What the hooks run
 
-- `pre-commit` runs `scripts/check-repo-rules.sh` (static checks: file modes, issue status lines, README sync, design index, no raw HTML sinks in the Dashboard and report apps, frozen Room schema files, `SDK_VERSION` equal to `sdkVersion`).
+- `pre-commit` runs `scripts/check-repo-rules.sh` (static checks: file modes, issue status lines, README sync, design index, no raw HTML sinks in the Dashboard and report apps, frozen Room schema files, `SDK_VERSION` equal to `sdkVersion`, Android Lint and detekt baselines that gain no entry).
 - `pre-push` always runs `scripts/check-repo-rules.sh`, so it can reject a docs-only push too. When code changed, it also runs `scripts/verify-contract.sh`.
 
 ## Change a Gradle dependency
@@ -29,6 +29,17 @@ scripts/update-gradle-verification.sh
 ```
 
 Commit the changed `verification-metadata.xml` files. Read the diff: a new entry must belong to the dependency that you changed. A Renovate Gradle PR needs the same step. Check out its branch, run the script, and push once.
+
+## Static analysis
+
+Android Lint (warnings are errors) and detekt with the ktlint rules run in CI for every `sdk/` module, and detekt for every `server/` module ([ADR-0049](docs/adr/0049-production-quality-gates.md)):
+
+```sh
+sdk/gradlew -p sdk lint detekt
+cd server && ./gradlew detekt
+```
+
+A finding that is in no baseline fails the build: fix it. Each module has a `lint-baseline.xml` or `detekt-baseline.xml` that may only lose entries (`scripts/check-baselines.py` fails a PR that adds one). After you fix baselined findings, drop their entries with `sdk/gradlew -p sdk updateLintBaseline detektBaseline` (server: `./gradlew detektBaseline`) and commit the smaller files.
 
 ## Design first
 
