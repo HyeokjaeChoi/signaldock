@@ -1,9 +1,9 @@
 # 90. The PR review runs on API credits first and on the subscription second
 
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: None
-Execution: PR pending
+Execution: Done (merged in PR #285, 2026-11-15 UTC)
 
 ## Scope and completion criteria
 
@@ -17,3 +17,4 @@ On 2026-11-15 UTC the owner asked that the review job work like the `pleos-famil
 Notes:
 - The owner sets the secret: `gh secret set ANTHROPIC_API_KEY --repo HyeokjaeChoi/signaldock`. `gh` cannot copy a secret value from another repository, and no agent handles the key. `CLAUDE_CODE_OAUTH_TOKEN` exists already. Until the API key exists, step 1 prints a warning and step 2 reviews.
 - The label trigger replaces the push trigger, as in family-stop. Open PRs get no review until the label is added.
+- Verification: the first real runs on PR 285 showed `Review (API credits, claude -p)` success, a summary comment with the marker, and `Review (subscription fallback)` skipped (run 43725592714, 2026-11-15 UTC). Not verified: a real used-up credit or rate-limit failure text.
