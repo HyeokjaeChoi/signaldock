@@ -32,14 +32,14 @@ Commit the changed `verification-metadata.xml` files. Read the diff: a new entry
 
 ## Static analysis
 
-Android Lint (warnings are errors) and detekt with the ktlint rules run in CI for every `sdk/` module, and detekt for every `server/` module ([ADR-0049](docs/adr/0049-production-quality-gates.md)):
+Android Lint (warnings are errors) runs in CI for the `sdk/` Android modules, and detekt with the ktlint rules for every `sdk/` and `server/` module ([ADR-0049](docs/adr/0049-production-quality-gates.md)):
 
 ```sh
 sdk/gradlew -p sdk lint detekt
 cd server && ./gradlew detekt
 ```
 
-A finding that is in no baseline fails the build: fix it. Each module has a `lint-baseline.xml` or `detekt-baseline.xml` that may only lose entries (`scripts/check-baselines.py` fails a PR that adds one). After you fix baselined findings, drop their entries with `sdk/gradlew -p sdk updateLintBaseline detektBaseline` (server: `./gradlew detektBaseline`) and commit the smaller files.
+A finding that is in no baseline fails the build: fix it. A module with findings has a `lint-baseline.xml` or `detekt-baseline.xml` that may only lose entries (`scripts/check-baselines.py` fails a PR that has more entries of a rule in a file than `origin/main`). A detekt entry names the rule, the file, and the enclosing declaration, not the line, so one entry covers all findings of that rule in that declaration; do not add more of the same there. After you fix baselined findings, drop their entries with `sdk/gradlew -p sdk updateLintBaseline detektBaseline` (server: `./gradlew detektBaseline`) and commit the smaller files.
 
 ## Design first
 

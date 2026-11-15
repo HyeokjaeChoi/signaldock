@@ -40,7 +40,7 @@ ADRs:
 - ADR-0040 (`docs/adr/0040-sdk-baseline-profile.md`), for `sdk/profile-app`, `sdk/baseline-profile`, and `sdk/sdk-android/src/main/generated/baselineProfiles/baseline-prof.txt` (issue 70)
 - ADR-0046 (`docs/adr/0046-sdk-platform-field.md`), for the `sdkPlatform` field that Android SDK 0.4.0 sends
 - ADR-0047 (`docs/adr/0047-ios-sdk.md`), for the iOS SDK; the Android SDK is its parity reference
-- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), decisions 2 and 3 and "Amendment (2026-11-15, ticket 01, static analysis)", for Android Lint and detekt in every `sdk/` module: the `subprojects` block of `sdk/build.gradle.kts`, `gradle/detekt.yml`, and the `lint-baseline.xml` and `detekt-baseline.xml` of each module (baselines only shrink)
+- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), decisions 2 and 3 and "Amendment (2026-11-15, ticket 01, static analysis)", for Android Lint and detekt in every `sdk/` module: the `subprojects` block of `sdk/build.gradle.kts`, `gradle/detekt.yml`, and the `lint-baseline.xml` and `detekt-baseline.xml` files of the modules (baselines only shrink)
 
 Public API change: update the dump (`sdk/gradlew -p sdk :sdk-android:apiDump`), the integration guide, and `CHANGELOG.md` in the same PR.
 
@@ -86,7 +86,7 @@ ADRs:
 - ADR-0036 (`docs/adr/0036-sdk-client-reports.md`), for `POST /v1/client-reports`, `GET /v1/client-report-counts`, and `V3__create_client_reports.sql` (issue 61)
 - ADR-0037 (`docs/adr/0037-server-collection-kill-switch.md`), for `CollectionControl.kt`, the block lists, and the shed switch (issue 67)
 - ADR-0046 (`docs/adr/0046-sdk-platform-field.md`), for `V4`, the default `android`, the `platform:version` kill switch, the `sdkPlatform` filters, and the client report grouping
-- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), decisions 2 and 3 and "Amendment (2026-11-15, ticket 01, static analysis)", for detekt in every `server/` module: the `subprojects` block of `server/build.gradle.kts`, `gradle/detekt.yml`, and the `detekt-baseline.xml` of each module (baselines only shrink)
+- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), decisions 2 and 3 and "Amendment (2026-11-15, ticket 01, static analysis)", for detekt in every `server/` module: the `subprojects` block of `server/build.gradle.kts`, `gradle/detekt.yml`, and the `detekt-baseline.xml` files of the modules (baselines only shrink)
 
 Spec (`.scratch/signaldock/spec.md`):
 - 2. Agreed stack and boundaries

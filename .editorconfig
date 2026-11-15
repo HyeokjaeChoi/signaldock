@@ -1,0 +1,2 @@
+# Stops ktlint (detekt rule set `ktlint`) and editors from reading an .editorconfig above this repository (ADR-0049).
+root = true

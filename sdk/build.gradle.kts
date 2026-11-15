@@ -28,10 +28,14 @@ subprojects {
             lint.abortOnError = true
             lint.textReport = true
             lint.baseline = file("lint-baseline.xml")
-            // Checks that compare a version with the newest one on the network: the result changes when a new
-            // release comes out, so a green build turns red without a change in the repo. Renovate owns
-            // freshness (ADR-0031).
-            lint.disable += setOf("AndroidGradlePluginVersion", "GradleDependency", "NewerVersionAvailable")
+            // Checks whose result depends on something outside the repo: the newest version on the network, the date
+            // of a Play deadline, the state of the Play SDK Index. A green build would turn red with no change in
+            // the repo. Renovate owns freshness (ADR-0031).
+            lint.disable += setOf(
+                "AndroidGradlePluginVersion", "GradleDependency", "NewerVersionAvailable",
+                "ExpiringTargetSdkVersion", "ExpiredTargetSdkVersion",
+                "OutdatedLibrary", "PlaySdkIndexNonCompliant", "RiskyLibrary",
+            )
         }
     }
     // detekt with the ktlint rule set; one config for sdk and server (gradle/detekt.yml). It reads all source sets

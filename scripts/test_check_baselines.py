@@ -82,20 +82,36 @@ class BaselineCheck(unittest.TestCase):
         self.write("m/detekt-baseline.xml", detekt_xml("MagicNumber:A.kt:8", "ReturnCount:A.kt:A$fun f", "LongMethod:B.kt:B$fun g"))
         errs = self.errors()
         self.assertEqual(1, len(errs))
-        self.assertIn("m/detekt-baseline.xml gains an entry", errs[0])
-        self.assertIn("LongMethod:B.kt:B$fun g", errs[0])
+        self.assertIn("m/detekt-baseline.xml has 1 entries of LongMethod in B.kt", errs[0])
 
     def test_added_lint_entry_fails(self):
         self.both()
         self.write("m/lint-baseline.xml", lint_xml(("A", "first", 10), ("B", "second", 20), ("C", "third", 30)))
         errs = self.errors()
         self.assertEqual(1, len(errs))
-        self.assertIn("m/lint-baseline.xml gains an entry", errs[0])
-        self.assertIn("third", errs[0])
+        self.assertIn("m/lint-baseline.xml has 1 entries of C in src/main/A.kt", errs[0])
 
-    def test_changed_entry_counts_as_added(self):
+    def test_reworded_lint_message_is_not_a_new_entry(self):
+        # A tool update can reword a message; the entry stays the same rule in the same file.
         self.both()
         self.write("m/lint-baseline.xml", lint_xml(("A", "first, new wording", 10), ("B", "second", 20)))
+        self.assertEqual([], self.errors())
+
+    def test_renamed_declaration_is_not_a_new_detekt_entry(self):
+        self.both()
+        self.write("m/detekt-baseline.xml", detekt_xml("MagicNumber:A.kt:9", "ReturnCount:A.kt:A$fun g"))
+        self.assertEqual([], self.errors())
+
+    def test_one_more_detekt_entry_of_a_rule_in_a_file_fails(self):
+        self.both()
+        self.write("m/detekt-baseline.xml", detekt_xml("MagicNumber:A.kt:8", "MagicNumber:A.kt:9", "ReturnCount:A.kt:A$fun f"))
+        errs = self.errors()
+        self.assertEqual(1, len(errs))
+        self.assertIn("MagicNumber in A.kt", errs[0])
+
+    def test_same_rule_in_another_file_fails(self):
+        self.both()
+        self.write("m/detekt-baseline.xml", detekt_xml("MagicNumber:A.kt:8", "MagicNumber:B.kt:8", "ReturnCount:A.kt:A$fun f"))
         self.assertEqual(1, len(self.errors()))
 
     def test_a_second_copy_of_an_entry_fails(self):
@@ -125,6 +141,19 @@ class BaselineCheck(unittest.TestCase):
         self.base({"m/detekt-baseline.xml": self.DETEKT})
         self.write("m/lint-baseline.xml", lint_xml(("A", "first", 10)))  # lint: skipped (none on base)
         self.write("m/detekt-baseline.xml", detekt_xml("MagicNumber:A.kt:8", "ReturnCount:A.kt:A$fun f", "X:Y.kt:1"))
+        self.assertEqual(1, len(self.errors()))
+
+    def test_a_main_that_moved_on_does_not_count_against_the_branch(self):
+        # `base` loses entry B after the branch point. The branch did not touch the baseline: no error.
+        self.base({"m/lint-baseline.xml": self.LINT})
+        self.git("checkout", "-q", "-b", "feat")
+        self.git("checkout", "-q", "base")
+        self.write("m/lint-baseline.xml", lint_xml(("A", "first", 10)))
+        self.git("commit", "-q", "-m", "main fixes B")
+        self.git("checkout", "-q", "feat")
+        self.assertEqual([], self.errors())
+        # A real addition on the branch still fails.
+        self.write("m/lint-baseline.xml", lint_xml(("A", "first", 10), ("B", "second", 20), ("C", "third", 30)))
         self.assertEqual(1, len(self.errors()))
 
     def test_missing_base_ref_fails(self):

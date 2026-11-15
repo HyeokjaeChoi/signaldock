@@ -16,7 +16,7 @@ naming:
 
 ktlint:
   # ktlint's own layout rules: the code of this repo wraps argument lists, signatures, and lambdas by hand and
-  # breaks all of them (measured 2026-11-15: 5,600 findings in 14,289 lines, 80% of all findings). Reformatting
+  # breaks all of them (measured 2026-11-15 on 14,289 lines: 4,823 of the 5,598 default findings, 86%). Reformatting
   # that much code is a separate change and would bury `git blame`; a baseline of that size would never shrink.
   # The other ktlint rules (indentation, import order, unused imports, spacing, trailing commas) stay on.
   ArgumentListWrapping:
