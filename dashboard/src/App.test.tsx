@@ -1,8 +1,9 @@
 import { act, cleanup, fireEvent, render as rtlRender, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { Mock } from "vitest";
 import type { EventReceiptDetail, EventReceiptSummary } from "../../generated/typescript/models";
 import { App } from "./App";
-import type { Api } from "./api";
+import type { Api, Filters } from "./api";
 import { dictionaries, I18nProvider } from "./i18n";
 import { QueryError } from "./polling";
 import { translate } from "../../web-shared/i18n";
@@ -25,12 +26,12 @@ const detail: EventReceiptDetail = {
   properties: { price: 19900, in_stock: true, note: "hello" },
 };
 
-function fakeApi(overrides: Partial<Api> = {}): Api & Record<"listEvents" | "countsByName" | "countsByPlanStatus" | "clientReportCounts", ReturnType<typeof vi.fn>> {
+function fakeApi(
+  overrides: Partial<Api> = {},
+): Api & { [K in "listEvents" | "countsByName" | "countsByPlanStatus" | "clientReportCounts"]: Mock<Api[K]> } {
   return {
     listEvents: vi.fn(async (_f, _s, cursor?: string) =>
-      cursor === "c2"
-        ? { items: [summary(3)], nextCursor: undefined }
-        : { items: [summary(1), summary(2)], nextCursor: "c2" },
+      cursor === "c2" ? { items: [summary(3)], nextCursor: undefined } : { items: [summary(1), summary(2)], nextCursor: "c2" },
     ),
     getEvent: vi.fn(async () => detail),
     countsByName: vi.fn(async () => ({ items: [], truncated: false })),
@@ -41,8 +42,14 @@ function fakeApi(overrides: Partial<Api> = {}): Api & Record<"listEvents" | "cou
   } as never;
 }
 
-const flush = () => act(async () => { await vi.advanceTimersByTimeAsync(0); });
-const advance = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
+const flush = () =>
+  act(async () => {
+    await vi.advanceTimersByTimeAsync(0);
+  });
+const advance = (ms: number) =>
+  act(async () => {
+    await vi.advanceTimersByTimeAsync(ms);
+  });
 
 const LANGUAGES: Language[] = ["en", "ko"];
 
@@ -57,8 +64,16 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
   const t = (key: MessageKey<typeof dictionaries.en>, options?: TOptions) => translate(dictionaries[lang], lang, key, options);
   /** The fixed text parts of a message with a `{{time}}` slot. */
   const parts = (key: "status.lastSuccess" | "status.nextAttempt" | "status.queryFailed") =>
-    t(key, { time: "\0", message: "\0" }).split("\0").map((x) => x.trim()).filter(Boolean);
-  const render = (api: Api) => rtlRender(<I18nProvider initialLanguage={lang}><App api={api} /></I18nProvider>);
+    t(key, { time: "\0", message: "\0" })
+      .split("\0")
+      .map((x) => x.trim())
+      .filter(Boolean);
+  const render = (api: Api) =>
+    rtlRender(
+      <I18nProvider initialLanguage={lang}>
+        <App api={api} />
+      </I18nProvider>,
+    );
 
   it("keeps a past page in place while the first page keeps polling", async () => {
     const api = fakeApi();
@@ -80,7 +95,7 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
     expect(screen.getByText("event_3")).toBeTruthy(); // and no jump to the latest page
     expect(screen.queryByText("event_1")).toBeNull();
 
-    fireEvent.click(screen.getAllByRole("button", { name: t("controls.refresh") })[0]!);
+    fireEvent.click(screen.getAllByRole("button", { name: t("controls.refresh") })[0]);
     await flush();
     expect(api.listEvents.mock.calls.length).toBe(calls + 1);
     expect(api.listEvents.mock.calls.at(-1)?.[2]).toBe("c2");
@@ -96,7 +111,7 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
       listEvents: vi.fn(async () => {
         if (fail) throw new QueryError("HTTP 503", 503);
         return { items: [summary(1)] };
-      }) as never,
+      }),
     });
     render(api);
     await flush();
@@ -142,7 +157,7 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
       listEvents: vi.fn(async () => {
         if (fail) throw new QueryError("HTTP 503", 503);
         return { items: [summary(1)] };
-      }) as never,
+      }),
     });
     render(api);
     await flush();
@@ -150,7 +165,9 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
     await advance(5000);
     const status = screen.getByText(t("status.events")).parentElement!.cloneNode(true) as HTMLElement;
     expect(status.textContent).toContain("|");
-    status.querySelectorAll("[aria-hidden='true']").forEach((el) => el.remove());
+    status.querySelectorAll("[aria-hidden='true']").forEach((el) => {
+      el.remove();
+    });
     expect(status.textContent).not.toContain("|");
   });
 
@@ -165,7 +182,7 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
 
   it("shows the empty-result text and the not-found text", async () => {
     const api = fakeApi({
-      listEvents: vi.fn(async () => ({ items: [] })) as never,
+      listEvents: vi.fn(async () => ({ items: [] })),
     });
     render(api);
     await flush();
@@ -193,7 +210,7 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
     fireEvent.click(within(panel).getByRole("button", { name: t("copy.json") }));
     await flush();
     expect(writeText).toHaveBeenCalledTimes(1);
-    const copied = JSON.parse(writeText.mock.calls[0]![0]);
+    const copied: unknown = JSON.parse(writeText.mock.calls[0]?.[0] ?? "");
     expect(copied).toEqual(detail);
   });
 
@@ -202,7 +219,7 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
     const api = fakeApi({
       getEvent: vi.fn(async () => {
         throw new QueryError(status === 404 ? "nf" : "boom", status, status === 404 ? "EVENT_NOT_FOUND" : undefined);
-      }) as never,
+      }),
     });
     render(api);
     await flush();
@@ -221,9 +238,13 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
     const day = 24 * 3600 * 1000;
     const api = fakeApi({
       countsByTime: vi.fn(async () => ({
-        timeZone: "Asia/Seoul", bucket: "day" as const,
-        items: [{ start: new Date(Date.now() - 3 * day).toISOString(), count: 7 }, { start: new Date().toISOString(), count: 5 }],
-      })) as never,
+        timeZone: "Asia/Seoul",
+        bucket: "day" as const,
+        items: [
+          { start: new Date(Date.now() - 3 * day).toISOString(), count: 7 },
+          { start: new Date().toISOString(), count: 5 },
+        ],
+      })),
     });
     render(api);
     await flush();
@@ -255,11 +276,13 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
       vi.fn(async () => ({ planned: 0, unplannedEvent: 0, invalidProperties: 0, notChecked: 0, ...c })) as never;
 
     it("shows a badge with a word for each status, and Not checked when the event has none", async () => {
-      const { container } = render(fakeApi({
-        listEvents: vi.fn(async () => ({
-          items: [withStatus(1, "planned"), withStatus(2, "unplanned_event"), withStatus(3, "invalid_properties"), withStatus(4)],
-        })) as never,
-      }));
+      const { container } = render(
+        fakeApi({
+          listEvents: vi.fn(async () => ({
+            items: [withStatus(1, "planned"), withStatus(2, "unplanned_event"), withStatus(3, "invalid_properties"), withStatus(4)],
+          })),
+        }),
+      );
       await flush();
       expect(Array.from(container.querySelectorAll("td .badge")).map((b) => [b.textContent, b.className])).toEqual([
         [t("plan.planned"), "badge ok"],
@@ -283,7 +306,7 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
       const api = fakeApi();
       render(api);
       await flush();
-      const select = screen.getByRole("combobox", { name: new RegExp(t("controls.planStatus")) }) as HTMLSelectElement;
+      const select = screen.getByRole<HTMLSelectElement>("combobox", { name: new RegExp(t("controls.planStatus")) });
       expect(Array.from(select.options).map((o) => [o.value, o.textContent])).toEqual([
         ["", t("plan.all")],
         ["planned", t("plan.planned")],
@@ -310,7 +333,9 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
       await flush();
       const card = screen.getByText(t("kpi.violations")).parentElement!;
       expect(card.querySelector(".kpi-value")!.textContent).toBe(new Intl.NumberFormat(lang).format(1002));
-      expect(card.querySelector(".kpi-sub")!.textContent).toBe(t("kpi.violationsSub", { unplanned: "2", invalid: new Intl.NumberFormat(lang).format(1000) }));
+      expect(card.querySelector(".kpi-sub")!.textContent).toBe(
+        t("kpi.violationsSub", { unplanned: "2", invalid: new Intl.NumberFormat(lang).format(1000) }),
+      );
     });
 
     it("shows Not checked instead of a count when no event of the period has a status", async () => {
@@ -327,7 +352,7 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
       await flush();
       expect(screen.getByText(t("status.byPlan"))).toBeTruthy();
       const calls = api.countsByPlanStatus.mock.calls.length;
-      fireEvent.click(screen.getAllByRole("button", { name: t("controls.refresh") })[0]!);
+      fireEvent.click(screen.getAllByRole("button", { name: t("controls.refresh") })[0]);
       await flush();
       expect(api.countsByPlanStatus.mock.calls.length).toBe(calls + 1);
     });
@@ -337,15 +362,20 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
     const ios = (n: number) => ({ ...summary(n), sdkPlatform: "ios" as const });
 
     it("shows the platform of an ios and an android event in the list and in the details", async () => {
-      const { container } = render(fakeApi({
-        listEvents: vi.fn(async () => ({ items: [summary(1), ios(2)] })) as never,
-        getEvent: vi.fn(async () => ({ ...detail, ...ios(1), properties: {} })) as never,
-      }));
+      const { container } = render(
+        fakeApi({
+          listEvents: vi.fn(async () => ({ items: [summary(1), ios(2)] })),
+          getEvent: vi.fn(async () => ({ ...detail, ...ios(1), properties: {} })),
+        }),
+      );
       await flush();
       const head = Array.from(container.querySelectorAll("thead th")).map((h) => h.textContent);
       const col = head.indexOf(t("list.platform"));
       expect(col).toBeGreaterThan(-1);
-      expect(Array.from(container.querySelectorAll("tbody tr")).map((r) => r.children[col]!.textContent)).toEqual([t("platform.android"), t("platform.ios")]);
+      expect(Array.from(container.querySelectorAll("tbody tr")).map((r) => r.children[col].textContent)).toEqual([
+        t("platform.android"),
+        t("platform.ios"),
+      ]);
       fireEvent.click(screen.getByRole("button", { name: "event_1" }));
       await flush();
       const panel = screen.getByRole("region", { name: t("details.label") });
@@ -356,13 +386,16 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
       const api = fakeApi();
       render(api);
       await flush();
-      const select = screen.getByRole("combobox", { name: new RegExp(t("controls.platform")) }) as HTMLSelectElement;
+      const select = screen.getByRole<HTMLSelectElement>("combobox", { name: new RegExp(t("controls.platform")) });
       expect(Array.from(select.options).map((o) => [o.value, o.textContent])).toEqual([
         ["", t("platform.all")],
         ["android", t("platform.android")],
         ["ios", t("platform.ios")],
       ]);
-      const sent = () => [api.listEvents, api.countsByName, api.countsByTime, api.countsByPlanStatus, api.clientReportCounts].map((m) => (m as ReturnType<typeof vi.fn>).mock.calls.at(-1)?.[0].sdkPlatform);
+      const sent = () =>
+        [api.listEvents, api.countsByName, api.countsByTime, api.countsByPlanStatus, api.clientReportCounts].map(
+          (m) => (m as Mock<(f: Filters) => unknown>).mock.calls.at(-1)?.[0].sdkPlatform,
+        );
       expect(sent()).toEqual([undefined, undefined, undefined, undefined, undefined]);
       fireEvent.change(select, { target: { value: "ios" } });
       expect(sent()).toEqual([undefined, undefined, undefined, undefined, undefined]); // a draft only
@@ -385,7 +418,7 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
     const fmt = (n: number) => new Intl.NumberFormat(lang).format(n);
 
     it("shows the rows with the translated reason, the wire name, the formatted count, and the total of the shown rows", async () => {
-      render(fakeApi({ clientReportCounts: vi.fn(async () => ({ items: rows, truncated: false })) as never }));
+      render(fakeApi({ clientReportCounts: vi.fn(async () => ({ items: rows, truncated: false })) }));
       await flush();
       const table = within(card()).getByRole("table", { name: t("dropped.title") });
       const body = Array.from(table.querySelectorAll("tbody tr")).map((r) => Array.from(r.children).map((c) => c.textContent));
@@ -404,7 +437,7 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
       expect(within(card()).getByText(t("dropped.empty"))).toBeTruthy();
       expect(within(card()).queryByRole("table")).toBeNull();
       cleanup();
-      render(fakeApi({ clientReportCounts: vi.fn(async () => ({ items: rows, truncated: true })) as never }));
+      render(fakeApi({ clientReportCounts: vi.fn(async () => ({ items: rows, truncated: true })) }));
       await flush();
       expect(within(card()).getByText(t("dropped.truncated", { limit: fmt(100) }))).toBeTruthy();
     });
@@ -437,7 +470,7 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
         { sdkPlatform: "android" as const, sdkVersion: "0.1.0", reason: "queue_full" as const, count: 2 },
         { sdkPlatform: "ios" as const, sdkVersion: "0.1.0", reason: "queue_full" as const, count: 3 },
       ];
-      render(fakeApi({ clientReportCounts: vi.fn(async () => ({ items: same, truncated: false })) as never }));
+      render(fakeApi({ clientReportCounts: vi.fn(async () => ({ items: same, truncated: false })) }));
       await flush();
       expect(within(card()).getAllByRole("row")).toHaveLength(4); // head, two rows, foot
       expect(errors.mock.calls.filter((c) => String(c[0]).includes("same key"))).toEqual([]);
@@ -450,7 +483,7 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
         clientReportCounts: vi.fn(async () => {
           if (fail) throw new QueryError("HTTP 503", 503);
           return { items: rows, truncated: false };
-        }) as never,
+        }),
       });
       render(api);
       await flush();
@@ -471,7 +504,7 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
         clientReportCounts: vi.fn(async () => {
           if (fail) throw new QueryError("no", 400, "CONTRACT_VERSION_UNSUPPORTED");
           return { items: rows, truncated: false };
-        }) as never,
+        }),
       });
       render(api);
       await flush();
@@ -488,10 +521,17 @@ describe.each(LANGUAGES)("App (%s)", (lang) => {
   describe("at 720 px or less (Q147)", () => {
     const original = window.matchMedia;
     beforeEach(() => {
-      window.matchMedia = ((query: string) => ({ matches: true, media: query, addEventListener: () => {}, removeEventListener: () => {} })) as never;
+      window.matchMedia = ((query: string) => ({
+        matches: true,
+        media: query,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      })) as never;
     });
-    afterEach(() => { window.matchMedia = original; });
-    const disclosure = (container: HTMLElement) => container.querySelector("details.more-filters") as HTMLDetailsElement;
+    afterEach(() => {
+      window.matchMedia = original;
+    });
+    const disclosure = (container: HTMLElement) => container.querySelector<HTMLDetailsElement>("details.more-filters")!;
 
     it("puts the three exact filters in a closed More filters disclosure; period and sort stay outside", async () => {
       const { container } = render(fakeApi());

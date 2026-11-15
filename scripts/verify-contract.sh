@@ -5,9 +5,10 @@
 #    (verification never rewrites the checkout).
 # 2. Checks oasdiff finds no unrecorded change against the v1 baseline.
 # 3. Compiles generated Kotlin DTOs and runs the fixture round-trip tests.
-# 4. Installs pinned dashboard deps (npm ci from the committed lockfile),
-#    runs the dashboard tests and the bundle-has-no-query-key check (Q129),
-#    type-checks the dashboard, and runs the executable TS round-trip assertions.
+# 4. Web packages (npm ci from the committed lockfiles): ESLint and Prettier over dashboard/, perf/report/, and web-shared/
+#    from the lint package at the repository root (ADR-0049 W1, W2); type check, tests (with axe-core on every view, W4),
+#    and the gzip bundle budget (W3) of dashboard/ and perf/report/; the bundle-has-no-query-key check (Q129) and the
+#    executable TS round-trip assertions of the dashboard.
 # 5. Evaluates the independent sdk/ and server/ Gradle builds.
 # 6. Checks the SDK public API dump (ADR-0019) and the published dependency baseline (ADR-0033).
 # 7. Tracking plan (ADR-0021; Kotlin, TypeScript, and Swift outputs): regenerates into a temp dir and diffs against
@@ -60,8 +61,14 @@ fi
 echo "=== 3. kotlin compile + tests (contract-check build) ==="
 (cd "$ROOT/contract-check" && ./gradlew test --no-daemon)
 
-echo "=== 4. typescript contract check (dashboard) ==="
-(cd "$ROOT/dashboard" && npm ci && npm run typecheck && npm test && npm run contract-check && npm run check-bundle-key)
+echo "=== 4. web packages: lint, format, type check, tests with axe-core, bundle budget, contract check (ADR-0049) ==="
+# The lint package type-checks against the node_modules of the two apps, so all three installs come first.
+(cd "$ROOT/dashboard" && npm ci)
+(cd "$ROOT/perf/report" && npm ci)
+(cd "$ROOT" && npm ci && npm run lint && npm run format:check)
+(cd "$ROOT/dashboard" && npm run typecheck && npm test && npm run contract-check && npm run check-bundle-key && npm run check-bundle-budget)
+(cd "$ROOT/perf/report" && npm run typecheck && npm test && npm run check-bundle-budget)
+node --test "$ROOT/scripts/check-bundle-budget.test.mjs"
 
 echo "=== 5. independent sdk/ and server/ builds ==="
 (cd "$ROOT/sdk" && ./gradlew help --no-daemon -q)

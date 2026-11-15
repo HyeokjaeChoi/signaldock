@@ -1,0 +1,11 @@
+# Prettier checks only the web packages (ADR-0049 W2).
+/*
+!/dashboard
+!/perf
+!/web-shared
+/perf/*
+!/perf/report
+package-lock.json
+dist/
+node_modules/
+.tmp-contract-check/

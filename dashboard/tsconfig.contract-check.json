@@ -1,1 +1,12 @@
-{"compilerOptions":{"module":"NodeNext","moduleResolution":"NodeNext","noEmit":false,"noEmitOnError":true,"outDir":".tmp-contract-check","rootDir":".."},"extends":"./tsconfig.json","include":["src/contract-check.ts","../generated/typescript/**/*", "../tracking-plan/generated/typescript/**/*"]}
+{
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "noEmit": false,
+    "noEmitOnError": true,
+    "outDir": ".tmp-contract-check",
+    "rootDir": ".."
+  },
+  "extends": "./tsconfig.json",
+  "include": ["src/contract-check.ts", "../generated/typescript/**/*", "../tracking-plan/generated/typescript/**/*"]
+}

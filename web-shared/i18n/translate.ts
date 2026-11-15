@@ -36,7 +36,7 @@ export function translate(messages: Messages, language: Language, key: string, o
 /** Every leaf of a dictionary as `[dotted key, value]`. Used by the format test. */
 export function leaves(messages: Messages, prefix = ""): [string, unknown][] {
   return Object.entries(messages).flatMap(([k, v]) =>
-    v !== null && typeof v === "object" ? leaves(v as Messages, `${prefix}${k}.`) : [[`${prefix}${k}`, v] as [string, unknown]],
+    typeof v === "object" ? leaves(v, `${prefix}${k}.`) : [[`${prefix}${k}`, v] as [string, unknown]],
   );
 }
 

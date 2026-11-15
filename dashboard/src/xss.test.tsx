@@ -15,7 +15,10 @@ const PAYLOADS = [
   "<svg onload=alert(1)>",
   "</td></tr></table><iframe src=javascript:alert(1)>",
 ];
-const flush = () => act(async () => { await vi.advanceTimersByTimeAsync(0); });
+const flush = () =>
+  act(async () => {
+    await vi.advanceTimersByTimeAsync(0);
+  });
 const INJECTED = "img, script, iframe, svg, [onerror], [onload]";
 
 beforeEach(() => vi.useFakeTimers());
@@ -43,7 +46,12 @@ describe.each(PAYLOADS)("hostile text %s", (payload) => {
     countsByPlanStatus: vi.fn(async () => ({ planned: 0, unplannedEvent: 0, invalidProperties: 0, notChecked: 0 })),
     clientReportCounts: vi.fn(async () => ({ items: [], truncated: false })),
   } as unknown as Api;
-  const render = () => rtlRender(<I18nProvider initialLanguage="en"><App api={api} /></I18nProvider>);
+  const render = () =>
+    rtlRender(
+      <I18nProvider initialLanguage="en">
+        <App api={api} />
+      </I18nProvider>,
+    );
 
   it("renders event name, property key and value, and top-event KPI as text only", async () => {
     const { container } = render();
@@ -58,7 +66,7 @@ describe.each(PAYLOADS)("hostile text %s", (payload) => {
     const detailPanel = container.querySelector(".detail")!;
     expect(detailPanel.querySelector("dd")?.textContent).toBe(payload); // name
     expect(detailPanel.querySelector("tbody th")?.textContent).toBe(payload); // property key
-    expect(detailPanel.querySelectorAll("tbody td")[1]?.textContent).toBe(payload); // property value
+    expect(detailPanel.querySelectorAll("tbody td").item(1).textContent).toBe(payload); // property value
     expect(detailPanel.querySelector("pre")?.textContent).toContain(JSON.stringify(payload).slice(1, -1)); // JSON view
   });
 
@@ -77,7 +85,11 @@ describe.each(PAYLOADS)("hostile text %s", (payload) => {
 describe("plan status label", () => {
   it("never renders a server-sent unknown status as markup", async () => {
     const { PlanBadge } = await import("./PlanBadge");
-    const { container } = rtlRender(<I18nProvider initialLanguage="en"><PlanBadge status={PAYLOADS[0] as never} /></I18nProvider>);
+    const { container } = rtlRender(
+      <I18nProvider initialLanguage="en">
+        <PlanBadge status={PAYLOADS[0] as never} />
+      </I18nProvider>,
+    );
     expect(container.querySelector(INJECTED)).toBeNull();
   });
 });

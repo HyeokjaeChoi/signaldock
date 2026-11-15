@@ -53,8 +53,8 @@ When a mistake or the same kind of review finding repeats, add a check to `scrip
 2. Build what the design sources say. If you must make a new decision, record it in an ADR in the same PR and name it in the PR description. Implementers do not write review rules.
 3. One purpose per PR. Work outside it, such as new hooks, CI, or review setup, goes in a separate PR.
 4. A PR description states what changed, which design sections it follows, and the exact verification commands and results. Never label a step verified without a run.
-5. Claude Code reviews each PR against the design sources with no session context (`.github/workflows/claude-review.yml`, ADR-0041). Answer each finding in one way: fix the code; fix the design source in the same PR; add a check to `scripts/check-repo-rules.sh` or `scripts/verify-contract.sh`; or reject it and cite the design source section.
-6. Collect all findings of one review round, fix them together, and push once. The push starts the next review.
+5. After you open a PR, add the label `claude-review-request`. Claude Code then reviews the PR against the design sources with no session context (`.github/workflows/claude-review.yml`, ADR-0041). Answer each finding in one way: fix the code; fix the design source in the same PR; add a check to `scripts/check-repo-rules.sh` or `scripts/verify-contract.sh`; or reject it and cite the design source section.
+6. Collect all findings of one review round, fix them together, and push once. When the review job has ended and removed the label, add it again to start the next review.
 7. Merge when no Critical or Major finding is open and all checks pass. Record each open Minor or lower finding as a local issue, link it in the PR, and do not hold the merge for it.
 
 ## Where things are

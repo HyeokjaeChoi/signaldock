@@ -7,7 +7,9 @@ describe("resolvePeriod", () => {
   it("Today is [start of the date, start of the next date) in the project timezone", () => {
     expect(dateIn(now, "Asia/Seoul")).toBe("2026-10-13");
     expect(resolvePeriod("today", "", "", "Asia/Seoul", now)).toEqual({
-      ok: true, from: "2026-10-12T15:00:00.000Z", to: "2026-10-13T15:00:00.000Z",
+      ok: true,
+      from: "2026-10-12T15:00:00.000Z",
+      to: "2026-10-13T15:00:00.000Z",
     });
   });
 

@@ -173,8 +173,10 @@ export const en = {
     trackChart: "track() completion per run (ms)",
     rateChart: "Actual event rate as % of target, per run",
     percent: "% of target",
-    rateNote: "The dashed line is 100 % of the target rate. Offline runs have no target rate (calls run back to back), so the chart leaves them out.",
+    rateNote:
+      "The dashed line is 100 % of the target rate. Offline runs have no target rate (calls run back to back), so the chart leaves them out.",
     events: "{{started}} of {{planned}} calls, {{bytes}} bytes per event, {{inflight}} in flight at most, {{notOk}} not ok",
-    memoryNote: "PSS is the change from after initialization to after drain (offline: after storing). It has noise of some MiB. It shows the size order, not exact cost.",
+    memoryNote:
+      "PSS is the change from after initialization to after drain (offline: after storing). It has noise of some MiB. It shows the size order, not exact cost.",
   },
 } satisfies Messages;

@@ -1,7 +1,8 @@
 # 02. Web: ESLint, Prettier, axe, bundle budget
 
-Status: ready-for-agent
+Status: resolved
 Type: task
+Execution: Done (PR #283, 2026-11-15 UTC)
 
 ## Scope and completion criteria
 

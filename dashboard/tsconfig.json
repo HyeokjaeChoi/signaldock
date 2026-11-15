@@ -5,11 +5,17 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "noEmit": true,
-    "paths": { "react": ["./node_modules/@types/react"], "vitest": ["./node_modules/vitest"] },
+    "paths": { "react": ["./node_modules/@types/react"], "vitest": ["./node_modules/vitest"], "axe-core": ["./node_modules/axe-core"] },
     "skipLibCheck": true,
     "strict": true,
     "target": "ES2022",
     "types": ["node", "vite/client"]
   },
-  "include": ["src/**/*", "vite.config.mts", "../generated/typescript/**/*", "../tracking-plan/generated/typescript/**/*", "../web-shared/**/*"]
+  "include": [
+    "src/**/*",
+    "vite.config.mts",
+    "../generated/typescript/**/*",
+    "../tracking-plan/generated/typescript/**/*",
+    "../web-shared/**/*"
+  ]
 }

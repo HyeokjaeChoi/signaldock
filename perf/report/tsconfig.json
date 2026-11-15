@@ -5,12 +5,12 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "noEmit": true,
-    "paths": { "react": ["./node_modules/@types/react"] },
+    "paths": { "react": ["./node_modules/@types/react"], "axe-core": ["./node_modules/axe-core"] },
     "skipLibCheck": true,
     "strict": true,
     "target": "ES2022",
-    "types": ["vite/client"]
+    "types": ["node", "vite/client"]
   },
-  "include": ["src/**/*", "../../web-shared/**/*.ts"],
+  "include": ["src/**/*", "vite.config.mts", "../../web-shared/**/*.ts"],
   "exclude": ["../../web-shared/**/*.test.ts"]
 }

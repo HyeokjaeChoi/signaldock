@@ -3,7 +3,10 @@
 // window.SIGNALDOCK_SDK_RESULTS) so the page works from file:// where fetch is blocked.
 import { copyFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 
-const files = [["index.json", "SIGNALDOCK_RESULTS", "perf/summarize.py --index"], ["sdk-index.json", "SIGNALDOCK_SDK_RESULTS", "perf/sdk_summarize.py --index"]];
+const files = [
+  ["index.json", "SIGNALDOCK_RESULTS", "perf/summarize.py --index"],
+  ["sdk-index.json", "SIGNALDOCK_SDK_RESULTS", "perf/sdk_summarize.py --index"],
+];
 let script = "";
 for (const [name, global, writer] of files) {
   const src = new URL(`../../results/${name}`, import.meta.url);

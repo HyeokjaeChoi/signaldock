@@ -44,6 +44,30 @@ On main 3b640b9 (2026-11-15):
 - A release can wait up to one night for a green nightly run, or for a `workflow_dispatch` run on the tagged commit.
 - `claude-review.yml` names only tools that run.
 
+## Amendment (2026-11-15, ticket 02, web gates W1 to W4)
+
+Spec gates W1 to W4 run in `scripts/verify-contract.sh` step 4 (CI job `verify-contract`). W5 (Lighthouse) is not part of this ticket.
+
+**Decision: the lint package is the repository root `package.json`.** `typescript-eslint` 8.72.2 supports TypeScript below 6.1.0 only. `dashboard/` and `perf/report/` compile with TypeScript 7.0.2, which has no JS compiler API, so the type-aware rules cannot run on it, and npm cannot put two TypeScript versions behind one `typescript` name in the same package. The root package holds only lint and format tools, with `typescript` 6.0.3 for them; the apps keep 7.0.2 for `tsc`. The two app lockfiles stay separate (ADR-0008, ADR-0013). `eslint` is 9.39.5, not 10: `eslint-plugin-jsx-a11y` 6.10.2 allows up to 9. Renovate keeps the root `typescript` below 6.1.0 (`.github/renovate.json5`). Lift both limits when the plugins support them.
+
+**Rules.**
+- ESLint (`eslint.config.mjs`): `typescript-eslint` strict-type-checked and stylistic-type-checked; `react-hooks` (`.ts` and `.tsx`, the hooks live in both); `jsx-a11y` strict; `eslint-comments` (a disable comment has a description and suppresses something). `--max-warnings 0`. Tests may use `!`, async mocks without `await`, unbound `vi.fn` methods, and empty stubs. Numbers in template literals are allowed. The existing findings were fixed in code. One `eslint-disable` exists, with a reason: `dashboard/src/polling.ts`, a disabled query clears its state in an effect.
+- Prettier `--check`, `printWidth` 140, over the same three directories (38 files reformatted once).
+- `noUncheckedIndexedAccess` stays off; the findings that it would have removed were fixed one by one in `perf/report/src/App.tsx` (types now say that keys may be missing).
+
+**axe-core** (`web-shared/a11y/axe.ts`, `axe-core` 4.14.0 in both apps): fails on any `serious` or `critical` violation of the whole document. `color-contrast` is off because jsdom has no layout; `web-shared/theme/contrast.test.ts` checks the tokens. Charts draw nothing in jsdom (stubbed in the Dashboard tests, as in `App.test.tsx`), so chart SVG is not covered. Result: 0 serious and 0 critical violations in 20 Dashboard tests (10 views in `en` and `ko`: list, details, empty, failed queries, failed details, stopped polling, details not found, custom period without dates, invalid id filter, narrow layout with the open disclosure) and 4 report tests (with and without the committed `perf/results/*index.json`, `en` and `ko`). Dashboard tests: 206 (186 before); report tests: 4 (none before). A deliberate violation (a `select` without a label) failed the suite when tried by hand.
+
+**Bundle budget** (`scripts/check-bundle-budget.mjs`, no dependency, `bundle-budget.json` in each app): gzip level 9 of all `.js` files of a `vite build` into a temporary directory; budget = measured size + 10%, rounded up. `perf/report/` is built without `copy-data.mjs`, because that step writes the result data as `dist/index.js`, which grows with every measurement run and is not code. The budget changes only in a PR that says why (script header).
+
+| App | Measured gzip JS (CI) | Budget | Evidence |
+|---|---|---|---|
+| `dashboard/` | 184,136 bytes | 202,550 bytes | CI run 43681844059, job `verify-contract` (step 4) |
+| `perf/report/` | 197,352 bytes | 217,088 bytes | same run |
+
+The local build gave the same sizes (184,135 before a one-byte code change). The CI run above also ran ESLint, Prettier, both type checks, and all tests with no failure.
+
+**Not done here.** No check yet fails a PR that raises `budgetGzipBytes` (ADR-0049 decision 3 style, against `origin/main`); the ticket that owns `scripts/check-repo-rules.sh` can add it. The root lockfile has one moderate advisory (`minimatch` below `typescript-estree`, a dev tool that runs on repository files only); the fix needs a breaking `typescript-eslint` downgrade.
+
 ## Amendment (2026-11-15, ticket 05, nightly workflow and E2E gate)
 
 `.github/workflows/nightly.yml` exists, with `schedule` (`0 18 * * *`) and `workflow_dispatch`. Job `e2e-delivery` (gate Q1) runs `scripts/e2e-delivery.sh 1 2 3 4 5` against the Compose stack and an API 34 `google_apis` x86_64 emulator on `ubuntu-latest`, with the KVM and AVD cache setup of `device-test` (same cache key). Each nightly job writes a JSON summary (gate Q2; `scripts/nightly-summary.py`, format in `docs/engineering/nightly-summary.md`) and uploads it as the artifact `nightly-summary-<job>`. `scripts/check-repo-rules.sh` fails when `nightly.yml` has a trigger other than `schedule` and `workflow_dispatch`, or a job without the summary step. Tickets 06, 07, 08, and 11 add their jobs below the marker comment in the file.

@@ -4,13 +4,22 @@ export type Preset = "today" | "7d" | "30d" | "custom";
 export const MAX_DATES = 30;
 
 /** A failed period names a message key (and a count for plurals); the UI shows it in the selected language. */
-export type PeriodError = { key: "period.chooseDates" | "period.endBeforeStart" | "period.tooLong"; count?: number };
+export interface PeriodError {
+  key: "period.chooseDates" | "period.endBeforeStart" | "period.tooLong";
+  count?: number;
+}
 export type Period = { ok: true; from: string; to: string } | ({ ok: false } & PeriodError);
 
 const parts = (ms: number, timeZone: string) => {
   const f = new Intl.DateTimeFormat("en-CA", {
-    timeZone, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", second: "2-digit",
+    timeZone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
   });
   return Object.fromEntries(f.formatToParts(ms).map((p) => [p.type, Number(p.value)])) as Record<string, number>;
 };
@@ -33,16 +42,14 @@ export function midnight(date: string, timeZone: string): number {
   let guess = wall;
   for (let i = 0; i < 2; i++) {
     const p = parts(guess, timeZone);
-    guess += wall - Date.UTC(p.year!, p.month! - 1, p.day!, p.hour!, p.minute!, p.second!);
+    guess += wall - Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
   }
   return guess;
 }
 
 const daysBetween = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86400000);
 
-export function resolvePeriod(
-  preset: Preset, customStart: string, customEnd: string, timeZone: string, nowMs: number,
-): Period {
+export function resolvePeriod(preset: Preset, customStart: string, customEnd: string, timeZone: string, nowMs: number): Period {
   const today = dateIn(nowMs, timeZone);
   let start = today;
   let end = today;
