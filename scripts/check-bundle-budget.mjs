@@ -44,7 +44,7 @@ export function verdict(total, budget) {
 function build() {
   const out = mkdtempSync(join(tmpdir(), "signaldock-budget-"));
   try {
-    execFileSync("node_modules/.bin/vite", ["build", "--outDir", out, "--emptyOutDir"], { stdio: ["ignore", "ignore", "inherit"] });
+    execFileSync("node_modules/.bin/vite", ["build", "--outDir", out, "--emptyOutDir", "--logLevel", "error"], { stdio: ["ignore", "ignore", "inherit"] });
     return gzipSizes(out);
   } finally {
     rmSync(out, { recursive: true, force: true });
