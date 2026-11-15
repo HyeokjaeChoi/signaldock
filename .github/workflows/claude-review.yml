@@ -79,13 +79,14 @@ jobs:
           persist-credentials: false
 
       - name: Restore Claude Code config from the base
-        # The PR head is checked out: its .claude/ (hooks, settings) and .mcp.json must not run with the secrets.
+        # The PR head is checked out: its .claude/ (hooks, settings), .mcp.json, and instruction files (CLAUDE.md, AGENTS.md)
+        # must not run or steer Claude Code with the secrets. The reviewer reads a changed AGENTS.md as diff data.
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           git fetch --depth=1 origin "$BASE_SHA"
-          rm -rf .claude CLAUDE.md CLAUDE.local.md .mcp.json
-          git ls-tree -r --name-only FETCH_HEAD -- .claude CLAUDE.md CLAUDE.local.md .mcp.json | xargs -r git checkout FETCH_HEAD --
+          rm -rf .claude CLAUDE.md CLAUDE.local.md AGENTS.md AGENTS.local.md .mcp.json
+          git ls-tree -r --name-only FETCH_HEAD -- .claude CLAUDE.md CLAUDE.local.md AGENTS.md AGENTS.local.md .mcp.json | xargs -r git checkout FETCH_HEAD --
 
       - name: Record start time
         # Summaries of an earlier run for the same SHA must not count for this run.
