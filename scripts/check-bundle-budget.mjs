@@ -1,8 +1,9 @@
-// Bundle budget gate (ADR-0049 W3). Run it from a web package directory (dashboard/ or perf/report/):
-//   node ../scripts/check-bundle-budget.mjs           builds with Vite into a temp dir and fails when the gzip size
+// Bundle budget gate (ADR-0049 W3). Run it from a web package directory (dashboard/ or perf/report/) as `npm run check-bundle-budget`,
+// which calls this file (`node ../scripts/...` from dashboard/, `node ../../scripts/...` from perf/report/); pass the mode after `--`:
+//   (no mode)                                         builds with Vite into a temp dir and fails when the gzip size
 //                                                     of all dist/**/*.js files is above `budgetGzipBytes` of ./bundle-budget.json
-//   node ../scripts/check-bundle-budget.mjs --measure builds and prints the sizes; it writes nothing
-//   node ../scripts/check-bundle-budget.mjs --write   builds and writes ./bundle-budget.json from the measured size
+//   --measure                                         builds and prints the sizes; it writes nothing
+//   --write                                           builds and writes ./bundle-budget.json from the measured size
 // The budget is the first measured size plus 10 %, a rule and not a guess (ADR-0049 decision 2). The gzip size is the one
 // that a browser downloads from nginx, which the Dashboard image serves with gzip. No dependency: node:zlib only.
 //
