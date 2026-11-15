@@ -35,6 +35,16 @@
   npm: {
     managerFilePatterns: ["/^dashboard/package\\.json$/", "/^perf/report/package\\.json$/"],
   },
+  // The Claude Code CLI that claude-review.yml installs with npm (ADR-0041, Amendment 2026-11-15).
+  customManagers: [
+    {
+      customType: "regex",
+      managerFilePatterns: ["/^\\.github/workflows/claude-review\\.yml$/"],
+      matchStrings: ["CLAUDE_CODE_VERSION: \"(?<currentValue>\\d+\\.\\d+\\.\\d+)\""],
+      depNameTemplate: "@anthropic-ai/claude-code",
+      datasourceTemplate: "npm",
+    },
+  ],
   packageRules: [
     // Registries. Default Gradle lookup is Maven Central only.
     {
