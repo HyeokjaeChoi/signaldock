@@ -262,7 +262,7 @@ done
 # Fail closed: a job key that is not a plain `name:` line, or no job at all, is an error.
 nf=.github/workflows/nightly.yml
 if git cat-file -e ":$nf" 2>/dev/null; then
-  if wf "$nf" | grep -E "$ONK[[:space:]]*\$" >/dev/null; then
+  if wf "$nf" | grep -E "${ONK}[[:space:]]*\$" >/dev/null; then
     badtrig="$(wf "$nf" | awk -v k="$ONK" '$0 ~ k {p=1; next} /^[^ ]/ {p=0}
       p { match($0, /^ */); if (!w) w = RLENGTH; if (RLENGTH == w) { t = substr($0, w + 1); sub(/:.*/, "", t); print t } }' \
       | grep -vxE 'schedule|workflow_dispatch' || true)"
