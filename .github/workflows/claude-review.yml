@@ -3,7 +3,8 @@
 # review the next push.
 # Step 1: `claude -p` with the repository secret ANTHROPIC_API_KEY (API credits).
 # Step 2: claude-code-action with CLAUDE_CODE_OAUTH_TOKEN (subscription, `claude setup-token`),
-#         only if no summary comment for this head SHA exists after step 1.
+#         only if step 1 failed with a used-up credit or a rate limit (or has no key) and left no
+#         summary comment for this head SHA. Any other failure fails the job.
 # The owner sets both secrets with `gh secret set`. Without ANTHROPIC_API_KEY, step 1 prints a
 # warning and step 2 reviews.
 name: claude-review
@@ -99,7 +100,11 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          test -n "$ANTHROPIC_API_KEY" || { echo "::warning::ANTHROPIC_API_KEY is not set; the subscription step reviews"; exit 1; }
+          if test -z "$ANTHROPIC_API_KEY"; then
+            echo "::warning::ANTHROPIC_API_KEY is not set; the subscription step reviews"
+            echo "reason=no-key" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
           npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" >/dev/null
           INLINE="The first line of the summary comment is exactly: ${MARKER}
           Post a finding on a line with this command, not with gh pr comment:
@@ -111,7 +116,13 @@ jobs:
             --allowedTools "${TOOLS},Bash(gh api repos/${GITHUB_REPOSITORY}/pulls/${PR}/comments:*)" \
             --output-format json > result.json || true
           jq '{is_error, subtype, num_turns, total_cost_usd, result: (.result // "" | .[0:600])}' result.json || cat result.json
-          jq -e '.is_error == false' result.json >/dev/null
+          # Only a used-up credit or a rate limit lets the subscription step review. Any other failure fails the job.
+          if ! jq -e '.is_error == false' result.json >/dev/null; then
+            if jq -e '.is_error == true and ((.result // "") | test("credit balance|rate.?limit|billing_error|overloaded|429"; "i"))' result.json >/dev/null 2>&1; then
+              echo "reason=quota" >> "$GITHUB_OUTPUT"
+            fi
+            exit 1
+          fi
 
       - name: Check summary posted
         id: posted
@@ -123,7 +134,7 @@ jobs:
           echo "summary comments for ${SHA}: $n"
 
       - name: Review (subscription fallback)
-        if: steps.posted.outputs.count == '0'
+        if: steps.posted.outputs.count == '0' && (steps.api.outputs.reason == 'quota' || steps.api.outputs.reason == 'no-key')
         uses: anthropics/claude-code-action@16f9f71ab9c490faf367f94dd294897edc25be33 # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -145,10 +156,12 @@ jobs:
       - name: Require a summary
         # A green job without a review would hide a failed review.
         if: ${{ !cancelled() }}
+        env:
+          REASON: ${{ steps.api.outputs.reason }}
         run: |
           n=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" --paginate \
             --jq '.[] | select(.user.login == "github-actions[bot]" and .created_at >= env.RUN_START and (.body | contains(env.MARKER))) | .id' | wc -l | tr -d ' ')
-          test "$n" -gt 0 || { echo "::error::no review summary for ${SHA}: the API step and the subscription step both failed"; exit 1; }
+          test "$n" -gt 0 || { echo "::error::no review summary for ${SHA}; API step reason: ${REASON:-other}. The subscription step runs only for reason quota or no-key"; exit 1; }
 
       - name: Remove trigger label
         # A cancelled run (replaced by a new request) must not remove the label of the new request.
