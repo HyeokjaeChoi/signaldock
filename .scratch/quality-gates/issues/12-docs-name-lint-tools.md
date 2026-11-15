@@ -1,4 +1,4 @@
-# 11. Docs name the lint tools that pre-commit needs
+# 12. Docs name the lint tools that pre-commit needs
 
 Status: ready-for-agent
 Type: task
