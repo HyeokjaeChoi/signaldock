@@ -25,4 +25,4 @@ ADR-0011 and ADR-0017 list four limits of the device test harness: offline is a 
 
 ## Amendment (2026-11-15, ADR-0049 decision 6)
 
-An emulator cannot cut power, but SIGKILL of the emulator process loses the guest page cache. ADR-0049 adds a nightly gate on that: the queue opens with `PRAGMA integrity_check` = `ok`, no duplicate reaches the server, and lost events are only a tail after the last WAL sync. Items 4 and 5 and `synchronous=NORMAL` do not change.
+An emulator cannot cut power, but SIGKILL of the emulator process loses the guest page cache. ADR-0049 adds a nightly gate on that: the queue opens with `PRAGMA integrity_check` = `ok`, the server stores each `eventId` once (a resend after a lost queue-delete gets `duplicate`, not `conflict`), and an unsent event is lost only if it is in the tail tracked after the last WAL sync. Items 4 and 5 and `synchronous=NORMAL` do not change.
