@@ -43,7 +43,8 @@ def verify(lines, pre, lostack, pending, tail):
 
 
 def main(argv):
-    path, pre, lostack, pending, tail = argv[0], *map(int, argv[1:5])
+    path = argv[0]
+    pre, lostack, pending, tail = (int(a) for a in argv[1:5])
     with open(path, encoding="utf-8") as f:
         problems, numbers = verify(f.readlines(), pre, lostack, pending, tail)
     for p in problems:
