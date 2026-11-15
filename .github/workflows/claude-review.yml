@@ -41,7 +41,7 @@ jobs:
         env:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
-          kb='^(AGENTS|GLOSSARY|architecture|CLAUDE)\.md$|^\.claude/|^\.mcp\.json$|^docs/design-index\.md$|^docs/adr/'
+          kb='(^|/)(AGENTS|CLAUDE)(\.local)?\.md$|(^|/)\.claude/|^(GLOSSARY|architecture)\.md$|^\.mcp\.json$|^docs/design-index\.md$|^docs/adr/'
           git ls-files -z | grep -zE "$kb" | xargs -0 -r rm -f
           git fetch --no-tags --depth=1 origin "$BASE_REF"
           git ls-tree -r -z --name-only FETCH_HEAD | grep -zE "$kb" | xargs -0 -r git checkout FETCH_HEAD --
