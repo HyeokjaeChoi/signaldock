@@ -1,6 +1,6 @@
 # 05. Nightly workflow, E2E delivery gate, run summaries
 
-Status: claimed
+Status: resolved
 Type: task
 
 ## Scope and completion criteria
@@ -14,4 +14,4 @@ Spec gates Q1, Q2. ADR-0049 decisions 1, 2, 5, 10; ADR-0010; ADR-0023.
 5. Tickets 06, 07, 08, 11 add their jobs after this PR merges. This ticket owns `nightly.yml`, the `AGENTS.md` rows, and `docs/design-index.md` in wave 2.
 6. Proof before merge: a temporary `push` trigger on the branch; run IDs and job times in the PR and in an ADR-0049 amendment; the trigger removed.
 
-Execution: (set when the PR merges)
+Execution: Done (PR #288, merged as 82f968c). Proof runs 43683069360 and 43691646307 (job 12 min 10 s and 11 min 25 s); see the ADR-0049 amendment of ticket 05.
