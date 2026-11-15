@@ -26,8 +26,9 @@ adb_bin="${ANDROID_HOME:+$ANDROID_HOME/platform-tools/}adb"
 adb() { "$adb_bin" -s "$serial" "$@"; }
 
 if [ -z "${JAVA_HOME:-}" ]; then
-  JAVA_HOME="$PWD/.tools/$(ls .tools | grep '^jdk-')"
-  export JAVA_HOME
+  jdks=("$PWD"/.tools/jdk-*)
+  export JAVA_HOME="${jdks[0]}"
+  [ -x "$JAVA_HOME/bin/java" ] || { echo "error: no JDK at $JAVA_HOME; run scripts/setup-toolchain.sh or set JAVA_HOME" >&2; exit 1; }
 fi
 sdk/gradlew -p sdk :sdk-android:assembleDebugAndroidTest --no-daemon -q
 

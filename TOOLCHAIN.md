@@ -11,9 +11,11 @@ the later changes of their pins.
 ## Setup
 
 Run `scripts/setup-toolchain.sh` once per clone. It installs the pinned JDK,
-oasdiff, and openapi-generator-cli into `.tools/`. It checks the hash of each
+oasdiff, openapi-generator-cli, shellcheck, and actionlint into `.tools/`. It checks the hash of each
 download and skips tools that are already installed. It works on macOS and
 Linux, on arm64 and x64.
+
+`scripts/setup-toolchain.sh lint` installs only shellcheck 0.11.0 and actionlint 1.7.12 (the CI `check` job and `.githooks/pre-commit` need nothing else). `scripts/check-shell-lint.sh` runs them: shellcheck `--severity=warning` on every tracked `*.sh` and `.githooks/*` file, actionlint on `.github/workflows` (ADR-0049 D1, D2). It uses the pinned copies in `.tools/`, never one on PATH.
 
 If a tool that `scripts/setup-toolchain.sh` installs is missing, a script stops with a setup message. Scripts use the installed oasdiff and openapi-generator-cli. They use the bundled JDK unless `JAVA_HOME` is set. Node and npm come from PATH; 24.20.0 is the verified Node version.
 

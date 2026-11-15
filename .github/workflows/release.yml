@@ -43,7 +43,8 @@ jobs:
       # ubuntu-latest ships an Android SDK at $ANDROID_HOME.
       - name: Build ZIP and checksum
         run: |
-          export JAVA_HOME="$PWD/.tools/$(ls .tools | grep '^jdk-')"
+          jdks=("$PWD"/.tools/jdk-*)
+          export JAVA_HOME="${jdks[0]}"
           scripts/release.sh "${TAG#v}"
           cp "docs/releases/$TAG.md" dist/RELEASE_NOTES.md
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

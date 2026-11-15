@@ -1,7 +1,8 @@
 # 03. shellcheck and actionlint
 
-Status: ready-for-agent
+Status: resolved
 Type: task
+Execution: Done (PR #282, 2026-11-15 UTC)
 
 ## Scope and completion criteria
 

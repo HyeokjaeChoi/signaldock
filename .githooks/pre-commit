@@ -1,2 +1,5 @@
 #!/bin/bash
-exec "$(git rev-parse --show-toplevel)/scripts/check-repo-rules.sh"
+set -euo pipefail
+ROOT="$(git rev-parse --show-toplevel)"
+"$ROOT/scripts/check-repo-rules.sh"
+"$ROOT/scripts/check-shell-lint.sh"
