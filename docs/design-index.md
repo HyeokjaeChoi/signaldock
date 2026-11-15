@@ -16,6 +16,7 @@ Architecture (`architecture.md`):
 - Contracts, generated sources, and JSON
 
 ADRs:
+- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), for the nightly durability and power-loss gates, StrictMode and Main Thread Checker, the coverage ratchet, and the API semver check (it amends ADR-0011 decision 10, ADR-0029 "Limits", and ADR-0047 D13)
 - ADR-0001 (`docs/adr/0001-installation-scoped-identity.md`)
 - ADR-0002 (`docs/adr/0002-openapi-json-contract.md`)
 - ADR-0003 (`docs/adr/0003-sdk-storage-decisions.md`)
@@ -71,6 +72,7 @@ Architecture (`architecture.md`):
 - Contracts, generated sources, and JSON
 
 ADRs:
+- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), for detekt and its baseline (gate B1), the container image scan (B4), and the nightly load SLO (B3)
 - ADR-0002
 - ADR-0004 (`docs/adr/0004-server-runtime-and-receipt-boundaries.md`)
 - ADR-0005, section "Server: layered Gradle modules"
@@ -140,6 +142,7 @@ Architecture (`architecture.md`):
 - Independent distribution and verification
 
 ADRs:
+- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), for the nightly durability and power-loss gates, StrictMode and Main Thread Checker, the coverage ratchet, and the API semver check (it amends ADR-0011 decision 10, ADR-0029 "Limits", and ADR-0047 D13)
 - ADR-0047 (`docs/adr/0047-ios-sdk.md`), D9 (language level), D11 (distribution), D13 (CI gates), and "iOS 15 Simulator fallback"; the Android SDK is the parity reference
 - ADR-0032 (`docs/adr/0032-codeql-advanced-setup.md`), for the Swift entry of `.github/workflows/codeql.yml`
 - ADR-0002 and ADR-0047 D10, for `sdk-ios/Sources/SignalDock/Generated`, the Swift wire models that `scripts/codegen.sh` writes (ticket 06; the drift check is step 1 of `scripts/verify-contract.sh`)
@@ -191,6 +194,7 @@ Architecture (`architecture.md`):
 - DB time budgets and queries
 
 ADRs:
+- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), for ESLint, Prettier, axe, the bundle budget, and Lighthouse (gates W1-W5)
 - ADR-0002
 - ADR-0007 (`docs/adr/0007-dashboard-query-api.md`)
 - ADR-0008 (`docs/adr/0008-dashboard-and-compose-delivery.md`)
@@ -214,6 +218,7 @@ Also read `.scratch/signaldock/dashboard-verification-defaults.md`.
 Plain TypeScript and CSS with no `package.json` and no `node_modules`. Both pages import it by relative path. Its tests run with the Dashboard (`cd dashboard && npm test`). `web-shared/i18n/` holds the language code (issue 27). `web-shared/theme/` holds the design tokens (`tokens.css`), the shared element styles (`base.css`), the theme choice (`theme.ts`, `react.ts`), and the shared chart style (`chart.ts`) (issue 28). Change a color only in `tokens.css`; the contrast test checks it.
 
 ADRs:
+- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), for ESLint, Prettier, and axe (gates W1, W2, W4)
 - ADR-0015 (`docs/adr/0015-web-ui-languages.md`)
 - ADR-0016 (`docs/adr/0016-telemetry-style-ui.md`), for `web-shared/theme/`
 - ADR-0008 and ADR-0013, for the separate builds and lockfiles that it must not merge
@@ -231,6 +236,7 @@ Architecture (`architecture.md`):
 - DB time budgets and queries
 
 ADRs:
+- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), decision 7, for k6 thresholds in `perf/load.js` and `perf/overload.js` and how `perf/run_one.py` and `perf/overload.py` handle k6 exit 99 (amends ADR-0013); the nightly load SLO (gate B3)
 - ADR-0004
 - ADR-0007
 - ADR-0008
@@ -276,6 +282,7 @@ ADRs:
 - ADR-0038 (`docs/adr/0038-gradle-dependency-verification.md`), for `*/gradle/verification-metadata.xml` and `scripts/update-gradle-verification.sh` (issue 68)
 - ADR-0039 (`docs/adr/0039-release-provenance-attestation.md`), for the attestation step and job permissions of `publish` in `.github/workflows/release.yml`, and the attestation section of `docs/releases/README.md` (issue 69)
 - ADR-0041 (`docs/adr/0041-claude-code-pr-review.md`), for `.github/workflows/claude-review.yml` (issue 83)
+- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), for the PR, nightly, and release gate tiers, static-analysis baselines, the coverage ratchet, and `.github/workflows/nightly.yml` (plan: `.scratch/quality-gates/spec.md`)
 - ADR-0042 (`docs/adr/0042-measurement-on-a-physical-device.md`), for the `SIGNALDOCK_PHYSICAL_DEVICE` opt-in of `scripts/device-measure.sh` and `scripts/host-cost-measure.sh`
 - ADR-0043 (`docs/adr/0043-cloud-demo-hosting-and-deploy.md`), for `scripts/demo-seed.py` (cloud-demo ticket 02) and the checks in `scripts/check-repo-rules.sh` (ticket 06)
 

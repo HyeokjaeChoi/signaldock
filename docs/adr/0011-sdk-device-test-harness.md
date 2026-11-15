@@ -30,3 +30,7 @@ The design sources leave the test harness open (spec section 7 "Offline recovery
 ## Amendment (2026-10-27)
 
 The instrumented suites later ran on a physical phone (Galaxy Z Flip7). Issue 73 (`.scratch/signaldock/issues/73-real-device-test-galaxy-z-flip7.md`, PR #187, 2026-10-18 UTC) was the first run. Issue 85 (`.scratch/signaldock/issues/85-device-verification-v0.3.0.md`, PR #204, 2026-10-24 UTC) ran again with 33 test cases: 17 passed, 16 skipped. `scripts/device-durability.sh` still runs on emulators only (ADR-0042 decision 8).
+
+## Amendment (2026-11-15, ADR-0049)
+
+Decision 10 changes: `scripts/device-durability.sh` also runs in the nightly CI tier on API 24 and 37 emulators (ADR-0049 decision 1, gate A5). It stays out of the PR tier.

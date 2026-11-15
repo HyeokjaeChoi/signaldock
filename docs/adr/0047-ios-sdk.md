@@ -426,3 +426,7 @@ The ticket 13 results ("Reproducible", under D11) say the hash of the CI run is 
 - `gh attestation verify` with `--signer-workflow HyeokjaeChoi/signaldock/.github/workflows/release-ios.yml` exit code 0. The Gap lines about this command (README, integration guide section 13) are removed.
 - `scripts/verify-consumer-ios.sh` on the downloaded ZIP: exit code 0 (Debug and Release build).
 - Live demo check: the consumer app (Debug, iPhone 18 Pro Max Simulator, iOS 27.0) sent 8 events to the cloud demo. The last ACK was accepted 4, duplicate 0, rejected 0, with no queued events. The server stored 8 events with `sdkPlatform` `ios`, `sdkVersion` `0.1.0`, and `planStatus` `planned`. Record: `.scratch/ios-sdk/issues/19-release-android-0.4.0-ios-0.1.0.md`.
+
+## Amendment (2026-11-15, ADR-0049)
+
+D13 "Rejected: a coverage floor" changes: a coverage ratchet for `sdk-ios` and `sdk/sdk-android` replaces it (ADR-0049 decision 4). A fixed floor stays rejected. `scripts/simulator-durability.sh` also runs in the nightly CI tier (ADR-0049 gate I2).

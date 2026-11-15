@@ -22,3 +22,7 @@ ADR-0011 and ADR-0017 list four limits of the device test harness: offline is a 
 - The WorkManager fault is a database write lock. It does not prove behavior for a WorkManager that is not initialized (host disabled the initializer): that case stays with `SchedulingTest` and `CrashSafetyTest` on the JVM.
 - Power loss is still untested. The semantics are documented and pinned; the behavior is not observed.
 - CI does not run these cases (ADR-0011 decision 10).
+
+## Amendment (2026-11-15, ADR-0049 decision 6)
+
+An emulator cannot cut power, but SIGKILL of the emulator process loses the guest page cache. ADR-0049 adds a nightly gate on that: the queue opens with `PRAGMA integrity_check` = `ok`, the server stores each `eventId` once (a resend after a lost queue-delete gets `duplicate`, not `conflict`), and no event committed before a test-forced `PRAGMA wal_checkpoint(FULL)` (delivery stopped, result `busy = 0`) is lost; loss after that point is counted, not gated. "Limits" changes too: the fault cases run in the nightly CI tier (ADR-0049 gate A5). Items 4 and 5 and `synchronous=NORMAL` do not change.
