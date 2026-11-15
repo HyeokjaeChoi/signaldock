@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
-"""Host-side ACK server for scripts/device-durability.sh (case airplane, ADR-0029).
+"""Host-side ACK server for scripts/device-durability.sh (cases airplane and powerloss, ADR-0029, ADR-0049).
 
 Usage: ack-server.py <port> <log-file>
-Answers every POST like the ingestion server for ACK purposes: first sight of an eventId is "accepted",
-later "duplicate". Appends each received eventId to <log-file>, one per line. The emulator reaches it at
-10.0.2.2; airplane mode cuts that route, which the loopback address does not follow.
+Answers every POST like the ingestion server for ACK purposes (architecture.md "Lost ACKs and event
+deduplication"): first sight of an eventId is "accepted"; a later send with the same content is "duplicate";
+a later send with other content is "rejected" with code "CONFLICT". Appends one line per received event to
+<log-file>: eventId, status ("accepted", "duplicate" or "conflict") and event name, separated by tabs.
+The emulator reaches the server at 10.0.2.2; airplane mode cuts that route, which the loopback address does
+not follow. The state lives in this process, so it survives a kill of the emulator (case powerloss).
 """
 import json
 import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 port, log = int(sys.argv[1]), sys.argv[2]
-seen = set()
+seen = {}  # eventId -> canonical content
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -25,9 +28,16 @@ class Handler(BaseHTTPRequestHandler):
         with open(log, "a") as f:
             for i, event in enumerate(body["events"]):
                 eid = event["eventId"]
-                results.append({"index": i, "eventId": eid, "status": "duplicate" if eid in seen else "accepted"})
-                seen.add(eid)
-                f.write(eid + "\n")
+                content = json.dumps([body["installationId"], event], sort_keys=True)
+                if eid not in seen:
+                    seen[eid] = content
+                    status, item = "accepted", {"status": "accepted"}
+                elif seen[eid] == content:
+                    status, item = "duplicate", {"status": "duplicate"}
+                else:
+                    status, item = "conflict", {"status": "rejected", "code": "CONFLICT"}
+                results.append({"index": i, "eventId": eid, **item})
+                f.write(f"{eid}\t{status}\t{event['name']}\n")
         out = json.dumps({"results": results}).encode()
         self.send_response(200)
         self.send_header("Content-Type", "application/json")

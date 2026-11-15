@@ -186,7 +186,8 @@ case_airplane() {
   wait "$host_server_pid" 2>/dev/null || true
   host_server_pid=""
   local ids unique
-  ids="$(wc -l <"$log" | tr -d ' ')"; unique="$(sort -u "$log" | wc -l | tr -d ' ')"
+  # The host server logs "eventId<TAB>status<TAB>name" per received event (scripts/ack-server.py).
+  ids="$(wc -l <"$log" | tr -d ' ')"; unique="$(cut -f1 "$log" | sort -u | wc -l | tr -d ' ')"
   rm -f "$log"
   echo "  host server received $ids event IDs, $unique unique"
   [ "$unique" -eq 25 ] || { echo "expected 25 unique event IDs at the host server" >&2; exit 1; }
