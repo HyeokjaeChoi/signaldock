@@ -53,6 +53,7 @@ The owner asked for the review flow of the `pleos-family-stop` repository (`.git
 
 Consequences:
 
+- CodeQL rule `actions/untrusted-checkout/medium` flags the checkout of the PR head in `claude-review.yml`. The review must read the PR code, so the checkout stays. Limits: the job runs only for PRs from this repository (no fork code), only after a user with write access adds the label, the prompt holds no PR text, Claude Code config is restored from the base, and the tools are read-only plus `gh` comments. The owner dismisses the alert as "won't fix" with this reason.
 - Cost: one Opus run per label on API credits. The subscription quota is used only when step 1 leaves no summary.
 - AGENTS.md rules 5 and 6 now say "add the label". An open PR gets no review until someone adds the label.
 - The Consequences bullet about `claude-review.yml` changes holds only for step 2 (the action). Step 1 has no such check; whether step 2 keeps it with `github_token` is not verified.
