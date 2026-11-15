@@ -3,6 +3,7 @@ package local.signaldock.device
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.net.ConnectivityManager
+import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.os.StatFs
 import android.system.Os
@@ -41,7 +42,13 @@ class FaultPhases {
     private val connectivity get() = targetContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
     private fun setAirplane(on: Boolean) {
-        shell("cmd connectivity airplane-mode " + if (on) "enable" else "disable")
+        if (Build.VERSION.SDK_INT >= 30) {
+            shell("cmd connectivity airplane-mode " + if (on) "enable" else "disable")
+        } else {
+            // Before Android 11 `cmd connectivity airplane-mode` does not exist; switching mobile data and Wi-Fi off removes the same route.
+            shell("svc data " + if (on) "disable" else "enable")
+            shell("svc wifi " + if (on) "disable" else "enable")
+        }
         awaitTrue(30_000, "airplane mode ${if (on) "on: no active network" else "off: active network"}") { (connectivity.activeNetwork == null) == on }
     }
 

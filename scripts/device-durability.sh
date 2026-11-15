@@ -56,6 +56,8 @@ restore_device() {
   [ -z "$host_server_pid" ] || kill "$host_server_pid" 2>/dev/null || true
   backup_off
   adb shell cmd connectivity airplane-mode disable >/dev/null 2>&1 || true
+  adb shell svc data enable >/dev/null 2>&1 || true
+  adb shell svc wifi enable >/dev/null 2>&1 || true
   adb shell run-as "$PKG" rm -f files/filler.bin >/dev/null 2>&1 || true
 }
 trap restore_device EXIT
@@ -162,7 +164,9 @@ case_restore() {
   adb shell bmgr transport "$transport" >/dev/null
   adb shell bmgr wipe "$transport" "$PKG" >/dev/null 2>&1 || true
   echo "  transport: $transport"
-  adb shell bmgr backupnow "$PKG" | tr -d '\r' | grep -q "Package $PKG with result: Success" || { echo "backup did not succeed" >&2; exit 1; }
+  local backup_out
+  backup_out="$(adb shell bmgr backupnow "$PKG" 2>&1 | tr -d '\r')"
+  grep -q "Package $PKG with result: Success" <<<"$backup_out" || { echo "backup did not succeed; bmgr said: $backup_out" >&2; adb shell bmgr list transports 2>&1 | tr -d '\r' >&2; exit 1; }
   # LocalTransport names its current restore set with token 1; list order does not mark it.
   adb shell bmgr list sets | tr -d '\r' | awk '{print $1}' | grep -qx 1 || { echo "restore set token 1 not found: backup set missing" >&2; exit 1; }
   token=1
@@ -284,9 +288,9 @@ case_powerloss() {
   record resends "$(sed -n 's/^resends=//p' <<<"$numbers")"
 }
 
-# Gate A4 (ADR-0049 decision 2): the budget is the measured p99 plus a stated margin, set from a run on the nightly
-# runner class (ADR-0049 amendment). Empty: no budget yet, the value is recorded and not gated.
-MAIN_THREAD_P99_BUDGET_US=
+# Gate A4 (ADR-0049 decision 2): the budget is the measured p99 plus a stated margin: 2 x the worst of 12 p99 values on CI
+# emulators (API 24 and 37.0, run 43692865454): 55,155 us -> 110,000 us (ADR-0049 amendment 2026-11-15). Empty: not gated.
+MAIN_THREAD_P99_BUDGET_US=110000
 
 case_maincost() {
   echo "== maincost: 1,000 track() calls on the main thread, p99 against the budget (gate A4)"
