@@ -90,7 +90,7 @@ jobs:
           test -n "$ANTHROPIC_API_KEY" || { echo "::warning::ANTHROPIC_API_KEY is not set; the subscription step reviews"; exit 1; }
           npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" >/dev/null
           INLINE="The first line of the summary comment is exactly: ${MARKER}
-          Post a finding on a line with this command, not with `gh pr comment`:
+          Post a finding on a line with this command, not with gh pr comment:
           gh api repos/${GITHUB_REPOSITORY}/pulls/${PR}/comments -f commit_id=${SHA} -f path=<file> -F line=<line in the new file> -f side=RIGHT -f body=<text>"
           claude -p "${PROMPT}
           ${INLINE}" \
