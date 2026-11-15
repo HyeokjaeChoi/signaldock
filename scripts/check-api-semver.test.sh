@@ -1,6 +1,8 @@
 #!/bin/bash
 # Test of scripts/check-api-semver.sh on a temporary repository with a release tag (ADR-0049 A7, I3).
 set -euo pipefail
+# A git hook exports these; without this, the git calls below would change the real repository.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX
 SCRIPT="$(cd "$(dirname "$0")" && pwd)/check-api-semver.sh"
 T="$(mktemp -d)"
 trap 'rm -rf "$T"' EXIT
@@ -19,8 +21,8 @@ git add -A && git commit -qm base && git tag v0.1.0 && git tag ios-v0.1.0
 export SEMVER_ROOT="$T"
 fail=0
 expect() { # expect <0|1> <name> <args>
-  want="$1" name="$2"; shift 2
-  rc=0; "$SCRIPT" "$@" > /dev/null 2>&1 || rc=$?
+  local want="$1" name="$2" rc=0; shift 2
+  "$SCRIPT" "$@" > /dev/null 2>&1 || rc=$?
   if [ "$rc" != "$want" ]; then echo "FAIL: $name (exit $rc, want $want)"; fail=1; else echo "ok: $name"; fi
 }
 for p in android ios; do
@@ -39,4 +41,15 @@ for p in android ios; do
   expect 1 "$p: changed line, same version" "$p"
   dump
 done
+# From 1.0 on, MINOR does not count: only MAJOR does.
+setv 1.0.0 1.0.0
+dump
+git add -A && git commit -qm one && git tag v1.0.0 && git tag ios-v1.0.0
+printf 'class A {\n\tfun a ()V\n}\n' | tee sdk/sdk-android/api/sdk-android.api > sdk-ios/api/SignalDock.swiftinterface
+setv 1.1.0 1.1.0
+expect 1 "android: removed line, minor bump after 1.0" android
+expect 1 "ios: removed line, minor bump after 1.0" ios
+setv 2.0.0 2.0.0
+expect 0 "android: removed line, major bump" android
+expect 0 "ios: removed line, major bump" ios
 exit "$fail"

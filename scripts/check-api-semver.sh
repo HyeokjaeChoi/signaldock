@@ -38,7 +38,7 @@ tags="$(git ls-remote --tags --refs origin "refs/tags/$PREFIX[0-9]*" 2> /dev/nul
 tag="$(printf '%s\n' "$tags" | grep -E "^$PREFIX[0-9]+\.[0-9]+\.[0-9]+$" | sort -V | tail -1 || true)"
 [ -n "$tag" ] || { echo "error: no '$PREFIX*' release tag found (remote or local)" >&2; exit 1; }
 if ! git rev-parse -q --verify "refs/tags/$tag^{commit}" > /dev/null; then
-  git fetch -q --depth=1 --no-tags origin "+refs/tags/$tag:refs/tags/$tag"
+  git fetch -q --depth=1 --no-tags origin "+refs/tags/$tag:refs/tags/$tag" || { echo "error: cannot fetch tag $tag from origin" >&2; exit 1; }
 fi
 
 old="${tag#"$PREFIX"}"
@@ -50,7 +50,10 @@ trap 'rm -f "$old_dump"' EXIT
 git show "$tag:$DUMP" > "$old_dump"
 
 # Lines that exist only in the old dump: removed, or the old half of a changed declaration.
-removed="$(diff "$old_dump" "$DUMP" | sed -n 's/^< //p' || true)"
+rc=0
+changes="$(diff "$old_dump" "$DUMP")" || rc=$?
+[ "$rc" -le 1 ] || { echo "error: cannot compare $DUMP with $tag" >&2; exit 1; }
+removed="$(printf '%s\n' "$changes" | sed -n 's/^< //p')"
 if [ -z "$removed" ]; then
   echo "ok: $DUMP has no removed or changed line against $tag (version $cur)"
   exit 0
