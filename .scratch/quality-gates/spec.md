@@ -1,0 +1,122 @@
+# Production quality gates: plan
+
+Status: ready-for-agent
+Decisions: ADR-0049
+Requested by: session "세션 맥락 복원" (2026-11-15), for the portfolio and résumé.
+Rule for every number in this file: a threshold is a target until a merged PR shows a run. The results table at the end lists only run IDs and committed file paths.
+
+## Verified gaps (checked on main 3b640b9)
+
+| # | Gap | Evidence |
+|---|---|---|
+| 1 | No detekt, ktlint, spotless, or Android Lint config or CI step for `sdk/` and `server/` | `git grep` finds none; `.github/workflows/claude-review.yml:47` says detekt and shellcheck "already check", which is false |
+| 2 | No ESLint, Prettier, or bundle size budget for `dashboard`, `perf/report`, `web-shared` | `dashboard/package.json` scripts; `check-bundle-key` is a secret check |
+| 3 | No k6 `thresholds`; no load run in CI | `perf/load.js`, `perf/overload.js`, `perf/demo-vm/collect.js`; verdicts come from Python after the run |
+| 4 | E2E 5 cases, device durability, simulator durability, API 24 and 37 runs are local only | headers of `scripts/e2e-delivery.sh`, `scripts/device-durability.sh`, `scripts/simulator-durability.sh`; CI `device-test` runs API 34 in-process tests only |
+| 5 | No shellcheck; no coverage gate (rejected, ADR-0047 D13); no ANR, StrictMode, or battery target; power loss not observed | `docs/engineering/failure-modes.md` "Still open" 1 and 8 |
+
+No workflow has a `schedule:` trigger except `codeql.yml`, so there is no nightly tier now.
+
+## Tiers
+
+- PR: blocks merge. Budget: each new job 10 min or less on `ubuntu-latest`; no new macOS job on PR (macOS minutes cost 10x).
+- Nightly (`nightly.yml`, `schedule` + `workflow_dispatch`): emulator, Simulator, Compose, and load jobs. A failure opens no PR block; it fails the run, and the owner triages it into `.scratch/`.
+- Release (`release.yml`, `release-ios.yml`): the release job needs the last nightly run on the tagged commit to be green (`gh run list` check in the release workflow).
+
+## Area reviews and gates
+
+Staff Product Engineer scope: gates that stop a real regression in this product (lost or duplicate events, broken contract, slower ingest, inaccessible Dashboard). Not gates that only add a badge.
+
+### Android SDK (Staff Engineer, Android)
+
+| Gate | Stops | Fails when | Tier | Cost |
+|---|---|---|---|---|
+| A1 Android Lint | API misuse, missing `@RequiresApi`, manifest and WorkManager errors | any error; warnings are errors (`warningsAsErrors`), checked against a committed `lint-baseline.xml` that may only shrink | PR (`sdk-test`) | ~2 min |
+| A2 detekt + ktlint rules (detekt `formatting` plugin, one tool) | complexity, swallowed exceptions, style drift | any finding not in the committed baseline; baseline may only shrink (repo-rules check) | PR | ~1 min |
+| A3 StrictMode in instrumented tests | disk or network I/O on the main thread from `track()`, `flush()`, init | a `StrictMode` violation with `penaltyDeath` in a test rule around the public API | PR (`device-test`) | 0 (same job) |
+| A4 Main-thread cost (ANR proxy) | slow `track()` on the main thread | p99 of `track()` on the main thread > budget from `MeasurePhases` (owner sets the number from a first run) | Nightly | ~5 min |
+| A5 Durability on emulator: `device-durability.sh` all cases | event loss across kill, update, clear, reinstall, restore, airplane, full disk, WorkManager lock | any lost or unreported event | Nightly, API 24 and 37 matrix | ~25 min per API |
+| A6 Power loss: SIGKILL of the emulator process, cold boot without snapshot | loss of a stored event when the guest page cache is lost | any event that `track()` reported stored is missing after boot | Nightly | ~10 min |
+| A7 Semver check of the API dump | a removed or changed public symbol without a version change | the dump has a removed line vs the last `v*` tag and `SDK_VERSION` major (minor before 1.0) did not change | PR (`verify-contract.sh`) | seconds |
+
+Rejected: a battery target in CI. An emulator has no battery model; the proxy (wakeups per hour from WorkManager) is already fixed by design (ADR-0011). Record in the ADR.
+
+### iOS SDK (Staff Engineer, iOS)
+
+Existing gates are already strict (swift format, TSan, ASan, UBSan, analyze, API interface, size budget).
+
+| Gate | Stops | Fails when | Tier | Cost |
+|---|---|---|---|---|
+| I1 Main Thread Checker on in Simulator tests | UIKit or main-actor misuse | any checker report (`-enableMainThreadChecker YES`, report fails the test) | PR (`ios-test`, no new job) | 0 |
+| I2 `simulator-durability.sh` all cases | event loss across kill, update, reinstall, opt-out, offline | any lost or unreported event | Nightly (`macos-26`) | ~20 min |
+| I3 Semver check of `SignalDock.swiftinterface` | as A7 | as A7, against the last `ios-v*` tag | PR | seconds |
+
+### Backend: Ktor and PostgreSQL (Staff Engineer, Backend)
+
+| Gate | Stops | Fails when | Tier | Cost |
+|---|---|---|---|---|
+| B1 detekt + ktlint rules | as A2 | as A2 | PR (`server-test`) | ~1 min |
+| B2 k6 `thresholds` in all three scripts | a run that a human reads as pass while it failed | `http_req_failed` rate > 1%, `dropped_iterations` > 0, p95 > stop rule of ADR-0048; k6 exits 99 | all runs | 0 |
+| B3 Ingest load SLO, Compose on the runner | ingest throughput or latency regression | at a fixed 20 req/s x 20 events for 120 s: any non-200, or p95 > 2x the committed baseline of the same runner class | Nightly | ~8 min |
+| B4 Container image scan on PR | a new Critical or High CVE before the tag | Trivy finds Critical or High with a fix (same rule as `demo-deploy.yml`) | PR, only when `server/` or `dashboard/` Dockerfiles or deps change | ~3 min |
+
+Rejected: a load SLO on PR (runner noise is larger than the effect; nightly with a 2x band is the honest form).
+
+### Web: Dashboard, perf report, web-shared (Staff Engineer, Web)
+
+| Gate | Stops | Fails when | Tier | Cost |
+|---|---|---|---|---|
+| W1 ESLint (`typescript-eslint` strict-type-checked, `react-hooks`, `jsx-a11y`) | hook-order bugs, unhandled promises, missing labels | any error; no `eslint-disable` without a reason comment (lint rule) | PR (`verify-contract` step 4) | ~1 min |
+| W2 Prettier `--check` | format drift | any diff | PR | seconds |
+| W3 Bundle budget (a script over `dist/` gzip sizes; no new dependency) | bundle growth | gzip JS > committed budget; budget = first measured size + 10% | PR | seconds |
+| W4 axe-core in Vitest on each view (jsdom) | WCAG A and AA rule failures | any `serious` or `critical` violation | PR | ~1 min |
+| W5 Lighthouse CI on `vite preview` with fixture API | LCP, CLS, TBT regression | LCP > 2.5 s, CLS > 0.1, TBT > 200 ms (Google "good" bands), median of 3 runs | Nightly | ~5 min |
+
+### DevOps and CI (Staff Engineer, DevOps)
+
+| Gate | Stops | Fails when | Tier | Cost |
+|---|---|---|---|---|
+| D1 shellcheck on every tracked `*.sh` and `.githooks/*` | quoting and `set -e` bugs | any finding at `--severity=warning`; version pinned in `setup-toolchain.sh` with SHA-256 | PR (`check`) | seconds |
+| D2 actionlint on `.github/workflows` | broken expressions, wrong `needs` | any finding; pinned binary with SHA-256 | PR (`check`) | seconds |
+| D3 Fix `claude-review.yml:47` to name only tools that run | a reviewer that skips a check nobody runs | n/a (text fix in the PR that adds detekt and shellcheck) | PR | 0 |
+| D4 Release needs a green nightly on the tagged commit | a release that skipped the device and load tiers | the last `nightly.yml` run on `GITHUB_SHA` is not `success` | Release | seconds |
+
+### QA and Reliability (Staff Engineer, QA)
+
+| Gate | Stops | Fails when | Tier | Cost |
+|---|---|---|---|---|
+| Q1 `e2e-delivery.sh` cases 1-5 on an emulator + Compose | lost events on ACK loss, wrong partial rejection, content conflict, missing client report | any case fails | Nightly | ~20 min |
+| Q2 Committed result files for nightly runs | numbers that live only in PR text | a nightly job writes a JSON summary as an artifact; a monthly PR commits one snapshot under `perf/results/` or `docs/engineering/verification/` | Nightly + manual | 0 |
+| Q3 Coverage | see owner decision 2 | | | |
+
+## Owner decisions (2026-11-15, recorded in ADR-0049)
+
+1. Nightly tier and D4: accepted.
+2. Coverage: ratchet; fails when coverage of `sdk/sdk-android` or `sdk-ios` drops more than 0.5 point below the committed value. Reverses the coverage rejection of ADR-0047 D13.
+3. Retry: none. A flaky gate is fixed at the cause; after two failed fixes the gate is removed and the removal is recorded in ADR-0049.
+
+## Tickets and file ownership
+
+Parallel tickets in one wave touch disjoint files. `AGENTS.md` (table rows), `repo-rules.yml`, and `docs/design-index.md` are shared: each wave has one owner ticket for them, named below; other tickets in the wave hand their row text to it in the PR description.
+
+Wave 1 (parallel):
+- 01 Kotlin static analysis: A1, A2, B1, fix D3 line. Files: `sdk/**/build.gradle.kts`, `server/**/build.gradle.kts`, `gradle/libs.versions.toml` files, baselines, verification metadata, `claude-review.yml`. Owner of shared files in wave 1.
+- 02 Web lint and budget: W1-W4. Files: `dashboard/`, `perf/report/`, `web-shared/`, `scripts/verify-contract.sh` step 4.
+- 03 Shell and workflow lint: D1, D2. Files: `scripts/setup-toolchain.sh`, shell fixes across `scripts/` (does not touch Gradle or web files).
+- 04 k6 thresholds: B2. Files: `perf/*.js`, `perf/demo-vm/collect.js`, matching READMEs.
+
+Wave 2 (after wave 1 merges; `nightly.yml` is created by 05 and extended by later tickets in order):
+- 05 Nightly workflow + Q1 E2E + Q2 summaries. Owner of `nightly.yml` and shared files in wave 2.
+- 06 Android device gates: A3, A5, A6 (A4 after a first run). Files: `sdk/sdk-android/src/androidTest/**`, `scripts/device-durability.sh`.
+- 07 iOS gates: I1, I2. Files: `scripts/verify-ios.sh`, `scripts/simulator-durability.sh`, `compatibility/consumer-ios/**`.
+- 08 Server SLO + image scan: B3, B4. Files: `perf/compose.perf.yml`, a new `perf/ci-slo.sh`, baseline JSON.
+- 09 Semver checks: A7, I3. Files: `scripts/verify-contract.sh` step 6 and 8 (after 02 merges, which also touches this file).
+
+Wave 3: 10 coverage (if decision 2 = ratchet), D4, ADR-0049 final results table, README pair, `docs/engineering/failure-modes.md` open gaps update.
+
+Each ticket: implementation session (`sonnet` per `docs/agents/models.md`) → `/code-review` with `opus` in a separate subagent with no session context → fixes → PR → `claude-review.yml` round → merge by AGENTS.md rule 7.
+
+## Results (filled from merged PRs only)
+
+| Gate | Threshold | Where it runs | Measured value | Evidence (run ID, file) |
+|---|---|---|---|---|
