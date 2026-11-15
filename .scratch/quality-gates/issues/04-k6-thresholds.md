@@ -1,7 +1,8 @@
 # 04. k6 thresholds
 
-Status: claimed
+Status: resolved
 Type: task
+Execution: Done (merged in PR #287, 2026-11-15 UTC)
 
 ## Scope and completion criteria
 
