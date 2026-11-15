@@ -152,6 +152,16 @@ Proof, by a temporary `push` trigger on the branch of the PR (removed before mer
 
 The AVD cache hit in both runs. The spec estimate for Q1 was about 20 minutes; the measured job time is about 12 minutes, so the 60-minute `timeout-minutes` has a wide margin. The times are measurements of two runs, not a threshold. A failing case was not forced in CI: the job fails through the non-zero exit of `scripts/e2e-delivery.sh` (`e2e_cases.py` exits 1 when a case fails), and `scripts/test_nightly_summary.py` checks that a failed case or job gives `result: fail`.
 
+## Amendment (2026-11-16, ticket 09, semver gates A7 and I3)
+
+Spec gates A7 and I3 run in `scripts/verify-contract.sh` (step 6 and step 8, CI job `verify-contract`) through `scripts/check-api-semver.sh android|ios`.
+
+**Rule.** The committed API dump is compared line by line (`diff`) with the dump at the last release tag: `v*` for `sdk-android.api` (version: `sdkVersion` in `sdk/sdk-android/build.gradle.kts`), `ios-v*` for `SignalDock.swiftinterface` (version: `SignalDockSDK.version`). A removed line, or the old half of a changed line, fails unless MAJOR changed, or, while MAJOR is 0, MINOR changed (`docs/versioning.md`). A pure addition always passes. This compares the committed dumps, so it needs no Android SDK and no Xcode; the iOS check runs on every Mac and in CI, even where the rest of step 8 skips.
+
+**Tag lookup.** The CI checkout has depth 1 and no tags. The script lists tags with `git ls-remote origin` (the repository is public, so no credential is needed), takes the highest `X.Y.Z` by version sort, and fetches that one tag at depth 1. With no network it uses the local tags and fails when there are none. It never skips: no tag is an error.
+
+**Limits.** A moved declaration shows as removed plus added and fails until the version changes; reorder-only dump changes are rare because the dumps are sorted. A MINOR bump passes a removal in `0.x`; the deprecation period of `docs/versioning.md` stays a review item. The tag is the highest release tag, not the nearest ancestor of the branch. `scripts/check-api-semver.test.sh` covers unchanged, added, removed, changed, patch bump, and minor bump cases on a temporary repository for both platforms.
+
 ## Amendment (2026-11-15, ticket 06: Android device gates)
 
 Gates A3, A4, A5, and A6 are built. Evidence: the `device-test` run of this PR for A3 (run ID in the PR), and three runs of a temporary workflow on this branch (`gate06-proof.yml`, removed in the same PR) that ran the nightly steps on the nightly runner class: `ubuntu-latest`, KVM, x86_64 `google_apis` emulators at API 24 and API 37.0 (the newest stable x86_64 image; `37.2` exists only as `ps16k`). The runs are 43692865454 (first full run and the negative control), 43694083496 (second try of two cases), and 43695424448 (final full run). The job is `device-durability` in `nightly.yml` (matrix API 24 and 37.0). The `device-test` run of the PR is 43743427552 (A3 passed). Three `workflow_dispatch` runs of `nightly.yml` on this branch (43749861972, 43749868768, 43749875422): all jobs success, 13 of 13 cases at API 24 and 37.0 each time; `lostAfterCheckpoint` 0 (API 24) and 20 (API 37.0), `resends` 60.
