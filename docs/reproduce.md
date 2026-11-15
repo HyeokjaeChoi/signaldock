@@ -142,9 +142,11 @@ Results go to `perf/sdk-results/ios-<sdk version>-<UTC date>/`: CSV files, `meta
 
 ## iOS Simulator durability
 
-`scripts/simulator-durability.sh <simulator-udid> [case ...]` runs the SDK across process boundaries on an iOS Simulator ([ADR-0047](adr/0047-ios-sdk.md) D15, ADR-0011, ADR-0029). It is local only; CI does not run it. The cases are `kill_store kill_send restart update reinstall optout offline`. The default is all seven. Backup restore and full disk cannot run on a Simulator; the script prints them as `not run`.
+`scripts/simulator-durability.sh <simulator-udid> [case ...]` runs the SDK across process boundaries on an iOS Simulator ([ADR-0047](adr/0047-ios-sdk.md) D15, ADR-0011, ADR-0029). It runs locally and every night in CI on `macos-26` (job `ios-durability` of `nightly.yml`, [ADR-0049](adr/0049-production-quality-gates.md) gate I2). The cases are `kill_store kill_send restart update reinstall optout offline`. The default is all seven. Backup restore and full disk cannot run on a Simulator; the script prints them as `not run`.
 
 It needs a running stack (use the separate Compose project above), `sqlite3`, `python3`, `curl`, and full Xcode. It refuses a UDID that `xcrun simctl list devices` does not list as an iOS Simulator. It never runs `docker compose`.
+
+A GitHub macOS runner cannot run containers. `scripts/simulator-durability-ci.sh [case ...]` therefore starts its own stack and then runs the script above with all cases (or the cases you name): PostgreSQL 17 from Homebrew in a temporary directory (ports 15442 and 18092; random keys and password for each run), and the server from `./gradlew :app:installDist` run on the host. It uses the Simulator that `scripts/verify-ios.sh simulator` picks (or `SIMULATOR_UDID`), writes `postgres.log` and `server.log` to `build/simulator-durability/`, and stops the stack at exit. It needs JDK 21 (`JAVA_HOME`, or the `.tools` JDK of `scripts/setup-toolchain.sh`) and `brew install postgresql@17`. On a Mac with Docker the Compose route above works as well.
 
 | Variable | Meaning |
 | --- | --- |
@@ -153,6 +155,8 @@ It needs a running stack (use the separate Compose project above), `sqlite3`, `p
 | `SIGNALDOCK_ENDPOINT` | Server URL. Default `http://127.0.0.1:${SIGNALDOCK_SERVER_PORT:-8080}` |
 | `SIMULATOR_DURABILITY_SKIP_BUILD=1` | Reuse the app that `scripts/verify-consumer-ios.sh` built earlier |
 | `IOS_WERROR=1` | Passed to the build |
+| `SIMULATOR_DURABILITY_RESULT_JSON` | A file path. The per-case results are written there as `[{"name", "result", "seconds"}]` (input of `scripts/nightly-summary.py`) |
+| `SIMULATOR_BOOT_TIMEOUT` | Seconds to wait for the Simulator to boot. Default 600 |
 
 ```sh
 set -a; . "$IOS_ENV"; set +a

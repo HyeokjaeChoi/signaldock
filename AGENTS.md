@@ -32,7 +32,7 @@ Code enforces these. Do not restate them in prose; read the check when it fails.
 | `sdk-ios/Sources` uses no required-reason API (file timestamp, boot time, disk space, `UserDefaults`, active keyboards) whose category is missing in `PrivacyInfo.xcprivacy` (ADR-0047 D14) | `scripts/check-repo-rules.sh` |
 | `sdk-ios/Package.swift` has no `.package(` dependency (ADR-0047 D13) | `scripts/check-repo-rules.sh` |
 | No `privacy: .public` under `sdk-ios` (ADR-0047 D13) | `scripts/check-repo-rules.sh` |
-| iOS SDK gates: `swift format` strict with documentation on public declarations, Simulator tests under TSan and under ASan and UBSan, `xcodebuild analyze` (ADR-0047 D13) | `scripts/verify-ios.sh`, CI `ios-test` and `ios-sanitize` |
+| iOS SDK gates: `swift format` strict with documentation on public declarations, Simulator tests under TSan and under ASan and UBSan with no Main Thread Checker report in the log (ADR-0049 I1), `xcodebuild analyze` (ADR-0047 D13) | `scripts/verify-ios.sh`, CI `ios-test` and `ios-sanitize` |
 | Every `uses:` in `.github/workflows` and every tracked `action.yml` or `action.yaml` is pinned by a 40-character SHA (local `./` actions excepted) | `scripts/check-repo-rules.sh` |
 | No workflow triggers on `pull_request_target` or `workflow_run` | `scripts/check-repo-rules.sh` |
 | Every workflow has a top-level `permissions:` key | `scripts/check-repo-rules.sh` |
@@ -42,6 +42,7 @@ Code enforces these. Do not restate them in prose; read the check when it fails.
 | `nightly.yml` triggers only on `schedule` and `workflow_dispatch`; every job in it runs `scripts/nightly-summary.py` (ADR-0049 gate Q2; format in `docs/engineering/nightly-summary.md`) | `scripts/check-repo-rules.sh` |
 | Contract and generated code: codegen drift, `oasdiff` baseline, SDK public API dump, SDK dependency baseline, tracking plan codegen | `scripts/verify-contract.sh` (pre-push, CI `verify-contract`) |
 | Semver of the public API dumps (ADR-0049 A7, I3): a removed or changed line in `sdk-android.api` or `SignalDock.swiftinterface` against the last `v*` or `ios-v*` tag needs a new MAJOR (before 1.0, MINOR) in `sdkVersion` or `SignalDockSDK.version` | `scripts/check-api-semver.sh` in `scripts/verify-contract.sh` steps 6 and 8 (pre-push, CI `verify-contract`) |
+| Nightly iOS Simulator durability: all seven cases of `scripts/simulator-durability.sh`, no lost or unreported event (ADR-0049 I2) | `scripts/simulator-durability-ci.sh`, `nightly.yml` job `ios-durability` |
 | iOS SDK public API: `sdk-ios/api/SignalDock.swiftinterface` equals the normalized interface of a check-only build with the compiler of CI (`sdk-ios/api/compiler-version`); take updates from the CI artifact `api-actual` with `scripts/verify-ios.sh api-update <dir>` | CI `ios-test` (`scripts/verify-ios.sh api`); on a Mac with another compiler `scripts/verify-contract.sh` step 8 skips it |
 | PR description is 3,500 characters or less (author text only; Dependabot and Renovate PRs exempt) | `.github/workflows/pr-description.yml` |
 | Builds, tests, device tests, SDK size budget (Android `size-budget`, iOS `ios-size-budget`), Gradle wrapper checksums | `.github/workflows/repo-rules.yml` |
