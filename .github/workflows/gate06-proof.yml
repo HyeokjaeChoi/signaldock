@@ -17,9 +17,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Second try at the two cases that failed in run 43692865454.
-          - {api: '24', control: '0', cases: 'airplane restore'}
-          - {api: '37.0', control: '0', cases: 'restore'}
+          # Full runs of all cases with the fixes of run 43694083496.
+          - {api: '24', control: '0', cases: ''}
+          - {api: '37.0', control: '0', cases: ''}
     env:
       DURABILITY_RESULT_JSON: ${{ github.workspace }}/durability-cases.json
       DURABILITY_NUMBERS: ${{ github.workspace }}/durability-numbers.txt
