@@ -33,9 +33,9 @@ cd "$ROOT"
 cur="$(sed -n "$VERSION_SED" "$VERSION_FILE" | head -1)"
 [ -n "$cur" ] || { echo "error: no version found in $VERSION_FILE" >&2; exit 1; }
 
-tags="$(git ls-remote --tags --refs origin "refs/tags/$PREFIX[0-9]*" 2> /dev/null | sed 's|.*refs/tags/||' || true)"
-[ -n "$tags" ] || tags="$(git tag -l "$PREFIX[0-9]*")"
-tag="$(printf '%s\n' "$tags" | grep -E "^$PREFIX[0-9]+\.[0-9]+\.[0-9]+$" | sort -V | tail -1 || true)"
+tags="$(git ls-remote --tags --refs origin "refs/tags/${PREFIX}[0-9]*" 2> /dev/null | sed 's|.*refs/tags/||' || true)"
+[ -n "$tags" ] || tags="$(git tag -l "${PREFIX}[0-9]*")"
+tag="$(printf '%s\n' "$tags" | grep -E "^${PREFIX}[0-9]+\.[0-9]+\.[0-9]+$" | sort -V | tail -1 || true)"
 [ -n "$tag" ] || { echo "error: no '$PREFIX*' release tag found (remote or local)" >&2; exit 1; }
 if ! git rev-parse -q --verify "refs/tags/$tag^{commit}" > /dev/null; then
   depth=""
