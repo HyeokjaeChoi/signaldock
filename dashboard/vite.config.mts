@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     // web-shared/ (Q137) has no node_modules: its imports of react (and vitest, in its tests) resolve to this page's copy.
-    resolve: { dedupe: ["react", "react-dom", "vitest"] },
+    resolve: { dedupe: ["react", "react-dom", "vitest", "axe-core"] },
     server: {
       host: "127.0.0.1",
       fs: { allow: [".."] }, // ../generated and ../web-shared

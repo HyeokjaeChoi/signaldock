@@ -31,9 +31,9 @@
     prConcurrentLimit: 5,
     minimumReleaseAge: null,
   },
-  // Only the web packages that exist today (both private, exact pins).
+  // Only the web packages that exist today (all private, exact pins). The root package.json is the lint package (ADR-0049).
   npm: {
-    managerFilePatterns: ["/^dashboard/package\\.json$/", "/^perf/report/package\\.json$/"],
+    managerFilePatterns: ["/^package\\.json$/", "/^dashboard/package\\.json$/", "/^perf/report/package\\.json$/"],
   },
   packageRules: [
     // Registries. Default Gradle lookup is Maven Central only.
@@ -129,6 +129,17 @@
       matchManagers: ["gradle"],
       matchPackageNames: ["com.squareup.okhttp3:**"],
       allowedVersions: "<5.5.0",
+    },
+
+    {
+      // typescript-eslint supports TypeScript below 6.1.0, and TypeScript 7 has no JS compiler API. The two apps compile with
+      // TypeScript 7; only the lint package at the root stays on 6.0 (ADR-0049 amendment, ticket 02). Lift this when
+      // typescript-eslint supports TypeScript 7.
+      description: "The lint package keeps TypeScript below 6.1.0 (ADR-0049)",
+      matchManagers: ["npm"],
+      matchFileNames: ["package.json"],
+      matchPackageNames: ["typescript"],
+      allowedVersions: "<6.1.0",
     },
 
     // Manual decisions. A major here has its own PR, written by hand.

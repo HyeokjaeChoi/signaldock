@@ -1,6 +1,6 @@
 # 02. Web: ESLint, Prettier, axe, bundle budget
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 
 ## Scope and completion criteria

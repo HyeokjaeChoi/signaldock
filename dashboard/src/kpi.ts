@@ -9,7 +9,7 @@ import type { QueryState } from "./polling";
  *  timezone: its day buckets then start on other dates, so no exact total for the project date can be built (the page shows
  *  the mismatch notice). Filters in force apply to the counts. */
 export function receivedOnDay(counts: EventTimeCounts | undefined, day: string, timeZone: string): number | undefined {
-  if (!counts || counts.timeZone !== timeZone) return undefined;
+  if (counts?.timeZone !== timeZone) return undefined;
   const buckets = counts.items.filter((b) => dateIn(new Date(b.start).getTime(), timeZone) === day);
   return buckets.length ? buckets.reduce((sum, b) => sum + b.count, 0) : undefined;
 }
@@ -21,8 +21,9 @@ export function periodTotal(counts: EventTimeCounts | undefined): number | undef
 
 /** Plan violations of the shown period (ADR-0022): events whose name is not in the plan, plus events with properties that do not match.
  *  `checked` is the events that carry a status; with 0 checked no plan was in force for them. `undefined` before the first result. */
-export function planViolations(counts: EventPlanStatusCounts | undefined):
-  { violations: number; unplanned: number; invalid: number; checked: number; notChecked: number } | undefined {
+export function planViolations(
+  counts: EventPlanStatusCounts | undefined,
+): { violations: number; unplanned: number; invalid: number; checked: number; notChecked: number } | undefined {
   if (!counts) return undefined;
   return {
     violations: counts.unplannedEvent + counts.invalidProperties,
@@ -53,8 +54,11 @@ export type Health = "live" | "paused" | "loading" | "retrying" | "stopped" | "i
  * `polled` (one flag, or one per state) is false when a query does not update by itself (a list page after the
  * first, Q77). Such a query never retries by itself, so its success or failure is "paused", never "live" or "retrying".
  */
-export function queryHealth(states: QueryState<unknown>[], polled: boolean | boolean[] = true): { health: Health; nextEligibleAt?: number } {
-  const auto = (i: number) => (Array.isArray(polled) ? polled[i] ?? true : polled);
+export function queryHealth(
+  states: QueryState<unknown>[],
+  polled: boolean | boolean[] = true,
+): { health: Health; nextEligibleAt?: number } {
+  const auto = (i: number) => (Array.isArray(polled) ? (polled[i] ?? true) : polled);
   if (states.some((s) => s.stopped)) return { health: "stopped" };
   const retrying = states.filter((s, i) => s.error && auto(i));
   const waits = retrying.map((s) => s.nextEligibleAt).filter((x): x is number => x !== undefined);

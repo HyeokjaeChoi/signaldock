@@ -9,10 +9,7 @@ import { QueryError } from "./polling";
 import { formatDateTime } from "../../web-shared/i18n";
 
 type Load =
-  | { status: "loading" }
-  | { status: "ok"; detail: EventReceiptDetail }
-  | { status: "notFound" }
-  | { status: "error"; error: Error };
+  { status: "loading" } | { status: "ok"; detail: EventReceiptDetail } | { status: "notFound" } | { status: "error"; error: Error };
 
 export function CopyButton({ text, label }: { text: string; label: string }) {
   const { t } = useTranslation();
@@ -27,10 +24,12 @@ export function CopyButton({ text, label }: { text: string; label: string }) {
   };
   return (
     <>
-      <button type="button" className="copy" onClick={copy} aria-label={label}>
+      <button type="button" className="copy" onClick={() => void copy()} aria-label={label}>
         {result ? t(`copy.${result}`) : t("copy.copy")}
       </button>
-      <span className="sr-only" role="status">{result ? t(`copy.${result}`) : ""}</span>
+      <span className="sr-only" role="status">
+        {result ? t(`copy.${result}`) : ""}
+      </span>
     </>
   );
 }
@@ -39,36 +38,58 @@ export function CopyButton({ text, label }: { text: string; label: string }) {
 export function Details({ api, eventId, timeZone, onClose }: { api: Api; eventId: string; timeZone: string; onClose: () => void }) {
   const { t } = useTranslation();
   const [load, setLoad] = useState<Load>({ status: "loading" });
-  const [attempt, setAttempt] = useState(0);
+  const [attempt, setAttempt] = useState(0); // the parent keys this component by eventId, so a new event starts at "loading"
   // Opening an event moves focus to the heading of the details, so a keyboard or screen reader user lands on them (issue 29).
   const heading = useRef<HTMLHeadingElement>(null);
-  useEffect(() => { heading.current?.focus(); }, [eventId]);
+  useEffect(() => {
+    heading.current?.focus();
+  }, [eventId]);
 
   useEffect(() => {
     const controller = new AbortController();
-    setLoad({ status: "loading" });
     api.getEvent(eventId, controller.signal).then(
-      (detail) => setLoad({ status: "ok", detail }),
-      (e) => {
+      (detail) => {
+        setLoad({ status: "ok", detail });
+      },
+      (e: unknown) => {
         if (controller.signal.aborted) return;
         if (e instanceof QueryError && e.status === 404) setLoad({ status: "notFound" });
-        else setLoad({ status: "error", error: e instanceof Error ? e : new QueryError("Request failed", undefined, undefined, undefined, "errors.request") });
+        else
+          setLoad({
+            status: "error",
+            error: e instanceof Error ? e : new QueryError("Request failed", undefined, undefined, undefined, "errors.request"),
+          });
       },
     );
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+    };
   }, [api, eventId, attempt]);
 
   return (
     <section className="card detail" aria-label={t("details.label")}>
       <div className="detail-head">
-        <h2 ref={heading} tabIndex={-1}>{t("details.title")}</h2>
-        <button type="button" onClick={onClose}>{t("details.close")}</button>
+        <h2 ref={heading} tabIndex={-1}>
+          {t("details.title")}
+        </h2>
+        <button type="button" onClick={onClose}>
+          {t("details.close")}
+        </button>
       </div>
       {load.status === "loading" && <p role="status">{t("details.loading")}</p>}
       {load.status === "notFound" && <p role="status">{t("details.notFound")}</p>}
       {load.status === "error" && (
         <p className="error" role="alert">
-          {errorText(t, load.error)} <button type="button" onClick={() => setAttempt((n) => n + 1)}>{t("status.retry")}</button>
+          {errorText(t, load.error)}{" "}
+          <button
+            type="button"
+            onClick={() => {
+              setLoad({ status: "loading" });
+              setAttempt((n) => n + 1);
+            }}
+          >
+            {t("status.retry")}
+          </button>
         </p>
       )}
       {load.status === "ok" && <DetailBody detail={load.detail} timeZone={timeZone} />}
@@ -83,14 +104,28 @@ function DetailBody({ detail, timeZone }: { detail: EventReceiptDetail; timeZone
   return (
     <>
       <dl>
-        <dt>{t("details.name")}</dt><dd>{detail.name}</dd>
-        <dt>{t("details.eventId")}</dt><dd><code>{detail.eventId}</code> <CopyButton text={detail.eventId} label={t("copy.eventId")} /></dd>
-        <dt>{t("details.installationId")}</dt><dd><code>{detail.installationId}</code> <CopyButton text={detail.installationId} label={t("copy.installationId")} /></dd>
-        <dt>{t("details.occurredAt")}</dt><dd>{formatDateTime(detail.occurredAt, timeZone, i18n.language)}</dd>
-        <dt>{t("details.receivedAt")}</dt><dd>{formatDateTime(detail.receivedAt, timeZone, i18n.language)}</dd>
-        <dt>{t("details.sdkPlatform")}</dt><dd>{t(`platform.${detail.sdkPlatform}`)}</dd>
-        <dt>{t("details.sdkVersion")}</dt><dd>{detail.sdkVersion}</dd>
-        <dt>{t("details.planStatus")}</dt><dd><PlanBadge status={detail.planStatus} /></dd>
+        <dt>{t("details.name")}</dt>
+        <dd>{detail.name}</dd>
+        <dt>{t("details.eventId")}</dt>
+        <dd>
+          <code>{detail.eventId}</code> <CopyButton text={detail.eventId} label={t("copy.eventId")} />
+        </dd>
+        <dt>{t("details.installationId")}</dt>
+        <dd>
+          <code>{detail.installationId}</code> <CopyButton text={detail.installationId} label={t("copy.installationId")} />
+        </dd>
+        <dt>{t("details.occurredAt")}</dt>
+        <dd>{formatDateTime(detail.occurredAt, timeZone, i18n.language)}</dd>
+        <dt>{t("details.receivedAt")}</dt>
+        <dd>{formatDateTime(detail.receivedAt, timeZone, i18n.language)}</dd>
+        <dt>{t("details.sdkPlatform")}</dt>
+        <dd>{t(`platform.${detail.sdkPlatform}`)}</dd>
+        <dt>{t("details.sdkVersion")}</dt>
+        <dd>{detail.sdkVersion}</dd>
+        <dt>{t("details.planStatus")}</dt>
+        <dd>
+          <PlanBadge status={detail.planStatus} />
+        </dd>
       </dl>
       <h3>{t("details.properties")}</h3>
       {Object.keys(detail.properties).length === 0 ? (
@@ -103,7 +138,13 @@ function DetailBody({ detail, timeZone }: { detail: EventReceiptDetail; timeZone
               {Object.entries(detail.properties).map(([k, v]) => (
                 <tr key={k}>
                   <th scope="row">{k}</th>
-                  <td>{typeof v === "string" ? t("details.typeString") : typeof v === "number" ? t("details.typeNumber") : t("details.typeBoolean")}</td>
+                  <td>
+                    {typeof v === "string"
+                      ? t("details.typeString")
+                      : typeof v === "number"
+                        ? t("details.typeNumber")
+                        : t("details.typeBoolean")}
+                  </td>
                   <td>{String(v)}</td>
                 </tr>
               ))}

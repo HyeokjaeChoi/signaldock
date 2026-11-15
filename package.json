@@ -1,0 +1,21 @@
+{
+  "name": "signaldock-web-lint",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Lint and format checks for dashboard/, perf/report/, and web-shared/ (ADR-0049). Holds no application code.",
+  "scripts": {
+    "lint": "eslint --max-warnings 0",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint-community/eslint-plugin-eslint-comments": "4.8.1",
+    "@eslint/js": "9.39.5",
+    "eslint": "9.39.5",
+    "eslint-plugin-jsx-a11y": "6.10.2",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.14.0",
+    "prettier": "3.10.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.2"
+  }
+}

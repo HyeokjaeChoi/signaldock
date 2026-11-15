@@ -18,29 +18,46 @@ const VISIBLE_ATTRIBUTES = new Set(["aria-label", "aria-description", "title", "
 const ALLOWED = new Set(["receivedAt", "installationId", "eventId", "eventName", "planStatus", "sdkPlatform", "ms", "Hikari"]);
 
 // A field that holds a count, size, or duration (by its name) must be shown through n() / f1() (ADR-0015).
-const NUMERIC_FIELD = /(_s|_ms|_kib|_size|size|count|counts|repetition|started|scheduled|dropped|requests|samples|rows|days|clients|calls)$/i;
+const NUMERIC_FIELD =
+  /(_s|_ms|_kib|_size|size|count|counts|repetition|started|scheduled|dropped|requests|samples|rows|days|clients|calls)$/i;
 const rawNumber = (e: Node): string | null =>
-  e.type === "Literal" && typeof e.value === "number" ? String(e.value)
-  : e.type === "MemberExpression" && !e.computed && NUMERIC_FIELD.test((e.property as { name: string }).name) ? (e.property as { name: string }).name
-  : null;
+  e.type === "Literal" && typeof e.value === "number"
+    ? String(e.value)
+    : e.type === "MemberExpression" && !e.computed && NUMERIC_FIELD.test((e.property as { name: string }).name)
+      ? (e.property as { name: string }).name
+      : null;
 
 const hasWord = (text: string) => text.split(/[^\p{L}\p{N}_]+/u).some((w) => /\p{L}{2,}/u.test(w) && !ALLOWED.has(w));
 
-type Node = { type: string; [key: string]: unknown };
+interface Node {
+  type: string;
+  [key: string]: unknown;
+}
 
 /** Strings that reach the screen from an expression, without going through a call. */
 function literals(node: Node | null | undefined): string[] {
   if (!node) return [];
   switch (node.type) {
-    case "Literal": return typeof node.value === "string" ? [node.value] : [];
-    case "TemplateLiteral": return [...(node.quasis as { value: { cooked: string } }[]).map((q) => q.value.cooked), ...(node.expressions as Node[]).flatMap(literals)];
-    case "ConditionalExpression": return [...literals(node.consequent as Node), ...literals(node.alternate as Node)];
+    case "Literal":
+      return typeof node.value === "string" ? [node.value] : [];
+    case "TemplateLiteral":
+      return [
+        ...(node.quasis as { value: { cooked: string } }[]).map((q) => q.value.cooked),
+        ...(node.expressions as Node[]).flatMap(literals),
+      ];
+    case "ConditionalExpression":
+      return [...literals(node.consequent as Node), ...literals(node.alternate as Node)];
     // `a && b` shows only b; comparisons such as `status === "ok"` show nothing.
-    case "LogicalExpression": return node.operator === "&&" ? literals(node.right as Node) : [...literals(node.left as Node), ...literals(node.right as Node)];
-    case "BinaryExpression": return node.operator === "+" ? [...literals(node.left as Node), ...literals(node.right as Node)] : [];
-    case "JSXExpressionContainer": return literals(node.expression as Node);
-    case "ParenthesizedExpression": return literals(node.expression as Node);
-    default: return [];
+    case "LogicalExpression":
+      return node.operator === "&&" ? literals(node.right as Node) : [...literals(node.left as Node), ...literals(node.right as Node)];
+    case "BinaryExpression":
+      return node.operator === "+" ? [...literals(node.left as Node), ...literals(node.right as Node)] : [];
+    case "JSXExpressionContainer":
+      return literals(node.expression as Node);
+    case "ParenthesizedExpression":
+      return literals(node.expression as Node);
+    default:
+      return [];
   }
 }
 
@@ -49,7 +66,10 @@ function findings(file: string, code = readFileSync(file, "utf8")): string[] {
   expect(parsed.errors, file).toEqual([]);
   const found: string[] = [];
   const visit = (node: unknown): void => {
-    if (Array.isArray(node)) return node.forEach(visit);
+    if (Array.isArray(node)) {
+      node.forEach(visit);
+      return;
+    }
     if (!node || typeof node !== "object") return;
     const n = node as Node;
     if (n.type === "JSXText" && hasWord(n.value as string)) found.push(`JSX text ${JSON.stringify((n.value as string).trim())}`);
@@ -60,7 +80,8 @@ function findings(file: string, code = readFileSync(file, "utf8")): string[] {
     }
     if (n.type === "JSXAttribute") {
       const name = (n.name as { name?: string }).name ?? "";
-      if (VISIBLE_ATTRIBUTES.has(name)) for (const s of literals(n.value as Node)) if (hasWord(s)) found.push(`attribute ${name}=${JSON.stringify(s)}`);
+      if (VISIBLE_ATTRIBUTES.has(name))
+        for (const s of literals(n.value as Node)) if (hasWord(s)) found.push(`attribute ${name}=${JSON.stringify(s)}`);
       return; // the value is not on screen unless the attribute is visible; render props are not used
     }
     for (const value of Object.values(n)) visit(value);
@@ -83,7 +104,8 @@ describe("hard-coded visible strings", () => {
   });
 
   it("the scan detects each kind of hard-coded text and accepts t() calls", () => {
-    const bad = 'export const A = () => <p title="Hello there" aria-label={"Close it"}>Plain words {ok ? "yes sir" : t("k")}{`xy ${t("k")} tail`}</p>;';
+    const bad =
+      'export const A = () => <p title="Hello there" aria-label={"Close it"}>Plain words {ok ? "yes sir" : t("k")}{`xy ${t("k")} tail`}</p>;';
     expect(findings("bad.tsx", bad)).toEqual([
       'attribute title="Hello there"',
       'attribute aria-label="Close it"',
@@ -96,11 +118,12 @@ describe("hard-coded visible strings", () => {
       "unformatted number in JSX {pool_size}",
       "unformatted number in JSX {0}",
     ]);
-    const good = 'export const A = () => <p title={t("a")} className={ok ? "a b" : "c d"} data-k="some value">{t("b")} {" | "} {n} ms <code>receivedAt</code></p>;';
+    const good =
+      'export const A = () => <p title={t("a")} className={ok ? "a b" : "c d"} data-k="some value">{t("b")} {" | "} {n} ms <code>receivedAt</code></p>;';
     expect(findings("good.tsx", good)).toEqual([]);
   });
 
   it.each(componentFiles.map((f) => [relative(join(here, "../.."), f), f]))("%s has no hard-coded visible text", (_name, file) => {
-    expect(findings(file as string)).toEqual([]);
+    expect(findings(file)).toEqual([]);
   });
 });

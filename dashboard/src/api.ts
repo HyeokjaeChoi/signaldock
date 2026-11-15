@@ -71,14 +71,18 @@ async function getJson(path: string, params: Record<string, string | undefined>,
 }
 
 const filterParams = (f: Filters) => ({
-  from: f.from, to: f.to, name: f.name, installationId: f.installationId, eventId: f.eventId, planStatus: f.planStatus, sdkPlatform: f.sdkPlatform,
+  from: f.from,
+  to: f.to,
+  name: f.name,
+  installationId: f.installationId,
+  eventId: f.eventId,
+  planStatus: f.planStatus,
+  sdkPlatform: f.sdkPlatform,
 });
 
 export const realApi: Api = {
   async listEvents(f, sort, cursor, signal) {
-    return EventReceiptPageFromJSON(
-      await getJson("/v1/events", { ...filterParams(f), sort, limit: String(PAGE_SIZE), cursor }, signal),
-    );
+    return EventReceiptPageFromJSON(await getJson("/v1/events", { ...filterParams(f), sort, limit: String(PAGE_SIZE), cursor }, signal));
   },
   async getEvent(eventId, signal) {
     return EventReceiptDetailFromJSON(await getJson(`/v1/events/${encodeURIComponent(eventId)}`, {}, signal));
@@ -90,9 +94,13 @@ export const realApi: Api = {
     return EventTimeCountsFromJSON(await getJson("/v1/event-counts/by-time", filterParams(f), signal));
   },
   async countsByPlanStatus(f, signal) {
-    return EventPlanStatusCountsFromJSON(await getJson("/v1/event-counts/by-plan-status", { ...filterParams(f), planStatus: undefined }, signal));
+    return EventPlanStatusCountsFromJSON(
+      await getJson("/v1/event-counts/by-plan-status", { ...filterParams(f), planStatus: undefined }, signal),
+    );
   },
   async clientReportCounts(f, signal) {
-    return ClientReportCountsFromJSON(await getJson("/v1/client-report-counts", { from: f.from, to: f.to, sdkPlatform: f.sdkPlatform }, signal));
+    return ClientReportCountsFromJSON(
+      await getJson("/v1/client-report-counts", { from: f.from, to: f.to, sdkPlatform: f.sdkPlatform }, signal),
+    );
   },
 };

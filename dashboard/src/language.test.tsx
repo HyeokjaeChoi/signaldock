@@ -22,21 +22,32 @@ const summary: EventReceiptSummary = {
 };
 const detail: EventReceiptDetail = { ...summary, properties: { price: 19900 } };
 
-const fakeApi = (overrides: Partial<Api> = {}): Api =>
-  ({
-    listEvents: vi.fn(async () => ({ items: [summary] })),
-    getEvent: vi.fn(async () => detail),
-    countsByName: vi.fn(async () => ({ items: [], truncated: false })),
-    countsByTime: vi.fn(async () => ({ timeZone: "Asia/Seoul", bucket: "hour" as const, items: [] })),
-    countsByPlanStatus: vi.fn(async () => ({ planned: 0, unplannedEvent: 0, invalidProperties: 0, notChecked: 0 })),
-    clientReportCounts: vi.fn(async () => ({ items: [], truncated: false })),
-    ...overrides,
-  }) as never;
-const failing = (error: QueryError) => fakeApi({ listEvents: vi.fn(async () => { throw error; }) as never });
+const fakeApi = (overrides: Partial<Api> = {}): Api => ({
+  listEvents: vi.fn(async () => ({ items: [summary] })),
+  getEvent: vi.fn(async () => detail),
+  countsByName: vi.fn(async () => ({ items: [], truncated: false })),
+  countsByTime: vi.fn(async () => ({ timeZone: "Asia/Seoul", bucket: "hour" as const, items: [] })),
+  countsByPlanStatus: vi.fn(async () => ({ planned: 0, unplannedEvent: 0, invalidProperties: 0, notChecked: 0 })),
+  clientReportCounts: vi.fn(async () => ({ items: [], truncated: false })),
+  ...overrides,
+});
+const failing = (error: QueryError) =>
+  fakeApi({
+    listEvents: vi.fn(async () => {
+      throw error;
+    }),
+  });
 
-const flush = () => act(async () => { await vi.advanceTimersByTimeAsync(0); });
+const flush = () =>
+  act(async () => {
+    await vi.advanceTimersByTimeAsync(0);
+  });
 const mount = (api: Api, initialLanguage: "en" | "ko") =>
-  render(<I18nProvider initialLanguage={initialLanguage}><App api={api} /></I18nProvider>);
+  render(
+    <I18nProvider initialLanguage={initialLanguage}>
+      <App api={api} />
+    </I18nProvider>,
+  );
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => {
@@ -49,30 +60,39 @@ afterEach(() => {
 /** Text and accessible names on screen. */
 const visibleText = () =>
   [
-    document.body.textContent ?? "",
+    document.body.textContent,
     ...[...document.querySelectorAll("[aria-label],[title]")].map((e) => e.getAttribute("aria-label") ?? e.getAttribute("title") ?? ""),
   ].join("\n");
 
 /** Every English message that has a different Korean text and no placeholder. None may show up in the Korean page. */
 const englishOnly = leaves(en)
-  .filter(([key, text]) => typeof text === "string" && !text.includes("{{") && !key.startsWith("language.") && translate(ko, "ko", key) !== text)
+  .filter(
+    ([key, text]) => typeof text === "string" && !text.includes("{{") && !key.startsWith("language.") && translate(ko, "ko", key) !== text,
+  )
   .map(([, text]) => text as string);
 
 describe("language", () => {
   it("shows no English UI text in Korean (list, details, empty, error, and stopped states)", async () => {
     const apis: Api[] = [
       fakeApi(),
-      fakeApi({ listEvents: vi.fn(async () => ({ items: [] })) as never }),
+      fakeApi({ listEvents: vi.fn(async () => ({ items: [] })) }),
       failing(new QueryError("Network error: the server did not answer", undefined, undefined, undefined, "errors.network")),
       failing(new QueryError("Unsupported", 400, "CONTRACT_VERSION_UNSUPPORTED")),
       failing(new QueryError("Server is busy", 503, "TEMPORARILY_UNAVAILABLE", 1000)),
-      fakeApi({ getEvent: vi.fn(async () => { throw new QueryError("not found", 404, "EVENT_NOT_FOUND"); }) as never }),
+      fakeApi({
+        getEvent: vi.fn(async () => {
+          throw new QueryError("not found", 404, "EVENT_NOT_FOUND");
+        }),
+      }),
     ];
     for (const api of apis) {
       const view = mount(api, "ko");
       await flush();
       const open = screen.queryByRole("button", { name: "event_1" });
-      if (open) { fireEvent.click(open); await flush(); }
+      if (open) {
+        fireEvent.click(open);
+        await flush();
+      }
       const text = visibleText();
       for (const english of englishOnly) expect(text, english).not.toContain(english);
       expect(document.documentElement.lang).toBe("ko");
@@ -120,7 +140,13 @@ describe("language", () => {
 
   it("shows the KPI cards from the data the page already fetched", async () => {
     const api = fakeApi({
-      countsByName: vi.fn(async () => ({ items: [{ name: "add_to_cart", count: 3 }, { name: "screen_opened", count: 9 }], truncated: false })) as never,
+      countsByName: vi.fn(async () => ({
+        items: [
+          { name: "add_to_cart", count: 3 },
+          { name: "screen_opened", count: 9 },
+        ],
+        truncated: false,
+      })),
     });
     mount(api, "en");
     await flush();
@@ -146,8 +172,8 @@ describe("language", () => {
     await flush();
     fireEvent.change(screen.getByRole("combobox", { name: ko.controls.period }), { target: { value: "custom" } });
     const [from, to] = [ko.controls.from, ko.controls.to].map((label) => screen.getByLabelText(label));
-    fireEvent.change(from!, { target: { value: "2026-09-01" } });
-    fireEvent.change(to!, { target: { value: "2026-10-30" } });
+    fireEvent.change(from, { target: { value: "2026-09-01" } });
+    fireEvent.change(to, { target: { value: "2026-10-30" } });
     await flush();
     expect(screen.getByRole("alert").textContent).toBe(translate(ko, "ko", "period.tooLong", { count: 30 }));
   });
