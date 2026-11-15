@@ -85,6 +85,6 @@ The local build gave the same sizes (184,135 before a one-byte code change). The
 | `codeql.yml`, `release.yml` | SC2155, SC2010 each: same glob |
 | `repo-rules.yml` (`sdk-test`, `server-test`, `device-test`) | SC2155, SC2010 (5 messages): same glob |
 
-Behavior change: only when `.tools/` holds more than one `jdk-*` directory. The old code built a multi-line path and failed; the glob uses the first match. With no JDK, the error message shows the glob instead of an empty name.
+Behavior change: only when `.tools/` holds more than one `jdk-*` directory. The old code built a multi-line path and failed; the glob uses the first match. With no JDK, the error message shows the glob instead of an empty name; `device-durability.sh` now has the same `-x "$JAVA_HOME/bin/java"` check as the other scripts, so it still fails at once.
 
 Evidence: CI run 43678422518 (PR 282), job `check` passed with both steps.

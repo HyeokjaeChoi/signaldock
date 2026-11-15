@@ -20,7 +20,8 @@ done
 "$ACTIONLINT" --version | head -1 | grep -qx '1\.7\.12' || { echo "error: actionlint is not 1.7.12; run: scripts/setup-toolchain.sh lint" >&2; exit 1; }
 
 files=()
-while IFS= read -r -d '' f; do files+=("$f"); done < <(git ls-files -z -- '*.sh' '.githooks/*')
+# A tracked file that is deleted in the working tree (not yet staged) is skipped, not an error.
+while IFS= read -r -d '' f; do if [ -e "$f" ]; then files+=("$f"); fi; done < <(git ls-files -z -- '*.sh' '.githooks/*')
 [ "${#files[@]}" -gt 0 ] || { echo "error: no shell files found; the pathspec is wrong" >&2; exit 1; }
 
 fail=0
