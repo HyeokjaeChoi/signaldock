@@ -65,9 +65,15 @@ describe("language resolution (Q136)", () => {
     });
 
     it("still works when storage throws", () => {
-      vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("blocked"); });
-      vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("blocked"); });
-      expect(() => save("ko")).not.toThrow();
+      vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+        throw new Error("blocked");
+      });
+      vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+        throw new Error("blocked");
+      });
+      expect(() => {
+        save("ko");
+      }).not.toThrow();
       expect(["ko", "en"]).toContain(resolveFromBrowser());
     });
   });
@@ -142,7 +148,11 @@ describe.each([
 
   it("both languages use the same {{placeholders}} for each key", () => {
     // Every plural form must use the same placeholders as every other form of the key, in both languages.
-    const names = (v: string) => [...new Set(v.match(/\{\{\s*[\w.]+\s*\}\}/g) ?? [])].map((x) => x.replace(/[{}\s]/g, "")).sort().join(",");
+    const names = (v: string) =>
+      [...new Set(v.match(/\{\{\s*[\w.]+\s*\}\}/g) ?? [])]
+        .map((x) => x.replace(/[{}\s]/g, ""))
+        .sort()
+        .join(",");
     const forms = new Map<string, Set<string>>();
     for (const m of [dictionaries.en, dictionaries.ko])
       for (const [k, v] of leaves(m)) forms.set(base(k), (forms.get(base(k)) ?? new Set()).add(names(v as string)));

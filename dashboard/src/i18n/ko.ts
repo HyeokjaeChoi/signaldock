@@ -7,8 +7,7 @@ export const ko = {
     skip: "본문으로 건너뛰기",
     note: "서버에 저장된 기록을 receivedAt 기준으로 보여 줍니다. 프로젝트 시간대는 {{tz}}입니다 (오늘은 {{today}}).",
     tzMismatch: "서버는 {{serverTz}}를 보고했지만, 이 화면의 기간 경계는 {{tz}}를 씁니다.",
-    separateQueries:
-      "집계와 목록은 서로 다른 조회이므로 시점이 다를 수 있습니다. SDK의 ACK 수나 큐 상태가 아닙니다.",
+    separateQueries: "집계와 목록은 서로 다른 조회이므로 시점이 다를 수 있습니다. SDK의 ACK 수나 큐 상태가 아닙니다.",
   },
   language: { label: "언어", en: "English", ko: "한국어" },
   theme: { label: "테마", dark: "어둡게", light: "밝게" },
@@ -92,8 +91,7 @@ export const ko = {
     loading: "불러오는 중...",
     noData: "아직 데이터 없음",
     queryFailed: "조회 실패: {{message}}",
-    stopped:
-      "갱신이 중단되었습니다. 이 대시보드와 서버의 계약 버전이 다릅니다. 기존 데이터는 그대로 유지됩니다.",
+    stopped: "갱신이 중단되었습니다. 이 대시보드와 서버의 계약 버전이 다릅니다. 기존 데이터는 그대로 유지됩니다.",
     nextAttempt: "다음 시도 {{time}} 이후",
     reload: "페이지 새로고침",
     retry: "다시 시도",

@@ -32,16 +32,27 @@ describe("theme", () => {
   });
 
   it("works when storage throws", () => {
-    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("blocked"); });
-    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("blocked"); });
-    expect(() => initTheme()).not.toThrow();
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("blocked");
+    });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("blocked");
+    });
+    expect(() => {
+      initTheme();
+    }).not.toThrow();
     expect(currentTheme()).toBe("dark");
-    expect(() => changeTheme("light")).not.toThrow();
+    expect(() => {
+      changeTheme("light");
+    }).not.toThrow();
     expect(currentTheme()).toBe("light");
   });
 
-  it.each(["dashboard/index.html", "perf/report/index.html"])("%s sets the saved theme before the first paint with the same key", (file) => {
-    const html = readFileSync(join(root, file), "utf8");
-    expect(html).toContain(THEME_STORAGE_KEY);
-  });
+  it.each(["dashboard/index.html", "perf/report/index.html"])(
+    "%s sets the saved theme before the first paint with the same key",
+    (file) => {
+      const html = readFileSync(join(root, file), "utf8");
+      expect(html).toContain(THEME_STORAGE_KEY);
+    },
+  );
 });

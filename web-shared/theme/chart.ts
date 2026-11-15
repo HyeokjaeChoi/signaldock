@@ -9,8 +9,12 @@ export const AXIS = { tick: text, tickLine: false, axisLine: { stroke: "var(--ch
 export const GRID = { stroke: "var(--chart-grid)", strokeDasharray: "3 3" } as const;
 export const TOOLTIP = {
   contentStyle: {
-    background: "var(--surface-raised)", border: "1px solid var(--line)", borderRadius: "var(--radius-sm)",
-    color: "var(--fg)", fontSize: 12, boxShadow: "var(--shadow-pop)",
+    background: "var(--surface-raised)",
+    border: "1px solid var(--line)",
+    borderRadius: "var(--radius-sm)",
+    color: "var(--fg)",
+    fontSize: 12,
+    boxShadow: "var(--shadow-pop)",
   },
   labelStyle: { color: "var(--fg)", fontWeight: 600 },
   itemStyle: { color: "var(--fg)" },
@@ -20,7 +24,8 @@ export const TOOLTIP = {
 export const LEGEND = { wrapperStyle: { fontSize: 12, color: "var(--fg-muted)", paddingTop: 12 }, itemSorter: null } as const;
 /** Axis title (the unit) under a number axis; give that XAxis `height={AXIS_LABEL_HEIGHT}`. */
 export const AXIS_LABEL_HEIGHT = 48;
-export const axisLabel = (value: string) => ({ value, position: "insideBottom", offset: 0, fill: "var(--chart-axis)", fontSize: 11 }) as const;
+export const axisLabel = (value: string) =>
+  ({ value, position: "insideBottom", offset: 0, fill: "var(--chart-axis)", fontSize: 11 }) as const;
 
 export const SERIES = ["var(--c1)", "var(--c2)", "var(--c3)"] as const;
 /** Same order as `SERIES`: solid, dashed, dotted. */
@@ -31,17 +36,28 @@ export const SERIES_DASH = [undefined, "6 3", "2 3"] as const;
  * (as a child of `BarChart`); legends use the same fills. No JSX here (ADR-0015 decision 3), hence `createElement`.
  */
 export const BAR_FILL = {
-  p50: "var(--c1)", p95: "url(#sd-hatch-c2)", max: "url(#sd-dots-c3)",
-  ok: "var(--ok)", shed: "url(#sd-hatch-c2)", other: "url(#sd-dots-bad)",
+  p50: "var(--c1)",
+  p95: "url(#sd-hatch-c2)",
+  max: "url(#sd-dots-c3)",
+  ok: "var(--ok)",
+  shed: "url(#sd-hatch-c2)",
+  other: "url(#sd-dots-bad)",
 } as const;
 
 const hatch = (id: string, color: string) =>
-  createElement("pattern", { key: id, id, width: 6, height: 6, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" },
+  createElement(
+    "pattern",
+    { key: id, id, width: 6, height: 6, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" },
     createElement("rect", { width: 6, height: 6, fill: color, fillOpacity: 0.35 }),
-    createElement("rect", { width: 3, height: 6, fill: color }));
+    createElement("rect", { width: 3, height: 6, fill: color }),
+  );
 const dots = (id: string, color: string) =>
-  createElement("pattern", { key: id, id, width: 6, height: 6, patternUnits: "userSpaceOnUse" },
+  createElement(
+    "pattern",
+    { key: id, id, width: 6, height: 6, patternUnits: "userSpaceOnUse" },
     createElement("rect", { width: 6, height: 6, fill: color, fillOpacity: 0.35 }),
-    createElement("circle", { cx: 3, cy: 3, r: 1.8, fill: color }));
+    createElement("circle", { cx: 3, cy: 3, r: 1.8, fill: color }),
+  );
 
-export const PatternDefs = () => createElement("defs", null, hatch("sd-hatch-c2", "var(--c2)"), dots("sd-dots-c3", "var(--c3)"), dots("sd-dots-bad", "var(--bad)"));
+export const PatternDefs = () =>
+  createElement("defs", null, hatch("sd-hatch-c2", "var(--c2)"), dots("sd-dots-c3", "var(--c3)"), dots("sd-dots-bad", "var(--bad)"));

@@ -11,20 +11,20 @@ const ROW_PX = 30;
 
 export function NameChart({ counts }: { counts: EventNameCounts }) {
   const { t, i18n } = useTranslation();
-  const number = (v: unknown) => (typeof v === "number" ? formatNumber(v, i18n.language) : String(v ?? ""));
+  const number = (v: unknown) => (typeof v === "number" ? formatNumber(v, i18n.language) : typeof v === "string" ? v : "");
   return (
     <>
       <div className="chart-fill" style={{ "--chart-min": `${Math.max(120, counts.items.length * ROW_PX + 12)}px` } as CSSProperties}>
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={counts.items} layout="vertical" margin={{ left: 0, right: 40 }}>
-          <XAxis type="number" hide />
-          <YAxis {...AXIS} type="category" dataKey="name" width={150} interval={0} />
-          <Tooltip {...TOOLTIP} formatter={number} />
-          <Bar dataKey="count" name={t("counts.series")} fill={SERIES[0]} radius={[0, 3, 3, 0]} isAnimationActive={false}>
-            <LabelList dataKey="count" position="right" formatter={number} fill="var(--fg)" fontSize={12} />
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={counts.items} layout="vertical" margin={{ left: 0, right: 40 }}>
+            <XAxis type="number" hide />
+            <YAxis {...AXIS} type="category" dataKey="name" width={150} interval={0} />
+            <Tooltip {...TOOLTIP} formatter={number} />
+            <Bar dataKey="count" name={t("counts.series")} fill={SERIES[0]} radius={[0, 3, 3, 0]} isAnimationActive={false}>
+              <LabelList dataKey="count" position="right" formatter={number} fill="var(--fg)" fontSize={12} />
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
       </div>
       {counts.truncated && <p className="note">{t("counts.truncated", { limit: number(100) })}</p>}
     </>
@@ -33,19 +33,19 @@ export function NameChart({ counts }: { counts: EventNameCounts }) {
 
 export function TimeChart({ counts, label }: { counts: EventTimeCounts; label: (iso: string, bucket: string) => string }) {
   const { t, i18n } = useTranslation();
-  const number = (v: unknown) => (typeof v === "number" ? formatNumber(v, i18n.language) : String(v ?? ""));
+  const number = (v: unknown) => (typeof v === "number" ? formatNumber(v, i18n.language) : typeof v === "string" ? v : "");
   const data = counts.items.map((b) => ({ label: label(b.start, counts.bucket), count: b.count }));
   return (
     <div className="chart-fill">
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={data}>
-        <CartesianGrid {...GRID} vertical={false} />
-        <XAxis {...AXIS} dataKey="label" minTickGap={16} />
-        <YAxis {...AXIS} allowDecimals={false} tickFormatter={number} width={44} />
-        <Tooltip {...TOOLTIP} formatter={number} />
-        <Bar dataKey="count" name={t("counts.series")} fill={SERIES[0]} radius={[3, 3, 0, 0]} isAnimationActive={false} />
-      </BarChart>
-    </ResponsiveContainer>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data}>
+          <CartesianGrid {...GRID} vertical={false} />
+          <XAxis {...AXIS} dataKey="label" minTickGap={16} />
+          <YAxis {...AXIS} allowDecimals={false} tickFormatter={number} width={44} />
+          <Tooltip {...TOOLTIP} formatter={number} />
+          <Bar dataKey="count" name={t("counts.series")} fill={SERIES[0]} radius={[3, 3, 0, 0]} isAnimationActive={false} />
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   );
 }

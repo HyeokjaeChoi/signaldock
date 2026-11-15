@@ -2,8 +2,14 @@ import type { T } from "./i18n";
 import type { QueryError } from "./polling";
 
 const KNOWN_CODES = [
-  "CONTRACT_HEADER_MISSING", "CONTRACT_VERSION_UNSUPPORTED", "QUERY_KEY_INVALID", "INVALID_PARAMETER",
-  "INVALID_CURSOR", "PERIOD_TOO_LONG", "EVENT_NOT_FOUND", "TEMPORARILY_UNAVAILABLE",
+  "CONTRACT_HEADER_MISSING",
+  "CONTRACT_VERSION_UNSUPPORTED",
+  "QUERY_KEY_INVALID",
+  "INVALID_PARAMETER",
+  "INVALID_CURSOR",
+  "PERIOD_TOO_LONG",
+  "EVENT_NOT_FOUND",
+  "TEMPORARILY_UNAVAILABLE",
 ] as const;
 type KnownCode = (typeof KNOWN_CODES)[number];
 const isKnown = (code: string | undefined): code is KnownCode => KNOWN_CODES.includes(code as KnownCode);

@@ -84,7 +84,9 @@ export class PollingQuery<T> {
     if (!this.auto && !manual) return;
     const wait = Math.max(0, (this.state.nextEligibleAt ?? 0) - this.env.now());
     if (wait > 0) {
-      this.timer = setTimeout(() => this.kick(manual), wait);
+      this.timer = setTimeout(() => {
+        this.kick(manual);
+      }, wait);
       return;
     }
     void this.run();
@@ -92,7 +94,9 @@ export class PollingQuery<T> {
 
   private set(patch: Partial<QueryState<T>>): void {
     this.state = { ...this.state, ...patch };
-    this.listeners.forEach((l) => l());
+    this.listeners.forEach((l) => {
+      l();
+    });
   }
 
   private async run(): Promise<void> {
@@ -107,18 +111,26 @@ export class PollingQuery<T> {
       this.set({ data, lastSuccessAt: this.env.now(), error: undefined, nextEligibleAt: undefined, loading: false });
     } catch (e) {
       if (controller.signal.aborted) return;
-      const error = e instanceof QueryError ? e : e instanceof Error ? new QueryError(e.message) : new QueryError("Query failed", undefined, undefined, undefined, "errors.query");
+      const error =
+        e instanceof QueryError
+          ? e
+          : e instanceof Error
+            ? new QueryError(e.message)
+            : new QueryError("Query failed", undefined, undefined, undefined, "errors.query");
       if (error.isContractError) {
         this.inflight = undefined;
         this.set({ error, stopped: true, loading: false, nextEligibleAt: undefined });
         return;
       }
       this.failures += 1;
-      wait = Math.max(BACKOFF_MS[Math.min(this.failures, BACKOFF_MS.length) - 1]!, error.retryAfterMs ?? 0);
+      wait = Math.max(BACKOFF_MS[Math.min(this.failures, BACKOFF_MS.length) - 1], error.retryAfterMs ?? 0);
       this.set({ error, nextEligibleAt: this.env.now() + wait, loading: false });
     }
     this.inflight = undefined;
-    if (this.running && this.auto) this.timer = setTimeout(() => this.kick(), wait);
+    if (this.running && this.auto)
+      this.timer = setTimeout(() => {
+        this.kick();
+      }, wait);
   }
 }
 
@@ -131,22 +143,30 @@ export function usePolledQuery<T>(
   auto = true,
   env: PollEnv = browserEnv,
 ): { state: QueryState<T>; refresh: () => void } {
+  // The latest fetcher, for the running query. It is written after the commit; the key effect below runs after it.
   const fetcherRef = useRef(fetcher);
-  fetcherRef.current = fetcher;
+  useEffect(() => {
+    fetcherRef.current = fetcher;
+  });
   const queryRef = useRef<PollingQuery<T>>(undefined);
   const [state, setState] = useState<QueryState<T>>({ stopped: false, loading: false });
 
   useEffect(() => {
     if (key === null) {
       queryRef.current = undefined;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- a disabled query (null key) must drop the data of its last key; the state belongs to this hook, not to a parent
       setState({ stopped: false, loading: false });
       return;
     }
     const query = new PollingQuery<T>((s) => fetcherRef.current(s), env, auto);
     queryRef.current = query;
     setState(query.state);
-    const unsubscribe = query.subscribe(() => setState(query.state));
-    const onVisibility = () => query.kick();
+    const unsubscribe = query.subscribe(() => {
+      setState(query.state);
+    });
+    const onVisibility = () => {
+      query.kick();
+    };
     document.addEventListener("visibilitychange", onVisibility);
     query.start();
     return () => {

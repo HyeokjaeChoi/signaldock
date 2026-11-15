@@ -15,26 +15,40 @@ export function DroppedCard({ counts }: { counts?: ClientReportCounts }) {
     <section className="card dropped-card" aria-label={t("dropped.title")}>
       <h2>{t("dropped.title")}</h2>
       <p className="note">{t("dropped.note")}</p>
-      {counts && counts.items.length === 0 && <p>{t("dropped.empty")}</p>}
+      {counts?.items.length === 0 && <p>{t("dropped.empty")}</p>}
       {counts && counts.items.length > 0 && (
         <div className="table-wrap">
           <table>
             <caption className="sr-only">{t("dropped.title")}</caption>
             <thead>
-              <tr><th scope="col">{t("dropped.platform")}</th><th scope="col">{t("dropped.sdkVersion")}</th><th scope="col">{t("dropped.reason")}</th><th scope="col" className="num">{t("dropped.count")}</th></tr>
+              <tr>
+                <th scope="col">{t("dropped.platform")}</th>
+                <th scope="col">{t("dropped.sdkVersion")}</th>
+                <th scope="col">{t("dropped.reason")}</th>
+                <th scope="col" className="num">
+                  {t("dropped.count")}
+                </th>
+              </tr>
             </thead>
             <tbody>
               {counts.items.map((r) => (
                 <tr key={`${r.sdkPlatform}|${r.sdkVersion}|${r.reason}`}>
                   <td>{t(`platform.${r.sdkPlatform}`)}</td>
                   <td>{r.sdkVersion}</td>
-                  <td>{t(`dropped.reasons.${r.reason}`)} <code>{r.reason}</code></td>
+                  <td>
+                    {t(`dropped.reasons.${r.reason}`)} <code>{r.reason}</code>
+                  </td>
                   <td className="num">{n(r.count)}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
-              <tr><th scope="row" colSpan={3}>{t("dropped.total")}</th><td className="num">{n(total ?? 0)}</td></tr>
+              <tr>
+                <th scope="row" colSpan={3}>
+                  {t("dropped.total")}
+                </th>
+                <td className="num">{n(total ?? 0)}</td>
+              </tr>
             </tfoot>
           </table>
         </div>

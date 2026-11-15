@@ -9,14 +9,34 @@ export const formatNumber = (value: number, language: Language, options?: Intl.N
 /** Date and time with milliseconds, 24-hour clock, in `timeZone`. */
 export const formatDateTime = (instant: number | string | Date, timeZone: string, language: Language): string =>
   new Intl.DateTimeFormat(LOCALE[language], {
-    timeZone, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", second: "2-digit", fractionalSecondDigits: 3,
+    timeZone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    fractionalSecondDigits: 3,
   }).format(new Date(instant));
 
 /** The same instant as `formatDateTime`, in two parts, so a table can dim the date (Q146). */
-export const formatDateTimeParts = (instant: number | string | Date, timeZone: string, language: Language): { date: string; time: string } => ({
-  date: new Intl.DateTimeFormat(LOCALE[language], { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(instant)),
-  time: new Intl.DateTimeFormat(LOCALE[language], { timeZone, hourCycle: "h23", hour: "2-digit", minute: "2-digit", second: "2-digit", fractionalSecondDigits: 3 }).format(new Date(instant)),
+export const formatDateTimeParts = (
+  instant: number | string | Date,
+  timeZone: string,
+  language: Language,
+): { date: string; time: string } => ({
+  date: new Intl.DateTimeFormat(LOCALE[language], { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(
+    new Date(instant),
+  ),
+  time: new Intl.DateTimeFormat(LOCALE[language], {
+    timeZone,
+    hourCycle: "h23",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    fractionalSecondDigits: 3,
+  }).format(new Date(instant)),
 });
 
 /** Calendar date only, in `timeZone`. */
@@ -31,7 +51,5 @@ export const formatClock = (instant: number | string | Date, timeZone: string, l
 export const formatBucketLabel = (instant: number | string | Date, hourly: boolean, timeZone: string, language: Language): string =>
   new Intl.DateTimeFormat(
     LOCALE[language],
-    hourly
-      ? { timeZone, hourCycle: "h23", hour: "2-digit", minute: "2-digit" }
-      : { timeZone, month: "2-digit", day: "2-digit" },
+    hourly ? { timeZone, hourCycle: "h23", hour: "2-digit", minute: "2-digit" } : { timeZone, month: "2-digit", day: "2-digit" },
   ).format(new Date(instant));

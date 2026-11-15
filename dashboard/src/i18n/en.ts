@@ -94,8 +94,7 @@ export const en = {
     loading: "loading...",
     noData: "no data yet",
     queryFailed: "query failed: {{message}}",
-    stopped:
-      "Updates stopped: this Dashboard and the server use different contract versions. Existing data is kept.",
+    stopped: "Updates stopped: this Dashboard and the server use different contract versions. Existing data is kept.",
     nextAttempt: "next attempt after {{time}}",
     reload: "Reload page",
     retry: "Retry",
