@@ -1,6 +1,6 @@
 #!/bin/bash
-# Device verification of SDK durability (issue 20, ADR-0011). Runs locally and in the nightly CI tier on API 24 and 37
-# emulators (job `device-durability` of .github/workflows/nightly.yml, ADR-0049 gates A5, A6, A4).
+# Device verification of SDK durability (issue 20, ADR-0011). Runs locally, and in the nightly CI tier on API 24 and 37
+# emulators once the job `device-durability` is in .github/workflows/nightly.yml (ADR-0049 gates A5, A6, A4).
 #
 # Usage: scripts/device-durability.sh <adb-serial> [case ...]
 # Cases: offline kill restart update clear reinstall restore airplane fulldisk workmanager optout powerloss maincost
@@ -232,8 +232,8 @@ PL_PRE=40 PL_LOSTACK=30 PL_PENDING=30 PL_TAIL=20
 # stays. Then a cold boot (no snapshot is loaded or saved; no -wipe-data).
 emulator_kill_and_cold_boot() {
   local port="${serial#emulator-}" avd pid
-  avd="$(adb emu avd name 2>/dev/null | head -1 | tr -d '\r')"
-  pid="$(lsof -nP -iTCP:"$port" -sTCP:LISTEN -t 2>/dev/null | head -1)"
+  avd="$(adb emu avd name 2>/dev/null | head -1 | tr -d '\r' || true)"
+  pid="$(lsof -nP -iTCP:"$port" -sTCP:LISTEN -t 2>/dev/null | head -1 || true)"
   [ -n "$avd" ] && [ -n "$pid" ] || { echo "cannot find the AVD name ('$avd') or the emulator process ('$pid') of $serial (needs lsof)" >&2; exit 1; }
   echo "  SIGKILL of emulator process $pid (AVD $avd)"
   kill -9 "$pid"
@@ -241,8 +241,9 @@ emulator_kill_and_cold_boot() {
   # shellcheck disable=SC2086
   nohup "${ANDROID_HOME:-$HOME/Library/Android/sdk}/emulator/emulator" -avd "$avd" -port "$port" -no-snapshot \
     ${EMULATOR_OPTS:--no-window -noaudio -no-boot-anim -gpu swiftshader_indirect} >/dev/null 2>&1 &
-  adb wait-for-device
-  for _ in $(seq 1 180); do  # 6 minutes
+  local new_pid=$!
+  for _ in $(seq 1 180); do  # 6 minutes; no wait-for-device (it has no timeout)
+    kill -0 "$new_pid" 2>/dev/null || { echo "the restarted emulator process died" >&2; exit 1; }
     [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ] && adb shell pm path android >/dev/null 2>&1 && break
     sleep 2
   done
@@ -288,8 +289,8 @@ case_powerloss() {
   record resends "$(sed -n 's/^resends=//p' <<<"$numbers")"
 }
 
-# Gate A4 (ADR-0049 decision 2): the budget is the measured p99 plus a stated margin: 2 x the worst of 12 p99 values on CI
-# emulators (API 24 and 37.0, run 43692865454): 55,155 us -> 110,000 us (ADR-0049 amendment 2026-11-15). Empty: not gated.
+# Gate A4 (ADR-0049 decision 2): the budget is the measured p99 plus a stated margin: 2 x the worst of 14 p99 values on CI
+# emulators (API 24 and 37.0, runs 43692865454 to 43695424448): 55,155 us -> 110,000 us (ADR-0049 amendment 2026-11-15). Empty: not gated.
 MAIN_THREAD_P99_BUDGET_US=110000
 
 case_maincost() {

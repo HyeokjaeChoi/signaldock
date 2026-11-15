@@ -132,6 +132,8 @@ class PowerLossPhases {
         assertEquals("events committed before the checkpoint are lost ($facts)", emptyList<String>(), lost)
 
         val kept = fun(prefix: String) = names.count { it.startsWith(prefix) }
+        // Their delivery and queue delete were committed before the checkpoint, so the delete is durable too.
+        assertEquals("pre events came back ($facts)", 0, kept("pl_pre_"))
         val sdk = runBlocking { rig().initialize() }
         assertEquals("the SDK sees the same queue", names.size, runBlocking { sdk.diagnostics().queuedEvents })
         // The failed send before the checkpoint stored a retry time (10 s): the sender waits for it.

@@ -21,7 +21,7 @@ ADR-0011 and ADR-0017 list four limits of the device test harness: offline is a 
 - The full-disk case uses an app-visible filler file. System services also write to `/data`, so the exact point of failure is not fixed. The test does not depend on it.
 - The WorkManager fault is a database write lock. It does not prove behavior for a WorkManager that is not initialized (host disabled the initializer): that case stays with `SchedulingTest` and `CrashSafetyTest` on the JVM.
 - A real power cut is not tested. Gate A6 (ADR-0049 amendment of 2026-11-15, runs 43692865454 and 43695424448) kills the emulator process and cold-boots it: queue integrity, no `conflict`, and no loss before a forced checkpoint are checked, and on API 37 20 of 20 events written after the checkpoint were lost, as item 4 says. It is a SIGKILL of the emulator, not a cut of the power to a phone.
-- The nightly CI tier runs these cases at API 24 and API 37 (ADR-0049 gate A5, run 43695424448: 13 of 13 at both). The PR tier does not (ADR-0011 decision 10).
+- The nightly CI tier will run these cases at API 24 and API 37 once the job is in `nightly.yml` (ADR-0049 gate A5; proof run 43695424448: 13 of 13 at both). The PR tier does not (ADR-0011 decision 10).
 
 ## Amendment (2026-11-15, ADR-0049 decision 6)
 

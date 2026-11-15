@@ -26,7 +26,7 @@ The opt-out phases (`optout_set`, `optout_check`, `optout_off`) add 3 methods to
 
 ## Amendment (2026-11-15, ADR-0049 gate A3)
 
-Decision 3 counts changed again: 38 methods start, 20 skip themselves without `-e phase`, and 18 run. New: `StrictModeDeviceTest` (runs; it fails the job when the SDK touches the disk or the network on the main thread), three phases of `PowerLossPhases`, and `MeasurePhases.main_thread` (these four skip). The `device-test` job and its API 34 emulator do not change. The nightly tier runs the process-boundary cases at API 24 and 37 (ADR-0049 gate A5).
+Decision 3 counts changed again: 38 methods start, 20 skip themselves without `-e phase`, and 18 run. New: `StrictModeDeviceTest` (runs; it fails the job when the SDK touches the disk or the network on the main thread), three phases of `PowerLossPhases`, and `MeasurePhases.main_thread` (these four skip). The `device-test` job and its API 34 emulator do not change. The nightly tier will run the process-boundary cases at API 24 and 37 (ADR-0049 gate A5) once its job is in `nightly.yml`.
 
 ## Limits
 
