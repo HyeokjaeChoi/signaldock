@@ -21,6 +21,9 @@ jobs:
           - {api: '37.0', control: '0', cases: ''}
           # Negative control: no checkpoint. The job is expected to fail in `powerloss` (events lost).
           - {api: '37.0', control: '1', cases: 'powerloss'}
+          # Samples for the A4 budget: the full runs above give one value per API, these give five more.
+          - {api: '24', control: '0', cases: 'maincost maincost maincost maincost maincost'}
+          - {api: '37.0', control: '0', cases: 'maincost maincost maincost maincost maincost'}
     env:
       DURABILITY_RESULT_JSON: ${{ github.workspace }}/durability-cases.json
       DURABILITY_NUMBERS: ${{ github.workspace }}/durability-numbers.txt
