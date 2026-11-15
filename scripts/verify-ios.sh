@@ -2,6 +2,12 @@
 # iOS SDK gates (ADR-0047 D13). Usage: scripts/verify-ios.sh [all|lint|tsan|asan|analyze|manifest|api|api-update [artifact-dir]|available]
 # `available` exits 0 only with full Xcode (Swift 6, `swift format`) and a Simulator runtime that pick_simulator can select
 # (iOS 15 or later, with an iPhone); a Command Line Tools shim of xcodebuild is not enough.
+# `simulator` prints the UDID that the tests use (scripts/simulator-durability-ci.sh runs on the same one).
+# SIMULATOR_UDID=<udid> picks a Simulator by hand (a Mac that has other Simulators booted).
+# Main Thread Checker (ADR-0049 gate I1): `xcodebuild` has no switch for it. The scheme that SwiftPM generates has it on for
+# tests, and it only writes "Main Thread Checker: UI API called on a background thread" to the log; the run stays green.
+# run_tests therefore reads the log and fails on that line. Parallel testing is off (it runs the tests on Simulator clones,
+# whose console output does not reach this log, so the check would see nothing).
 # CI sets IOS_WERROR=1 (warnings as errors in CI only). The tests run on the oldest iOS Simulator runtime
 # that is installed, because the GitHub runner has no iOS 15 runtime (spec section 5; ADR-0047 "iOS 15 Simulator fallback").
 set -euo pipefail
@@ -16,6 +22,11 @@ fi
 
 # Prints a Simulator UDID: the first iPhone of the oldest installed iOS runtime at iOS 15 or later (the deployment target).
 pick_simulator() {
+  if [ -n "${SIMULATOR_UDID:-}" ]; then
+    echo "simulator: $SIMULATOR_UDID (SIMULATOR_UDID)" >&2
+    echo "$SIMULATOR_UDID"
+    return
+  fi
   xcrun simctl list runtimes >&2
   xcrun simctl list devices available -j | python3 -I -c '
 import json, re, sys
@@ -47,10 +58,20 @@ run_lint() {
 }
 
 run_tests() { # arguments: sanitizer flags
-  local udid
+  local udid log status=0 reports
   udid="$(pick_simulator)"
+  log="$(mktemp)"
   (cd "$PKG" && xcodebuild test -scheme SignalDock -destination "id=$udid" \
-    -derivedDataPath "$DERIVED" "$@" ${WERROR[@]+"${WERROR[@]}"})
+    -derivedDataPath "$DERIVED" -parallel-testing-enabled NO "$@" ${WERROR[@]+"${WERROR[@]}"}) 2>&1 | tee "$log" || status=$?
+  # grep finds no line (status 1) on a clean run; that is the pass case.
+  reports="$(grep -F 'Main Thread Checker:' "$log" | head -10)" || true
+  rm -f "$log"
+  if [ -n "$reports" ]; then
+    echo "error: the Main Thread Checker reported a UIKit call off the main thread (ADR-0049 gate I1). First lines:" >&2
+    echo "$reports" >&2
+    exit 1
+  fi
+  [ "$status" -eq 0 ] || exit "$status"
 }
 
 run_analyze() {
@@ -182,5 +203,6 @@ case "${1:-all}" in
   api-update) run_api_update "$@" ;;
   all) run_lint; "$0" tsan; "$0" asan; run_analyze; run_manifest; run_api ;;
   available) available ;;
-  *) echo "usage: $0 [all|lint|tsan|asan|analyze|manifest|api|api-update [artifact-dir]|available]" >&2; exit 2 ;;
+  simulator) pick_simulator ;;
+  *) echo "usage: $0 [all|lint|tsan|asan|analyze|manifest|api|api-update [artifact-dir]|available|simulator]" >&2; exit 2 ;;
 esac

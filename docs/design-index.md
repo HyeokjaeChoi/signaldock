@@ -273,7 +273,7 @@ ADRs:
 - ADR-0019 (`docs/adr/0019-sdk-public-api-check.md`), for the `apiCheck` step in `scripts/verify-contract.sh`
 - ADR-0033 (`docs/adr/0033-sdk-dependency-baseline.md`), for the `dependencyGuard` step in `scripts/verify-contract.sh` and `sdk/sdk-android/dependencies/` (issue 56)
 - ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for `scripts/host-cost-measure.sh` (issue 36)
-- ADR-0011 (`docs/adr/0011-sdk-device-test-harness.md`), ADR-0029, and ADR-0047 "Amendment (2026-10-29, ticket 15, durability phases)", for `scripts/simulator-durability.sh` (iOS ticket 15; the Android form is `scripts/device-durability.sh`)
+- ADR-0011 (`docs/adr/0011-sdk-device-test-harness.md`), ADR-0029, and ADR-0047 "Amendment (2026-10-29, ticket 15, durability phases)", for `scripts/simulator-durability.sh` (iOS ticket 15; the Android form is `scripts/device-durability.sh`), and ADR-0049 "Amendment (2026-11-16, ticket 07: iOS gates I1 and I2)" for `scripts/simulator-durability-ci.sh` and the Main Thread Checker check in `scripts/verify-ios.sh`
 - ADR-0023 (`docs/adr/0023-ci-device-tests-and-size-budget.md`), for the `device-test` and `size-budget` jobs in `.github/workflows/repo-rules.yml` and `scripts/check-size-budget.sh` (issue 40)
 - ADR-0047 (`docs/adr/0047-ios-sdk.md`), "Amendment (2026-10-29, ticket 17, size budget)", for the `ios-size-budget` job in `.github/workflows/repo-rules.yml` and `scripts/check-ios-size-budget.sh` (budgets and the raise rule)
 - ADR-0024 (`docs/adr/0024-release-workflow-and-dependency-updates.md`), for `.github/workflows/release.yml`, the `--check` flag of `scripts/release.sh`, and `docs/releases/README.md` (issue 41)
