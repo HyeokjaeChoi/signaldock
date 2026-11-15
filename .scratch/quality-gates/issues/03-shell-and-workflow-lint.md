@@ -1,8 +1,8 @@
 # 03. shellcheck and actionlint
 
-Status: claimed
+Status: resolved
 Type: task
-Execution: PR pending (branch gate/03-shell-workflow-lint)
+Execution: Done (PR #282, 2026-11-15 UTC)
 
 ## Scope and completion criteria
 
