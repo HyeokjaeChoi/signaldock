@@ -102,7 +102,7 @@ Source: https://developer.apple.com/documentation/bundleresources/privacy-manife
 
 ### D15. Verification on the Simulator
 
-`scripts/simulator-durability.sh` (local only, `xcrun simctl`) covers: kill during store and during send, restart, update install, uninstall and install (new installation ID), opt-out, and offline. Pass means no lost event, no server duplicate, and the expected queue state. Measurement: SDK size (consumer Release arm64 with and without the SDK, unsigned) and host cost (`initialize()` and `track()` main-thread time, cold start, memory). The size budget gate follows from that measurement.
+`scripts/simulator-durability.sh` (`xcrun simctl`; local, and nightly in CI from [ADR-0049](0049-production-quality-gates.md) gate I2) covers: kill during store and during send, restart, update install, uninstall and install (new installation ID), opt-out, and offline. Pass means no lost event, no server duplicate, and the expected queue state. Measurement: SDK size (consumer Release arm64 with and without the SDK, unsigned) and host cost (`initialize()` and `track()` main-thread time, cold start, memory). The size budget gate follows from that measurement.
 Mirrors: [ADR-0011](0011-sdk-device-test-harness.md), [ADR-0029](0029-device-fault-tests-and-power-loss.md), [ADR-0020](0020-sdk-host-app-cost.md) then [ADR-0023](0023-ci-device-tests-and-size-budget.md) (measure first, gate second), [ADR-0014](0014-sdk-device-measurement-harness.md).
 Rejected: a physical iPhone now (it needs the owner device, an Apple Developer account, and signing; like [ADR-0042](0042-measurement-on-a-physical-device.md)).
 

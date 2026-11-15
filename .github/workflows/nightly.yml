@@ -180,6 +180,41 @@ jobs:
           if-no-files-found: error
 
   # ---- Add jobs below this line, one ticket at a time, after the PR of ticket 05 has merged. ----
-  # Planned (spec "Tickets"): 07 iOS durability (I2),
-  # 08 ingest load SLO (B3), 11 OSV-Scanner on main and the ruleset drift check (R2, R3), and the Lighthouse run (W5).
+  # Planned (spec "Tickets"): 08 ingest load SLO (B3), 11 OSV-Scanner on main and the ruleset drift check (R2, R3), and the Lighthouse run (W5).
   # Copy the summary and upload steps of `e2e-delivery`; `python3 -I scripts/nightly-summary.py` documents its flags.
+
+  # Gate I2: scripts/simulator-durability-ci.sh runs all seven cases of scripts/simulator-durability.sh on the iOS Simulator.
+  # macos-26 has no Docker, so the script starts PostgreSQL (Homebrew) and the server on the host (ADR-0049 amendment, ticket 07).
+  ios-durability:
+    runs-on: macos-26
+    timeout-minutes: 45
+    env:
+      SIMULATOR_DURABILITY_RESULT_JSON: ${{ github.workspace }}/simulator-durability.json
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - run: sudo xcode-select -s /Applications/Xcode_26.6.app # ADR-0047: the default of macos-26
+      - run: scripts/setup-toolchain.sh
+      - run: echo "JAVA_HOME=$(echo "$PWD"/.tools/jdk-*)" >> "$GITHUB_ENV" # one JDK from scripts/setup-toolchain.sh
+      - name: simulator-durability-ci.sh (all cases)
+        run: scripts/simulator-durability-ci.sh
+      - name: Summary (gate Q2)
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: python3 -I scripts/nightly-summary.py --job ios-durability --gate I2 --status "$JOB_STATUS" --cases simulator-durability.json
+      - name: Upload summary
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: nightly-summary-ios-durability
+          path: nightly-summary/
+          if-no-files-found: error
+      - name: Upload logs
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ios-durability-logs
+          path: build/simulator-durability/
+          if-no-files-found: ignore

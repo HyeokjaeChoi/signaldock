@@ -1,5 +1,6 @@
 #!/bin/bash
-# Simulator verification of SDK durability (iOS ticket 15, ADR-0047 D15, ADR-0011, ADR-0029). Local only: not run in CI.
+# Simulator verification of SDK durability (iOS ticket 15, ADR-0047 D15, ADR-0011, ADR-0029). Runs locally, and nightly in
+# CI on macos-26 through scripts/simulator-durability-ci.sh (ADR-0049 gate I2), which starts the stack this script needs.
 #
 # Usage: scripts/simulator-durability.sh <simulator-udid> [case ...]
 # Cases: kill_store kill_send restart update reinstall optout offline   (default: all)
@@ -18,6 +19,11 @@
 #   SIGNALDOCK_ENDPOINT        server URL the Simulator and this script use (default http://127.0.0.1:${SIGNALDOCK_SERVER_PORT:-8080})
 #   SIMULATOR_DURABILITY_SKIP_BUILD=1  reuse the app that scripts/verify-consumer-ios.sh built earlier
 #   IOS_WERROR=1               passed to the build
+#   SIMULATOR_DURABILITY_RESULT_JSON  an absolute file path (removed at start): the per-case results are written there as
+#                              [{"name", "result": "pass"|"fail", "seconds"}] (input of scripts/nightly-summary.py,
+#                              ADR-0049 gate Q2). Only cases that ran are listed; the case that failed is "fail".
+#   SIMULATOR_BOOT_TIMEOUT     seconds to wait for the Simulator to boot (default 600). A phase has its own deadline
+#                              (PHASE_TIMEOUT, default 240 s). No retry anywhere: a failed case fails the run.
 # Offline means the app endpoint is a closed local port (http://127.0.0.1:9): no network setting of the Mac changes.
 # A Simulator that this script boots is shut down at exit. It never runs docker compose.
 set -euo pipefail
@@ -49,23 +55,47 @@ for runtime, devices in json.load(sys.stdin)["devices"].items():
             print(d["name"] + " / " + runtime.rsplit(".", 1)[-1])
 ' "$udid")"
 [ -n "$devname" ] || { echo "refusing $udid: not an iOS Simulator (iOS runtime) listed by 'xcrun simctl list devices'" >&2; exit 1; }
-curl -fsS -o /dev/null "$ENDPOINT/ready" || { echo "error: server not ready at $ENDPOINT (start the verification stack first)" >&2; exit 1; }
+curl -fsS --max-time 10 -o /dev/null "$ENDPOINT/ready" || { echo "error: server not ready at $ENDPOINT (start the verification stack first)" >&2; exit 1; }
 
 BUNDLE=""
 work="$(mktemp -d)"
+[ -z "${SIMULATOR_DURABILITY_RESULT_JSON:-}" ] || rm -f "$SIMULATOR_DURABILITY_RESULT_JSON" # no stale file from an earlier run
 booted_here=0
+results=() # "name result seconds", one per case that ran
+current_case="" # a case that has started and not finished when the script ends is a failed case
+case_started=0
+loop_started=0
+write_results() {
+  [ -n "${SIMULATOR_DURABILITY_RESULT_JSON:-}" ] || return 0
+  python3 -I -c '
+import json, sys
+print(json.dumps([{"name": n, "result": r, "seconds": float(t)} for n, r, t in (a.split() for a in sys.argv[1:])]))
+' ${results[@]+"${results[@]}"} >"$SIMULATOR_DURABILITY_RESULT_JSON"
+}
 cleanup() {
+  local status=$?
+  if [ -n "$current_case" ]; then results+=("$current_case fail $((SECONDS - case_started))"); fi
+  # A script that died before the first case writes no file, which nightly-summary.py reads as "the job never ran".
+  if [ "$loop_started" = 1 ] && ! write_results; then
+    echo "error: cannot write $SIMULATOR_DURABILITY_RESULT_JSON" >&2
+    [ "$status" -ne 0 ] || status=1
+  fi
   rm -rf "$work"
   xcrun simctl terminate "$udid" "$BUNDLE" >/dev/null 2>&1 || true
   if [ "$booted_here" = 1 ]; then xcrun simctl shutdown "$udid" >/dev/null 2>&1 || true; fi
+  exit "$status"
 }
 trap cleanup EXIT
+
+# within <seconds> <command...>: kills the command after the time and exits 142 (macOS has no timeout(1); perl is in the base system).
+within() { local s="$1"; shift; perl -e 'alarm shift; exec @ARGV or die "exec: $!\n"' "$s" "$@"; }
 
 if ! xcrun simctl list devices | grep "$udid" | grep -q Booted; then
   xcrun simctl boot "$udid"
   booted_here=1
 fi
-xcrun simctl bootstatus "$udid" -b >/dev/null
+within "${SIMULATOR_BOOT_TIMEOUT:-600}" xcrun simctl bootstatus "$udid" -b >/dev/null ||
+  { echo "error: the Simulator $udid did not finish booting within ${SIMULATOR_BOOT_TIMEOUT:-600} s" >&2; exit 1; }
 
 if [ "${SIMULATOR_DURABILITY_SKIP_BUILD:-0}" != 1 ]; then
   scripts/verify-consumer-ios.sh
@@ -319,6 +349,13 @@ case_offline() {
   inst="$(res installationId)"
   tr ',' '\n' <<<"$(res eventIds)" >"$work/seeded.txt"
   [ "$(res queuedEvents)" = 30 ] || fail "queuedEvents $(res queuedEvents), expected 30"
+  # The failed send is recorded a moment after the store phase ends. Kill only after it is in queue.db: a kill before it
+  # tests nothing about persisted retry state (first nightly-form run, ADR-0049 amendment ticket 07).
+  local retry_deadline=$((SECONDS + 60))
+  until [ "$(sqlite3 -readonly "$(queue_db)" 'select count(*) from retry_state where failureCount >= 1' 2>/dev/null || echo 0)" -ge 1 ]; do
+    [ $SECONDS -lt "$retry_deadline" ] || fail "no failed send was recorded in retry_state within 60 s"
+    sleep 0.5
+  done
   kill9 "$pid"
   diff <(queue_ids) "$work/seeded.txt" >/dev/null || fail "queue after the kill differs from the stored events"
   [ "$(server_ids "$inst" | wc -l | tr -d ' ')" -eq 0 ] || fail "events reached the server while offline"
@@ -329,7 +366,15 @@ case_offline() {
   deliver "$work/seeded.txt"
 }
 
-for c in "${cases[@]}"; do "case_$c"; echo "  ok: $c"; done
+loop_started=1
+for c in "${cases[@]}"; do
+  current_case="$c"
+  case_started=$SECONDS
+  "case_$c"
+  results+=("$c pass $((SECONDS - case_started))")
+  current_case=""
+  echo "  ok: $c ($((SECONDS - case_started)) s)"
+done
 
 echo "backup restore: not run (the Simulator cannot reproduce it; spec section 5)"
 echo "full disk: not run (the Simulator cannot reproduce it; spec section 5)"
