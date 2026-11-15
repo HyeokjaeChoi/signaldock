@@ -221,7 +221,7 @@ case_workmanager() {
 powerloss() { phase_class=local.signaldock.device.PowerLossPhases phase "$@"; }
 
 # Set sizes of PowerLossPhases and of scripts/powerloss-verify.py (one place: this script).
-PL_PRE=40 PL_PENDING=30 PL_POST=30 PL_TAIL=20
+PL_PRE=40 PL_LOSTACK=30 PL_PENDING=30 PL_TAIL=20
 
 # SIGKILL of the emulator process loses the guest page cache, as a power cut does; the data partition file on the host
 # stays. Then a cold boot (no snapshot is loaded or saved; no -wipe-data).
@@ -256,7 +256,7 @@ case_powerloss() {
   host_server_pid=$!
   sleep 1
   kill -0 "$host_server_pid" 2>/dev/null || { echo "host ACK server did not start (port $port in use?)" >&2; host_server_pid=""; exit 1; }
-  local args=(-e pre "$PL_PRE" -e pending "$PL_PENDING" -e post "$PL_POST" -e tail "$PL_TAIL" -e endpoint "http://10.0.2.2:$port")
+  local args=(-e pre "$PL_PRE" -e lostack "$PL_LOSTACK" -e pending "$PL_PENDING" -e tail "$PL_TAIL" -e endpoint "http://10.0.2.2:$port")
   powerloss powerloss_prepare "${args[@]}"
   adb shell sync # the installation and the empty queue are durable: only what powerloss_write writes can be lost
   adb shell am instrument -w -e class local.signaldock.device.PowerLossPhases -e phase powerloss_write "${args[@]}" "$RUNNER" >"$wlog" 2>&1 &
@@ -276,7 +276,7 @@ case_powerloss() {
   wait "$host_server_pid" 2>/dev/null || true
   host_server_pid=""
   local numbers
-  numbers="$(python3 scripts/powerloss-verify.py "$log" "$PL_PRE" "$PL_PENDING" "$PL_POST" "$PL_TAIL")" || { rm -f "$log" "$wlog"; exit 1; }
+  numbers="$(python3 scripts/powerloss-verify.py "$log" "$PL_PRE" "$PL_LOSTACK" "$PL_PENDING" "$PL_TAIL")" || { rm -f "$log" "$wlog"; exit 1; }
   rm -f "$log" "$wlog"
   echo "  server: $(echo "$numbers" | tr '\n' ' ')(counted, not gated)"
   record lostAfterCheckpoint "$(sed -n 's/^lostAfterCheckpoint=//p' <<<"$numbers")"

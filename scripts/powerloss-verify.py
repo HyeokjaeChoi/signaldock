@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
 """Host-side verdict of gate A6 (ADR-0049 decision 6): reads the log of scripts/ack-server.py after the power-loss case.
 
-Usage: powerloss-verify.py <log-file> <pre> <pending> <post> <tail>   (set sizes, as given to PowerLossPhases)
+Usage: powerloss-verify.py <log-file> <pre> <lostack> <pending> <tail>   (set sizes, as given to PowerLossPhases)
 
 The log has one line per received event: eventId, status, name (tab separated). Fails (exit 1, reasons on stderr) when
   - the server answered "conflict" to any event (a resend with other content), or
   - an eventId was not "accepted" exactly once, first, and only "duplicate" after that, or
-  - an event of the sets pre, pending or post never reached the server (pending: committed before the checkpoint).
-Prints key=value lines that the nightly summary takes: resends (duplicate answers, a lost queue delete after an
-ACK brings events back) and lostAfterCheckpoint (tail events that never arrived). These two are counted, not gated.
+  - an event of the sets pre, lostack or pending never reached the server (lostack and pending: committed before the checkpoint
+    and still queued when the emulator was killed, so the SDK must have kept them).
+Prints key=value lines that the nightly summary takes: resends (duplicate answers: the lostack events, whose ACK the host
+server dropped, and any queue delete that the kill undid) and lostAfterCheckpoint (tail events that never arrived).
+These two are counted, not gated.
 """
 import sys
 from collections import defaultdict
 
 
-def verify(lines, pre, pending, post, tail):
+def verify(lines, pre, lostack, pending, tail):
     """Returns (problems, numbers)."""
     statuses = defaultdict(list)  # eventId -> statuses in order
     accepted = {}  # name -> eventId
@@ -29,7 +31,7 @@ def verify(lines, pre, pending, post, tail):
             problems.append(f"{event_id}: server answered conflict to a resend {seq}")
         elif seq[0] != "accepted" or any(s != "duplicate" for s in seq[1:]):
             problems.append(f"{event_id}: statuses {seq}, expected accepted once, then duplicate only")
-    for prefix, n in (("pl_pre", pre), ("pl_pending", pending), ("pl_post", post)):
+    for prefix, n in (("pl_pre", pre), ("pl_lostack", lostack), ("pl_pending", pending)):
         missing = [f"{prefix}_{i}" for i in range(n) if f"{prefix}_{i}" not in accepted]
         if missing:
             problems.append(f"{len(missing)} {prefix} events never reached the server, first {missing[0]}")
@@ -41,9 +43,9 @@ def verify(lines, pre, pending, post, tail):
 
 
 def main(argv):
-    path, pre, pending, post, tail = argv[0], *map(int, argv[1:5])
+    path, pre, lostack, pending, tail = argv[0], *map(int, argv[1:5])
     with open(path, encoding="utf-8") as f:
-        problems, numbers = verify(f.readlines(), pre, pending, post, tail)
+        problems, numbers = verify(f.readlines(), pre, lostack, pending, tail)
     for p in problems:
         print("FAIL: " + p, file=sys.stderr)
     for k, v in numbers.items():

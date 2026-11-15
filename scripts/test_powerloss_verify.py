@@ -11,12 +11,12 @@ def line(eid, status, name):
     return f"{eid}\t{status}\t{name}\n"
 
 
-BASE = [line("a", "accepted", "pl_pre_0"), line("b", "accepted", "pl_pending_0"), line("c", "accepted", "pl_post_0")]
+BASE = [line("a", "accepted", "pl_pre_0"), line("b", "accepted", "pl_pending_0"), line("c", "accepted", "pl_lostack_0")]
 
 
 class PowerLossVerify(unittest.TestCase):
     def test_clean_run_with_a_lost_tail_and_a_resend(self):
-        lines = BASE + [line("c", "duplicate", "pl_post_0")]  # tail pl_tail_0 never arrived
+        lines = BASE + [line("c", "duplicate", "pl_lostack_0")]  # tail pl_tail_0 never arrived
         problems, numbers = pv.verify(lines, 1, 1, 1, 1)
         self.assertEqual([], problems)
         self.assertEqual({"resends": 1, "lostAfterCheckpoint": 1}, numbers)

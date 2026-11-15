@@ -1,0 +1,78 @@
+# TEMP proof workflow of ticket 06 (ADR-0049 gates A4, A5, A6). Removed before merge: the job moves into nightly.yml
+# after ticket 05 has merged it. Same emulator setup as the `device-test` job of repo-rules.yml.
+name: gate06-proof
+
+on:
+  push:
+    branches: ['claude/gate-06-android-device-7b5e28']
+
+permissions:
+  contents: read
+
+jobs:
+  device-durability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        api: ['24', '37.0']
+    env:
+      DURABILITY_RESULT_JSON: ${{ github.workspace }}/durability-cases.json
+      DURABILITY_NUMBERS: ${{ github.workspace }}/durability-numbers.txt
+      # The options of the emulator restart in case `powerloss`: those of the action below, without the snapshot options.
+      EMULATOR_OPTS: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - run: scripts/setup-toolchain.sh
+      - run: echo "JAVA_HOME=$PWD/.tools/$(ls .tools | grep '^jdk-')" >> "$GITHUB_ENV"
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: AVD cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-${{ matrix.api }}-google_apis-x86_64-v1
+      - name: Create AVD and snapshot (cache miss)
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          disable-animations: false
+          script: echo "Generated AVD snapshot for caching."
+      - name: device-durability.sh
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          disable-animations: true
+          script: scripts/device-durability.sh emulator-5554
+      - name: Results
+        if: always()
+        run: |
+          cat durability-cases.json || true
+          cat durability-numbers.txt || true
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: gate06-proof-api${{ matrix.api }}
+          path: |
+            durability-cases.json
+            durability-numbers.txt
+          if-no-files-found: ignore
