@@ -1,8 +1,8 @@
 # 09. Semver checks of the public API dumps
 
-Status: claimed
+Status: resolved
 Type: task
-Execution: In progress
+Execution: Done (PR #290, 2026-11-16 UTC)
 
 ## Scope and completion criteria
 
