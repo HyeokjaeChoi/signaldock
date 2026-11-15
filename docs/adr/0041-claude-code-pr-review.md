@@ -48,7 +48,8 @@ The owner asked for the review flow of the `pleos-family-stop` repository (`.git
 5. A last step fails the job when no summary exists after both steps. A green job without a review would hide the failure.
 6. Both steps use one `env` block for the prompt, `opus`, the turn limit, and the base tool list. Their prompt suffixes differ in how a finding on a line is posted; step 2 also reads the earlier line comments of `github-actions[bot]` to avoid repeats. Step 1 sets `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` so `gh` and the shell do not get the API key; a tool rule such as `Bash(gh pr comment:*)` still allows any arguments, so the review stays limited to same-repository PRs (fork PRs are skipped). Step 1 has its own 25-minute timeout; a job timeout would skip the last two steps and leave the label (then remove it by hand).
 7. The owner sets both secrets with `gh secret set`; no agent handles them. Without `ANTHROPIC_API_KEY`, step 1 prints a warning and step 2 reviews.
-8. Job permissions: `contents: read`, `pull-requests: write`, `issues: write` (label removal). `id-token: write` is gone: with `github_token` the action does not exchange an OIDC token (action docs, `src/github/token.ts`).
+8. Before step 1 the job restores `.claude/`, `CLAUDE.md`, `CLAUDE.local.md`, and `.mcp.json` from the PR base commit, so a PR cannot run its own Claude Code hooks or settings with the secrets. `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` is set for both steps.
+9. Job permissions: `contents: read`, `pull-requests: write`, `issues: write` (label removal). `id-token: write` is gone: with `github_token` the action does not exchange an OIDC token (action docs, `src/github/token.ts`).
 
 Consequences:
 

@@ -42,6 +42,7 @@ jobs:
       # Shared by both steps.
       MODEL: opus
       MAX_TURNS: "80"
+      CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: "1"
       TOOLS: "Read,Glob,Grep,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
       # Exact pin. Renovate raises it (.github/renovate.json5).
       CLAUDE_CODE_VERSION: "2.1.325"
@@ -77,6 +78,15 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
+      - name: Restore Claude Code config from the base
+        # The PR head is checked out: its .claude/ (hooks, settings) and .mcp.json must not run with the secrets.
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch --depth=1 origin "$BASE_SHA"
+          rm -rf .claude CLAUDE.md CLAUDE.local.md .mcp.json
+          git ls-tree -r --name-only FETCH_HEAD -- .claude CLAUDE.md CLAUDE.local.md .mcp.json | xargs -r git checkout FETCH_HEAD --
+
       - name: Record start time
         # Summaries of an earlier run for the same SHA must not count for this run.
         run: echo "RUN_START=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
@@ -104,7 +114,7 @@ jobs:
             --max-turns "$MAX_TURNS" \
             --allowedTools "${TOOLS},Bash(gh api repos/${GITHUB_REPOSITORY}/pulls/${PR}/comments:*)" \
             --output-format json > result.json || true
-          jq '{is_error, subtype, num_turns, total_cost_usd, result: (.result // "" | .[0:300])}' result.json || cat result.json
+          jq '{is_error, subtype, num_turns, total_cost_usd, result: (.result // "" | .[0:600])}' result.json || cat result.json
           jq -e '.is_error == false' result.json >/dev/null
 
       - name: Check summary posted
