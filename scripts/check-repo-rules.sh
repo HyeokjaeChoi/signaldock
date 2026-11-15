@@ -256,6 +256,35 @@ for pair in .github/workflows/demo-deploy.yml:demo-v .github/workflows/release-i
   fi
 done
 
+# nightly.yml (ADR-0049 decision 1, gate Q2): it exists, runs only on schedule and workflow_dispatch (a proof trigger on a
+# branch must not stay), and every job names scripts/nightly-summary.py and the artifact name nightly-summary- (the
+# summary step and its upload). `if: always()` on those steps is a convention that this check does not read.
+# Fail closed: a job key that is not a plain `name:` line, or no job at all, is an error.
+nf=.github/workflows/nightly.yml
+if git cat-file -e ":$nf" 2>/dev/null; then
+  if wf "$nf" | grep -E "${ONK}[[:space:]]*\$" >/dev/null; then
+    badtrig="$(wf "$nf" | awk -v k="$ONK" '$0 ~ k {p=1; next} /^[^ ]/ {p=0}
+      p { match($0, /^ */); if (!w) w = RLENGTH; if (RLENGTH == w) { t = substr($0, w + 1); sub(/:.*/, "", t); print t } }' \
+      | grep -vxE 'schedule|workflow_dispatch' || true)"
+    if [ -n "$badtrig" ]; then
+      echo "error: $nf triggers on: $(echo "$badtrig" | tr '\n' ' ')(only schedule and workflow_dispatch are allowed)" >&2; fail=1
+    fi
+  else
+    echo "error: $nf must have a block on: with only schedule and workflow_dispatch" >&2; fail=1
+  fi
+  nosummary="$(wf "$nf" | awk '/^jobs:[ ]*$/ {j=1; next} /^[^ ]/ {j=0}
+    j && /^  [^ ]/ { if ($0 !~ /^  [A-Za-z0-9_-]+:[ ]*$/) { print "(job key not a plain name: " $0 ")"; cur = ""; next }
+      cur = $1; sub(/:$/, "", cur); sc[cur] = 0; up[cur] = 0; order[++n] = cur; next }
+    j && cur != "" && /nightly-summary\.py/ { sc[cur] = 1 }
+    j && cur != "" && /nightly-summary-/ { up[cur] = 1 }
+    END { if (!n) print "(no job found)"; for (i = 1; i <= n; i++) if (!sc[order[i]] || !up[order[i]]) print order[i] }')"
+  if [ -n "$nosummary" ]; then
+    echo "error: $nf: job(s) without a scripts/nightly-summary.py step and a nightly-summary-<job> artifact: $(echo "$nosummary" | tr '\n' ' ')" >&2; fail=1
+  fi
+else
+  echo "error: $nf is missing; ADR-0049 decision 1 needs the nightly tier" >&2; fail=1
+fi
+
 # The iOS release ZIP removes the SignalDockTests line from Package.swift (ADR-0047 Ticket 13). If the manifest changes
 # that line, the release would fail only at tag time; this finds it in the PR.
 scripts/build-ios-release-zip.sh --check-manifest > /dev/null || fail=1

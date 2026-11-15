@@ -269,7 +269,7 @@ ADRs:
 - ADR-0002
 - ADR-0021 (`docs/adr/0021-tracking-plan-codegen.md`), for step 7 of `scripts/verify-contract.sh` (issue 37)
 - ADR-0009 (`docs/adr/0009-maven-zip-and-consumer-app.md`), for `scripts/verify-consumer.sh` and `scripts/release.sh` (issue 32; release notes in `docs/releases/`)
-- ADR-0010 (`docs/adr/0010-delivery-failure-e2e-harness.md`), for `scripts/e2e-delivery.sh` and `scripts/e2e/` (issue 21)
+- ADR-0010 (`docs/adr/0010-delivery-failure-e2e-harness.md`), for `scripts/e2e-delivery.sh` and `scripts/e2e/` (issue 21); its "Amendment (2026-11-15, nightly run)" for the `e2e-delivery` job of `.github/workflows/nightly.yml`
 - ADR-0019 (`docs/adr/0019-sdk-public-api-check.md`), for the `apiCheck` step in `scripts/verify-contract.sh`
 - ADR-0033 (`docs/adr/0033-sdk-dependency-baseline.md`), for the `dependencyGuard` step in `scripts/verify-contract.sh` and `sdk/sdk-android/dependencies/` (issue 56)
 - ADR-0020 (`docs/adr/0020-sdk-host-app-cost.md`), for `scripts/host-cost-measure.sh` (issue 36)
@@ -281,8 +281,8 @@ ADRs:
 - ADR-0032 (`docs/adr/0032-codeql-advanced-setup.md`), for `.github/workflows/codeql.yml` (issue 54)
 - ADR-0038 (`docs/adr/0038-gradle-dependency-verification.md`), for `*/gradle/verification-metadata.xml` and `scripts/update-gradle-verification.sh` (issue 68)
 - ADR-0039 (`docs/adr/0039-release-provenance-attestation.md`), for the attestation step and job permissions of `publish` in `.github/workflows/release.yml`, and the attestation section of `docs/releases/README.md` (issue 69)
-- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), for the PR, nightly, and release gate tiers, static-analysis baselines, the coverage ratchet, and `.github/workflows/nightly.yml` (plan: `.scratch/quality-gates/spec.md`)
 - ADR-0041 (`docs/adr/0041-claude-code-pr-review.md`), for `.github/workflows/claude-review.yml` and its `CLAUDE_CODE_VERSION` entry in `.github/renovate.json5` (issues 83 and 90)
+- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), for the PR, nightly, and release gate tiers, static-analysis baselines, the coverage ratchet, and `.github/workflows/nightly.yml` (plan: `.scratch/quality-gates/spec.md`); `docs/engineering/nightly-summary.md` and `scripts/nightly-summary.py` for the summary file of each nightly job (gate Q2)
 - ADR-0042 (`docs/adr/0042-measurement-on-a-physical-device.md`), for the `SIGNALDOCK_PHYSICAL_DEVICE` opt-in of `scripts/device-measure.sh` and `scripts/host-cost-measure.sh`
 - ADR-0043 (`docs/adr/0043-cloud-demo-hosting-and-deploy.md`), for `scripts/demo-seed.py` (cloud-demo ticket 02) and the checks in `scripts/check-repo-rules.sh` (ticket 06)
 

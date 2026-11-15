@@ -7,6 +7,8 @@
 Steps: restore the run database from the seed template, ANALYZE, start the server with the pool size, wait for the
 pool, warm-up and measurement under one k6 process, drain, DB checks, ID reconciliation, manifest, raw results,
 verdict. Never uses k6 cloud. A run that misses the target injection rate is `invalid`, never `pass`.
+k6 exit 99 (a threshold in perf/load.js was crossed, ADR-0049) is a `fail` that names the thresholds, except a crossed dropped_iterations,
+which keeps the run `invalid`; any other k6 exit is `invalid`.
 Files: manifest.json, summary.json, requests.csv, samples.csv, gc.log, k6-summary.json, k6.log, statements.json, statements.csv (gitignored:
 k6-raw.json.gz, server.log).
 """
@@ -541,8 +543,9 @@ def execute(a):
     skipped = {ep: c_get("ticks_skipped", ep, "measure") for ep in ("list", "by-name", "by-time")}
     reasons, invalid = [], []
     scheduled = a.measure * RATE
-    if k6_exit != 0:
-        invalid.append(f"k6 exit code {k6_exit}; phases may be incomplete (see k6.log)")
+    k6_invalid, k6_fail = c.k6_exit_reasons(k6_exit, k6_summary)
+    invalid += k6_invalid
+    reasons += k6_fail
     if c_get("bodies_exhausted"):
         invalid.append("request fixtures exhausted")
     if dropped:

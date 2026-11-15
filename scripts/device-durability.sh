@@ -1,6 +1,6 @@
 #!/bin/bash
 # Device verification of SDK durability (issue 20, ADR-0011). Runs locally, and in the nightly CI tier on API 24 and 37
-# emulators once the job `device-durability` is in .github/workflows/nightly.yml (ADR-0049 gates A5, A6, A4).
+# emulators as the job `device-durability` of .github/workflows/nightly.yml (ADR-0049 gates A5, A6, A4).
 #
 # Usage: scripts/device-durability.sh <adb-serial> [case ...]
 # Cases: offline kill restart update clear reinstall restore airplane fulldisk workmanager optout powerloss maincost

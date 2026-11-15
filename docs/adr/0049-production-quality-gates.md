@@ -89,9 +89,72 @@ Behavior change: only when `.tools/` holds more than one `jdk-*` directory. The 
 
 Evidence: CI run 43678422518 (PR 282), job `check` passed with both steps.
 
+## Amendment (2026-11-15, ticket 04, k6 thresholds)
+
+Gate B2, as decision 7 states it. `perf/load.js` and `perf/overload.js` now declare k6 `thresholds`, so k6 exits with status 99 when a run crosses one. Before, only Python decided pass or fail after the run ([ADR-0013](0013-server-load-measurement-harness.md)). `perf/demo-vm/collect.js` has none.
+
+### Thresholds
+
+| Script | Threshold | Crossed when |
+|---|---|---|
+| `load.js` | `http_req_failed{phase:measure}` | 1% or more of the requests in the measure phase fail. Requests now carry the `phase` tag, so warm-up and the tail iteration do not count |
+| `load.js`, `overload.js` | `dropped_iterations` | any iteration is dropped (the VU cap was reached) |
+| `overload.js` | `unexpected_status` | the rate of answers with a status other than 200 and 503 is above 0. Status 0 (timeout, network error) counts. This is the ADR-0013 rule "only 200 and 503 answers" |
+
+There is no `http_req_failed` threshold in `overload.js`: the run must shed with 503, and k6 counts 503 as failed. There is no p95 threshold: the p95 rules of ADR-0013 are relative to a baseline of the same run (`perf/overload.py`), so they stay in Python, and so does every other pass rule of ADR-0013 and ADR-0048.
+
+### Decisions
+
+1. `perf/common.py` `k6_exit_reasons` turns the k6 exit code into run reasons for `run_one.py` and `overload.py`. Exit 0: none. Exit 99: the run is complete, so it is summarized. A crossed server threshold is a `fail` reason that names it. A crossed `dropped_iterations` is an `invalid` reason: a generator limit, not server behavior, as the runners already rule. Both can apply, and `invalid` ranks first. The existing `dropped` check of each runner stays as a second guard, so one crossed `dropped_iterations` can give two `invalid` reasons. Exit 99 with no crossed threshold in the summary is `invalid` too (the harness cannot read k6, which says nothing about the server). Any other exit code stays `invalid` ("phases may be incomplete"). Before, any non-zero exit made the run `invalid`.
+2. No `abortOnFail`: the summaries need the whole run.
+3. The thresholds are absolute, so they can be weaker than the Python rules. `load.js` allows up to 1% failed requests in the measure phase; `run_one.py` still fails the run on any non-ok answer, and `overload.py` fails it on any status other than 200 and 503. So k6 exit 0 does not mean verdict `pass`, and a `fail` can carry both a k6 reason and a Python reason.
+4. A threshold on a metric without samples passes, and a Trend cannot use `count`. So every threshold has a proof that it can fail (below). `k6 --summary-export` writes `true` for a crossed threshold.
+
+### Proof
+
+Local, no CI run. Tools: k6 v2.3.0, Python 3.9.6, macOS.
+
+1. Mock server, [`perf/threshold-proof/results.md`](../../perf/threshold-proof/results.md), written by `perf/threshold-proof/proof.py` (9 of 9 cases matched; each case compares the crossed set and the run verdict with the expected ones, exactly). Each threshold fails on its own fault, the clean cases cross nothing, and the Python parsers (`run_one.read_k6`, `overload.read_raw`) read the output also after exit 99:
+
+| Script | Fault | k6 exit | Crossed | Run verdict |
+|---|---|---|---|---|
+| `load.js` | none | 0 | none | pass |
+| `load.js` | every collect answers 500 in the first 4.5 s (warm-up) | 0 | none | pass |
+| `load.js` | every 20th collect answers 500 | 99 | `http_req_failed{phase:measure}` | fail |
+| `load.js` | collect held 1.5 s at 40 req/s | 99 | `dropped_iterations` | invalid |
+| `load.js` | both faults | 99 | both | invalid, with a fail reason |
+| `overload.js` | 503 on every 2nd collect and by-name in the overload phase | 0 | none | pass |
+| `overload.js` | every 50th collect answers 500 | 99 | `unexpected_status` | fail |
+| `overload.js` | every 100th collect answers after 6 s (timeout, status 0) | 99 | `unexpected_status` | fail |
+| `overload.js` | collect held 2.5 s at 200 req/s | 99 | `dropped_iterations` | invalid |
+
+The observed values (they vary from run to run) are in `results.md`.
+
+2. Real run scripts, [`perf/threshold-proof/runner-runs.md`](../../perf/threshold-proof/runner-runs.md): `run_one.py` and `overload.py` on the Docker stack, clean, with one threshold made impossible to meet, and with the generator starved of VUs. With a crossed server threshold both write every result file with verdict `fail`; with `dropped_iterations` crossed both give `invalid` and no `fail` reason from it; the clean `run_one.py` run is `pass`.
+
+3. Replay on committed results, no new run (the last table of `results.md`, also written by `proof.py`): `pilot-1` and `pilot-2` have 0 of 2,400 measure-phase requests not ok and no dropped iteration; `overload-1` has only the statuses 200 and 503 and no dropped iteration. None crosses a threshold.
+
+### Not covered
+
+- The clean `overload.py` run on the Docker stack had k6 exit 0 (`unexpected_status` stayed at 0 over 10,881 answers, with real 503 answers) but the verdict `fail` from the Python rules of ADR-0013 (recovery p95 509 ms against a limit of 277 ms, and non-200 answers in the last 30 s of recovery). The Mac was shared with other running sessions. This PR does not claim a clean pass of the whole overload run; it claims that the thresholds do not fail it.
+- No load run in CI. B3 (nightly ingest load SLO) compares p95 with a committed baseline.
+
+## Amendment (2026-11-15, ticket 05, nightly workflow and E2E gate)
+
+`.github/workflows/nightly.yml` exists, with `schedule` (`0 18 * * *`) and `workflow_dispatch`. Job `e2e-delivery` (gate Q1) runs `scripts/e2e-delivery.sh 1 2 3 4 5` against the Compose stack and an API 34 `google_apis` x86_64 emulator on `ubuntu-latest`, with the KVM and AVD cache setup of `device-test` (same cache key). Each nightly job writes a JSON summary (gate Q2; `scripts/nightly-summary.py`, format in `docs/engineering/nightly-summary.md`) and uploads it as the artifact `nightly-summary-<job>`. `scripts/check-repo-rules.sh` fails when `nightly.yml` has a trigger other than `schedule` and `workflow_dispatch`, or a job without the summary step. Tickets 06, 07, 08, and 11 add their jobs below the marker comment in the file.
+
+Proof, by a temporary `push` trigger on the branch of the PR (removed before merge; the check above rejects it):
+
+| Run | Commit | Result | Job time | Compose step | `e2e-delivery.sh` step |
+|---|---|---|---|---|---|
+| [43683069360](https://github.com/HyeokjaeChoi/signaldock/actions/runs/43683069360) | `6a5fbb9` (before the rebase on main) | success, cases 1-5 pass | 12 min 10 s | 1 min 46 s | 9 min 49 s |
+| [43691646307](https://github.com/HyeokjaeChoi/signaldock/actions/runs/43691646307) | `aa553f8` (after the rebase and the JDK glob fix) | success, cases 1-5 pass | 11 min 25 s | 1 min 44 s | 8 min 56 s |
+
+The AVD cache hit in both runs. The spec estimate for Q1 was about 20 minutes; the measured job time is about 12 minutes, so the 60-minute `timeout-minutes` has a wide margin. The times are measurements of two runs, not a threshold. A failing case was not forced in CI: the job fails through the non-zero exit of `scripts/e2e-delivery.sh` (`e2e_cases.py` exits 1 when a case fails), and `scripts/test_nightly_summary.py` checks that a failed case or job gives `result: fail`.
+
 ## Amendment (2026-11-15, ticket 06: Android device gates)
 
-Gates A3, A4, A5, and A6 are built. Evidence: the `device-test` run of this PR for A3 (run ID in the PR), and three runs of a temporary workflow on this branch (`gate06-proof.yml`, removed in the same PR) that ran the nightly steps on the nightly runner class: `ubuntu-latest`, KVM, x86_64 `google_apis` emulators at API 24 and API 37.0 (the newest stable x86_64 image; `37.2` exists only as `ps16k`). The runs are 43692865454 (first full run and the negative control), 43694083496 (second try of two cases), and 43695424448 (final full run). The job moves into `nightly.yml` after ticket 05 merges; its first nightly run ID goes into a later amendment.
+Gates A3, A4, A5, and A6 are built. Evidence: the `device-test` run of this PR for A3 (run ID in the PR), and three runs of a temporary workflow on this branch (`gate06-proof.yml`, removed in the same PR) that ran the nightly steps on the nightly runner class: `ubuntu-latest`, KVM, x86_64 `google_apis` emulators at API 24 and API 37.0 (the newest stable x86_64 image; `37.2` exists only as `ps16k`). The runs are 43692865454 (first full run and the negative control), 43694083496 (second try of two cases), and 43695424448 (final full run). The job is `device-durability` in `nightly.yml` (matrix API 24 and 37.0). The `device-test` run of the PR is 43743427552 (A3 passed). Dispatch runs of the nightly job are listed below.
 
 - **A3.** `MainThreadStrictMode` (a JUnit rule: `detectAll`, `penaltyLog`, `penaltyDeath` on the main thread) wraps `StrictModeDeviceTest`, which calls `initialize`, `track` (25 events, so the foreground trigger and the real WorkManager scheduler run), `diagnostics`, the foreground drain, `setOptOut`, `isOptedOut`, and `clearQueue` on the main thread. The SDK has no public `flush()`; the foreground drain stands in for it. No violation was found, so no SDK change was needed. Proof that the rule can fail: a deliberate `File.exists()` on the main thread killed the process with `StrictModeDiskReadViolation` and failed the run (local API 24 emulator). The `device-test` job is unchanged.
 - **A6.** Phases `powerloss_prepare`, `powerloss_write`, `powerloss_check` (`PowerLossPhases.kt`) and case `powerloss` of `scripts/device-durability.sh`. Two choices differ from decision 6: delivery is stopped by construction (the SDK is built with no scheduler and no foreground trigger, WorkManager work is also cancelled; airplane mode is not used, because the check needs the network again after the boot), and a set of events whose ACK the host server drops (`/__mode/drop` of `scripts/ack-server.py`) is queued before the checkpoint, so that the resend after the boot is certain and the answer `duplicate` (not `conflict`) is observed, not only expected. The host server mirrors the architecture table ("Lost ACKs and event deduplication"): same content is `duplicate`, other content is `rejected` with `CONFLICT`. It does not replace the server's own conflict tests (E2E case 4). `scripts/powerloss-verify.py` judges the server log; `scripts/test_powerloss_verify.py` tests it. The queue is checked before the SDK opens it, with `PRAGMA integrity_check` on a connection that has no `DatabaseErrorHandler` (the default one deletes a corrupt database). Results of run 43695424448 (each: integrity `ok`, checkpoint `busy=0 log=36 checkpointed=36`, 30 lost-ACK and 30 pending events still queued, server answers `duplicate`, never `conflict`): API 24: 0 of 20 events written after the checkpoint lost, 60 `duplicate` answers (counted answers, 30 events: the batch reached the server twice before the boot, probably an OkHttp retry after the dropped answer, not checked); API 37.0: 20 of 20 lost, 60 `duplicate` answers. Negative control (`POWERLOSS_SKIP_CHECKPOINT=1`, no checkpoint, API 37.0, run 43692865454): 11 of 30 pending events lost, the case failed. So the gate can fail and the emulator kill does lose unsynced WAL data when the platform uses `synchronous=NORMAL`.

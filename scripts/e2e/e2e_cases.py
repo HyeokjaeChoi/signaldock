@@ -6,7 +6,8 @@ consumer app and the demo app installed (both built for the fault proxy endpoint
 entry script's environment (it sources .env and exports E2E_*_PORT, SIGNALDOCK_*). Do not run
 this file directly. Cases: 1 normal E2E (consumer app and demo app), 2 ACK loss, 3 partial
 rejection, 4 content conflict, 5 client report (SDK drop count to the Dashboard query). Unknown case numbers exit nonzero before anything runs. Prints evidence for
-each case and a PASS/FAIL summary; the exit code is 1 when any case failed.
+each case and a PASS/FAIL summary; the exit code is 1 when any case failed. When E2E_RESULT_JSON names a file,
+it also writes [{"name", "result": "pass"|"fail", "seconds"}] there (input of scripts/nightly-summary.py, ADR-0049 gate Q2).
 """
 import json
 import os
@@ -438,16 +439,20 @@ def main():
         if only and title.split()[0] not in only:
             continue
         say(f"\n=== case {title} ===")
+        t0 = time.monotonic()
         try:
             fn()
-            results.append((title, "PASS", ""))
+            results.append((title, "PASS", "", time.monotonic() - t0))
         except Exception as e:  # keep running the other cases
             say(f"  FAIL: {e!r}")
-            results.append((title, "FAIL", repr(e)))
+            results.append((title, "FAIL", repr(e), time.monotonic() - t0))
     say("\n=== summary ===")
-    for title, status, why in results:
-        say(f"{status}  case {title} {why}")
-    sys.exit(0 if all(s == "PASS" for _, s, _ in results) else 1)
+    for title, status, why, secs in results:
+        say(f"{status}  case {title} {why} ({secs:.0f} s)")
+    if ENV.get("E2E_RESULT_JSON"):
+        with open(ENV["E2E_RESULT_JSON"], "w", encoding="utf-8") as f:
+            json.dump([{"name": t, "result": s.lower(), "seconds": round(secs, 1)} for t, s, _, secs in results], f)
+    sys.exit(0 if all(s == "PASS" for _, s, _, _ in results) else 1)
 
 
 if __name__ == "__main__":

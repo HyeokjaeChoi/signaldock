@@ -176,3 +176,31 @@ def percentile(sorted_vals, p):
     if not sorted_vals:
         return None
     return sorted_vals[max(1, math.ceil(p / 100 * len(sorted_vals))) - 1]
+
+
+K6_THRESHOLD_EXIT = 99  # k6 exit code: the run completed and a threshold in the k6 script was crossed
+GENERATOR_THRESHOLDS = ("dropped_iterations",)  # crossed: the load generator hit its VU cap, which says nothing about the server (ADR-0013)
+
+
+def crossed_thresholds(k6_summary):
+    """`metric: expression` of each threshold that `k6 --summary-export` marks as crossed (its value is true when crossed)."""
+    return [f"{name}: {expr}" for name, m in k6_summary["metrics"].items() for expr, crossed in m.get("thresholds", {}).items() if crossed is True]
+
+
+def k6_exit_reasons(k6_exit, k6_summary):
+    """(invalid, fail) reasons from the k6 exit code.
+    0: none. 99: the run is complete. A crossed generator threshold (dropped_iterations) keeps the run `invalid`; any other crossed
+    threshold is a `fail` that names it. Both can apply. Any other code (script error, interrupt, no start): k6 did not finish the plan,
+    so phases may be incomplete (`invalid`)."""
+    if k6_exit == 0:
+        return [], []
+    if k6_exit != K6_THRESHOLD_EXIT:
+        return [f"k6 exit code {k6_exit}; phases may be incomplete (see k6.log)"], []
+    crossed = crossed_thresholds(k6_summary)
+    gen = [t for t in crossed if t.startswith(GENERATOR_THRESHOLDS)]
+    server = [t for t in crossed if t not in gen]
+    invalid = [f"k6 exit {K6_THRESHOLD_EXIT}, generator threshold crossed: {gen} (VU cap reached; a generator limit, not server behavior)"] if gen else []
+    fail = [f"k6 exit {K6_THRESHOLD_EXIT}, thresholds crossed: {server}"] if server else []
+    if not crossed:  # the summary format changed or the file is wrong: a harness problem, not a server result
+        invalid = [f"k6 exit {K6_THRESHOLD_EXIT} but the k6 summary lists no crossed threshold"]
+    return invalid, fail

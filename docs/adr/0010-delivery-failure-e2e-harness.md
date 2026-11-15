@@ -18,3 +18,7 @@ The design sources fix the four cases (spec section 7 rows "Normal E2E", "ACK lo
 
 - Physical devices, other API levels, the demo app's diagnostics tab and other flows (only product → add to cart is driven), and TLS (the proxy is cleartext to `10.0.2.2`, allowed for that host by ADR-0009 item 5).
 - Concurrent senders and process restart (issue 20).
+
+## Amendment (2026-11-15, nightly run)
+
+Decision 3 says the script is not part of CI because there is no emulator in CI. [ADR-0023](0023-ci-device-tests-and-size-budget.md) added an emulator to CI, and [ADR-0049](0049-production-quality-gates.md) gate Q1 runs cases 1 to 5 every night: job `e2e-delivery` of `.github/workflows/nightly.yml` starts the Compose stack (`.env` from `.env.example`) and an API 34 `google_apis` x86_64 emulator, then runs `scripts/e2e-delivery.sh 1 2 3 4 5`. A failed case fails the job. There is no retry (ADR-0049 decision 5). The script gains the env settings `E2E_AVD` (only named in an error message) and `E2E_RESULT_JSON` (a file for the per-case results, which `scripts/nightly-summary.py` reads). Local use is unchanged; the rest of this ADR is unchanged.
