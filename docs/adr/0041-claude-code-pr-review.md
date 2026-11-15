@@ -36,3 +36,14 @@ The user installed the Claude GitHub App on 2026-10-24 UTC, asked that Claude Co
 ## Amendment (2026-10-25)
 
 The owner changed the review model to `opus` for review quality. Cost is one Opus run per push on the owner's subscription quota. Decision item 6 and the first Consequences bullet now read as Opus. The original text above is kept as written.
+
+## Amendment (2026-11-15): API-credit-first review with subscription fallback
+
+The owner changes the authentication and cost order: spend Console API credits first, then use the existing Claude subscription only when the API stage cannot leave a bot summary for the current PR head.
+
+- **Decision 3 amended.** Store `ANTHROPIC_API_KEY` and `CLAUDE_CODE_OAUTH_TOKEN` as repository Actions secrets. Run the first stage with `claude -p` and the API key scoped only to that step. If the API attempt fails or leaves no bot summary marked for the current head SHA, run `claude-code-action` with the subscription OAuth token. A bot summary marker prevents duplicate fallback and repeat reviews on the same head. The repository owner manages secret values directly; neither workflow logs nor review prompts expose them.
+- **Decision 4 amended.** Keep permissions at job scope with `contents: read`, `pull-requests: write`, `issues: write`, and `id-token: write`. The added issue permission is needed to post and check the single PR summary comment; pull-request write permits inline review comments. The workflow default remains `permissions: {}`.
+- **Decision 6 amended.** Continue to forbid pushes. The reviewer may read files and Git history, inspect PRs/issues, and post PR summaries and inline review comments through narrowly scoped commands. The API stage uses `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1`; its API key is present only for the CLI step.
+- **Decision 7 clarified.** Continue to skip `generated/**`, `**/gradle/wrapper/**`, and `package-lock.json`. Restore review guidance from the base branch so PR-controlled hooks and instructions cannot run; review proposed edits to those files through `gh pr diff` without treating them as trusted policy.
+
+**Consequences.** One Console API attempt uses available API credits per new PR head. If it cannot post the summary, one subscription-authenticated fallback may run; this may consume both API credits and subscription quota for that PR head. Fork, draft, Dependabot, and Renovate behavior remains unchanged.
