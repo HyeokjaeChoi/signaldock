@@ -85,8 +85,10 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           git fetch --depth=1 origin "$BASE_SHA"
-          rm -rf .claude CLAUDE.md CLAUDE.local.md AGENTS.md AGENTS.local.md .mcp.json
-          git ls-tree -r --name-only FETCH_HEAD -- .claude CLAUDE.md CLAUDE.local.md AGENTS.md AGENTS.local.md .mcp.json | xargs -r git checkout FETCH_HEAD --
+          # Every such file at any depth: a nested CLAUDE.md loads when Claude reads that directory.
+          PAT='(^|/)(CLAUDE(\.local)?\.md|AGENTS(\.local)?\.md|\.mcp\.json)$|(^|/)\.claude/'
+          git ls-files -z | { grep -z -E "$PAT" || true; } | xargs -0 -r rm -f
+          git ls-tree -r -z --name-only FETCH_HEAD | { grep -z -E "$PAT" || true; } | xargs -0 -r git checkout FETCH_HEAD --
 
       - name: Record start time
         # Summaries of an earlier run for the same SHA must not count for this run.
