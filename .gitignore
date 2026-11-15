@@ -37,3 +37,4 @@ coverage/
 # iOS consumer app: the unzipped release ZIP (scripts/verify-consumer-ios.sh)
 compatibility/consumer-ios/.sdk/
 xcuserdata/
+__pycache__/
