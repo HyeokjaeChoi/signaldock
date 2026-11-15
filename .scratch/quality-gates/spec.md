@@ -36,7 +36,7 @@ Staff Product Engineer scope: gates that stop a real regression in this product 
 | A3 StrictMode in instrumented tests | disk or network I/O on the main thread from `track()`, `flush()`, init | a `StrictMode` violation with `penaltyDeath` in a test rule around the public API | PR (`device-test`) | 0 (same job) |
 | A4 Main-thread cost (ANR proxy) | slow `track()` on the main thread | p99 of `track()` on the main thread > budget from `MeasurePhases` (owner sets the number from a first run) | Nightly | ~5 min |
 | A5 Durability on emulator: `device-durability.sh` all cases | event loss across kill, update, clear, reinstall, restore, airplane, full disk, WorkManager lock | any lost or unreported event | Nightly, API 24 and 37 matrix | ~25 min per API |
-| A6 Power loss: SIGKILL of the emulator process, cold boot without snapshot | loss of a stored event when the guest page cache is lost | any event that `track()` reported stored is missing after boot | Nightly | ~10 min |
+| A6 Power loss: SIGKILL of the emulator process, cold boot without snapshot | a corrupt queue, duplicates, or loss beyond what ADR-0029 accepts after the guest page cache is lost | the queue does not open or `PRAGMA integrity_check` is not `ok`; any duplicate `eventId` reaches the server; or a lost event is older than a surviving one (loss must be a tail after the last WAL sync, ADR-0029 items 4 and 5; `synchronous=NORMAL` stays). The lost tail count is recorded, not gated | Nightly | ~10 min |
 | A7 Semver check of the API dump | a removed or changed public symbol without a version change | the dump has a removed line vs the last `v*` tag and `SDK_VERSION` major (minor before 1.0) did not change | PR (`verify-contract.sh`) | seconds |
 
 Rejected: a battery target in CI. An emulator has no battery model; the proxy (wakeups per hour from WorkManager) is already fixed by design (ADR-0011). Record in the ADR.
@@ -56,7 +56,7 @@ Existing gates are already strict (swift format, TSan, ASan, UBSan, analyze, API
 | Gate | Stops | Fails when | Tier | Cost |
 |---|---|---|---|---|
 | B1 detekt + ktlint rules | as A2 | as A2 | PR (`server-test`) | ~1 min |
-| B2 k6 `thresholds` in all three scripts | a run that a human reads as pass while it failed | `http_req_failed` rate > 1%, `dropped_iterations` > 0, p95 > stop rule of ADR-0048; k6 exits 99 | all runs | 0 |
+| B2 k6 `thresholds` in `perf/load.js` and `perf/overload.js` (not `perf/demo-vm/collect.js`: ADR-0048 finds capacity with failing stages, and its `invalid` and relative-p95 rules need `docker stats` and another run, so its verdict stays in Python) | a run that a human reads as pass while it failed | `http_req_failed` rate > 1% (overload: any 5xx other than 503), `dropped_iterations` > 0, p95 bound of the script's stop rule, on measure-phase submetrics where the script tags phases. k6 exits 99; `run_one.py` and `overload.py` treat 99 as "threshold crossed" (summarize and record it), and only other non-zero exits as invalid | all runs of those two scripts | 0 |
 | B3 Ingest load SLO, Compose on the runner | ingest throughput or latency regression | at a fixed 20 req/s x 20 events for 120 s: any non-200, or p95 > 2x the committed baseline of the same runner class | Nightly | ~8 min |
 | B4 Container image scan on PR | a new Critical or High CVE before the tag | Trivy finds Critical or High with a fix (same rule as `demo-deploy.yml`) | PR, only when `server/` or `dashboard/` Dockerfiles or deps change | ~3 min |
 
@@ -79,7 +79,7 @@ Rejected: a load SLO on PR (runner noise is larger than the effect; nightly with
 | D1 shellcheck on every tracked `*.sh` and `.githooks/*` | quoting and `set -e` bugs | any finding at `--severity=warning`; version pinned in `setup-toolchain.sh` with SHA-256 | PR (`check`) | seconds |
 | D2 actionlint on `.github/workflows` | broken expressions, wrong `needs` | any finding; pinned binary with SHA-256 | PR (`check`) | seconds |
 | D3 Fix `claude-review.yml:47` to name only tools that run | a reviewer that skips a check nobody runs | n/a (text fix in the PR that adds detekt and shellcheck) | PR | 0 |
-| D4 Release needs a green nightly on the tagged commit | a release that skipped the device and load tiers | the last `nightly.yml` run on `GITHUB_SHA` is not `success` | Release | seconds |
+| D4 Release needs a green nightly on the tagged commit | a release that skipped the device and load tiers | the last `nightly.yml` run on `GITHUB_SHA` is not `success`, or there is none. The check runs in the `build` job of `release.yml` and `release-ios.yml`, which gets `actions: read`; `publish` stays without project code and its permissions do not change (ADR-0039, ADR-0047 Ticket 13). An API error fails the job with a message that names the permission | Release | seconds |
 
 ### QA and Reliability (Staff Engineer, QA)
 
@@ -87,7 +87,7 @@ Rejected: a load SLO on PR (runner noise is larger than the effect; nightly with
 |---|---|---|---|---|
 | Q1 `e2e-delivery.sh` cases 1-5 on an emulator + Compose | lost events on ACK loss, wrong partial rejection, content conflict, missing client report | any case fails | Nightly | ~20 min |
 | Q2 Committed result files for nightly runs | numbers that live only in PR text | a nightly job writes a JSON summary as an artifact; a monthly PR commits one snapshot under `perf/results/` or `docs/engineering/verification/` | Nightly + manual | 0 |
-| Q3 Coverage | see owner decision 2 | | | |
+| Q3 Coverage ratchet | coverage regressions in `sdk/sdk-android` and `sdk-ios` | line coverage more than 0.5 point below the committed value; a `scripts/check-repo-rules.sh` check fails when a PR lowers the committed value vs `origin/main` | PR | ~1 min |
 
 ## Owner decisions (2026-11-15, recorded in ADR-0049)
 
@@ -103,7 +103,7 @@ Wave 1 (parallel):
 - 01 Kotlin static analysis: A1, A2, B1, fix D3 line. Files: `sdk/**/build.gradle.kts`, `server/**/build.gradle.kts`, `gradle/libs.versions.toml` files, baselines, verification metadata, `claude-review.yml`. Owner of shared files in wave 1.
 - 02 Web lint and budget: W1-W4. Files: `dashboard/`, `perf/report/`, `web-shared/`, `scripts/verify-contract.sh` step 4.
 - 03 Shell and workflow lint: D1, D2. Files: `scripts/setup-toolchain.sh`, shell fixes across `scripts/` (does not touch Gradle or web files).
-- 04 k6 thresholds: B2. Files: `perf/*.js`, `perf/demo-vm/collect.js`, matching READMEs.
+- 04 k6 thresholds: B2. Files: `perf/load.js`, `perf/overload.js`, `perf/run_one.py`, `perf/overload.py`, matching READMEs.
 
 Wave 2 (after wave 1 merges; `nightly.yml` is created by 05 and extended by later tickets in order):
 - 05 Nightly workflow + Q1 E2E + Q2 summaries. Owner of `nightly.yml` and shared files in wave 2.
