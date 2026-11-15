@@ -36,3 +36,22 @@ The user installed the Claude GitHub App on 2026-10-24 UTC, asked that Claude Co
 ## Amendment (2026-10-25)
 
 The owner changed the review model to `opus` for review quality. Cost is one Opus run per push on the owner's subscription quota. Decision item 6 and the first Consequences bullet now read as Opus. The original text above is kept as written.
+
+## Amendment (2026-11-15)
+
+The owner asked for the review flow of the `pleos-family-stop` repository (`.github/workflows/ai-review.yml`): review on API credits, with the subscription as fallback when the quota is used up. Decision items 1, 2, 3, and 4, and the Consequences bullets about cost and push, now read as follows. The original text above is kept as written.
+
+1. Trigger: `pull_request` `labeled`, only for the label `claude-review-request`. A push starts no review. The last step removes the label; adding it again reviews the next push. The concurrency group is per PR and label. Drafts and Dependabot and Renovate PRs are no longer skipped, because a label is an explicit request. Fork PRs are still skipped (no secrets).
+2. Step 1: `claude -p` (the Claude Code CLI, installed with npm at the exact version `CLAUDE_CODE_VERSION`, which Renovate raises) with the secret `ANTHROPIC_API_KEY`, `--model opus --max-turns 80`. The CLI runs directly because the family-stop workflow records that `claude-code-action` runs count as "Claude Code usage", which cannot use the subscription promo credit (not verified here).
+3. Step 2: `claude-code-action` (SHA pin unchanged) with `CLAUDE_CODE_OAUTH_TOKEN` and `github_token`. It runs only if no summary comment for the head SHA exists after step 1. It does not match error text: a missing key, used-up credit, a rate limit, or a CLI failure that leaves no summary all lead to step 2, so the detection does not depend on error messages that the CLI does not document.
+4. The summary comment starts with `<!-- claude-review:<head sha> -->`. Only a comment of `github-actions[bot]` with this marker counts. So a step 1 that fails after it posted does not cause a second review.
+5. A last step fails the job when no summary exists after both steps. A green job without a review would hide the failure.
+6. Both steps use one `env` block for the prompt, `opus`, the turn limit, and the base tool list. Their prompt suffixes differ only in how a finding on a line is posted.
+7. The owner sets both secrets with `gh secret set`; no agent handles them. Without `ANTHROPIC_API_KEY`, step 1 prints a warning and step 2 reviews.
+8. Job permissions: `contents: read`, `pull-requests: write`, `issues: write` (label removal). `id-token: write` is gone: with `github_token` the action does not exchange an OIDC token (action docs, `src/github/token.ts`).
+
+Consequences:
+
+- Cost: one Opus run per label on API credits. The subscription quota is used only when step 1 leaves no summary.
+- AGENTS.md rules 5 and 6 now say "add the label". An open PR gets no review until someone adds the label.
+- The Consequences bullet about `claude-review.yml` changes holds only for step 2 (the action). Step 1 has no such check; whether step 2 keeps it with `github_token` is not verified.
