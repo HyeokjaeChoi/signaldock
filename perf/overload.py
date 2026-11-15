@@ -8,6 +8,8 @@ Same stack, seed, and server restart as perf/run_one.py, but two server limits a
 Phases on one k6 clock: baseline, overload, recovery. The server is NOT restarted between phases.
 Checks (set before the run): only 200 and 503 answers, every 503 has a positive integer Retry-After, every ACKed event is stored
 exactly once, no event of a 503 request is stored, and the last 30 s of recovery are all 200 with latency near the baseline.
+k6 exit 99 (a threshold in perf/overload.js was crossed, ADR-0049) is a `fail` that names the thresholds, except a crossed dropped_iterations,
+which keeps the run `invalid`; any other k6 exit is `invalid`.
 Writes perf/results/<run-id>/ with kind=overload in manifest.json and summary.json. Never uses k6 cloud.
 """
 import argparse
@@ -247,8 +249,9 @@ def execute(a, out):
     clean = [s for s in ser if s[1] == "collect" and s[0] * 1000 >= over_end and s[5] == 0 and s[4] == 0]
     first_clean = min((s[0] for s in clean), default=None)
     bad, invalid = [], []
-    if k6_exit != 0:
-        invalid.append(f"k6 exit code {k6_exit}; phases may be incomplete (see k6.log)")
+    k6_invalid, k6_fail = c.k6_exit_reasons(k6_exit, k6s)
+    invalid += k6_invalid
+    bad += k6_fail
     if not pool_ready:
         invalid.append("pool not ready before the baseline phase")
     if counters.get("bodies_exhausted"):
