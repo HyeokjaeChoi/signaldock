@@ -11,11 +11,13 @@ the later changes of their pins.
 ## Setup
 
 Run `scripts/setup-toolchain.sh` once per clone. It installs the pinned JDK,
-oasdiff, openapi-generator-cli, shellcheck, and actionlint into `.tools/`. It checks the hash of each
+oasdiff, openapi-generator-cli, shellcheck, actionlint, and osv-scanner into `.tools/`. It checks the hash of each
 download and skips tools that are already installed. It works on macOS and
 Linux, on arm64 and x64.
 
 `scripts/setup-toolchain.sh lint` installs only shellcheck 0.11.0 and actionlint 1.7.12 (the CI `check` job and `.githooks/pre-commit` need nothing else). `scripts/check-shell-lint.sh` runs them: shellcheck `--severity=warning` on every tracked `*.sh` and `.githooks/*` file, actionlint on `.github/workflows` (ADR-0049 D1, D2). It uses the pinned copies in `.tools/`, never one on PATH.
+
+`scripts/setup-toolchain.sh osv` installs only osv-scanner 2.7.1 (SHA-256 per platform). `scripts/osv-scan.sh` runs it (CI job `osv-scan`, ADR-0049 R2). The CI job `check` also runs `renovate-config-validator --strict` from `renovate@44.239.1` through `npx`; npm checks the package integrity, and this repo pins no hash for it (ADR-0049 amendment, ticket 11).
 
 If a tool that `scripts/setup-toolchain.sh` installs is missing, a script stops with a setup message. Scripts use the installed oasdiff and openapi-generator-cli. They use the bundled JDK unless `JAVA_HOME` is set. Node and npm come from PATH; 24.20.0 is the verified Node version.
 

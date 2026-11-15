@@ -222,7 +222,7 @@ jobs:
           persist-credentials: false
       - name: Compare the live ruleset with the file
         run: |
-          id="$(gh api "repos/$GITHUB_REPOSITORY/rulesets" --paginate --jq '.[] | select(.name == "main" and .target == "branch") | .id' | head -1)"
+          id="$(gh api "repos/$GITHUB_REPOSITORY/rulesets" --paginate --jq '.[] | select(.name == "main" and .target == "branch") | .id' | sed -n 1p)"
           if [ -z "$id" ]; then
             echo "::error::no branch ruleset named main is applied; run the command in docs/releases/README.md"
             exit 1

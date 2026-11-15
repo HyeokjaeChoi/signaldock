@@ -296,7 +296,7 @@ fi
 # A date in the past is allowed: OSV-Scanner then reports the finding again. The file is read line by line (python3 of
 # a developer machine may lack tomllib); a line that is not a comment, a table header, or `key = value` is an error.
 # Every tracked npm lockfile and Gradle verification-metadata.xml must be listed in scripts/osv-scan.sh.
-if ! python3 - <<'PY'
+if ! python3 -I - <<'PY'
 import datetime, re, subprocess, sys
 
 def show(path):
@@ -348,22 +348,22 @@ for bad in (GOOD.replace("2026-12-16", "2026-12-17"), GOOD.replace("reason = ", 
     assert check(bad, T), "osv-scanner.toml check: a bad sample passes: " + bad
 
 text = show("osv-scanner.toml")
-bad = False
+failed = False
 if text is None:
     print("error: osv-scanner.toml is missing; scripts/osv-scan.sh needs it (ADR-0049 decision 9)", file=sys.stderr)
-    bad = True
+    failed = True
 else:
     for e in check(text, datetime.datetime.now(datetime.timezone.utc).date()):
         print(f"error: osv-scanner.toml {e}", file=sys.stderr)
-        bad = True
+        failed = True
 scan = show("scripts/osv-scan.sh") or ""
 tracked = subprocess.run(["git", "ls-files", "-z", "--", "package-lock.json", "*/package-lock.json", "gradle/verification-metadata.xml", "*/gradle/verification-metadata.xml"],
                          capture_output=True, text=True, check=True).stdout.split("\0")
 for f in filter(None, tracked):
     if not re.search(r"^\s*" + re.escape(f) + r"\s*$", scan, re.M):
         print(f"error: {f} is tracked but not listed in LOCKFILES of scripts/osv-scan.sh (ADR-0049 decision 9)", file=sys.stderr)
-        bad = True
-sys.exit(1 if bad else 0)
+        failed = True
+sys.exit(1 if failed else 0)
 PY
 then
   fail=1

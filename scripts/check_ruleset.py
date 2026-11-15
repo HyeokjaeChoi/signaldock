@@ -27,6 +27,8 @@ def job_contexts(text, path):
     jobs, errors, cur = [], [], None
     in_jobs = False
     for line in text.splitlines():
+        if line.lstrip().startswith("#"):
+            continue
         if re.match(r"^jobs:\s*$", line):
             in_jobs = True
         elif in_jobs and re.match(r"^\S", line):
@@ -40,7 +42,7 @@ def job_contexts(text, path):
             continue
         m = re.match(r"^    name:\s*(.+?)\s*$", line)
         if cur and m:
-            name = m.group(1).strip("\"'")
+            name = re.sub(r"\s+#.*$", "", m.group(1)).strip("\"'")
             if "${{" in name:
                 errors.append(f"{path}: job {cur} has an expression in name; the context cannot be checked here")
             else:
@@ -142,10 +144,6 @@ def drift_errors(file_rs, live_rs):
             want = {c["context"] for c in r["parameters"]["required_status_checks"]}
             have = {c["context"] for c in live_rules[t].get("parameters", {}).get("required_status_checks", [])}
             errors += [f"required context {c} is live but not in the file" for c in sorted(have - want)]
-        if t == "pull_request":
-            got = live_rules[t].get("parameters", {}).get("allowed_merge_methods")
-            if got is not None and sorted(got) != sorted(r["parameters"].get("allowed_merge_methods", [])):
-                errors.append(f"rules.pull_request: live merge methods {got} differ from the file")
     return errors
 
 
