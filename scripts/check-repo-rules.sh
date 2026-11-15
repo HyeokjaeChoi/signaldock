@@ -256,6 +256,29 @@ for pair in .github/workflows/demo-deploy.yml:demo-v .github/workflows/release-i
   fi
 done
 
+# nightly.yml (ADR-0049 decision 1, gate Q2): it runs only on schedule and workflow_dispatch (a proof trigger on a branch
+# must not stay), and every job runs scripts/nightly-summary.py, so each nightly job leaves a result file.
+# ponytail: skipped when the file is absent; a job that names the script only in a `run:` text it never runs would pass.
+if git cat-file -e ":.github/workflows/nightly.yml" 2>/dev/null; then
+  nf=.github/workflows/nightly.yml
+  if wf "$nf" | grep -E "$ONK[[:space:]]*\$" >/dev/null; then
+    badtrig="$(wf "$nf" | awk -v k="$ONK" '$0 ~ k {p=1; next} /^[^ ]/ {p=0} p && /^  [^ ]/ {sub(/^  /, ""); sub(/:.*/, ""); print}' \
+      | grep -vxE 'schedule|workflow_dispatch' || true)"
+    if [ -n "$badtrig" ]; then
+      echo "error: $nf triggers on: $(echo "$badtrig" | tr '\n' ' ')(only schedule and workflow_dispatch are allowed)" >&2; fail=1
+    fi
+  else
+    echo "error: $nf must have a block on: with only schedule and workflow_dispatch" >&2; fail=1
+  fi
+  nosummary="$(wf "$nf" | awk '/^jobs:/ {j=1; next} /^[^ ]/ {j=0}
+    j && /^  [A-Za-z0-9_-]+:[ ]*$/ {cur=$1; sub(/:$/, "", cur); seen[cur]=0; order[++n]=cur; next}
+    j && cur != "" && /nightly-summary\.py/ {seen[cur]=1}
+    END {for (i = 1; i <= n; i++) if (!seen[order[i]]) print order[i]}')"
+  if [ -n "$nosummary" ]; then
+    echo "error: $nf: job(s) without a scripts/nightly-summary.py step: $(echo "$nosummary" | tr '\n' ' ')" >&2; fail=1
+  fi
+fi
+
 # The iOS release ZIP removes the SignalDockTests line from Package.swift (ADR-0047 Ticket 13). If the manifest changes
 # that line, the release would fail only at tag time; this finds it in the PR.
 scripts/build-ios-release-zip.sh --check-manifest > /dev/null || fail=1

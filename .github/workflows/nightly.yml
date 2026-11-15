@@ -11,8 +11,6 @@
 name: nightly
 
 on:
-  push:
-    branches: ['claude/gate-05-nightly-3db1f6']  # TEMP proof trigger, removed before merge
   schedule:
     - cron: '0 18 * * *'
   workflow_dispatch:

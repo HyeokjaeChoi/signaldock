@@ -43,3 +43,16 @@ On main 3b640b9 (2026-11-15):
 - About 90 Linux and 20 macOS runner minutes per night.
 - A release can wait up to one night for a green nightly run, or for a `workflow_dispatch` run on the tagged commit.
 - `claude-review.yml` names only tools that run.
+
+## Amendment (2026-11-15, ticket 05, nightly workflow and E2E gate)
+
+`.github/workflows/nightly.yml` exists, with `schedule` (`0 18 * * *`) and `workflow_dispatch`. Job `e2e-delivery` (gate Q1) runs `scripts/e2e-delivery.sh 1 2 3 4 5` against the Compose stack and an API 34 `google_apis` x86_64 emulator on `ubuntu-latest`, with the KVM and AVD cache setup of `device-test` (same cache key). Each nightly job writes a JSON summary (gate Q2; `scripts/nightly-summary.py`, format in `docs/engineering/nightly-summary.md`) and uploads it as the artifact `nightly-summary-<job>`. `scripts/check-repo-rules.sh` fails when `nightly.yml` has a trigger other than `schedule` and `workflow_dispatch`, or a job without the summary step. Tickets 06, 07, 08, and 11 add their jobs below the marker comment in the file.
+
+Proof, by a temporary `push` trigger on the branch of the PR (removed before merge; the check above rejects it):
+
+| Run | Commit | Result | Job time | Compose step | `e2e-delivery.sh` step |
+|---|---|---|---|---|---|
+| [43683069360](https://github.com/HyeokjaeChoi/signaldock/actions/runs/43683069360) | `6a5fbb9` (before the rebase on main) | success, cases 1-5 pass | 12 min 10 s | 1 min 46 s | 9 min 49 s |
+| [43691646307](https://github.com/HyeokjaeChoi/signaldock/actions/runs/43691646307) | `aa553f8` (after the rebase and the JDK glob fix) | success, cases 1-5 pass | 11 min 25 s | 1 min 44 s | 8 min 56 s |
+
+The AVD cache hit in both runs. The spec estimate for Q1 was about 20 minutes; the measured job time is about 12 minutes, so the 60-minute `timeout-minutes` has a wide margin. The times are measurements of two runs, not a threshold. A failing case was not forced in CI: the job fails through the non-zero exit of `scripts/e2e-delivery.sh` (`e2e_cases.py` exits 1 when a case fails), and `scripts/test_nightly_summary.py` checks that a failed case or job gives `result: fail`.
