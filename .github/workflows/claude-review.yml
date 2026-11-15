@@ -77,6 +77,10 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
+      - name: Record start time
+        # Summaries of an earlier run for the same SHA must not count for this run.
+        run: echo "RUN_START=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+
       - name: Review (API credits, claude -p)
         id: api
         continue-on-error: true
@@ -106,7 +110,7 @@ jobs:
         if: always()
         run: |
           n=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" --paginate \
-            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains(env.MARKER))) | .id' | wc -l | tr -d ' ')
+            --jq '.[] | select(.user.login == "github-actions[bot]" and .created_at >= env.RUN_START and (.body | contains(env.MARKER))) | .id' | wc -l | tr -d ' ')
           echo "count=$n" >> "$GITHUB_OUTPUT"
           echo "summary comments for ${SHA}: $n"
 
@@ -135,7 +139,7 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           n=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" --paginate \
-            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains(env.MARKER))) | .id' | wc -l | tr -d ' ')
+            --jq '.[] | select(.user.login == "github-actions[bot]" and .created_at >= env.RUN_START and (.body | contains(env.MARKER))) | .id' | wc -l | tr -d ' ')
           test "$n" -gt 0 || { echo "::error::no review summary for ${SHA}: the API step and the subscription step both failed"; exit 1; }
 
       - name: Remove trigger label
