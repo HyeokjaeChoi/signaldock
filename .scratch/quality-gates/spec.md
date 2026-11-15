@@ -14,6 +14,7 @@ Rule for every number in this file: a threshold is a target until a merged PR sh
 | 3 | No k6 `thresholds`; no load run in CI | `perf/load.js`, `perf/overload.js`, `perf/demo-vm/collect.js`; verdicts come from Python after the run |
 | 4 | E2E 5 cases, device durability, simulator durability, API 24 and 37 runs are local only | headers of `scripts/e2e-delivery.sh`, `scripts/device-durability.sh`, `scripts/simulator-durability.sh`; CI `device-test` runs API 34 in-process tests only |
 | 5 | No shellcheck; no coverage gate (rejected, ADR-0047 D13); no ANR, StrictMode, or battery target; power loss not observed | `docs/engineering/failure-modes.md` "Still open" 1 and 8 |
+| 6 | Dependency and repository management: Renovate runs (ADR-0031; PRs 277-280 open, Dependency Dashboard 150) and Dependabot alerts are on (0 open), but no PR gate checks vulnerabilities, the Renovate config is validated only locally (ADR-0031 "Gaps"), and `main` has no branch protection or ruleset, so "merge when all checks pass" (AGENTS.md rule 7) is not enforced by GitHub | live repo settings 2026-11-15: `vulnerability-alerts` 204, `automated-security-fixes` off (by design, ADR-0031 item 8), secret scanning and push protection on, `branches/main/protection` 404, only ruleset `demo-tags` |
 
 No workflow has a `schedule:` trigger except `codeql.yml`, so there is no nightly tier now.
 
@@ -89,6 +90,17 @@ Rejected: a load SLO on PR (runner noise is larger than the effect; nightly with
 | Q2 Committed result files for nightly runs | numbers that live only in PR text | a nightly job writes a JSON summary as an artifact; a monthly PR commits one snapshot under `perf/results/` or `docs/engineering/verification/` | Nightly + manual | 0 |
 | Q3 Coverage ratchet | coverage regressions in `sdk/sdk-android` and `sdk-ios` | line coverage more than 0.5 point below the committed value; a `scripts/check-repo-rules.sh` check fails when a PR lowers the committed value vs `origin/main` | PR | ~1 min |
 
+### Dependencies and repository management (Staff Engineer, DevOps; security view)
+
+| Gate | Stops | Fails when | Tier | Cost |
+|---|---|---|---|---|
+| R1 `renovate-config-validator --strict`, exact `renovate` version | a Renovate config error that silently stops all update and security PRs | invalid config or a deprecated option | PR (`check`) | ~1 min |
+| R2 OSV-Scanner, pinned binary with SHA-256, over `dashboard/package-lock.json`, `perf/report/package-lock.json`, and the four `*/gradle/verification-metadata.xml` (OSV-Scanner reads them as Gradle lockfiles, so the whole resolved tree is scanned, not only the catalog entries ADR-0031 item 9 covers) | merging a dependency with a known vulnerability | any finding that is not in `osv-scanner.toml`; every ignore entry has a reason and an `ignoreUntil` at most 30 days ahead (a `scripts/check-repo-rules.sh` check) | PR, and nightly on `main` (new advisories appear without a code change) | ~1 min |
+| R3 Ruleset for `main` as code: `.github/rulesets/main.json` (pull request required, required status checks = the PR jobs of `repo-rules.yml`, `verify-contract`, CodeQL `analyze`, `pr-description` `length`; no force push, no deletion, squash only) | a direct push or a merge with a red or missing check | n/a on PR; nightly job compares the live ruleset (`GET /repos/{owner}/{repo}/rulesets`) with the committed file and fails on drift | owner applies once; nightly drift check | seconds |
+| R4 Container images | see B4 (Trivy, already planned) | | | |
+
+Kept as is: Dependabot security updates stay off; Renovate opens the fix PRs from Dependabot alerts and OSV (ADR-0031 items 8 and 9). GitHub dependency review on PR is rejected: the dependency graph does not parse the Gradle catalog (ADR-0031), so it would cover npm and actions only; R2 covers all three.
+
 ## Owner decisions (2026-11-15, recorded in ADR-0049)
 
 1. Nightly tier and D4: accepted.
@@ -110,6 +122,7 @@ Wave 2 (after wave 1 merges; `nightly.yml` is created by 05 and extended by late
 - 06 Android device gates: A3, A5, A6 (A4 after a first run). Files: `sdk/sdk-android/src/androidTest/**`, `scripts/device-durability.sh`.
 - 07 iOS gates: I1, I2. Files: `scripts/verify-ios.sh`, `scripts/simulator-durability.sh`, `compatibility/consumer-ios/**`.
 - 08 Server SLO + image scan: B3, B4. Files: `perf/compose.perf.yml`, a new `perf/ci-slo.sh`, baseline JSON.
+- 11 Dependency and repository gates: R1, R2 (PR part), R3 file and the apply command in `docs/releases/README.md`; the owner applies the ruleset. Files: `.github/renovate.json5` (only if the validator finds an error), `osv-scanner.toml`, `.github/rulesets/main.json`, `check` job of `repo-rules.yml` (after ticket 03 merges). The nightly parts of R2 and R3 go into `nightly.yml` after ticket 05.
 - 09 Semver checks: A7, I3. Files: `scripts/verify-contract.sh` step 6 and 8 (after 02 merges, which also touches this file).
 
 Wave 3: 10 coverage (if decision 2 = ratchet), D4, ADR-0049 final results table, README pair, `docs/engineering/failure-modes.md` open gaps update.

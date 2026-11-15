@@ -26,9 +26,12 @@ On main 3b640b9 (2026-11-15):
 6. Power loss (amends [ADR-0029](0029-device-fault-tests-and-power-loss.md), which says no emulator can cut power): SIGKILL of the emulator process loses the guest page cache, which is the part of a power cut that matters for the queue. The gate checks what ADR-0029 items 4 and 5 promise, not zero loss: the queue opens and `PRAGMA integrity_check` is `ok`, the server stores each `eventId` once and answers a resend with `duplicate` (not `conflict`), and an unsent event is lost only if it is in the tail tracked after the last WAL sync. Resends are expected (a lost queue-delete after an ACK) and are counted, not gated. `synchronous=NORMAL` does not change.
 7. k6 thresholds go in `perf/load.js` and `perf/overload.js` only. The runners treat exit 99 as "threshold crossed" and still summarize; other non-zero exits make a run invalid. `perf/demo-vm/collect.js` has none: the [ADR-0048](0048-demo-vm-capacity-measurement.md) verdict needs `docker stats` and the first stage, so it stays in Python.
 8. The release check of decision 1 runs in the `build` job of each release workflow with `actions: read`. `publish` keeps its permissions and runs no project code ([ADR-0039](0039-release-provenance-attestation.md)).
-9. Numbers that go into the README, the portfolio, or a résumé come only from a merged PR: a CI run ID or a committed result file.
+9. Dependency and repository gates. OSV-Scanner on PR and nightly reads the npm lockfiles and the `gradle/verification-metadata.xml` files, so it scans the resolved Gradle tree that ADR-0031 item 9 does not see. An ignored finding needs a reason and an expiry of at most 30 days. `renovate-config-validator --strict` runs on PR and closes the ADR-0031 "Gaps" item. The `main` ruleset is a committed file that the owner applies; a nightly job fails when the live ruleset differs from it. Dependabot security updates stay off (ADR-0031 item 8).
+10. Numbers that go into the README, the portfolio, or a résumé come only from a merged PR: a CI run ID or a committed result file.
 
 ## Alternatives rejected
+
+- GitHub dependency review on PR: the dependency graph does not parse the Gradle catalog (ADR-0031), so it covers npm and actions only. OSV-Scanner (decision 9) covers all of them.
 
 - Battery target in CI: an emulator has no battery model. The proxy, how often WorkManager wakes the app, is fixed by design (ADR-0011).
 - Ingest load SLO on PR: the noise of a shared runner is larger than the regressions it would catch. The nightly gate uses a 2x band against a baseline from the same runner class.
