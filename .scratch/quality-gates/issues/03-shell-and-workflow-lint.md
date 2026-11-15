@@ -1,7 +1,8 @@
 # 03. shellcheck and actionlint
 
-Status: ready-for-agent
+Status: claimed
 Type: task
+Execution: PR pending (branch gate/03-shell-workflow-lint)
 
 ## Scope and completion criteria
 
