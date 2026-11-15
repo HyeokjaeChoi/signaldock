@@ -289,9 +289,9 @@ case_powerloss() {
   record resends "$(sed -n 's/^resends=//p' <<<"$numbers")"
 }
 
-# Gate A4 (ADR-0049 decision 2): the budget is the measured p99 plus a stated margin: 2 x the worst of 14 p99 values on CI
-# emulators (API 24 and 37.0, runs 43692865454 to 43695424448): 55,155 us -> 110,000 us (ADR-0049 amendment 2026-11-15). Empty: not gated.
-MAIN_THREAD_P99_BUDGET_US=110000
+# Gate A4 (ADR-0049 decision 2): the budget is the measured p99 plus a stated margin: 2 x the worst of 17 p99 values on CI
+# emulators (API 24 and 37.0, runs 43692865454 to 43749875422): 84,401 us -> 170,000 us (ADR-0049 amendment 2026-11-15). Empty: not gated.
+MAIN_THREAD_P99_BUDGET_US=170000
 
 case_maincost() {
   echo "== maincost: 1,000 track() calls on the main thread, p99 against the budget (gate A4)"
