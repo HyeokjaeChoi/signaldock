@@ -234,7 +234,7 @@ Limits (known, accepted):
 
 Job times, from `repo-rules` runs (a job covers its checkout, toolchain setup, and Gradle run):
 
-| Job | Before (main runs 41196701656, 41198632341, 41200224841) | After (PR run) |
+| Job | Before (main runs 41196701656, 41198632341, 41200224841) | After (PR run 43682680191) |
 |---|---|---|
-| `sdk-test` | 203 s, 161 s, 234 s | <<SDK_AFTER>> |
-| `server-test` | 129 s, 112 s, 140 s | <<SERVER_AFTER>> |
+| `sdk-test` | 203 s, 161 s, 234 s | 285 s (the new step: 88 s) |
+| `server-test` | 129 s, 112 s, 140 s | 150 s (the new step: 20 s) |
