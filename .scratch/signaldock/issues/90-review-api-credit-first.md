@@ -7,7 +7,7 @@ Execution: PR pending
 
 ## Scope and completion criteria
 
-On 2026-11-15 UTC the owner asked that the review job work like the family-stop repository (`.github/workflows/ai-review.yml`), so that a used-up subscription quota does not stop the review (several ADR-0049 PRs wait for a review round, AGENTS.md rule 7).
+On 2026-11-15 UTC the owner asked that the review job work like the `pleos-family-stop` repository (`.github/workflows/ai-review.yml`), so that a used-up subscription quota does not stop the review (several ADR-0049 PRs wait for a review round, AGENTS.md rule 7).
 
 1. `.github/workflows/claude-review.yml`: trigger by the label `claude-review-request`; step 1 `claude -p` with `ANTHROPIC_API_KEY`; step 2 `claude-code-action` with `CLAUDE_CODE_OAUTH_TOKEN` only when no summary comment with the marker exists; a last step fails the job without a summary; the label is removed at the end. One `env` block holds the prompt, model, turn limit, and tool list.
 2. `.github/renovate.json5`: a `customManagers` entry for `CLAUDE_CODE_VERSION`.
