@@ -1,8 +1,15 @@
 #!/bin/bash
-# Device verification of SDK durability (issue 20, ADR-0011). Local only: not run in CI.
+# Device verification of SDK durability (issue 20, ADR-0011). Runs locally and in the nightly CI tier on API 24 and 37
+# emulators (job `device-durability` of .github/workflows/nightly.yml, ADR-0049 gates A5, A6, A4).
 #
 # Usage: scripts/device-durability.sh <adb-serial> [case ...]
-# Cases: offline kill restart update clear reinstall restore airplane fulldisk workmanager optout   (default: all)
+# Cases: offline kill restart update clear reinstall restore airplane fulldisk workmanager optout powerloss maincost
+#        (default: all). Each case runs in its own subshell: one failing case does not stop the others. The exit code is 1
+#        if any case did not pass. `powerloss` (ADR-0049 decision 6) SIGKILLs the emulator process and cold-boots it again from
+#        the same data partition, so the serial must be `emulator-<console port>` of an emulator that this script may restart
+#        (needs `lsof`; EMULATOR_OPTS overrides the options of the restart). `maincost` is gate A4: p99 of `track()` on the main thread.
+# Result files (optional): DURABILITY_RESULT_JSON gets [{"name","result":"pass"|"fail"|"invalid","seconds"}] (input of
+# scripts/nightly-summary.py); DURABILITY_NUMBERS gets key=value lines (--number arguments of the same script).
 #
 # Each case drives phases of local.signaldock.device.DurabilityPhases (sdk-android androidTest) with real
 # process boundaries between the instrumentation runs: am force-stop (SIGKILL), adb install -r, pm clear,
@@ -17,7 +24,7 @@ cd "$(dirname "$0")/.."
 serial="${1:?usage: scripts/device-durability.sh <adb-serial> [case ...]}"
 shift || true
 cases=("$@")
-[ ${#cases[@]} -gt 0 ] || cases=(offline kill restart update clear reinstall restore airplane fulldisk workmanager optout)
+[ ${#cases[@]} -gt 0 ] || cases=(offline kill restart update clear reinstall restore airplane fulldisk workmanager optout powerloss maincost)
 
 # The cases switch Backup Manager off and select the local transport: that must never touch a physical device.
 case "$serial" in emulator-*) ;; *) echo "refusing $serial: emulators only (backup settings are changed)" >&2; exit 1 ;; esac
@@ -64,6 +71,8 @@ phase() {
   if ! grep -q '^OK (' <<<"$out" || ! grep -q 'INSTRUMENTATION_STATUS: status=pass' <<<"$out"; then
     echo "FAILED phase $name:" >&2
     echo "$out" >&2
+    # A harness error (for example a checkpoint that stayed busy) makes the run invalid, not a product failure.
+    if grep -q 'INSTRUMENTATION_STATUS: status=invalid' <<<"$out"; then exit 3; fi
     exit 1
   fi
   echo "  phase $name: $(grep -o 'INSTRUMENTATION_STATUS: [a-zA-Z]*=[^ ]*' <<<"$out" | grep -v 'eventIds\|phase=\|status=' | sed 's/INSTRUMENTATION_STATUS: //' | tr '\n' ' ')"
@@ -208,5 +217,106 @@ case_workmanager() {
   fault workmanager_fault
 }
 
-for c in "${cases[@]}"; do "case_$c"; done
+
+powerloss() { phase_class=local.signaldock.device.PowerLossPhases phase "$@"; }
+
+# Set sizes of PowerLossPhases and of scripts/powerloss-verify.py (one place: this script).
+PL_PRE=40 PL_PENDING=30 PL_POST=30 PL_TAIL=20
+
+# SIGKILL of the emulator process loses the guest page cache, as a power cut does; the data partition file on the host
+# stays. Then a cold boot (no snapshot is loaded or saved; no -wipe-data).
+emulator_kill_and_cold_boot() {
+  local port="${serial#emulator-}" avd pid
+  avd="$(adb emu avd name 2>/dev/null | head -1 | tr -d '\r')"
+  pid="$(lsof -nP -iTCP:"$port" -sTCP:LISTEN -t 2>/dev/null | head -1)"
+  [ -n "$avd" ] && [ -n "$pid" ] || { echo "cannot find the AVD name ('$avd') or the emulator process ('$pid') of $serial (needs lsof)" >&2; exit 1; }
+  echo "  SIGKILL of emulator process $pid (AVD $avd)"
+  kill -9 "$pid"
+  while kill -0 "$pid" 2>/dev/null; do sleep 0.2; done
+  # shellcheck disable=SC2086
+  nohup "${ANDROID_HOME:-$HOME/Library/Android/sdk}/emulator/emulator" -avd "$avd" -port "$port" -no-snapshot \
+    ${EMULATOR_OPTS:--no-window -noaudio -no-boot-anim -gpu swiftshader_indirect} >/dev/null 2>&1 &
+  adb wait-for-device
+  for _ in $(seq 1 180); do  # 6 minutes
+    [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ] && adb shell pm path android >/dev/null 2>&1 && break
+    sleep 2
+  done
+  [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ] || { echo "the emulator did not boot again within 6 minutes" >&2; exit 1; }
+  sleep 5
+}
+
+record() { [ -z "${DURABILITY_NUMBERS:-}" ] || echo "$1=$2" >>"$DURABILITY_NUMBERS"; }
+
+case_powerloss() {
+  echo "== powerloss: checkpoint, more events, SIGKILL of the emulator process, cold boot, integrity and server checks"
+  fresh_install
+  local port=18098 log wlog
+  log="$(mktemp)"; wlog="$(mktemp)"
+  python3 scripts/ack-server.py "$port" "$log" &
+  host_server_pid=$!
+  sleep 1
+  kill -0 "$host_server_pid" 2>/dev/null || { echo "host ACK server did not start (port $port in use?)" >&2; host_server_pid=""; exit 1; }
+  local args=(-e pre "$PL_PRE" -e pending "$PL_PENDING" -e post "$PL_POST" -e tail "$PL_TAIL" -e endpoint "http://10.0.2.2:$port")
+  powerloss powerloss_prepare "${args[@]}"
+  adb shell sync # the installation and the empty queue are durable: only what powerloss_write writes can be lost
+  adb shell am instrument -w -e class local.signaldock.device.PowerLossPhases -e phase powerloss_write "${args[@]}" "$RUNNER" >"$wlog" 2>&1 &
+  local writer=$! armed=0
+  for _ in $(seq 1 1800); do  # 3 minutes
+    if grep -q 'status=invalid' "$wlog"; then cat "$wlog" >&2; exit 3; fi
+    if grep -q 'status=armed' "$wlog"; then armed=1; break; fi
+    kill -0 "$writer" 2>/dev/null || break
+    sleep 0.1
+  done
+  [ "$armed" = 1 ] || { echo "powerloss_write did not report 'armed':" >&2; cat "$wlog" >&2; exit 1; }
+  echo "  $(grep -o 'checkpoint=[^ ]* [^ ]* [^ ]*' "$wlog" | head -1)"
+  emulator_kill_and_cold_boot
+  wait "$writer" 2>/dev/null || true
+  powerloss powerloss_check "${args[@]}"
+  kill "$host_server_pid" 2>/dev/null || true
+  wait "$host_server_pid" 2>/dev/null || true
+  host_server_pid=""
+  local numbers
+  numbers="$(python3 scripts/powerloss-verify.py "$log" "$PL_PRE" "$PL_PENDING" "$PL_POST" "$PL_TAIL")" || { rm -f "$log" "$wlog"; exit 1; }
+  rm -f "$log" "$wlog"
+  echo "  server: $(echo "$numbers" | tr '\n' ' ')(counted, not gated)"
+  record lostAfterCheckpoint "$(sed -n 's/^lostAfterCheckpoint=//p' <<<"$numbers")"
+  record resends "$(sed -n 's/^resends=//p' <<<"$numbers")"
+}
+
+# Gate A4 (ADR-0049 decision 2): the budget is the measured p99 plus a stated margin, set from a run on the nightly
+# runner class (ADR-0049 amendment). Empty: no budget yet, the value is recorded and not gated.
+MAIN_THREAD_P99_BUDGET_US=
+
+case_maincost() {
+  echo "== maincost: 1,000 track() calls on the main thread, p99 against the budget (gate A4)"
+  fresh_install
+  phase_class=local.signaldock.device.MeasurePhases phase main_thread -e endpoint http://127.0.0.1:9 -e key device-test-key -e runId maincost
+  local p99
+  p99="$(get p99Micros)"
+  echo "  p50 $(get p50Micros) us, p99 $p99 us, max $(get maxMicros) us over $(get calls) calls (budget: ${MAIN_THREAD_P99_BUDGET_US:-not set})"
+  record mainThreadP99Micros "$p99"
+  [ -z "$MAIN_THREAD_P99_BUDGET_US" ] || [ "$p99" -le "$MAIN_THREAD_P99_BUDGET_US" ] ||
+    { echo "p99 $p99 us is above the budget $MAIN_THREAD_P99_BUDGET_US us" >&2; exit 1; }
+}
+
+for c in "${cases[@]}"; do
+  case "$c" in offline|kill|restart|update|clear|reinstall|restore|airplane|fulldisk|workmanager|optout|powerloss|maincost) ;;
+    *) echo "unknown case '$c'" >&2; exit 2 ;; esac
+done
+results=() failed=0
+for c in "${cases[@]}"; do
+  started="$(date +%s)"
+  set +e
+  ( set -e; trap restore_device EXIT; "case_$c" )
+  rc=$?
+  set -e
+  secs=$(( $(date +%s) - started ))
+  case "$rc" in 0) result=pass ;; 3) result=invalid; failed=1 ;; *) result=fail; failed=1 ;; esac
+  echo "-> $c: $result (${secs} s)"
+  results+=("{\"name\":\"$c\",\"result\":\"$result\",\"seconds\":$secs}")
+done
+if [ -n "${DURABILITY_RESULT_JSON:-}" ]; then
+  ( IFS=,; echo "[${results[*]}]" ) >"$DURABILITY_RESULT_JSON"
+fi
+[ "$failed" = 0 ] || { echo "cases that did not pass: see above ($serial)" >&2; exit 1; }
 echo "all requested cases passed on $serial"

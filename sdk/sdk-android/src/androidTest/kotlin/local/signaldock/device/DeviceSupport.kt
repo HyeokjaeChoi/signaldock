@@ -59,6 +59,16 @@ internal fun eventPayloads(body: String): List<String> =
 internal fun eventIdOf(payload: String): String =
     Json.parseToJsonElement(payload).jsonObject["eventId"]!!.jsonPrimitive.content
 
+internal fun eventNameOf(payload: String): String =
+    Json.parseToJsonElement(payload).jsonObject["name"]!!.jsonPrimitive.content
+
+/** The SDK's own Room connection (the one that carries its PRAGMAs). Room keeps its database in a field of the DAO; this fails loudly if that changes. */
+internal fun SignalDock.sqlite(): androidx.sqlite.db.SupportSQLiteDatabase {
+    val db = dao.javaClass.declaredFields.first { androidx.room.RoomDatabase::class.java.isAssignableFrom(it.type) }
+        .apply { isAccessible = true }.get(dao) as androidx.room.RoomDatabase
+    return db.openHelper.writableDatabase
+}
+
 /**
  * A MockWebServer on the device that behaves like the ingestion server for ACK purposes: the first time
  * an eventId is seen it is "accepted" (committed), later "duplicate". It records every request.
@@ -136,9 +146,11 @@ internal class Rig(
     private val foregroundTriggers: Boolean = false,
     private val jitter: Jitter = Jitter { 0 },
     val config: SignalDockConfig = server.config(),
+    /** A fixed name keeps the SDK directory across processes (power-loss phases); the default is unique per rig. */
+    dirName: String = "rig-" + UUID.randomUUID(),
 ) {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    val context = IsolatedContext(targetContext, File(targetContext.noBackupFilesDir, "rig-" + UUID.randomUUID()))
+    val context = IsolatedContext(targetContext, File(targetContext.noBackupFilesDir, dirName))
     private val savedDefault = InitCoordinator.default
 
     suspend fun initialize(): SignalDock {

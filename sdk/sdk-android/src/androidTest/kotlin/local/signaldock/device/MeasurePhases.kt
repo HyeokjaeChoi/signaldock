@@ -1,7 +1,15 @@
 package local.signaldock.device
 
+import android.os.Bundle
 import androidx.test.platform.app.InstrumentationRegistry
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import local.signaldock.InitResult
+import local.signaldock.SignalDock
+import local.signaldock.SignalDockConfig
+import local.signaldock.TrackResult
 import local.signaldock.measure.MeasureRunner
+import kotlin.math.ceil
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 
@@ -34,4 +42,34 @@ class MeasurePhases {
 
     /** Process restarted (script force-stops it), endpoint reachable (ADR-0011 item 6). */
     @Test fun offline_drain() = phase("offline_drain")
+
+    /**
+     * Gate A4 (ADR-0049): `track()` called from a coroutine on the main thread, 1,000 events back to back, endpoint
+     * unreachable (as `offline_store`). One call is timed from before it starts to its return, so the time bounds from
+     * above how long the call keeps the main thread (the thread is free while the Room write runs). p50, p99 and the
+     * maximum use nearest rank, like `perf/summarize.py`. `scripts/device-durability.sh` case `maincost` judges p99.
+     */
+    @Test fun main_thread() {
+        assumeTrue("phase main_thread not selected", runner.selected("main_thread"))
+        val config = SignalDockConfig(endpoint = "http://127.0.0.1:9", collectionKey = "device-test-key", allowInsecureEndpoint = true)
+        val sdk = (runBlocking { SignalDock.initialize(inst.targetContext, config) } as InitResult.Success).sdk
+        val micros = LongArray(1000)
+        runBlocking(Dispatchers.Main) {
+            for (i in micros.indices) {
+                val start = System.nanoTime()
+                val result = sdk.track("main_thread") { property("seq", i) }
+                micros[i] = (System.nanoTime() - start) / 1000
+                check(result is TrackResult.Success) { "track returned $result" }
+            }
+        }
+        val sorted = micros.sorted()
+        fun rank(p: Double) = sorted[ceil(p * sorted.size).toInt() - 1]
+        inst.sendStatus(
+            0,
+            Bundle().apply {
+                putString("phase", "main_thread"); putString("status", "pass"); putString("calls", "${micros.size}")
+                putString("p50Micros", "${rank(0.5)}"); putString("p99Micros", "${rank(0.99)}"); putString("maxMicros", "${sorted.last()}")
+            },
+        )
+    }
 }

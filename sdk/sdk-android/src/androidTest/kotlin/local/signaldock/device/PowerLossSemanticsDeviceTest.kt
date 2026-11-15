@@ -1,6 +1,5 @@
 package local.signaldock.device
 
-import androidx.room.RoomDatabase
 import kotlinx.coroutines.runBlocking
 import local.signaldock.TrackResult
 import org.junit.After
@@ -25,10 +24,7 @@ class PowerLossSemanticsDeviceTest {
         val r = Rig(AckServer().start()).also { rig = it }
         val sdk = r.initialize()
         assertTrue(sdk.track("pragma") is TrackResult.Success)
-        // Room's generated DAO keeps its database in a field; the test fails loudly if that changes.
-        val db = sdk.dao.javaClass.declaredFields.first { RoomDatabase::class.java.isAssignableFrom(it.type) }
-            .apply { isAccessible = true }.get(sdk.dao) as RoomDatabase
-        val sqlite = db.openHelper.writableDatabase
+        val sqlite = sdk.sqlite()
         fun pragma(name: String) = sqlite.query("PRAGMA $name").use { it.moveToFirst(); it.getString(0) }
         assertEquals("wal", pragma("journal_mode").lowercase())
         assertEquals("synchronous is 1 (NORMAL), not 2 (FULL)", "1", pragma("synchronous"))
