@@ -72,6 +72,7 @@ Architecture (`architecture.md`):
 - Contracts, generated sources, and JSON
 
 ADRs:
+- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), for detekt and its baseline (gate B1), the container image scan (B4), and the nightly load SLO (B3)
 - ADR-0002
 - ADR-0004 (`docs/adr/0004-server-runtime-and-receipt-boundaries.md`)
 - ADR-0005, section "Server: layered Gradle modules"
@@ -193,6 +194,7 @@ Architecture (`architecture.md`):
 - DB time budgets and queries
 
 ADRs:
+- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), for ESLint, Prettier, axe, the bundle budget, and Lighthouse (gates W1-W5)
 - ADR-0002
 - ADR-0007 (`docs/adr/0007-dashboard-query-api.md`)
 - ADR-0008 (`docs/adr/0008-dashboard-and-compose-delivery.md`)
@@ -216,6 +218,7 @@ Also read `.scratch/signaldock/dashboard-verification-defaults.md`.
 Plain TypeScript and CSS with no `package.json` and no `node_modules`. Both pages import it by relative path. Its tests run with the Dashboard (`cd dashboard && npm test`). `web-shared/i18n/` holds the language code (issue 27). `web-shared/theme/` holds the design tokens (`tokens.css`), the shared element styles (`base.css`), the theme choice (`theme.ts`, `react.ts`), and the shared chart style (`chart.ts`) (issue 28). Change a color only in `tokens.css`; the contrast test checks it.
 
 ADRs:
+- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), for ESLint, Prettier, and axe (gates W1, W2, W4)
 - ADR-0015 (`docs/adr/0015-web-ui-languages.md`)
 - ADR-0016 (`docs/adr/0016-telemetry-style-ui.md`), for `web-shared/theme/`
 - ADR-0008 and ADR-0013, for the separate builds and lockfiles that it must not merge
@@ -233,6 +236,7 @@ Architecture (`architecture.md`):
 - DB time budgets and queries
 
 ADRs:
+- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), decision 7, for k6 thresholds in `perf/load.js` and `perf/overload.js` and how `perf/run_one.py` and `perf/overload.py` handle k6 exit 99 (amends ADR-0013); the nightly load SLO (gate B3)
 - ADR-0004
 - ADR-0007
 - ADR-0008
