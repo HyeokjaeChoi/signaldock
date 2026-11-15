@@ -31,14 +31,17 @@ def parse_number(text):
 
 
 def load_cases(path):
-    """Returns (cases, complete). A missing file is incomplete: the job never reached its result."""
+    """Returns (cases, complete). A missing or malformed file is incomplete: the job never reached its result."""
     if path is None:
         return [], True
     try:
         with open(path, encoding="utf-8") as f:
-            return json.load(f), True
-    except FileNotFoundError:
+            cases = json.load(f)
+    except (FileNotFoundError, ValueError):
         return [], False
+    if not isinstance(cases, list) or not all(isinstance(c, dict) and "result" in c for c in cases):
+        return [], False
+    return cases, True
 
 
 def build(job, gate, status, cases, complete, numbers, env):

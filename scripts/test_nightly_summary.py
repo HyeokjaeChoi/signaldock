@@ -47,6 +47,13 @@ class Parse(unittest.TestCase):
         self.assertEqual(ns.load_cases(None), ([], True))
         self.assertEqual(ns.load_cases("/nonexistent/cases.json"), ([], False))
 
+    def test_malformed_cases_file_is_incomplete(self):
+        with tempfile.TemporaryDirectory() as d:
+            for text in ("not json", '{"a": 1}', '[{"name": "x"}]'):
+                f = Path(d, "c.json")
+                f.write_text(text)
+                self.assertEqual(ns.load_cases(str(f)), ([], False), text)
+
     def test_main_writes_the_file(self):
         with tempfile.TemporaryDirectory() as d:
             cases = Path(d, "cases.json")

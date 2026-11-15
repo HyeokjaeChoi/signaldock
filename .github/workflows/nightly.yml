@@ -5,7 +5,8 @@
 #
 # Rules for every job in this file (checked by scripts/check-repo-rules.sh):
 #   - the job runs scripts/nightly-summary.py in a step with `if: always()` and uploads the folder as the artifact
-#     `nightly-summary-<job>` (gate Q2; format: docs/engineering/nightly-summary.md);
+#     `nightly-summary-<job>` (gate Q2; format: docs/engineering/nightly-summary.md). The check reads the script name and
+#     the artifact name in the job; `if: always()` is a convention it does not read;
 #   - the file triggers only on `schedule` and `workflow_dispatch`.
 # Also set `timeout-minutes` on each job, and pin every action by a 40-character SHA.
 name: nightly
@@ -31,7 +32,7 @@ jobs:
         with:
           persist-credentials: false
       - run: scripts/setup-toolchain.sh
-      - run: echo "JAVA_HOME=$(printf '%s' "$PWD"/.tools/jdk-*)" >> "$GITHUB_ENV"
+      - run: for d in "$PWD"/.tools/jdk-*; do echo "JAVA_HOME=$d" >> "$GITHUB_ENV"; done
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
