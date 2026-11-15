@@ -98,12 +98,8 @@ jobs:
         timeout-minutes: 25
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          # Do not pass the key to the processes that Claude starts (gh, shell).
-          CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: "1"
         run: |
           test -n "$ANTHROPIC_API_KEY" || { echo "::warning::ANTHROPIC_API_KEY is not set; the subscription step reviews"; exit 1; }
-          # The env scrub runs Bash in a sandbox, which needs these two packages (run 43693785319: "socat not installed").
-          sudo apt-get update -qq && sudo apt-get install -y -qq socat bubblewrap
           npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" >/dev/null
           INLINE="The first line of the summary comment is exactly: ${MARKER}
           Post a finding on a line with this command, not with gh pr comment:
