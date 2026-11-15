@@ -92,7 +92,8 @@ class PowerLossPhases {
                 (0 until lostack).map { "pl_lostack_$it" } + (0 until pending).map { "pl_pending_$it" }, queuedNames(sdk),
             )
             // The sync point: nothing else writes now, so a checkpoint that cannot finish is a harness error, not a product failure.
-            val (busy, log, checkpointed) = sdk.sqlite().query("PRAGMA wal_checkpoint(FULL)").use {
+            // `-e skipCheckpoint 1` is the negative control of the gate: without the sync point, the check must find lost events.
+            val (busy, log, checkpointed) = if (instrumentationArg("skipCheckpoint") == "1") Triple(0, 0, 0) else sdk.sqlite().query("PRAGMA wal_checkpoint(FULL)").use {
                 it.moveToFirst(); Triple(it.getInt(0), it.getInt(1), it.getInt(2))
             }
             if (busy != 0 || log != checkpointed) {

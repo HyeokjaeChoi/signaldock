@@ -7,7 +7,8 @@
 #        (default: all). Each case runs in its own subshell: one failing case does not stop the others. The exit code is 1
 #        if any case did not pass. `powerloss` (ADR-0049 decision 6) SIGKILLs the emulator process and cold-boots it again from
 #        the same data partition, so the serial must be `emulator-<console port>` of an emulator that this script may restart
-#        (needs `lsof`; EMULATOR_OPTS overrides the options of the restart). `maincost` is gate A4: p99 of `track()` on the main thread.
+#        (needs `lsof`; EMULATOR_OPTS overrides the options of the restart). POWERLOSS_SKIP_CHECKPOINT=1 skips the checkpoint:
+#        the negative control that shows the gate can fail. `maincost` is gate A4: p99 of `track()` on the main thread.
 # Result files (optional): DURABILITY_RESULT_JSON gets [{"name","result":"pass"|"fail"|"invalid","seconds"}] (input of
 # scripts/nightly-summary.py); DURABILITY_NUMBERS gets key=value lines (--number arguments of the same script).
 #
@@ -256,7 +257,7 @@ case_powerloss() {
   host_server_pid=$!
   sleep 1
   kill -0 "$host_server_pid" 2>/dev/null || { echo "host ACK server did not start (port $port in use?)" >&2; host_server_pid=""; exit 1; }
-  local args=(-e pre "$PL_PRE" -e lostack "$PL_LOSTACK" -e pending "$PL_PENDING" -e tail "$PL_TAIL" -e endpoint "http://10.0.2.2:$port")
+  local args=(-e pre "$PL_PRE" -e lostack "$PL_LOSTACK" -e pending "$PL_PENDING" -e tail "$PL_TAIL" -e endpoint "http://10.0.2.2:$port" -e skipCheckpoint "${POWERLOSS_SKIP_CHECKPOINT:-0}")
   powerloss powerloss_prepare "${args[@]}"
   adb shell sync # the installation and the empty queue are durable: only what powerloss_write writes can be lost
   adb shell am instrument -w -e class local.signaldock.device.PowerLossPhases -e phase powerloss_write "${args[@]}" "$RUNNER" >"$wlog" 2>&1 &
