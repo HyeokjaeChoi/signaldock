@@ -32,4 +32,4 @@ Pass criteria, set before the final run: only 200 and 503 answers (no timeout, n
 
 ## Amendment (2026-11-15, ADR-0049 decision 7)
 
-`perf/load.js` and `perf/overload.js` get k6 thresholds. `perf/run_one.py` and `perf/overload.py` treat k6 exit 99 from a server-side threshold as "threshold crossed": they still summarize and record it. A crossed `dropped_iterations` threshold and every other non-zero exit keep the run invalid. The pass rules of this ADR do not change.
+`perf/load.js` and `perf/overload.js` get absolute k6 thresholds (error or status rate, `dropped_iterations`); the p95 rules stay in Python. `perf/run_one.py` and `perf/overload.py` treat k6 exit 99 from a server-side threshold as "threshold crossed": they still summarize and record it. A crossed `dropped_iterations` threshold and every other non-zero exit keep the run invalid. The pass rules of this ADR do not change.
