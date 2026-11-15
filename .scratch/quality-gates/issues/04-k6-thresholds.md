@@ -1,6 +1,6 @@
 # 04. k6 thresholds
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 
 ## Scope and completion criteria

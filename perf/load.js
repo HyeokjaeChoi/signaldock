@@ -6,6 +6,8 @@
 //            endpoint). A tick whose previous request is still running is skipped and counted.
 // Phases are tagged warmup/measure so the summarizer can drop warm-up. Duration is http_req_duration-style
 // (sending + waiting + receiving); connection wait is recorded separately as blocked_ms.
+// Thresholds (ADR-0049 decision 7): absolute ones only; k6 exits 99 when one is crossed and perf/run_one.py reports it. http_req_failed counts
+// the measure phase (requests carry the phase tag), not warm-up or the tail iteration. The latency rules (p95 targets) stay in run_one.py.
 import http from 'k6/http';
 import exec from 'k6/execution';
 import { sleep } from 'k6';
@@ -49,6 +51,10 @@ export const options = {
     dash_name: { executor: 'constant-vus', vus: CLIENTS, duration: `${TOTAL_S}s`, exec: 'dashName', gracefulStop: '10s' },
     dash_time: { executor: 'constant-vus', vus: CLIENTS, duration: `${TOTAL_S}s`, exec: 'dashTime', gracefulStop: '10s' },
   },
+  thresholds: {
+    'http_req_failed{phase:measure}': ['rate<0.01'],
+    dropped_iterations: ['count==0'],
+  },
 };
 
 const eventId = (seq, j) => `${SALT}-0000-4000-8000-${(seq * EPB + j).toString(16).padStart(12, '0')}`;
@@ -77,7 +83,7 @@ export function collect() {
       'Content-Type': 'application/json', 'SignalDock-Contract-Version': '1',
       Authorization: `Bearer ${E.COLLECTION_KEY}`,
     },
-    timeout: '5s', tags: { ep: 'collect' },
+    timeout: '5s', tags: { ep: 'collect', phase: extra.phase },
   });
   let outcome = outcomeOf(res);
   if (outcome === 'ok') {
@@ -107,7 +113,7 @@ function dash(ep, path, valid) {
   ticks.add(1, { ep, phase });
   const res = http.get(`${BASE}${path}`, {
     headers: { 'SignalDock-Contract-Version': '1', Authorization: `Bearer ${E.QUERY_KEY}` },
-    timeout: '5s', tags: { ep },
+    timeout: '5s', tags: { ep, phase },
   });
   let outcome = outcomeOf(res);
   if (outcome === 'ok') {

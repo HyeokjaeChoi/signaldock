@@ -88,3 +88,53 @@ The local build gave the same sizes (184,135 before a one-byte code change). The
 Behavior change: only when `.tools/` holds more than one `jdk-*` directory. The old code built a multi-line path and failed; the glob uses the first match. With no JDK, the error message shows the glob instead of an empty name; `device-durability.sh` now has the same `-x "$JAVA_HOME/bin/java"` check as the other scripts, so it still fails at once.
 
 Evidence: CI run 43678422518 (PR 282), job `check` passed with both steps.
+
+## Amendment (2026-11-15, ticket 04, k6 thresholds)
+
+Gate B2, as decision 7 states it. `perf/load.js` and `perf/overload.js` now declare k6 `thresholds`, so k6 exits with status 99 when a run crosses one. Before, only Python decided pass or fail after the run ([ADR-0013](0013-server-load-measurement-harness.md)). `perf/demo-vm/collect.js` has none.
+
+### Thresholds
+
+| Script | Threshold | Crossed when |
+|---|---|---|
+| `load.js` | `http_req_failed{phase:measure}` | 1% or more of the requests in the measure phase fail. Requests now carry the `phase` tag, so warm-up and the tail iteration do not count |
+| `load.js`, `overload.js` | `dropped_iterations` | any iteration is dropped (the VU cap was reached) |
+| `overload.js` | `unexpected_status` | the rate of answers with a status other than 200 and 503 is above 0. Status 0 (timeout, network error) counts. This is the ADR-0013 rule "only 200 and 503 answers" |
+
+There is no `http_req_failed` threshold in `overload.js`: the run must shed with 503, and k6 counts 503 as failed. There is no p95 threshold: the p95 rules of ADR-0013 are relative to a baseline of the same run (`perf/overload.py`), so they stay in Python, and so does every other pass rule of ADR-0013 and ADR-0048.
+
+### Decisions
+
+1. `perf/common.py` `k6_exit_reasons` turns the k6 exit code into run reasons for `run_one.py` and `overload.py`. Exit 0: none. Exit 99: the run is complete, so it is summarized. A crossed server threshold is a `fail` reason that names it. A crossed `dropped_iterations` is an `invalid` reason: a generator limit, not server behavior, as the runners already rule. Both can apply, and `invalid` ranks first. The existing `dropped` check of each runner stays as a second guard, so one crossed `dropped_iterations` can give two `invalid` reasons. Exit 99 with no crossed threshold in the summary is `invalid` too (the harness cannot read k6, which says nothing about the server). Any other exit code stays `invalid` ("phases may be incomplete"). Before, any non-zero exit made the run `invalid`.
+2. No `abortOnFail`: the summaries need the whole run.
+3. The thresholds are absolute, so they can be weaker than the Python rules. `load.js` allows up to 1% failed requests in the measure phase; `run_one.py` still fails the run on any non-ok answer, and `overload.py` fails it on any status other than 200 and 503. So k6 exit 0 does not mean verdict `pass`, and a `fail` can carry both a k6 reason and a Python reason.
+4. A threshold on a metric without samples passes, and a Trend cannot use `count`. So every threshold has a proof that it can fail (below). `k6 --summary-export` writes `true` for a crossed threshold.
+
+### Proof
+
+Local, no CI run. Tools: k6 v2.3.0, Python 3.9.6, macOS.
+
+1. Mock server, [`perf/threshold-proof/results.md`](../../perf/threshold-proof/results.md), written by `perf/threshold-proof/proof.py` (9 of 9 cases matched; each case compares the crossed set and the run verdict with the expected ones, exactly). Each threshold fails on its own fault, the clean cases cross nothing, and the Python parsers (`run_one.read_k6`, `overload.read_raw`) read the output also after exit 99:
+
+| Script | Fault | k6 exit | Crossed | Run verdict |
+|---|---|---|---|---|
+| `load.js` | none | 0 | none | pass |
+| `load.js` | every collect answers 500 in the first 4.5 s (warm-up) | 0 | none | pass |
+| `load.js` | every 20th collect answers 500 | 99 | `http_req_failed{phase:measure}` | fail |
+| `load.js` | collect held 1.5 s at 40 req/s | 99 | `dropped_iterations` | invalid |
+| `load.js` | both faults | 99 | both | invalid, with a fail reason |
+| `overload.js` | 503 on every 2nd collect and by-name in the overload phase | 0 | none | pass |
+| `overload.js` | every 50th collect answers 500 | 99 | `unexpected_status` | fail |
+| `overload.js` | every 100th collect answers after 6 s (timeout, status 0) | 99 | `unexpected_status` | fail |
+| `overload.js` | collect held 2.5 s at 200 req/s | 99 | `dropped_iterations` | invalid |
+
+The observed values (they vary from run to run) are in `results.md`.
+
+2. Real run scripts, [`perf/threshold-proof/runner-runs.md`](../../perf/threshold-proof/runner-runs.md): `run_one.py` and `overload.py` on the Docker stack, clean, with one threshold made impossible to meet, and with the generator starved of VUs. With a crossed server threshold both write every result file with verdict `fail`; with `dropped_iterations` crossed both give `invalid` and no `fail` reason from it; the clean `run_one.py` run is `pass`.
+
+3. Replay on committed results, no new run (the last table of `results.md`, also written by `proof.py`): `pilot-1` and `pilot-2` have 0 of 2,400 measure-phase requests not ok and no dropped iteration; `overload-1` has only the statuses 200 and 503 and no dropped iteration. None crosses a threshold.
+
+### Not covered
+
+- The clean `overload.py` run on the Docker stack had k6 exit 0 (`unexpected_status` stayed at 0 over 10,881 answers, with real 503 answers) but the verdict `fail` from the Python rules of ADR-0013 (recovery p95 509 ms against a limit of 277 ms, and non-200 answers in the last 30 s of recovery). The Mac was shared with other running sessions. This PR does not claim a clean pass of the whole overload run; it claims that the thresholds do not fail it.
+- No load run in CI. B3 (nightly ingest load SLO) compares p95 with a committed baseline.

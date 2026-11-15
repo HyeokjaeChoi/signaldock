@@ -5,10 +5,14 @@
 //   probe:   1 request/s, GET /v1/events?limit=50, all phases (read path and recovery check).
 //   heavy:   HEAVY_RATE rps of GET /v1/event-counts/by-name over the full window, overload phase only (long DB work holds slots).
 // Every response is recorded with its status, Retry-After, and error code. The script never retries a 503.
+// Thresholds (ADR-0049, amendment of ticket 04; k6 exits 99 when one is crossed). There is no http_req_failed threshold: this run must
+// shed with 503, which k6 counts as failed. Instead `unexpected_status` is the rate of answers whose status is not 200 or 503 (status 0:
+// timeout or network error included), the ADR-0013 overload pass rule. The other pass rules, the p95 rule among them (relative to the
+// baseline of the same run), stay in perf/overload.py.
 import http from 'k6/http';
 import exec from 'k6/execution';
 import { SharedArray } from 'k6/data';
-import { Trend, Counter } from 'k6/metrics';
+import { Trend, Counter, Rate } from 'k6/metrics';
 
 const E = __ENV;
 const BASE_S = Number(E.BASE_S), OVER_S = Number(E.OVER_S), REC_S = Number(E.REC_S);
@@ -21,6 +25,7 @@ const bodies = new SharedArray('bodies', () => open(E.BODIES).split('\n').filter
 
 const reqMs = new Trend('req_ms', true);
 const exhausted = new Counter('bodies_exhausted');
+const unexpectedStatus = new Rate('unexpected_status');
 
 export const options = {
   summaryTrendStats: ['min', 'med', 'p(95)', 'max', 'count'],
@@ -36,6 +41,10 @@ export const options = {
       executor: 'constant-arrival-rate', rate: HEAVY_RATE, timeUnit: '1s', startTime: `${BASE_S}s`, duration: `${OVER_S}s`,
       preAllocatedVUs: 100, maxVUs: 300, exec: 'heavy', gracefulStop: '10s',
     },
+  },
+  thresholds: {
+    unexpected_status: ['rate==0'],
+    dropped_iterations: ['count==0'],
   },
 };
 
@@ -57,6 +66,7 @@ function record(ep, res, outcome, at, id) {
     ep, outcome, status: String(res.status), phase: phaseOf(at), at: String(Math.round(at)), id: String(id),
     retry_after: String(res.headers['Retry-After'] ?? ''), code,
   });
+  unexpectedStatus.add(res.status !== 200 && res.status !== 503);
 }
 
 export function collect() {
