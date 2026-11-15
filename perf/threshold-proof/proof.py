@@ -84,8 +84,9 @@ class Mock:
                     if r.status and r.n % r.every == 0:
                         status, retry_after = r.status, r.retry_after
                 if status:
-                    return self.reply(status, {"code": "TEMPORARILY_UNAVAILABLE" if status == 503 else "INTERNAL"}, retry_after)
-                self.reply(200, ok_body())
+                    self.reply(status, {"code": "TEMPORARILY_UNAVAILABLE" if status == 503 else "INTERNAL"}, retry_after)
+                else:
+                    self.reply(200, ok_body())
 
             def do_POST(self):
                 body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
@@ -252,11 +253,11 @@ def main():
         print(f"[{time.time() - t:5.1f}s] {script:8} {case:24} exit {code:3} crossed: {shown}  -> {rows[-1][-1]}", flush=True)
     out = ["# k6 threshold proof (ADR-0049, amendment of ticket 04)", "",
            f"Written by `perf/threshold-proof/proof.py` on {dt.date.today()}. {k6_version}; Python {platform.python_version()}; {platform.platform()}.",
-           "Each case runs the real k6 script against a mock server with one fault. `exit` is the k6 exit status (99: a threshold was crossed). "
-           "`crossed` lists the thresholds that `--summary-export` marks as crossed, with the observed value. `run script verdict` is what "
-           "`common.k6_exit_reasons` makes of the k6 exit (the function `perf/run_one.py` and `perf/overload.py` use): a crossed server threshold "
-           "is a `fail` reason that names it; a crossed `dropped_iterations` keeps the run `invalid` (generator limit). `match` compares the "
-           "crossed set and that verdict with the expected ones (exact match).", "",
+           ("Each case runs the real k6 script against a mock server with one fault. `exit` is the k6 exit status (99: a threshold was crossed). " +
+           "`crossed` lists the thresholds that `--summary-export` marks as crossed, with the observed value. `run script verdict` is what " +
+           "`common.k6_exit_reasons` makes of the k6 exit (the function `perf/run_one.py` and `perf/overload.py` use): a crossed server threshold " +
+           "is a `fail` reason that names it; a crossed `dropped_iterations` keeps the run `invalid` (generator limit). `match` compares the " +
+           "crossed set and that verdict with the expected ones (exact match)."), "",
            "| script | case | fault | k6 exit | crossed | run script verdict | Python summary parses the output | match |", "|---|---|---|---:|---|---|---|---|"]
     out += [f"| {s} | {cs} | {f} | {x} | {cr} | {v} | {n or '-'} | {m} |" for s, cs, f, x, cr, v, n, m in rows]
     rep_rows = replay()
