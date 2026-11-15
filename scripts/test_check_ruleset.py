@@ -78,7 +78,7 @@ class Drift(unittest.TestCase):
 
     def test_changes_to_the_live_ruleset_are_drift(self):
         for mutate, text in (
-            (lambda l: rule(l, "pull_request")["parameters"].update(allowed_merge_methods=["squash", "rebase"]), "merge methods"),
+            (lambda l: rule(l, "pull_request")["parameters"].update(allowed_merge_methods=["squash", "rebase"]), "allowed_merge_methods"),
             (lambda l: rule(l, "required_status_checks")["parameters"].update(strict_required_status_checks_policy=False), "strict"),
             (lambda l: rule(l, "required_status_checks")["parameters"]["required_status_checks"].pop(), "is not in the live"),
             (lambda l: rule(l, "required_status_checks")["parameters"]["required_status_checks"].append({"context": "extra"}), "live but not in the file"),
