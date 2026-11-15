@@ -1,9 +1,9 @@
 # 06. Android device gates: StrictMode, power loss, nightly durability matrix, main-thread cost
 
-Status: claimed
+Status: resolved
 Type: task
-Execution: PR pending
-Blocked by: none (the nightly jobs wait for ticket 05 to merge `nightly.yml`)
+Execution: Done (PR #291)
+Blocked by: none
 
 ## Scope and completion criteria
 

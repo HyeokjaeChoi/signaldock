@@ -29,5 +29,5 @@ An emulator cannot cut power, but SIGKILL of the emulator process loses the gues
 
 ## Amendment (2026-11-15, ticket 06)
 
-The semantics of item 4 stay: `synchronous=NORMAL` is the intended setting, and a committed event survives process death but not power loss. What changes is the evidence. "Power loss is not tested" (item 4) and "Power loss is still untested" (Limits) now point to gate A6 and its runs (above). One fact is new: on the API 24 emulator the platform sets `synchronous=FULL` (2) for the SDK's connection, so there every commit syncs and a kill loses nothing. Item 5's test fails on API 24 for that reason; CI runs it on API 34, where it holds. `.scratch/quality-gates/issues/13-api24-synchronous-full.md` tracks the follow-up.
+The semantics of item 4 stay: `synchronous=NORMAL` is the intended setting, and a committed event survives process death but not power loss. What changes is the evidence. "Power loss is not tested" (item 4) and "Power loss is still untested" (Limits) now point to gate A6 and its runs (above). One fact is new: on the API 24 emulator the platform sets `synchronous=FULL` (2) for the SDK's connection, so there every commit syncs and a kill loses nothing. Item 5's test fails on API 24 for that reason; CI runs it on API 34, where it holds. `.scratch/quality-gates/issues/14-api24-synchronous-full.md` tracks the follow-up.
 

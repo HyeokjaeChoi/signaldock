@@ -1,4 +1,4 @@
-# 13. API 24 gives the SDK queue `synchronous=FULL`: the pin test fails there
+# 14. API 24 gives the SDK queue `synchronous=FULL`: the pin test fails there
 
 Status: ready-for-agent
 Type: task
