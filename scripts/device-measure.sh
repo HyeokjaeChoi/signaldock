@@ -74,7 +74,11 @@ if [ "$PHYS" = 1 ]; then
 fi
 
 [ -f "$ENV_FILE" ] || { echo "error: env file $ENV_FILE not found; see the header of this script" >&2; exit 1; }
-set -a; . "$ENV_FILE"; set +a
+# The env file is operator-supplied (see the header), so shellcheck cannot follow it.
+set -a
+# shellcheck source=/dev/null
+. "$ENV_FILE"
+set +a
 SERVER_PORT="${SIGNALDOCK_SERVER_PORT:-8080}"
 compose() { docker compose -p "$PROJECT" --env-file "$ENV_FILE" "$@"; }
 psql_ids() { compose exec -T db psql -U "$SIGNALDOCK_DB_USER" -d "${SIGNALDOCK_DB_NAME:-signaldock}" -At -c "SELECT event_id FROM events WHERE name = 'm_$1' ORDER BY event_id"; }
@@ -117,7 +121,8 @@ phase() {
 }
 
 run_scenario() {
-  local sc="$1" final="perf/sdk-results/api$api-$PREFIX$1" dir runId="r$(date -u +%Y%m%d%H%M%S)$1" ok=0
+  local sc="$1" final="perf/sdk-results/api$api-$PREFIX$1" dir runId ok=0
+  runId="r$(date -u +%Y%m%d%H%M%S)$1"
   dir="$(mktemp -d)"  # published to $final only after collection, so a failed setup keeps the previous run
   echo "== $sc (run $runId)"
   adb shell pm clear "$PKG" >/dev/null

@@ -79,7 +79,9 @@ for v in sdk nosdk; do
   cp "$CONSUMER/app/build/outputs/mapping/release/mapping.txt" "$WORK/$v/mapping.txt"
   consumer -Psignaldock.sdk=$flag :app:dependencies --configuration releaseRuntimeClasspath > "$WORK/$v/dependencies.txt"
 done
+# shellcheck disable=SC2034 # read as ${!pkg_var} with pkg_var="PKG_$v" in the loops below
 PKG_sdk=local.signaldock.consumer
+# shellcheck disable=SC2034 # same indirect read as PKG_sdk
 PKG_nosdk=local.signaldock.consumer.nosdk
 ACT=local.signaldock.consumer.MainActivity
 for v in sdk nosdk; do adb install -r "$WORK/$v/app-release.apk" >/dev/null; done

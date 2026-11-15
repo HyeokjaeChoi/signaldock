@@ -20,6 +20,9 @@ jobs:
       # The freeze checks compare with origin/main; a depth-1 checkout has no such ref.
       - run: git fetch --no-tags --depth=1 origin main:refs/remotes/origin/main
       - run: scripts/check-repo-rules.sh
+      # Pinned shellcheck and actionlint (ADR-0049 D1, D2); `lint` skips the JDK download.
+      - run: scripts/setup-toolchain.sh lint
+      - run: scripts/check-shell-lint.sh
       - run: python3 -I -m unittest discover -s scripts -p 'test_*.py'  # scripts/test_demo_seed.py
       - run: python3 -I -m unittest discover -s perf -p 'test_*.py'  # perf/test_seed.py (seed CSV matches the events columns)
 
@@ -47,7 +50,8 @@ jobs:
       - run: scripts/setup-toolchain.sh
       # ubuntu-latest ships an Android SDK at $ANDROID_HOME.
       - run: |
-          export JAVA_HOME="$PWD/.tools/$(ls .tools | grep '^jdk-')"
+          jdks=("$PWD"/.tools/jdk-*)
+          export JAVA_HOME="${jdks[0]}"
           sdk/gradlew -p sdk :sdk-android:testDebugUnitTest :demo:feature:shop:testDebugUnitTest :demo:feature:diagnostics:testDebugUnitTest :demo:core:data:testDebugUnitTest --no-daemon
           # Compile only: the `device-test` job runs the instrumented tests on an emulator (ADR-0023).
           sdk/gradlew -p sdk :sdk-android:assembleDebugAndroidTest --no-daemon
@@ -78,7 +82,8 @@ jobs:
       - run: scripts/setup-toolchain.sh
       # Testcontainers uses the runner's Docker for PostgreSQL.
       - run: |
-          export JAVA_HOME="$PWD/.tools/$(ls .tools | grep '^jdk-')"
+          jdks=("$PWD"/.tools/jdk-*)
+          export JAVA_HOME="${jdks[0]}"
           cd server && ./gradlew test verifyJooq --no-daemon
       - if: failure()
         run: echo "::notice::If the log says 'Dependency verification failed', run scripts/update-gradle-verification.sh and commit the changed gradle/verification-metadata.xml files (ADR-0038)."
@@ -93,7 +98,9 @@ jobs:
         with:
           persist-credentials: false
       - run: scripts/setup-toolchain.sh
-      - run: echo "JAVA_HOME=$PWD/.tools/$(ls .tools | grep '^jdk-')" >> "$GITHUB_ENV"
+      - run: |
+          jdks=("$PWD"/.tools/jdk-*)
+          echo "JAVA_HOME=${jdks[0]}" >> "$GITHUB_ENV"
       # The emulator needs /dev/kvm to be usable by the runner user.
       - name: Enable KVM
         run: |

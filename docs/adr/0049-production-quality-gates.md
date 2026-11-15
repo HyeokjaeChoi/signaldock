@@ -67,3 +67,24 @@ Spec gates W1 to W4 run in `scripts/verify-contract.sh` step 4 (CI job `verify-c
 The local build gave the same sizes (184,135 before a one-byte code change). The CI run above also ran ESLint, Prettier, both type checks, and all tests with no failure.
 
 **Not done here.** No check yet fails a PR that raises `budgetGzipBytes` (ADR-0049 decision 3 style, against `origin/main`); the ticket that owns `scripts/check-repo-rules.sh` can add it. The root lockfile has one moderate advisory (`minimatch` below `typescript-estree`, a dev tool that runs on repository files only); the fix needs a breaking `typescript-eslint` downgrade.
+
+## Amendment (2026-11-15, ticket 03: shellcheck and actionlint, gates D1 and D2)
+
+- Pins: shellcheck 0.11.0 and actionlint 1.7.12, each with a SHA-256 per platform (darwin and linux, arm64 and x64) in `scripts/setup-toolchain.sh`. `scripts/setup-toolchain.sh lint` installs only these two, so the CI `check` job downloads no JDK. `scripts/check-shell-lint.sh` runs only the pinned copies in `.tools/`, never a copy on PATH.
+- Scope: shellcheck `-x --severity=warning` on the 27 tracked files that match `*.sh` or `.githooks/*`. The four `gradlew` wrappers are generated and are not covered. actionlint runs on all 7 workflows and calls the pinned shellcheck for `run:` blocks (default severity, pyflakes off).
+- Runs in the `check` job of `repo-rules.yml` and in `.githooks/pre-commit`. A missing or wrong-version tool fails the run with a setup message.
+- First run on main 3b640b9 (before fixes): shellcheck 9 findings in 5 scripts; actionlint 9 shellcheck messages in 5 `run:` steps. All fixed; no finding is baselined.
+
+| File | Findings fixed |
+|---|---|
+| `scripts/check-size-budget.sh` | SC2155, SC2010: `export JAVA_HOME=$(ls \| grep)` became a glob |
+| `scripts/update-gradle-verification.sh` | SC2155, SC2010: same, glob `jdk-21*` |
+| `scripts/device-durability.sh` | SC2010: same |
+| `scripts/device-measure.sh` | SC1090: `# shellcheck source=/dev/null` (operator-supplied env file); SC2155: `runId` assigned on its own line |
+| `scripts/host-cost-measure.sh` | SC2034 twice: `PKG_sdk`, `PKG_nosdk` are read as `${!pkg_var}`; two `# shellcheck disable=SC2034` with that reason |
+| `codeql.yml`, `release.yml` | SC2155, SC2010 each: same glob |
+| `repo-rules.yml` (`sdk-test`, `server-test`, `device-test`) | SC2155, SC2010 (5 messages): same glob |
+
+Behavior change: only when `.tools/` holds more than one `jdk-*` directory. The old code built a multi-line path and failed; the glob uses the first match. With no JDK, the error message shows the glob instead of an empty name; `device-durability.sh` now has the same `-x "$JAVA_HOME/bin/java"` check as the other scripts, so it still fails at once.
+
+Evidence: CI run 43678422518 (PR 282), job `check` passed with both steps.
