@@ -15,8 +15,8 @@ import retrofit2.http.POST
 import retrofit2.http.Streaming
 import java.io.IOException
 import java.io.InterruptedIOException
-import javax.net.SocketFactory
 import java.util.concurrent.TimeUnit
+import javax.net.SocketFactory
 
 internal class BatchHttpRequest(val contractVersion: String, val body: ByteArray)
 

@@ -12,7 +12,6 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.testApplication
-import java.net.ServerSocket
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import local.signaldock.persistence.Database
@@ -20,6 +19,7 @@ import local.signaldock.server.jooq.tables.Events.EVENTS
 import org.testcontainers.DockerClientFactory
 import org.testcontainers.postgresql.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
+import java.net.ServerSocket
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

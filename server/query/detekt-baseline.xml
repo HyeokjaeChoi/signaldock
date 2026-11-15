@@ -1,0 +1,11 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>MagicNumber:Query.kt:1_000_000</ID>
+    <ID>MagicNumber:Query.kt:3</ID>
+    <ID>MagicNumber:Query.kt:9999</ID>
+    <ID>ThrowsCount:Query.kt:private fun decodeCursor: ListCursor</ID>
+    <ID>TooManyFunctions:Query.kt:local.signaldock.query.Query.kt</ID>
+  </CurrentIssues>
+</SmellBaseline>

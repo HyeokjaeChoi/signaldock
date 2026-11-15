@@ -1,0 +1,19 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>MagicNumber:ClientReport.kt:7</ID>
+    <ID>MagicNumber:IngestRules.kt:17</ID>
+    <ID>MagicNumber:IngestRules.kt:1_000_000</ID>
+    <ID>MagicNumber:IngestRules.kt:4</ID>
+    <ID>MagicNumber:IngestRules.kt:9999</ID>
+    <ID>ReturnCount:IngestRules.kt:private fun validUnicode: Boolean</ID>
+    <ID>ReturnCount:IngestRules.kt:public fun validateEvent: ValidatedItem</ID>
+    <ID>ThrowsCount:ClientReport.kt:public fun validateClientReport: ClientReport</ID>
+    <ID>ThrowsCount:IngestRules.kt:public fun checkItemContractVersion</ID>
+    <ID>TooManyFunctions:IngestRules.kt:local.signaldock.ingestion.IngestRules.kt</ID>
+    <ID>TrailingCommaOnDeclarationSite:ClientReport.kt:DiscardReason</ID>
+    <ID>TrailingCommaOnDeclarationSite:Domain.kt:SdkPlatform</ID>
+    <ID>TrailingCommaOnDeclarationSite:TrackingPlan.kt:PlanStatus</ID>
+  </CurrentIssues>
+</SmellBaseline>

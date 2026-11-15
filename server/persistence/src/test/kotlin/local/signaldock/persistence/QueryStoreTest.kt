@@ -3,7 +3,6 @@ package local.signaldock.persistence
 import kotlinx.coroutines.runBlocking
 import local.signaldock.ingestion.PropertyValue
 import local.signaldock.ingestion.SdkPlatform
-import local.signaldock.query.PlanStatusCounts
 import local.signaldock.query.Bucket
 import local.signaldock.query.CountQuery
 import local.signaldock.query.EventFilter
@@ -11,6 +10,7 @@ import local.signaldock.query.ListCursor
 import local.signaldock.query.ListQuery
 import local.signaldock.query.MAX_NAME_COUNTS
 import local.signaldock.query.Period
+import local.signaldock.query.PlanStatusCounts
 import local.signaldock.query.SortOrder
 import local.signaldock.query.TimeCountQuery
 import local.signaldock.query.bucketStarts

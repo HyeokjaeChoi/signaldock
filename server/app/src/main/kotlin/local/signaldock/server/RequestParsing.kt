@@ -1,9 +1,5 @@
 package local.signaldock.server
 
-import java.nio.ByteBuffer
-import java.nio.charset.CharacterCodingException
-import java.nio.charset.CodingErrorAction
-import java.nio.charset.StandardCharsets
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -14,11 +10,10 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.decodeFromJsonElement
 import local.signaldock.ingestion.ClientReport
-import local.signaldock.ingestion.RawDiscardedCount
-import local.signaldock.ingestion.validateClientReport
 import local.signaldock.ingestion.EventCandidate
 import local.signaldock.ingestion.EventFields
 import local.signaldock.ingestion.PropertyValue
+import local.signaldock.ingestion.RawDiscardedCount
 import local.signaldock.ingestion.RequestFailure
 import local.signaldock.ingestion.ValidatedBatch
 import local.signaldock.ingestion.checkBatchBytes
@@ -27,8 +22,13 @@ import local.signaldock.ingestion.checkEventCount
 import local.signaldock.ingestion.checkItemContractVersion
 import local.signaldock.ingestion.parseInstallationId
 import local.signaldock.ingestion.resolveEventIdConflicts
+import local.signaldock.ingestion.validateClientReport
 import local.signaldock.ingestion.validateEvent
 import org.openapitools.client.models.EventIngest
+import java.nio.ByteBuffer
+import java.nio.charset.CharacterCodingException
+import java.nio.charset.CodingErrorAction
+import java.nio.charset.StandardCharsets
 
 /**
  * Containers at this depth or deeper (root 0, events 1, event 2, properties 3, so property values

@@ -4,10 +4,10 @@ import android.content.Context
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withContext
 import local.signaldock.internal.collection.EventCollector
 import local.signaldock.internal.delivery.DeprecationNotice
 import local.signaldock.internal.delivery.DropCounter

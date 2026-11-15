@@ -6,7 +6,6 @@ import local.signaldock.internal.init.RandomUuidV4
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.util.UUID
 
 /**
  * Installation ID in a file under the SDK directory in noBackupFilesDir (ADR-0001).

@@ -1,9 +1,9 @@
 package local.signaldock.query
 
+import local.signaldock.ingestion.SdkPlatform
 import java.time.Instant
 import java.time.ZoneId
 import java.util.UUID
-import local.signaldock.ingestion.SdkPlatform
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

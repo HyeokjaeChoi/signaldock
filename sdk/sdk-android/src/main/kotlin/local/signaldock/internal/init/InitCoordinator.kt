@@ -2,10 +2,10 @@ package local.signaldock.internal.init
 
 import android.app.Application
 import android.content.Context
-import kotlinx.coroutines.CancellationException
 import androidx.room.Room
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -16,12 +16,15 @@ import local.signaldock.InitError
 import local.signaldock.InitResult
 import local.signaldock.SignalDock
 import local.signaldock.SignalDockConfig
+import local.signaldock.internal.MIGRATION_1_2
+import local.signaldock.internal.MIGRATION_2_3
+import local.signaldock.internal.SignalDockDatabase
 import local.signaldock.internal.collection.EventCollector
 import local.signaldock.internal.delivery.BatchTransport
+import local.signaldock.internal.delivery.DeprecationNotice
 import local.signaldock.internal.delivery.Jitter
 import local.signaldock.internal.delivery.RandomJitter
 import local.signaldock.internal.delivery.RetrofitBatchTransport
-import local.signaldock.internal.delivery.DeprecationNotice
 import local.signaldock.internal.delivery.Sender
 import local.signaldock.internal.scheduling.DeliveryCoordinator
 import local.signaldock.internal.scheduling.FOREGROUND_TRIGGER_DELAY_MILLIS
@@ -30,9 +33,6 @@ import local.signaldock.internal.scheduling.ForegroundTrigger
 import local.signaldock.internal.scheduling.NotifyingEventSink
 import local.signaldock.internal.scheduling.WorkManagerScheduler
 import local.signaldock.internal.scheduling.WorkScheduler
-import local.signaldock.internal.MIGRATION_1_2
-import local.signaldock.internal.MIGRATION_2_3
-import local.signaldock.internal.SignalDockDatabase
 import local.signaldock.internal.storage.InstallationIdStore
 import local.signaldock.internal.storage.OptOutStore
 import local.signaldock.internal.storage.QueueLimits

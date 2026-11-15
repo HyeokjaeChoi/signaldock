@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>MagicNumber:DiagnosticsScreen.kt:8</ID>
+    <ID>SpacingBetweenDeclarationsWithAnnotations:DiagnosticsViewModelTest.kt:DiagnosticsViewModelTest$@After fun tearDown</ID>
+    <ID>TooGenericExceptionCaught:DiagnosticsViewModel.kt:DiagnosticsViewModel$e: Exception</ID>
+  </CurrentIssues>
+</SmellBaseline>

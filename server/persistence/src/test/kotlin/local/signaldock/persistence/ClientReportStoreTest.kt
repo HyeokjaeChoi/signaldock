@@ -5,8 +5,8 @@ import local.signaldock.ingestion.ClientReport
 import local.signaldock.ingestion.DiscardReason
 import local.signaldock.ingestion.DiscardedCount
 import local.signaldock.ingestion.SdkPlatform
-import local.signaldock.query.ClientReportCountQuery
 import local.signaldock.query.ClientReportCount
+import local.signaldock.query.ClientReportCountQuery
 import local.signaldock.query.MAX_CLIENT_REPORT_COUNTS
 import local.signaldock.query.Period
 import local.signaldock.server.jooq.tables.ClientReports.CLIENT_REPORTS

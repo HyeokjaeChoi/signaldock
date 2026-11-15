@@ -157,6 +157,12 @@ if [ "$HAVE_MAIN" = 1 ]; then
   done
 fi
 
+# An Android Lint or detekt baseline may only lose entries (ADR-0049 decision 3). Logic and tests: scripts/check-baselines.py,
+# scripts/test_check_baselines.py (the tests add an entry and expect a failure).
+if [ "$HAVE_MAIN" = 1 ]; then
+  python3 -I scripts/check-baselines.py origin/main || fail=1
+fi
+
 # Workflow security (cloud-demo spec D9, ADR-0043 item 4). Reads the index. `wf` prints a workflow
 # without comments or blank lines, so a trigger or a pin named only in a comment does not count.
 wf() { git show ":$1" | sed -E 's/(^|[[:space:]])#.*//' | awk 'NF'; }

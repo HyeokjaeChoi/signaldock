@@ -1,8 +1,8 @@
 package local.signaldock.demo.feature.shop
 
 import androidx.lifecycle.SavedStateHandle
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher

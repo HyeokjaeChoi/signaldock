@@ -1,6 +1,6 @@
 # 01. Kotlin static analysis: Android Lint, detekt with ktlint rules
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 
 ## Scope and completion criteria

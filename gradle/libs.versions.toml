@@ -19,6 +19,10 @@ binary-compatibility-validator = "0.18.2"
 # Dependency baseline (issue 56, ADR-0033).
 dependency-guard = "0.5.0"
 
+# Static analysis (ticket 01, ADR-0049). detekt 2.x is the only line built against Kotlin 2.4 (2.0.0-alpha.6 uses the
+# 2.4.10 compiler); the 1.23 line embeds the 2.0 compiler. It is an alpha: ADR-0049 amendment 2026-11-15.
+detekt = "2.0.0-alpha.6"
+
 # Baseline Profile (issue 70, ADR-0040). Latest stable on Google Maven, 2026-10-17. profileinstaller is used by
 # the profile app only; the SDK does not depend on it.
 baselineprofile = "1.5.0"
@@ -104,6 +108,7 @@ androidx-benchmark-macro-junit4 = { module = "androidx.benchmark:benchmark-macro
 androidx-uiautomator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "androidx-uiautomator" }
 androidx-profileinstaller = { module = "androidx.profileinstaller:profileinstaller", version.ref = "profileinstaller" }
 slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
+detekt-ktlint = { module = "dev.detekt:detekt-rules-ktlint-wrapper", version.ref = "detekt" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
@@ -116,3 +121,4 @@ androidx-baselineprofile = { id = "androidx.baselineprofile", version.ref = "bas
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 dependency-guard = { id = "com.dropbox.dependency-guard", version.ref = "dependency-guard" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }

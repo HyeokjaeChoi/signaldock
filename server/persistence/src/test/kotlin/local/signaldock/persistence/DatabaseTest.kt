@@ -1,20 +1,20 @@
 package local.signaldock.persistence
 
-import java.util.UUID
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import local.signaldock.ingestion.PropertyValue
 import local.signaldock.server.jooq.tables.Events.EVENTS
 import org.testcontainers.postgresql.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
+import java.util.UUID
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -127,8 +127,8 @@ class DatabaseTest {
                         .values(id, id, "budget", java.time.OffsetDateTime.now(), "0.1.0", "android", org.jooq.JSONB.valueOf("{}"))
                         .execute()
                 }
-                query { fetch("select pg_sleep(0.9)") }   // under the 1000 ms statement limit
-                query { fetch("select pg_sleep(0.95)") }  // under it too, but over what the budget has left (about 700 ms)
+                query { fetch("select pg_sleep(0.9)") } // under the 1000 ms statement limit
+                query { fetch("select pg_sleep(0.95)") } // under it too, but over what the budget has left (about 700 ms)
             }
         }
         val elapsedMs = (System.nanoTime() - started) / 1_000_000

@@ -103,8 +103,9 @@ class IngestValidationTest {
 
     @Test
     fun `keeps raw syntax errors inside a nested property value at request level`() {
-        for (bad in listOf("""{"k":[1,}""", """{"k":{"a":1,}}""", """{"k":[1 2]}""", """{"k":{"a" 1}}""", """{"k":[[[[[[[[1]]}"""))
+        for (bad in listOf("""{"k":[1,}""", """{"k":{"a":1,}}""", """{"k":[1 2]}""", """{"k":{"a" 1}}""", """{"k":[[[[[[[[1]]}""")) {
             assertEquals("MALFORMED_REQUEST", assertFailsWith<RequestFailure> { parse(batch(event(properties = bad))) }.code, bad)
+        }
     }
 
     @Test

@@ -55,6 +55,13 @@ jobs:
           sdk/gradlew -p sdk :sdk-android:testDebugUnitTest :demo:feature:shop:testDebugUnitTest :demo:feature:diagnostics:testDebugUnitTest :demo:core:data:testDebugUnitTest --no-daemon
           # Compile only: the `device-test` job runs the instrumented tests on an emulator (ADR-0023).
           sdk/gradlew -p sdk :sdk-android:assembleDebugAndroidTest --no-daemon
+      # Static analysis of every module of the SDK build (ADR-0049): Android Lint with warnings as errors, and detekt with
+      # the ktlint rules. Each module has a baseline that may only shrink (scripts/check-baselines.py, run by `check`).
+      - name: Android Lint and detekt
+        run: |
+          jdks=("$PWD"/.tools/jdk-*)
+          export JAVA_HOME="${jdks[0]}"
+          sdk/gradlew -p sdk lint detekt --no-daemon
       - if: failure()
         run: echo "::notice::If the log says 'Dependency verification failed', run scripts/update-gradle-verification.sh and commit the changed gradle/verification-metadata.xml files (ADR-0038)."
 
@@ -85,6 +92,12 @@ jobs:
           jdks=("$PWD"/.tools/jdk-*)
           export JAVA_HOME="${jdks[0]}"
           cd server && ./gradlew test verifyJooq --no-daemon
+      # detekt with the ktlint rules for every server module (ADR-0049). Baselines may only shrink (scripts/check-baselines.py).
+      - name: detekt
+        run: |
+          jdks=("$PWD"/.tools/jdk-*)
+          export JAVA_HOME="${jdks[0]}"
+          cd server && ./gradlew detekt --no-daemon
       - if: failure()
         run: echo "::notice::If the log says 'Dependency verification failed', run scripts/update-gradle-verification.sh and commit the changed gradle/verification-metadata.xml files (ADR-0038)."
 

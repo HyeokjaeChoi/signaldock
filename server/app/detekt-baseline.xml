@@ -1,0 +1,52 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:SdkWireCorpusTest.kt:SdkWireCorpusTest$!v.isString &amp;&amp; v.content != "true" &amp;&amp; v.content != "false" &amp;&amp; v.content != "null"</ID>
+    <ID>CyclomaticComplexMethod:RequestParsing.kt:StrictJsonScanner$private fun skipContainer: JsonNode</ID>
+    <ID>CyclomaticComplexMethod:TrackingPlanFile.kt:internal fun parseTrackingPlan: TrackingPlan</ID>
+    <ID>EmptyElseBlock:RequestParsing.kt:StrictJsonScanner$if (peek() == '+' || peek() == '-') position++</ID>
+    <ID>LongMethod:Application.kt:internal fun Application.ingestionModule</ID>
+    <ID>LoopWithTooManyJumpStatements:RequestParsing.kt:StrictJsonScanner$do</ID>
+    <ID>LoopWithTooManyJumpStatements:RequestParsing.kt:StrictJsonScanner$while</ID>
+    <ID>MagicNumber:Application.kt:2_000</ID>
+    <ID>MagicNumber:Application.kt:4096</ID>
+    <ID>MagicNumber:RequestParsing.kt:400</ID>
+    <ID>MagicNumber:RequestParsing.kt:401</ID>
+    <ID>MagicNumber:RequestParsing.kt:413</ID>
+    <ID>MagicNumber:RequestParsing.kt:415</ID>
+    <ID>MagicNumber:RequestParsing.kt:StrictJsonScanner$4</ID>
+    <ID>MaxLineLength:ClientReportTest.kt:ClientReportTest$ SELECT timestamptz '2026-10-12 00:00:00+00', 'android', 'v' || lpad(g::text, 3, '0'), 'queue_full', 1 FROM generate_series(1, 101) g</ID>
+    <ID>MaxLineLength:ClientReportTest.kt:ClientReportTest$val batch = """{"installationId":"47c4d89f-352a-41da-9b31-529ea756515a","events":[{"eventId":"30d66f95-2435-4e56-b52a-70b1c8bba4ef","name":"product_viewed","occurredAt":"2026-10-09T21:30:00.123Z","properties":{},"sdkVersion":"0.1.0","contractVersion":"1"}]}"""</ID>
+    <ID>MaxLineLength:DatabaseOutageTest.kt:DatabaseOutageTest$private fun batch</ID>
+    <ID>MaxLineLength:PlanStatusTest.kt:PlanStatusTest$assertEquals(listOf("product_viewed"), json.parseToJsonElement(byName).jsonObject["items"]!!.jsonArray.map { it.jsonObject["name"]!!.jsonPrimitive.content })</ID>
+    <ID>MaxLineLength:QueryRoutes.kt:json.encodeToString(ClientReportCounts(counts.items.map { ClientReportCount(it.sdkPlatform.toDto(), it.sdkVersion, DiscardReason.valueOf(it.reason.name), it.count) }, counts.truncated))</ID>
+    <ID>MaxLineLength:QueryRoutesTest.kt:QueryRoutesTest$for</ID>
+    <ID>MaxLineLength:QueryRoutesTest.kt:QueryRoutesTest$private val endpoints = listOf("/v1/events", "/v1/events/${id(1)}", "/v1/event-counts/by-name", "/v1/event-counts/by-time", "/v1/event-counts/by-plan-status")</ID>
+    <ID>MaxLineLength:SdkPlatformTest.kt:SdkPlatformTest$json.decodeFromString&lt;ClientReportCounts&gt;(client.query("/v1/client-report-counts", window() + listOfNotNull(p?.let { "sdkPlatform" to it })).bodyAsText())</ID>
+    <ID>MaxLineLength:SdkPlatformTest.kt:SdkPlatformTest$runBlocking { json.decodeFromString&lt;EventReceiptPage&gt;(client.query("/v1/events", window() + params + ("sort" to "receivedAt_asc")).bodyAsText()).items }</ID>
+    <ID>MaxLineLength:SdkWireCorpusTest.kt:SdkWireCorpusTest$/** A number as its `Double` value (as the Swift comparison does): `1`, `1.0` and `1.0E0` are one number, and so are `4.9E-324` and `5e-324`. Strings and booleans stay as they are. */</ID>
+    <ID>MaxLineLength:SdkWireCorpusTest.kt:SdkWireCorpusTest$assertEquals(platform, (e as JsonObject)["sdkPlatform"]?.jsonPrimitive?.content, "$name event $i: sdkPlatform missing or not the folder platform")</ID>
+    <ID>ReturnCount:RequestParsing.kt:private fun fieldsOf: EventFields?</ID>
+    <ID>SpacingAroundParens:Application.kt:(</ID>
+    <ID>SpacingBetweenDeclarationsWithComments:Application.kt:// A variable that is set but malformed must not silently fall back: a run would measure the wrong limits.</ID>
+    <ID>SpacingBetweenDeclarationsWithComments:CollectionControl.kt:CollectionControl.Companion$// `platform:version`; no prefix means `android`. The prefix is exact and case-sensitive (ADR-0046).</ID>
+    <ID>SwallowedException:TrackingPlanFile.kt:error: IOException</ID>
+    <ID>SwallowedException:TrackingPlanFile.kt:error: IllegalArgumentException</ID>
+    <ID>ThrowsCount:Application.kt:private suspend fun io.ktor.server.application.ApplicationCall.receiveJsonBody: ByteArray</ID>
+    <ID>ThrowsCount:RequestParsing.kt:internal fun parseBatch: ValidatedBatch</ID>
+    <ID>ThrowsCount:RequestParsing.kt:internal fun parseClientReport: ClientReport</ID>
+    <ID>TooManyFunctions:RequestParsing.kt:StrictJsonScanner</ID>
+    <ID>TrailingCommaOnCallSite:Application.kt:(Json.encodeToString(ErrorResponse("REQUEST_TIMEOUT", "Storage outcome can be uncertain; a resent report counts twice")), ContentType.Application.Json, HttpStatusCode.ServiceUnavailable)</ID>
+    <ID>TrailingCommaOnCallSite:Application.kt:(Json.encodeToString(ErrorResponse("REQUEST_TIMEOUT", "Storage outcome can be uncertain; retry with the same event IDs")), ContentType.Application.Json, HttpStatusCode.ServiceUnavailable)</ID>
+    <ID>TrailingCommaOnCallSite:Application.kt:(Json.encodeToString(ErrorResponse("TEMPORARILY_UNAVAILABLE", "Collection is paused by the operator; retry with the same event IDs")), ContentType.Application.Json, HttpStatusCode.ServiceUnavailable)</ID>
+    <ID>TrailingCommaOnCallSite:Application.kt:(Json.encodeToString(ErrorResponse("TEMPORARILY_UNAVAILABLE", "Retry later; a resent report counts twice")), ContentType.Application.Json, HttpStatusCode.ServiceUnavailable)</ID>
+    <ID>TrailingCommaOnCallSite:Application.kt:(Json.encodeToString(ErrorResponse("TEMPORARILY_UNAVAILABLE", "Retry with the same event IDs")), ContentType.Application.Json, HttpStatusCode.ServiceUnavailable)</ID>
+    <ID>TrailingCommaOnCallSite:Application.kt:(Json.encodeToString(ErrorResponse(error.code, error.code)), ContentType.Application.Json, HttpStatusCode.fromValue(httpStatusOf(error.code)))</ID>
+    <ID>TrailingCommaOnCallSite:Application.kt:(required("SIGNALDOCK_JDBC_URL"), required("SIGNALDOCK_DB_USER"), required("SIGNALDOCK_DB_PASSWORD"), limits = databaseLimitsFromEnv(System::getenv), observer = DatabaseObserver { stage, millis -&gt; org.slf4j.LoggerFactory.getLogger("ingestion.database").info("stage={} elapsedMs={}", stage, millis) })</ID>
+    <ID>TrailingCommaOnCallSite:DatabaseLimitsEnvTest.kt:DatabaseLimitsEnvTest$(concurrency = 8, poolSize = 8, minimumIdle = 8, admissionMs = 1000, connectionMs = 1000, lockMs = 500, statementMs = 2000)</ID>
+    <ID>TrailingCommaOnCallSite:IngestionIntegrationTest.kt:IngestionIntegrationTest$(concurrency = 1, poolSize = 2, requestMs = 2_000, admissionMs = 100, connectionMs = 250, lockMs = 100, statementMs = 300, cleanupMs = 250, responseMs = 100)</ID>
+    <ID>TrailingCommaOnCallSite:PlanStatusTest.kt:PlanStatusTest$(1 to ApiPlanStatus.PLANNED, 2 to ApiPlanStatus.UNPLANNED_EVENT, 3 to ApiPlanStatus.INVALID_PROPERTIES, 4 to ApiPlanStatus.INVALID_PROPERTIES, 5 to ApiPlanStatus.INVALID_PROPERTIES)</ID>
+    <ID>TrailingCommaOnCallSite:QueryRoutesTest.kt:QueryRoutesTest$(concurrency = 1, poolSize = 2, requestMs = 2_000, admissionMs = 100, connectionMs = 250, lockMs = 100, statementMs = 300, cleanupMs = 250, responseMs = 100)</ID>
+  </CurrentIssues>
+</SmellBaseline>

@@ -10,9 +10,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import local.signaldock.internal.collection.EventCollector
 import local.signaldock.internal.delivery.BatchHttpRequest
