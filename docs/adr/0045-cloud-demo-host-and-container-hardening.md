@@ -49,7 +49,7 @@ The demo ([ADR-0043](0043-cloud-demo-hosting-and-deploy.md)) is on the public in
 - **docker-bench-security (item 9)** is pinned to v1.6.1, commit `ba0b402ea56aafbb9a56f09cc13ee629160c58b6`.
 - **Uptime check (item 7)** is a Cloud Monitoring public check. No agent and no service account run on the VM.
 
-## Amendment 2026-10-26 (issue 14)
+## Amendment 2026-10-26 (issue 16)
 
 Source: first docker-bench-security run (v1.6.1, score 22). The owner decided on 2026-10-26.
 
