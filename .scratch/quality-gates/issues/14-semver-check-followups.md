@@ -1,7 +1,8 @@
 # 14. Semver check follow-ups (Minor findings of PR 290)
 
-Status: claimed
+Status: resolved
 Type: task
+Execution: Done (PR #304, 2026-11-16 UTC)
 
 Open Minor findings of ticket 09 (PR 290, `scripts/check-api-semver.sh`):
 
