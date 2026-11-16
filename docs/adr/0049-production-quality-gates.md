@@ -239,3 +239,37 @@ Job times, from `repo-rules` runs (a job covers its checkout, toolchain setup, a
 |---|---|---|
 | `sdk-test` | 203 s, 161 s, 234 s | 285 s (the new step: 88 s) |
 | `server-test` | 129 s, 112 s, 140 s | 150 s (the new step: 20 s) |
+## Amendment (2026-11-16, ticket 08, server gates B3 and B4)
+
+**B3, nightly ingest load SLO** (`perf/ci-slo.sh`, `perf/ci-slo.js`, `perf/ci_slo.py`, job `ingest-slo` in `nightly.yml`). Compose on the runner with `perf/compose.perf.yml` (DB 2 CPUs / 2 GiB, server 2 CPUs / 1 GiB, an empty database, random keys), then k6: 20 req/s x 20 events (about 1 KiB each, 100 installations) for 120 s, after a 15 s warm-up that p95 ignores. No dashboard clients and no seed: the gate watches the ingest path, and the seeded runs of ADR-0013 stay in `perf/run_one.py`. The gate fails on any answer that is not 200 with 20 `accepted` results (k6 threshold `non200`), on a dropped iteration, on fewer than 99% of the 2,400 measure-phase requests, or when the measure-phase p95 is more than 2x `p95Ms` in `perf/ci-slo-baseline.json`. The p95 rule is in Python (decision 7); the baseline names its runner class (`ubuntu-latest`) and the run fails when it differs from `SLO_RUNNER_CLASS` of the job. The label is typed by hand in two places and is not verified against the runner; `result.json` records `ImageOS`, `ImageVersion`, and `RUNNER_ARCH`, so a moved image shows in the artifact. `perf/ci-slo.sh measure` has no p95 rule and prints the numbers for a new baseline. The k6 binary is the pinned v2.3.0 release (SHA-256 in the script) when none is on `PATH`.
+
+Baseline (decision 2): five runs on `ubuntu-latest` in [43777563219](https://github.com/HyeokjaeChoi/signaldock/actions/runs/43777563219) (commit 4116d09), p95 7.25, 6.49, 10.67, 11.61, 8.77 ms, 2,400 or 2,401 requests, no bad request. `p95Ms` = the highest, 11.61 ms, so the limit is 23.2 ms. The highest, not the median (8.77): a first set of three runs with a looser load shape gave 8.0, 11.6, and 38.3 ms, and 2x the median would fail on that spread. Job time 4 min (Compose build 1 to 2 min, k6 2 min 15 s); the estimate was about 8 min.
+
+Two faults found by the runs, fixed at the cause, with no retry:
+- The first load shape used one installation for all requests. In one run of 2,701 a request hit the 500 ms `lock_timeout` on a write of the shared installation row and the server answered with an error (run [43775817630](https://github.com/HyeokjaeChoi/signaldock/actions/runs/43775817630), job `measure (5)`, `canceling statement due to lock timeout` in the DB log). Real installations are separate devices, so the load now uses 100, as `perf/common.py` does.
+- Without a warm-up the p95 of the first three runs spread from 8 to 38 ms (JIT, pool, page cache). The warm-up phase removed that spread in the five runs above.
+
+Proof (temporary workflow `tmp-slo.yml`, removed before merge):
+
+| Sample | How | Result | Run |
+|---|---|---|---|
+| Bad p95 | baseline file with `p95Ms: 0.1` | gate exits 1, `p95 ... ms > 2 x baseline 0.1 ms = 0.2 ms` | [43779419710](https://github.com/HyeokjaeChoi/signaldock/actions/runs/43779419710) job `bad-p95` |
+| Bad status | `SIGNALDOCK_INGEST_SHED=true` (the server answers 503) | gate exits 1, `2702 bad requests` | same run, job `bad-status` |
+| Good | the committed baseline, the job as in `nightly.yml` | pass, p95 8.16 ms (limit 23.22 ms), 2,401 requests, summary `nightly-summary-ingest-slo` result `pass` | [43780134683](https://github.com/HyeokjaeChoi/signaldock/actions/runs/43780134683) |
+| Good, final code (after review fixes) | same job on a temporary branch (`tmp-final.yml`, deleted) | pass, p95 11.40 ms (limit 23.22 ms), 2,401 requests, runner `ubuntu26` image 20261111.196.1 | [43782066629](https://github.com/HyeokjaeChoi/signaldock/actions/runs/43782066629) |
+
+The proof jobs check the reason in `result.json`, not only the exit code: in an earlier run the bad-p95 job "passed" because `docker build` failed on a Gradle plugin download (run 43777563219, job `bad-p95`). A network failure like that fails the nightly job, and the owner triages it; no retry is added (decision 5). Unit tests: `perf/test_ci_slo.py`. The numbers are two runner-class samples of one runner image, not a capacity claim.
+
+Not covered: the dashboard queries and seeded databases (ADR-0013), a baseline for another runner class (change `SLO_RUNNER_CLASS` and `p95Ms` together), a slow drift under 2x between nightly runs (the baseline does not move by itself; a raise needs a new measurement in a PR).
+
+**B4, Trivy on PR** (`.github/workflows/image-scan.yml`). It builds the server and Dashboard images and runs the Trivy of `demo-deploy.yml` (v0.76.1, index digest, `--ignore-unfixed --severity CRITICAL,HIGH --exit-code 1`) on both. It runs on `pull_request` only when a Dockerfile, a Gradle build file or `libs.versions.toml` of the server, the Dashboard `package.json`, `package-lock.json`, or nginx template, `.dockerignore`, or the workflow itself changes. It is not a required check: a path-filtered workflow that does not run would block every other PR. The owner can make it required through the ruleset of gate R3 only with a job that always runs.
+
+The gate failed on the current `main` Dockerfiles, which is a result: the server image had `apt` and `libapt-pkg6.0t64` 2.8.3 (CVE-2026-109518, HIGH, fixed in 2.8.4ubuntu0.1), and the Dashboard image had `libexpat`, `libxslt`, `musl`, `musl-utils`, and `zlib` with HIGH findings that have a fix (10 in all). Both Dockerfiles upgrade these packages in the existing fix layers, which `demo-deploy.yml` would have needed at the next tag.
+
+| Sample | Result | Run |
+|---|---|---|
+| `main` Dockerfiles | server: 2 HIGH (apt, libapt-pkg6.0t64); Dashboard: 10 HIGH | [43777629825](https://github.com/HyeokjaeChoi/signaldock/actions/runs/43777629825) (server), [43779419630](https://github.com/HyeokjaeChoi/signaldock/actions/runs/43779419630) (Dashboard) |
+| Bad sample: `eclipse-temurin:21.0.1_12-jre-jammy` as the server base (branch `gate-08-bad-image`, deleted after the run) | 7 HIGH, step fails | [43777643246](https://github.com/HyeokjaeChoi/signaldock/actions/runs/43777643246) |
+| After the Dockerfile fixes | both scans pass | [43780060680](https://github.com/HyeokjaeChoi/signaldock/actions/runs/43780060680) |
+
+The runs used a temporary `push` trigger on the ticket branch (removed before merge). Trivy sees only known CVEs on the day of the PR; new advisories on an unchanged image are found by the scan before a demo tag (`demo-deploy.yml`) and by OSV-Scanner (R2), not by this gate.

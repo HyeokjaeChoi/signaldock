@@ -49,6 +49,8 @@ Code enforces these. Do not restate them in prose; read the check when it fails.
 | Android Lint on every `sdk/` Android module that has a lint task: `warningsAsErrors`, `abortOnError`, a committed `lint-baseline.xml` in each (ADR-0049) | `sdk/build.gradle.kts`, CI `sdk-test` (`lint`) |
 | detekt with the ktlint rule set on every `sdk/` and `server/` Kotlin module, `gradle/detekt.yml`, a committed `detekt-baseline.xml` in each module that has findings (ADR-0049) | `sdk/build.gradle.kts`, `server/build.gradle.kts`, CI `sdk-test` and `server-test` (`detekt`) |
 | A lint or detekt baseline has no more entries of a rule in a file than at the merge base with `origin/main` (a baseline only shrinks; a new module starts empty) | `scripts/check-baselines.py` via `scripts/check-repo-rules.sh`; `scripts/test_check_baselines.py` |
+| Server images: Trivy finds no Critical or High finding with a fix in the server and Dashboard images; runs only when a Dockerfile or a dependency file of an image changes (ADR-0049 B4) | `.github/workflows/image-scan.yml` (not a required check: a path-filtered workflow that does not run would block the merge) |
+| Nightly ingest load SLO at 20 req/s x 20 events for 120 s on Compose: no bad request, p95 at most 2x `perf/ci-slo-baseline.json` of the same runner class (ADR-0049 B3, decision 7) | `perf/ci-slo.sh`, `perf/ci_slo.py`, `nightly.yml` job `ingest-slo` |
 | PR description is 3,500 characters or less (author text only; Dependabot and Renovate PRs exempt) | `.github/workflows/pr-description.yml` |
 | Builds, tests, device tests, SDK size budget (Android `size-budget`, iOS `ios-size-budget`), Gradle wrapper checksums | `.github/workflows/repo-rules.yml` |
 
