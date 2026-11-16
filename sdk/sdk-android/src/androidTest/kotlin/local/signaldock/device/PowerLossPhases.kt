@@ -70,7 +70,9 @@ class PowerLossPhases {
     @Test
     fun powerloss_write() {
         phase("powerloss_write")
-        val (pre, lostack, pending, tail) = listOf("pre", "lostack", "pending", "tail").map(::count)
+        val counts = listOf("pre", "lostack", "pending", "tail").map(::count)
+        val (pre, lostack, pending) = counts
+        val tail = counts[3]
         val sdk = runBlocking { rig().initialize() }
         runBlocking {
             assertEquals("the prepared queue is empty", 0, sdk.diagnostics().queuedEvents)
@@ -93,16 +95,26 @@ class PowerLossPhases {
             )
             // The sync point: nothing else writes now, so a checkpoint that cannot finish is a harness error, not a product failure.
             // `-e skipCheckpoint 1` is the negative control of the gate: without the sync point, the check must find lost events.
-            val (busy, log, checkpointed) = if (instrumentationArg("skipCheckpoint") == "1") Triple(0, 0, 0) else sdk.sqlite().query("PRAGMA wal_checkpoint(FULL)").use {
-                it.moveToFirst(); Triple(it.getInt(0), it.getInt(1), it.getInt(2))
-            }
+            val (busy, log, checkpointed) =
+                if (instrumentationArg("skipCheckpoint") == "1") {
+                    Triple(0, 0, 0)
+                } else {
+                    sdk.sqlite().query("PRAGMA wal_checkpoint(FULL)").use {
+                        it.moveToFirst()
+                        Triple(it.getInt(0), it.getInt(1), it.getInt(2))
+                    }
+                }
             if (busy != 0 || log != checkpointed) {
                 report("phase", "powerloss_write", "status", "invalid", "reason", "checkpoint busy=$busy log=$log checkpointed=$checkpointed")
                 throw AssertionError("invalid run: checkpoint busy=$busy log=$log checkpointed=$checkpointed")
             }
 
             sdk.trackSet("pl_tail", tail)
-            report("phase", "powerloss_write", "status", "armed", "checkpoint", "busy=$busy log=$log checkpointed=$checkpointed", "pid", android.os.Process.myPid().toString())
+            report(
+                "phase", "powerloss_write", "status", "armed",
+                "checkpoint", "busy=$busy log=$log checkpointed=$checkpointed",
+                "pid", android.os.Process.myPid().toString(),
+            )
         }
         Thread.sleep(300_000) // the host kills the emulator now; a run that reaches the end of this wait is a harness error
         throw AssertionError("not killed within 5 minutes")
@@ -112,7 +124,9 @@ class PowerLossPhases {
     @Test
     fun powerloss_check() {
         phase("powerloss_check")
-        val (pre, lostack, pending, tail) = listOf("pre", "lostack", "pending", "tail").map(::count)
+        val counts = listOf("pre", "lostack", "pending", "tail").map(::count)
+        val (pre, lostack, pending) = counts
+        val tail = counts[3]
         val file = File(targetContext.noBackupFilesDir, "$DIR/signaldock/queue.db")
         assertTrue("the queue file survived: ${file.path}", file.exists())
         // A no-op error handler: the default one deletes a corrupt database, which would hide the failure.
