@@ -40,6 +40,7 @@ ADRs:
 - ADR-0040 (`docs/adr/0040-sdk-baseline-profile.md`), for `sdk/profile-app`, `sdk/baseline-profile`, and `sdk/sdk-android/src/main/generated/baselineProfiles/baseline-prof.txt` (issue 70)
 - ADR-0046 (`docs/adr/0046-sdk-platform-field.md`), for the `sdkPlatform` field that Android SDK 0.4.0 sends
 - ADR-0047 (`docs/adr/0047-ios-sdk.md`), for the iOS SDK; the Android SDK is its parity reference
+- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), decisions 2 and 3 and "Amendment (2026-11-15, ticket 01, static analysis)", for Android Lint and detekt in every `sdk/` module: the `subprojects` block of `sdk/build.gradle.kts`, `gradle/detekt.yml`, and the `lint-baseline.xml` and `detekt-baseline.xml` files of the modules (baselines only shrink)
 
 Public API change: update the dump (`sdk/gradlew -p sdk :sdk-android:apiDump`), the integration guide, and `CHANGELOG.md` in the same PR.
 
@@ -85,6 +86,7 @@ ADRs:
 - ADR-0036 (`docs/adr/0036-sdk-client-reports.md`), for `POST /v1/client-reports`, `GET /v1/client-report-counts`, and `V3__create_client_reports.sql` (issue 61)
 - ADR-0037 (`docs/adr/0037-server-collection-kill-switch.md`), for `CollectionControl.kt`, the block lists, and the shed switch (issue 67)
 - ADR-0046 (`docs/adr/0046-sdk-platform-field.md`), for `V4`, the default `android`, the `platform:version` kill switch, the `sdkPlatform` filters, and the client report grouping
+- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), decisions 2 and 3 and "Amendment (2026-11-15, ticket 01, static analysis)", for detekt in every `server/` module: the `subprojects` block of `server/build.gradle.kts`, `gradle/detekt.yml`, and the `detekt-baseline.xml` files of the modules (baselines only shrink)
 
 Spec (`.scratch/signaldock/spec.md`):
 - 2. Agreed stack and boundaries
@@ -131,6 +133,7 @@ Architecture (`architecture.md`):
 ADRs:
 - ADR-0005, section "Demo app: feature modules and unidirectional data flow"
 - ADR-0021 (`docs/adr/0021-tracking-plan-codegen.md`), for how `sdk/demo/core/data` sends its events through the generated functions (issue 37)
+- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), decisions 2 and 3 and "Amendment (2026-11-15, ticket 01, static analysis)", for the `lint-baseline.xml` and `detekt-baseline.xml` of the demo modules (baselines only shrink)
 
 Spec (`.scratch/signaldock/spec.md`):
 - 6. User screens and distribution, Demo and diagnostics
@@ -282,7 +285,7 @@ ADRs:
 - ADR-0038 (`docs/adr/0038-gradle-dependency-verification.md`), for `*/gradle/verification-metadata.xml` and `scripts/update-gradle-verification.sh` (issue 68)
 - ADR-0039 (`docs/adr/0039-release-provenance-attestation.md`), for the attestation step and job permissions of `publish` in `.github/workflows/release.yml`, and the attestation section of `docs/releases/README.md` (issue 69)
 - ADR-0041 (`docs/adr/0041-claude-code-pr-review.md`), for `.github/workflows/claude-review.yml` and its `CLAUDE_CODE_VERSION` entry in `.github/renovate.json5` (issues 83 and 90)
-- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), for the PR, nightly, and release gate tiers, static-analysis baselines, the coverage ratchet, and `.github/workflows/nightly.yml` (plan: `.scratch/quality-gates/spec.md`); `docs/engineering/nightly-summary.md` and `scripts/nightly-summary.py` for the summary file of each nightly job (gate Q2)
+- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), for the PR, nightly, and release gate tiers, static-analysis baselines (`scripts/check-baselines.py` and `scripts/test_check_baselines.py`, called by `scripts/check-repo-rules.sh`; the `lint` and `detekt` steps of `sdk-test` and `server-test`), the coverage ratchet, and `.github/workflows/nightly.yml` (plan: `.scratch/quality-gates/spec.md`); `docs/engineering/nightly-summary.md` and `scripts/nightly-summary.py` for the summary file of each nightly job (gate Q2)
 - ADR-0042 (`docs/adr/0042-measurement-on-a-physical-device.md`), for the `SIGNALDOCK_PHYSICAL_DEVICE` opt-in of `scripts/device-measure.sh` and `scripts/host-cost-measure.sh`
 - ADR-0043 (`docs/adr/0043-cloud-demo-hosting-and-deploy.md`), for `scripts/demo-seed.py` (cloud-demo ticket 02) and the checks in `scripts/check-repo-rules.sh` (ticket 06)
 

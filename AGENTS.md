@@ -46,6 +46,9 @@ Code enforces these. Do not restate them in prose; read the check when it fails.
 | `StrictMode` with `penaltyDeath` on the main thread around public SDK calls in the PR tier (ADR-0049 A3) | `MainThreadStrictMode` rule in `device-test` |
 | Nightly iOS Simulator durability: all seven cases of `scripts/simulator-durability.sh`, no lost or unreported event (ADR-0049 I2) | `scripts/simulator-durability-ci.sh`, `nightly.yml` job `ios-durability` |
 | iOS SDK public API: `sdk-ios/api/SignalDock.swiftinterface` equals the normalized interface of a check-only build with the compiler of CI (`sdk-ios/api/compiler-version`); take updates from the CI artifact `api-actual` with `scripts/verify-ios.sh api-update <dir>` | CI `ios-test` (`scripts/verify-ios.sh api`); on a Mac with another compiler `scripts/verify-contract.sh` step 8 skips it |
+| Android Lint on every `sdk/` Android module that has a lint task: `warningsAsErrors`, `abortOnError`, a committed `lint-baseline.xml` in each (ADR-0049) | `sdk/build.gradle.kts`, CI `sdk-test` (`lint`) |
+| detekt with the ktlint rule set on every `sdk/` and `server/` Kotlin module, `gradle/detekt.yml`, a committed `detekt-baseline.xml` in each module that has findings (ADR-0049) | `sdk/build.gradle.kts`, `server/build.gradle.kts`, CI `sdk-test` and `server-test` (`detekt`) |
+| A lint or detekt baseline has no more entries of a rule in a file than at the merge base with `origin/main` (a baseline only shrinks; a new module starts empty) | `scripts/check-baselines.py` via `scripts/check-repo-rules.sh`; `scripts/test_check_baselines.py` |
 | PR description is 3,500 characters or less (author text only; Dependabot and Renovate PRs exempt) | `.github/workflows/pr-description.yml` |
 | Builds, tests, device tests, SDK size budget (Android `size-budget`, iOS `ios-size-budget`), Gradle wrapper checksums | `.github/workflows/repo-rules.yml` |
 

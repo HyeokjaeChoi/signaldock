@@ -24,11 +24,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.net.InetAddress
-import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
-import javax.net.SocketFactory
 import java.util.concurrent.TimeUnit
+import javax.net.SocketFactory
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 

@@ -1,0 +1,46 @@
+# detekt config for sdk/ and server/ (ADR-0049). It sits on top of the defaults (buildUponDefaultConfig).
+# A change here needs a reason in the PR: every override turns off a rule that does not fit this repo,
+# or sets a limit from a measured run.
+
+# Line length: one limit, from a measured run on 2026-11-15 (14,289 Kotlin lines in sdk/ and server/: longest 268;
+# 520 lines are over 120, 174 over 140, 50 over 160, 7 over 200). 160 is the smallest multiple of 20 with fewer than
+# 0.5% of lines over it. The longer lines are in the baselines and may only shrink.
+style:
+  MaxLineLength:
+    maxLineLength: 160
+
+naming:
+  FunctionNaming:
+    # Compose functions that return Unit are PascalCase by the Compose API guidelines.
+    ignoreAnnotated: ['Composable']
+
+ktlint:
+  # ktlint's own layout rules: the code of this repo wraps argument lists, signatures, and lambdas by hand and
+  # breaks all of them (measured 2026-11-15 on 14,289 lines: 4,823 of the 5,598 default findings, 86%). Reformatting
+  # that much code is a separate change and would bury `git blame`; a baseline of that size would never shrink.
+  # The other ktlint rules (indentation, import order, unused imports, spacing, trailing commas) stay on.
+  ArgumentListWrapping:
+    active: false
+  BinaryExpressionWrapping:
+    active: false
+  BlankLineBetweenWhenConditions:
+    active: false
+  ClassSignature:
+    active: false
+  FunctionLiteral:
+    active: false
+  FunctionSignature:
+    active: false
+  MultiLineIfElse:
+    active: false
+  ParameterListWrapping:
+    active: false
+  PropertyWrapping:
+    active: false
+  StatementWrapping:
+    active: false
+  Wrapping:
+    active: false
+  # detekt's MaxLineLength (above) checks the same lines; one rule keeps one count.
+  MaximumLineLength:
+    active: false

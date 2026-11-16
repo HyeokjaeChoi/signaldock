@@ -8,13 +8,13 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.jsonPrimitive
 import local.signaldock.internal.delivery.Jitter
 import local.signaldock.internal.delivery.RunBudget
 import local.signaldock.internal.delivery.RunEnd
 import local.signaldock.internal.delivery.TransportResult
 import local.signaldock.internal.delivery.buildBatch
 import local.signaldock.internal.delivery.parseRetryAfterMillis
-import kotlinx.serialization.json.jsonPrimitive
 import local.signaldock.internal.transport.batchRequestBytes
 import local.signaldock.internal.transport.transportJson
 import org.junit.Assert.assertEquals

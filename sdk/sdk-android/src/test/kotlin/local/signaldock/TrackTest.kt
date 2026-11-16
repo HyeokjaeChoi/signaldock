@@ -5,9 +5,9 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.boolean
 import local.signaldock.internal.storage.QueueLimits
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

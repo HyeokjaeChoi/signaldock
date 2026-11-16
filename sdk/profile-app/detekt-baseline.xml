@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>MagicNumber:ProfileApp.kt:MainActivity$29</ID>
+  </CurrentIssues>
+</SmellBaseline>

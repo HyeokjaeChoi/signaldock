@@ -9,9 +9,9 @@ import local.signaldock.SignalDock
 import local.signaldock.SignalDockConfig
 import local.signaldock.TrackResult
 import local.signaldock.measure.MeasureRunner
-import kotlin.math.ceil
 import org.junit.Assume.assumeTrue
 import org.junit.Test
+import kotlin.math.ceil
 
 /**
  * SDK load measurement phases (issue 24, ADR-0014), debug build. The phases live in

@@ -1,0 +1,10 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:ShopViewModel.kt:ShopViewModel$fun onIntent</ID>
+    <ID>MagicNumber:ShopScreen.kt:8</ID>
+    <ID>ReturnCount:ShopViewModel.kt:ShopViewModel$fun onIntent</ID>
+    <ID>SpacingBetweenDeclarationsWithAnnotations:ShopViewModelTest.kt:ShopViewModelTest$@After fun tearDown</ID>
+  </CurrentIssues>
+</SmellBaseline>

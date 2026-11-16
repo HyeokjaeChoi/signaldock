@@ -1,0 +1,36 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:Database.kt:Database$suspend fun &lt;T&gt; transaction: T</ID>
+    <ID>LongMethod:Database.kt:Database$suspend fun &lt;T&gt; transaction: T</ID>
+    <ID>MagicNumber:Database.kt:Database$5</ID>
+    <ID>MagicNumber:Database.kt:DatabaseLimits$120_000</ID>
+    <ID>MagicNumber:Database.kt:DatabaseLimits$250</ID>
+    <ID>MagicNumber:Database.kt:DatabaseLimits$64</ID>
+    <ID>MaxLineLength:EventStore.kt:EventStore$row.sdkVersion!!</ID>
+    <ID>MaxLineLength:QueryStore.kt:QueryStore$.</ID>
+    <ID>MaxLineLength:QueryStore.kt:QueryStore$select(EVENTS.EVENT_ID, EVENTS.INSTALLATION_ID, EVENTS.NAME, EVENTS.OCCURRED_AT, EVENTS.RECEIVED_AT, EVENTS.SDK_VERSION, EVENTS.SDK_PLATFORM, EVENTS.PLAN_STATUS)</ID>
+    <ID>MaxLineLength:QueryStoreTest.kt:QueryStoreTest$assertEquals(listOf(2).map(::id), runBlocking { store.list(listQuery(SortOrder.OLDEST_FIRST, 10, filter = EventFilter("cart_add", null, null, sdkPlatform = SdkPlatform.IOS))).items.map { it.eventId } })</ID>
+    <ID>MaxLineLength:QueryStoreTest.kt:QueryStoreTest$assertEquals(mapOf("cart_add" to 1L, "cart_view" to 1L), store.countByName(CountQuery(october, filter(SdkPlatform.IOS))).items.associate { it.name to it.count })</ID>
+    <ID>MaxLineLength:QueryStoreTest.kt:QueryStoreTest$val counts = plan("SELECT name, count(*) FROM events WHERE received_at &gt;= '2026-09-10 00:00:00+00' AND received_at &lt; '2026-09-11 00:00:00+00' GROUP BY name")</ID>
+    <ID>MaxLineLength:QueryStoreTest.kt:QueryStoreTest$val countsIos = plan("SELECT name, count(*) FROM events WHERE received_at &gt;= '2026-09-10 00:00:00+00' AND received_at &lt; '2026-09-11 00:00:00+00' $platform GROUP BY name")</ID>
+    <ID>MaxLineLength:QueryStoreTest.kt:QueryStoreTest$val keyset = plan("$base AND (received_at, event_id) &lt; ('2026-09-10 12:00:00+00', '00000000-0000-4000-8000-000000000000') ORDER BY received_at DESC, event_id DESC LIMIT 51")</ID>
+    <ID>MaxLineLength:QueryStoreTest.kt:QueryStoreTest$val keysetIos = plan("$base $platform AND (received_at, event_id) &lt; ('2026-09-10 12:00:00+00', '00000000-0000-4000-8000-000000000000') ORDER BY received_at DESC, event_id DESC LIMIT 51")</ID>
+    <ID>MaxLineLength:SchemaUpgradeTest.kt:SchemaUpgradeTest$assertEquals(PlanStatusCounts(planned = 1, unplannedEvent = 0, invalidProperties = 0, notChecked = 3), query.countByPlanStatus(CountQuery(window, noFilter)))</ID>
+    <ID>MaxLineLength:SchemaUpgradeTest.kt:SchemaUpgradeTest$assertEquals(listOf(c), query.list(ListQuery(window, EventFilter(null, null, null, PlanStatus.PLANNED), SortOrder.NEWEST_FIRST, 50, null)).items.map { it.eventId })</ID>
+    <ID>MaxLineLength:SchemaUpgradeTest.kt:SchemaUpgradeTest$listOf(ClientReportCount(SdkPlatform.ANDROID, "0.1.0", DiscardReason.QUEUE_FULL, 3), ClientReportCount(SdkPlatform.ANDROID, "0.1.0", DiscardReason.STORAGE_ERROR, 2))</ID>
+    <ID>NestedBlockDepth:DatabaseTest.kt:DatabaseTest$private fun sleepIsActive: Boolean</ID>
+    <ID>SpacingAroundKeyword:Database.kt:Database$catch</ID>
+    <ID>SpacingBetweenDeclarationsWithComments:SchemaUpgradeTest.kt:SchemaUpgradeTest$// Ends far in the future: the empty-database test stores a row with receivedAt = now, which must stay in the window.</ID>
+    <ID>SwallowedException:Database.kt:Database$error: java.util.concurrent.RejectedExecutionException</ID>
+    <ID>ThrowsCount:Database.kt:Database$suspend fun &lt;T&gt; transaction: T</ID>
+    <ID>TooGenericExceptionCaught:Database.kt:Database$error: Throwable</ID>
+    <ID>TrailingCommaOnCallSite:Database.kt:Database$( if (error is Error) error else if (error is DatabaseUnavailable) error else DatabaseUnavailable(if (committed) "COMMIT_OUTCOME_UNCERTAIN" else "DATABASE_UNAVAILABLE") )</ID>
+    <ID>TrailingCommaOnCallSite:DatabaseTest.kt:DatabaseTest$(EVENTS, EVENTS.EVENT_ID, EVENTS.INSTALLATION_ID, EVENTS.NAME, EVENTS.OCCURRED_AT, EVENTS.SDK_VERSION, EVENTS.SDK_PLATFORM, EVENTS.PROPERTIES)</ID>
+    <ID>TrailingCommaOnCallSite:DatabaseTest.kt:DatabaseTest$(concurrency = 1, poolSize = 2, requestMs = 2_000, admissionMs = 100, connectionMs = 250, lockMs = 100, statementMs = 1_000, cleanupMs = 250, responseMs = 100)</ID>
+    <ID>TrailingCommaOnCallSite:DatabaseTest.kt:DatabaseTest$(concurrency = 1, poolSize = 2, requestMs = 2_000, admissionMs = 100, connectionMs = 250, lockMs = 100, statementMs = 300, cleanupMs = 250, responseMs = 100)</ID>
+    <ID>TrailingCommaOnCallSite:SchemaUpgradeTest.kt:SchemaUpgradeTest$(a, installation, "product_viewed", Instant.parse("2026-10-01T00:00:00.123Z"), "0.1.0", SdkPlatform.ANDROID, mapOf("price" to PropertyValue.Number("19.5"), "note" to PropertyValue.Text("가나다"), "in_stock" to PropertyValue.Flag(true)))</ID>
+    <ID>TrailingCommaOnCallSite:SchemaUpgradeTest.kt:SchemaUpgradeTest$(database, StoredEvent(id, installation, name, Instant.parse("2026-10-01T00:00:00.123Z"), "0.1.0", SdkPlatform.ANDROID, emptyMap()))</ID>
+  </CurrentIssues>
+</SmellBaseline>

@@ -1,0 +1,128 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:AckValidator.kt:internal fun validateAck: List&lt;ItemAck&gt;?</ID>
+    <ID>CyclomaticComplexMethod:WireCorpusTest.kt:WireCorpusTest$private fun cases: Map&lt;String, String&gt;</ID>
+    <ID>EmptyFunctionBlock:DeliveryCoordinator.kt:ForegroundExitObserver${}</ID>
+    <ID>EmptyFunctionBlock:TestSupport.kt:FakeLogger${}</ID>
+    <ID>EmptyFunctionBlock:WorkScheduler.kt:NoopScheduler${}</ID>
+    <ID>ExplicitGarbageCollectionCall:MeasureRunner.kt:MeasureRunner$gc()</ID>
+    <ID>Kdoc:ClientReport.kt:/** * SDK health report (Q164, ADR-0036): the SDK counts the events it dropped, by reason, and sends the * counts to `POST /v1/client-reports`. The counters are in Room, so a restart does not lose them. */</ID>
+    <ID>LongMethod:WireCorpusTest.kt:WireCorpusTest$private fun cases: Map&lt;String, String&gt;</ID>
+    <ID>LoopWithTooManyJumpStatements:Batcher.kt:for</ID>
+    <ID>LoopWithTooManyJumpStatements:ClientReport.kt:for</ID>
+    <ID>MagicNumber:ClientReport.kt:200</ID>
+    <ID>MagicNumber:ClientReport.kt:299</ID>
+    <ID>MagicNumber:ClientReport.kt:408</ID>
+    <ID>MagicNumber:ClientReport.kt:429</ID>
+    <ID>MagicNumber:ClientReport.kt:500</ID>
+    <ID>MagicNumber:ClientReport.kt:501</ID>
+    <ID>MagicNumber:ClientReport.kt:505</ID>
+    <ID>MagicNumber:ClientReport.kt:599</ID>
+    <ID>MagicNumber:DeprecationNotice.kt:1000</ID>
+    <ID>MagicNumber:MeasureRunner.kt:MeasureRunner$100</ID>
+    <ID>MagicNumber:MeasureRunner.kt:MeasureRunner$1000</ID>
+    <ID>MagicNumber:MeasureRunner.kt:MeasureRunner$1024</ID>
+    <ID>MagicNumber:MeasureRunner.kt:MeasureRunner$1e9</ID>
+    <ID>MagicNumber:MeasureRunner.kt:MeasureRunner$300</ID>
+    <ID>MagicNumber:MeasureRunner.kt:MeasureRunner$50</ID>
+    <ID>MagicNumber:MeasureRunner.kt:MeasureRunner$60</ID>
+    <ID>MagicNumber:MeasureRunner.kt:MeasureRunner$60_000</ID>
+    <ID>MagicNumber:RetryPolicy.kt:1000</ID>
+    <ID>MagicNumber:Sender.kt:Sender$200</ID>
+    <ID>MagicNumber:Sender.kt:Sender$300</ID>
+    <ID>MagicNumber:Sender.kt:Sender$400</ID>
+    <ID>MagicNumber:Sender.kt:Sender$408</ID>
+    <ID>MagicNumber:Sender.kt:Sender$413</ID>
+    <ID>MagicNumber:Sender.kt:Sender$429</ID>
+    <ID>MagicNumber:Sender.kt:Sender$499</ID>
+    <ID>MagicNumber:Sender.kt:Sender$500</ID>
+    <ID>MagicNumber:Sender.kt:Sender$501</ID>
+    <ID>MagicNumber:Sender.kt:Sender$505</ID>
+    <ID>MagicNumber:Sender.kt:Sender$599</ID>
+    <ID>MagicNumber:Storage.kt:QueueLimits$1024</ID>
+    <ID>MagicNumber:Storage.kt:QueueLimits$16</ID>
+    <ID>MagicNumber:Storage.kt:QueueLimits$16L</ID>
+    <ID>MagicNumber:Validation.kt:0x09</ID>
+    <ID>MagicNumber:Validation.kt:0x1680</ID>
+    <ID>MagicNumber:Validation.kt:0x20</ID>
+    <ID>MagicNumber:Validation.kt:0x2000</ID>
+    <ID>MagicNumber:Validation.kt:0x200A</ID>
+    <ID>MagicNumber:Validation.kt:0x2028</ID>
+    <ID>MagicNumber:Validation.kt:0x2029</ID>
+    <ID>MagicNumber:Validation.kt:0x202F</ID>
+    <ID>MagicNumber:Validation.kt:0x205F</ID>
+    <ID>MagicNumber:Validation.kt:0x3000</ID>
+    <ID>MagicNumber:Validation.kt:0x85</ID>
+    <ID>MagicNumber:Validation.kt:0xA0</ID>
+    <ID>MaxLineLength:CancellationDeviceTest.kt:CancellationDeviceTest$return EventCollector(installationId, sink, Clock { System.currentTimeMillis() }, RandomUuidV4, QueueLimits(), logger, OptOutStore(File(rig.context.noBackupFilesDir, "signaldock")))</ID>
+    <ID>MaxLineLength:ClientReport.kt:val json = transportJson.encodeToString(ClientReportRequest.serializer(), ClientReportRequest(sdkVersion = SDK_VERSION, discardedEvents = entries, sdkPlatform = SdkPlatform.ANDROID))</ID>
+    <ID>MaxLineLength:ClientReportTest.kt:ClientReportTest$fun entries</ID>
+    <ID>MaxLineLength:ConcurrencyDeviceTest.kt:ConcurrencyDeviceTest$private</ID>
+    <ID>MaxLineLength:DeliveryTest.kt:DeliveryTest$"""{"results":[{"index":0,"eventId":"$a","status":"accepted"},{"index":1,"eventId":"$b","status":"accepted"},{"index":2,"eventId":"$b","status":"accepted"}]}"""</ID>
+    <ID>MaxLineLength:DeliveryTest.kt:DeliveryTest$transport.handler = { TransportResult.Http(200, """{"extra":1,"results":[{"index":0,"eventId":"$id","status":"accepted","newField":{"x":1}}]}""", null) }</ID>
+    <ID>MaxLineLength:DeprecationTest.kt:DeprecationTest$val</ID>
+    <ID>MaxLineLength:DurabilityPhases.kt:DurabilityPhases$report("phase", "offline_recover", "status", "pass", "deliveredSeconds", "%.1f".format(seconds), "requests", "${server.requestCount.get()}", "pid", android.os.Process.myPid().toString())</ID>
+    <ID>MaxLineLength:FaultPhases.kt:FaultPhases$awaitTrue(30_000, "WARN 'WorkManager request failed'") { Logcat.since(before).any { it.startsWith("W/SignalDock") &amp;&amp; it.contains("WorkManager request failed") } }</ID>
+    <ID>MaxLineLength:FaultPhases.kt:FaultPhases$report("phase", "airplane_mode", "status", "pass", "offlineError", "${offline.lastDeliveryError?.kind}", "queuedWhileOffline", "${offline.queuedEvents}")</ID>
+    <ID>MaxLineLength:FaultPhases.kt:FaultPhases$val db = SQLiteDatabase.openDatabase(File(rig.context.noBackupFilesDir, "signaldock/queue.db").absolutePath, null, SQLiteDatabase.OPEN_READWRITE)</ID>
+    <ID>MaxLineLength:InitContractTest.kt:InitContractTest$assertEquals(setOf("endpoint", "collectionKey", "logLevel", "callTimeout", "connectTimeout", "readTimeout", "writeTimeout", "allowInsecureEndpoint"), configFields)</ID>
+    <ID>MaxLineLength:InitContractTest.kt:InitContractTest$for</ID>
+    <ID>MaxLineLength:LifecycleTest.kt:LifecycleTest$for (b in bad) assertTrue("$b", co.initialize(context, b) is InitResult.Failure &amp;&amp; (co.initialize(context, b) as InitResult.Failure).error is InitError.InvalidConfiguration)</ID>
+    <ID>MaxLineLength:MeasureRunner.kt:MeasureRunner$"i,sched_us,start_us,dur_us,result,event_id\n" + calls.joinToString("\n") { "${it.i},${it.schedMicros},${it.startMicros},${it.durMicros},${it.result},${it.eventId}" } + "\n"</ID>
+    <ID>MaxLineLength:MeasureRunner.kt:MeasureRunner$.</ID>
+    <ID>MaxLineLength:MeasureRunner.kt:MeasureRunner$return if (awaitTrue(timeoutMillis) { runBlocking { sdk.diagnostics() }.let { it.storageAvailable &amp;&amp; it.queuedEvents == 0 } }) (System.nanoTime() - t) / 1e9 else null</ID>
+    <ID>MaxLineLength:MigrationTest.kt:MigrationTest$sql.execSQL("INSERT INTO events (eventId, installationId, contractVersion, payloadJson, sizeBytes, createdAtMillis) VALUES ('e1','i1','1','{}',2,5)")</ID>
+    <ID>MaxLineLength:MigrationTest.kt:MigrationTest$sql.execSQL("INSERT INTO retry_state (id, failureCount, nextAttemptAtMillis, lastAckAccepted, lastAckDuplicate, lastAckRejected, hold) VALUES (1,3,9000,0,0,0,1)")</ID>
+    <ID>MaxLineLength:StorageTest.kt:StorageTest$assertTrue(context.filesDir.walkTopDown().none { it.isFile &amp;&amp; (it.name.contains("signaldock") || it.name.startsWith("queue.db") || it.name == "installation-id") })</ID>
+    <ID>MaxLineLength:StorageTest.kt:StorageTest$first.dao.saveRetryState(RetryStateEntity(failureCount = 2, nextAttemptAtMillis = 99, lastErrorKind = "RATE_LIMITED", lastErrorHttpStatus = 429, lastErrorAtMillis = 50))</ID>
+    <ID>MaxLineLength:StorageTest.kt:StorageTest$sdk.dao.saveRetryState(RetryStateEntity(failureCount = 3, nextAttemptAtMillis = 9_000, lastAckAtMillis = 7_000, lastAckAccepted = 2, lastAckDuplicate = 1, lastAckRejected = 4, lastErrorKind = "TIMEOUT", lastErrorHttpStatus = null, lastErrorAtMillis = 8_000))</ID>
+    <ID>MaxLineLength:TransportTest.kt:TransportTest$assertTrue("socket got the configured connect timeout: ${factory.connectTimeoutsMillis}", factory.connectTimeoutsMillis.isNotEmpty() &amp;&amp; factory.connectTimeoutsMillis.all { it == 300 })</ID>
+    <ID>MaxLineLength:WireCorpusTest.kt:WireCorpusTest$val legacy = """{"eventId":"00000000-0000-4000-8000-000000000001","name":"app_opened","occurredAt":"2025-10-09T08:53:20.123Z","properties":{},"sdkVersion":"0.3.0","contractVersion":"1"}"""</ID>
+    <ID>ReturnCount:AckValidator.kt:internal fun validateAck: List&lt;ItemAck&gt;?</ID>
+    <ID>ReturnCount:BatchTransport.kt:RetrofitBatchTransport$private suspend fun execute: TransportResult</ID>
+    <ID>ReturnCount:DeliveryCoordinator.kt:ForegroundTrigger$fun requestDrain</ID>
+    <ID>ReturnCount:DeprecationNotice.kt:internal fun parseDeprecationMillis: Long?</ID>
+    <ID>ReturnCount:DeviceSupport.kt:AckServer.&lt;no name provided&gt;$override fun dispatch: MockResponse</ID>
+    <ID>ReturnCount:EventBuilder.kt:EventBuilder$private fun put</ID>
+    <ID>ReturnCount:EventCollector.kt:EventCollector$suspend fun track: TrackResult</ID>
+    <ID>ReturnCount:InitCoordinator.kt:InitCoordinator$suspend fun initialize: InitResult</ID>
+    <ID>ReturnCount:RetryPolicy.kt:internal fun parseRetryAfterMillis: Long?</ID>
+    <ID>ReturnCount:Sender.kt:Sender$private suspend fun clampToWait: RetryStateEntity</ID>
+    <ID>ReturnCount:Sender.kt:Sender$private suspend fun sendBatches: Cycle</ID>
+    <ID>ReturnCount:Sender.kt:Sender$private suspend fun sendOne: Step</ID>
+    <ID>ReturnCount:Validation.kt:internal fun checkText: InvalidReason?</ID>
+    <ID>ReturnCount:Validation.kt:internal fun validateConfig: String?</ID>
+    <ID>SpacingAroundKeyword:CancellationDeviceTest.kt:CancellationDeviceTest$catch</ID>
+    <ID>SpacingAroundKeyword:LifecycleTest.kt:LifecycleTest$catch</ID>
+    <ID>SpacingBetweenDeclarationsWithAnnotations:DeviceSupport.kt:AckServer$@Volatile var delay: Long = delayMillis</ID>
+    <ID>SpacingBetweenDeclarationsWithAnnotations:DeviceSupport.kt:AckServer$@Volatile var mode: Mode = Mode.OK</ID>
+    <ID>SwallowedException:AckValidator.kt:e: IllegalArgumentException</ID>
+    <ID>SwallowedException:AckValidator.kt:e: SerializationException</ID>
+    <ID>SwallowedException:BatchTransport.kt:RetrofitBatchTransport$e: IOException</ID>
+    <ID>SwallowedException:BatchTransport.kt:RetrofitBatchTransport$e: InterruptedIOException</ID>
+    <ID>SwallowedException:CrashSafetyTest.kt:CrashSafetyTest$e: CancellationException</ID>
+    <ID>SwallowedException:CrashSafetyTest.kt:CrashSafetyTest$e: NoClassDefFoundError</ID>
+    <ID>SwallowedException:DeliveryTest.kt:DeliveryTest$e: android.database.sqlite.SQLiteException</ID>
+    <ID>SwallowedException:DeliveryTest.kt:DeliveryTest$e: kotlinx.coroutines.CancellationException</ID>
+    <ID>SwallowedException:InitContractTest.kt:InitContractTest$e: NoClassDefFoundError</ID>
+    <ID>SwallowedException:MeasureRunner.kt:MeasureRunner$e: android.database.SQLException</ID>
+    <ID>SwallowedException:OptOutStore.kt:OptOutStore$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ClientReport.kt:DropCounter$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:DeliveryCoordinator.kt:DeliveryCoordinator$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:DeliveryCoordinator.kt:ForegroundTrigger$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:EventCollector.kt:EventCollector$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:InitCoordinator.kt:InitCoordinator$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:InitCoordinator.kt:t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:MeasureRunner.kt:MeasureRunner$e: Throwable</ID>
+    <ID>TooGenericExceptionCaught:OptOutStore.kt:OptOutStore$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:Sender.kt:Sender$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SignalDock.kt:SignalDock$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:WorkScheduler.kt:WorkManagerScheduler$e: Exception</ID>
+    <ID>TooManyFunctions:MeasureRunner.kt:MeasureRunner</ID>
+    <ID>TooManyFunctions:Sender.kt:Sender</ID>
+    <ID>TooManyFunctions:Storage.kt:QueueDao</ID>
+    <ID>TrailingCommaOnCallSite:DeprecationTest.kt:DeprecationTest$("true" to "soon", "@abc" to "2026-12-31", "@" to "", "@99999999999999999999" to "Fri, 31 Dec 2026 23:59:59 GMT", "x" to "Thu, 31 Dec 2026 23:59:59 GMTbogus", "x" to "Thu, 31 Dec 2026 23:59:59 PST", "x" to "Thu, 1 Jan 2026 00:00:00 GMT", "x" to "Thu, 01 Jan 26 00:00:00 GMT", "x" to "Thu, 01 jan 2026 00:00:00 GMT", "x" to "Sat, 31 Feb 2026 00:00:00 GMT")</ID>
+  </CurrentIssues>
+</SmellBaseline>

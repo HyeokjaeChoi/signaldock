@@ -20,9 +20,6 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import org.openapitools.client.models.BatchAckResponse
-import org.openapitools.client.models.ErrorResponse
-import java.io.ByteArrayOutputStream
 import local.signaldock.ingestion.RequestFailure
 import local.signaldock.ingestion.TrackingPlan
 import local.signaldock.persistence.ClientReportStore
@@ -31,6 +28,9 @@ import local.signaldock.persistence.DatabaseLimits
 import local.signaldock.persistence.DatabaseObserver
 import local.signaldock.persistence.DatabaseUnavailable
 import local.signaldock.query.parseProjectZone
+import org.openapitools.client.models.BatchAckResponse
+import org.openapitools.client.models.ErrorResponse
+import java.io.ByteArrayOutputStream
 
 /** Callback is a test seam for response loss after a real commit; production uses the default. */
 internal fun Application.ingestionModule(

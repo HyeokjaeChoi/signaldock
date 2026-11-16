@@ -9,12 +9,12 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
-import java.io.File
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.io.File
 
 // The code samples of docs/integration-guide.md. The guide copies the text between the
 // `sample:` and `end sample` markers. Each sample compiles with the SDK; the tests below run
@@ -50,10 +50,10 @@ fun describe(result: InitResult): String = when (result) {
 // sample: track
 suspend fun onProductViewed(sdk: SignalDock): String {
     val result = sdk.track("product_viewed") {
-        property("product_id", "P-001")   // string
-        property("quantity", 2)           // number
-        property("price", 12.5)           // number
-        property("is_test", true)         // boolean
+        property("product_id", "P-001") // string
+        property("quantity", 2) // number
+        property("price", 12.5) // number
+        property("is_test", true) // boolean
     }
     return when (result) {
         is TrackResult.Success -> "stored on the device: ${result.eventId}" // not server receipt
@@ -160,7 +160,7 @@ class IntegrationGuideSamplesTest {
         } finally {
             dir.setWritable(true)
         }
-        assertTrue(sdk.isOptedOut())              // holds for this process
+        assertTrue(sdk.isOptedOut()) // holds for this process
         assertEquals(0, sdk.diagnostics().queuedEvents) // clearQueue succeeded
         assertFalse(File(dir, "opt-out").exists())
     }

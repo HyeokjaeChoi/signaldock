@@ -27,7 +27,6 @@ import org.openapitools.client.models.EventPlanStatusCounts
 import org.openapitools.client.models.EventReceiptDetail
 import org.openapitools.client.models.EventReceiptPage
 import org.openapitools.client.models.ItemAck
-import org.openapitools.client.models.PlanStatus as ApiPlanStatus
 import org.testcontainers.postgresql.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 import java.time.Instant
@@ -40,6 +39,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import org.openapitools.client.models.PlanStatus as ApiPlanStatus
 
 /** ADR-0022: stored events are marked against the tracking plan; nothing is rejected or dropped for plan reasons. */
 class PlanStatusTest {

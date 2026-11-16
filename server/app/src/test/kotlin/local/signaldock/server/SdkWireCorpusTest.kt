@@ -1,6 +1,5 @@
 package local.signaldock.server
 
-import java.io.File
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -8,6 +7,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -43,7 +43,7 @@ class SdkWireCorpusTest {
             val batch = try {
                 parseBatch(file.readBytes(), "1")
             } catch (e: Exception) {
-                throw AssertionError("$name: request-level failure ${e}", e)
+                throw AssertionError("$name: request-level failure $e", e)
             }
             assertTrue(batch.items.isNotEmpty(), name)
             batch.items.forEach { item ->

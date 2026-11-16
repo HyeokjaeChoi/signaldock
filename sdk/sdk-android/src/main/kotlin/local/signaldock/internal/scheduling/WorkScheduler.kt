@@ -12,13 +12,13 @@ import androidx.work.Operation
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import kotlin.coroutines.cancellation.CancellationException
 import local.signaldock.internal.init.Clock
 import local.signaldock.internal.init.InitCoordinator
 import local.signaldock.internal.init.Logger
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.coroutines.cancellation.CancellationException
 
 /** Scheduling boundary (Q88). WorkManager implementation below; fakes in tests. */
 internal interface WorkScheduler {
