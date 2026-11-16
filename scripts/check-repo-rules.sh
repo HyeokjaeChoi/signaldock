@@ -298,10 +298,10 @@ fi
 # every tracked lockfile is listed there. Tests: scripts/test_check_osv_config.py.
 python3 -I scripts/check_osv_config.py || fail=1
 # The OSV-Scanner version has one source: the `OSV_VERSION=` line of scripts/setup-toolchain.sh (ADR-0049 decision 9).
-osv_version="$(git show :scripts/setup-toolchain.sh | sed -n 's/^OSV_VERSION=//p')"
-if [ "$(printf '%s\n' "$osv_version" | grep -c .)" != 1 ]; then
-  echo "error: scripts/setup-toolchain.sh must have exactly one OSV_VERSION= line (ADR-0049 decision 9)" >&2; fail=1
-elif git show :scripts/osv-scan.sh | grep -qF -- "$osv_version"; then
+osv_version="$(git show :scripts/setup-toolchain.sh 2>/dev/null | sed -n 's/^OSV_VERSION=//p' || true)"
+if [ "$(printf '%s\n' "$osv_version" | grep -c .)" != 1 ] || ! printf '%s\n' "$osv_version" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+  echo "error: scripts/setup-toolchain.sh must have exactly one OSV_VERSION=X.Y.Z line, with no quotes or comment (ADR-0049 decision 9)" >&2; fail=1
+elif git show :scripts/osv-scan.sh | grep -qF -e "$osv_version" -e "${osv_version//./\\.}"; then
   echo "error: scripts/osv-scan.sh repeats the OSV-Scanner version $osv_version; read it from scripts/setup-toolchain.sh (ADR-0049 decision 9)" >&2; fail=1
 fi
 
