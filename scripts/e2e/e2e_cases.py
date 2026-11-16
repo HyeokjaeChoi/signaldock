@@ -295,13 +295,30 @@ def mutated_batch(events=3):
     before_log = len(proxy_log())
     proxy_mode("mutate")
     fresh_app()
+    adb("logcat", "-c")
+    t_tap = time.time()
     tap("Track consumer_ping", times=3)
+    t_done = time.time()
     say(f"  3 taps on device, batch needs >= {events} events (proxy mode mutate: event index 1 of the batch gets a leading space in its name)")
+    # DIAG: what the device holds right after the taps, before any send (foreground trigger is +10 s)
+    shown = [n.get("text", "") for n in ui_nodes() if n.get("text", "").startswith("track:")]
+    d0 = diagnostics()
+    t_d0 = time.time()
+    say(f"  DIAG taps took {t_done - t_tap:.2f}s; screen={shown}; queued right after taps={d0['queued']} (read {t_d0 - t_tap:.1f}s after first tap) ack={d0['ack']} err={d0['error']}")
     d = wait_for("ACK on device", lambda: (lambda x: x if x["queued"] == 0 and x["ack"] else None)(diagnostics()), 120)
     proxy_mode("pass")
     batches = [e for e in proxy_log()[before_log:] if e.get("mutatedEventId")]
     tapped = batches[0]["eventIds"] if batches else []
+    all_ids = [i for e in proxy_log()[before_log:] for i in (e.get("eventIds") or [])]
+    say(f"  DIAG proxy entries: {[(e.get('path'), e.get('eventIds'), round(e['t'] - t_tap, 2)) for e in proxy_log()[before_log:]]}")
+    if all_ids:
+        say(f"  DIAG server rows (eventId, tap, occurredAt-ms): {sql('select event_id, properties::text, occurred_at from events where event_id in (' + ','.join(repr(i) for i in all_ids) + ')')}")
     if len(batches) != 1 or len(tapped) < events:
+        log = adb("logcat", "-d", "-v", "threadtime")
+        keep = [l for l in log.splitlines() if re.search(r"InputDispatcher|InputReader|InputManager|Input|SignalDock|consumer|ViewRoot|WindowManager|ActivityTaskManager", l)]
+        say("  DIAG logcat (filtered, last 120):\n    " + "\n    ".join(keep[-120:]))
+        with open(os.path.join(ROOT, f"diag-logcat-{int(t_tap)}.txt"), "w") as f:
+            f.write(log)
         raise Split(f"the tapped events were split across batches: {[e.get('eventIds') for e in proxy_log()[before_log:]]}")
     check(True, f"the tapped events went out in one batch: {tapped}")
     return d, tapped, batches[0]["mutatedEventId"], batches[0]
