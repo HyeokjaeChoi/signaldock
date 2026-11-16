@@ -7,7 +7,7 @@ Execution: Done (merged in PR #32, 2026-10-12)
 
 ## Scope and completion criteria
 
-From the CodeRabbit Minor finding on PR #32 (issue 14), `server/persistence/.../QueryStore.kt` `countByTime`. PostgreSQL `date_trunc('hour', received_at, zone)` maps both occurrences of a repeated local hour to one instant. `bucketStarts` makes two buckets, so one shows 0 and the other the sum. The default zone `Asia/Seoul` has no DST, so the default setup is not affected.
+From the CodeRabbit Minor finding on PR #32 (issue 16), `server/persistence/.../QueryStore.kt` `countByTime`. PostgreSQL `date_trunc('hour', received_at, zone)` maps both occurrences of a repeated local hour to one instant. `bucketStarts` makes two buckets, so one shows 0 and the other the sum. The default zone `Asia/Seoul` has no DST, so the default setup is not affected.
 
 For hour buckets, subtract the local minute and second remainder from `received_at` instead. Keep `date_trunc` for day buckets.
 

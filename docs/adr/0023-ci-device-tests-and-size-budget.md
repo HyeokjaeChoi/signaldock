@@ -24,6 +24,10 @@ Decision 3 counts changed. `sdk-android` now has 30 `@Test` methods. The 13 meth
 
 The opt-out phases (`optout_set`, `optout_check`, `optout_off`) add 3 methods to `DurabilityPhases`. Now 33 methods: 16 skip without `-e phase`, and 17 run (job log of `repo-rules` run 39032066203 of PR #173). These counts replace the counts in decision 3, in Limits ("26 tests"), and in the first amendment.
 
+## Amendment (2026-11-15, ADR-0049 gate A3)
+
+Decision 3 counts changed again: 38 methods start, 20 skip themselves without `-e phase`, and 18 run. New: `StrictModeDeviceTest` (runs; it fails the job when the SDK touches the disk or the network on the main thread), three phases of `PowerLossPhases`, and `MeasurePhases.main_thread` (these four skip). The `device-test` job and its API 34 emulator do not change. The nightly tier will run the process-boundary cases at API 24 and 37 (ADR-0049 gate A5) once its job is in `nightly.yml`.
+
 ## Limits
 
 - GitHub Actions cannot run here. The workflow was checked by YAML parsing only (`actionlint` is not installed on the author's machine). Whether the emulator boots, the 26 tests pass on API 34 x86_64, the AVD cache hits on the second run, and the Linux APK delta is inside the budget can be shown only by CI.

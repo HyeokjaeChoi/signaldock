@@ -7,7 +7,7 @@ Execution: Done (merged in PR #32, 2026-10-12)
 
 ## Scope and completion criteria
 
-From the CodeRabbit Minor finding on PR #32 (issue 14), `openapi/contract-v1.yaml` near the `countReceivedEventsByTime` operation. The server rejects more than 720 buckets with 400 `PERIOD_TOO_LONG`, but the operation description does not say so. State it in the description, regenerate `generated/`, and update the baseline on purpose (ADR-0002 amendment) with the oasdiff output.
+From the CodeRabbit Minor finding on PR #32 (issue 16), `openapi/contract-v1.yaml` near the `countReceivedEventsByTime` operation. The server rejects more than 720 buckets with 400 `PERIOD_TOO_LONG`, but the operation description does not say so. State it in the description, regenerate `generated/`, and update the baseline on purpose (ADR-0002 amendment) with the oasdiff output.
 
 Done when `scripts/verify-contract.sh` passes with the new description.
 
