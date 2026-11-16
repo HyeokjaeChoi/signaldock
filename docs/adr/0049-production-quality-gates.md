@@ -256,6 +256,7 @@ Proof (temporary workflow `tmp-slo.yml`, removed before merge):
 | Bad p95 | baseline file with `p95Ms: 0.1` | gate exits 1, `p95 ... ms > 2 x baseline 0.1 ms = 0.2 ms` | [43779419710](https://github.com/HyeokjaeChoi/signaldock/actions/runs/43779419710) job `bad-p95` |
 | Bad status | `SIGNALDOCK_INGEST_SHED=true` (the server answers 503) | gate exits 1, `2702 bad requests` | same run, job `bad-status` |
 | Good | the committed baseline, the job as in `nightly.yml` | pass, p95 8.16 ms (limit 23.22 ms), 2,401 requests, summary `nightly-summary-ingest-slo` result `pass` | [43780134683](https://github.com/HyeokjaeChoi/signaldock/actions/runs/43780134683) |
+| Good, final code (after review fixes) | same job on a temporary branch (`tmp-final.yml`, deleted) | pass, p95 11.40 ms (limit 23.22 ms), 2,401 requests, runner `ubuntu26` image 20261111.196.1 | [43782066629](https://github.com/HyeokjaeChoi/signaldock/actions/runs/43782066629) |
 
 The proof jobs check the reason in `result.json`, not only the exit code: in an earlier run the bad-p95 job "passed" because `docker build` failed on a Gradle plugin download (run 43777563219, job `bad-p95`). A network failure like that fails the nightly job, and the owner triages it; no retry is added (decision 5). Unit tests: `perf/test_ci_slo.py`. The numbers are two runner-class samples of one runner image, not a capacity claim.
 
