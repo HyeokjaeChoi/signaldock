@@ -42,7 +42,9 @@ def xccov_line(path):
     """Line coverage of the target `SignalDock` in `xcrun xccov view --report --json`, files under sdk-ios/Sources.
     The target `SignalDockTests` lists the same files again, so it is not read."""
     covered = total = 0
-    for target in json.load(open(path)).get("targets", []):
+    with open(path) as fh:
+        report = json.load(fh)
+    for target in report.get("targets", []):
         for f in target.get("files", []) if target.get("name") == "SignalDock" else []:
             if "/sdk-ios/Sources/" in f.get("path", ""):
                 covered += f["coveredLines"]
@@ -90,7 +92,8 @@ def base_file(base):
 
 def committed():
     try:
-        data = json.load(open(FILE))
+        with open(FILE) as fh:
+            data = json.load(fh)
         for module, v in data.items():
             float(v["line"])
         return data
