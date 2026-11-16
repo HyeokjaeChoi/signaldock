@@ -14,7 +14,7 @@
   schedule: ["before 6am on monday"], // weekly, as Dependabot did
   prConcurrentLimit: 4,
   prHourlyLimit: 2,
-  dependencyDashboard: true,
+  dependencyDashboard: { enabled: true }, // the object form is what `renovate-config-validator --strict` wants (ADR-0049 R1)
   // Supply-chain delay, like the Dependabot `cooldown` that Mixpanel (30 days), PostHog (7) and
   // RevenueCat (3) use: a new release must be 3 days old. A registry with no release timestamp
   // does not block the update (logged as a warning). Security fixes are not delayed (below).
@@ -42,6 +42,14 @@
       managerFilePatterns: ["/^\\.github/workflows/claude-review\\.yml$/"],
       matchStrings: ["CLAUDE_CODE_VERSION: \"(?<currentValue>\\d+\\.\\d+\\.\\d+)\""],
       depNameTemplate: "@anthropic-ai/claude-code",
+      datasourceTemplate: "npm",
+    },
+    // The validator that repo-rules.yml runs on this file (ADR-0049 R1).
+    {
+      customType: "regex",
+      managerFilePatterns: ["/^\\.github/workflows/repo-rules\\.yml$/"],
+      matchStrings: ["RENOVATE_VERSION: \"(?<currentValue>\\d+\\.\\d+\\.\\d+)\""],
+      depNameTemplate: "renovate",
       datasourceTemplate: "npm",
     },
   ],

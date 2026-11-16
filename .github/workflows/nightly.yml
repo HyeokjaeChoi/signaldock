@@ -180,8 +180,67 @@ jobs:
           if-no-files-found: error
 
   # ---- Add jobs below this line, one ticket at a time, after the PR of ticket 05 has merged. ----
-  # Planned (spec "Tickets"): 11 OSV-Scanner on main and the ruleset drift check (R2, R3), and the Lighthouse run (W5).
+  # Planned (spec "Tickets"): the Lighthouse run (W5).
   # Copy the summary and upload steps of `e2e-delivery`; `python3 -I scripts/nightly-summary.py` documents its flags.
+
+  # Gate R2 on main (ADR-0049 decision 9): the PR job of the same name checks a change; this one catches an advisory that
+  # appeared since. An ignore in an osv-scanner.toml expires after 30 days at most, so an expired entry fails here too.
+  osv-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - run: scripts/setup-toolchain.sh osv
+      - run: scripts/osv-scan.sh
+      - name: Summary (gate Q2)
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: python3 -I scripts/nightly-summary.py --job osv-scan --gate R2 --status "$JOB_STATUS"
+      - name: Upload summary
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: nightly-summary-osv-scan
+          path: nightly-summary/
+          if-no-files-found: error
+
+  # Gate R3 drift check (ADR-0049 decision 9): the live ruleset for `main` must contain what .github/rulesets/main.json says.
+  # The owner applies the file (docs/releases/README.md); until then this job fails with "no ruleset named main".
+  # The repository is public, so the job token reads rulesets. A token without admin rights does not see `bypass_actors`;
+  # scripts/check_ruleset.py then skips that field.
+  ruleset-drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - name: Compare the live ruleset with the file
+        run: |
+          id="$(gh api "repos/$GITHUB_REPOSITORY/rulesets" --paginate --jq '.[] | select(.name == "main" and .target == "branch") | .id' | sed -n 1p)"
+          if [ -z "$id" ]; then
+            echo "::error::no branch ruleset named main is applied; run the command in docs/releases/README.md"
+            exit 1
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/rulesets/$id" > live-ruleset.json
+          python3 -I scripts/check_ruleset.py drift live-ruleset.json
+      - name: Summary (gate Q2)
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: python3 -I scripts/nightly-summary.py --job ruleset-drift --gate R3 --status "$JOB_STATUS"
+      - name: Upload summary
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: nightly-summary-ruleset-drift
+          path: nightly-summary/
+          if-no-files-found: error
 
   # Gate I2: scripts/simulator-durability-ci.sh runs all seven cases of scripts/simulator-durability.sh on the iOS Simulator.
   # macos-26 has no Docker, so the script starts PostgreSQL (Homebrew) and the server on the host (ADR-0049 amendment, ticket 07).

@@ -1,0 +1,13 @@
+# OSV-Scanner ignores for the root package-lock.json (ADR-0049 decision 9, gate R2). Run: scripts/osv-scan.sh.
+# scripts/osv-scan.sh passes the nearest osv-scanner.toml to each lockfile, so an ignore here covers only this file.
+# Each entry needs a `reason` and an `ignoreUntil` at most 30 days after the day it is written;
+# scripts/check-repo-rules.sh fails otherwise, and it rejects every table except [[IgnoredVulns]]
+# (no package-wide override). When a date passes, the finding fails the PR and the nightly run again:
+# fix it (update the dependency) or renew the entry in a PR that says why.
+# First run, 2026-11-16 (main 3120c29). Triage: issue 15.
+
+# minimatch: minimatch has potential denial of service via globparts amplification
+[[IgnoredVulns]]
+id = "GHSA-g3hv-75wg-m249"
+ignoreUntil = 2026-12-15
+reason = "Dev dependency of ESLint in the root lint package (package-lock.json); not shipped and not run on untrusted input. The fix is a new major that the ESLint range does not allow yet."
