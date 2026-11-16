@@ -10,6 +10,8 @@ on:
       - dashboard/Dockerfile
       - server/**/build.gradle.kts
       - server/gradle/**
+      - server/settings.gradle.kts
+      - server/gradle.properties
       - gradle/libs.versions.toml
       - dashboard/package.json
       - dashboard/package-lock.json

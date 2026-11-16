@@ -54,6 +54,7 @@ cleanup() {
   dc logs --no-color --tail=300 > "$out/compose.log" 2>&1 || true
   dc down --volumes --remove-orphans >/dev/null 2>&1 || true
   rm -f "$envfile"
+  rm -rf "${tmp:-}"
 }
 trap cleanup EXIT
 
@@ -68,7 +69,7 @@ if [[ $k6_exit -ne 0 && $k6_exit -ne 99 ]]; then echo "error: k6 exit code $k6_e
 
 k6_seconds=$((SECONDS - k6_start))
 if [[ $mode == measure ]]; then
-  python3 -I perf/ci_slo.py --summary "$out/k6-summary.json" --out "$out/result.json" --measure --runner-class "$SLO_RUNNER_CLASS" --seconds "$k6_seconds"
+  python3 -I perf/ci_slo.py --summary "$out/k6-summary.json" --out "$out/result.json" --measure --runner-class "$SLO_RUNNER_CLASS" --seconds "$k6_seconds" --expected-requests $((RATE * DURATION_S))
 else
-  python3 -I perf/ci_slo.py --summary "$out/k6-summary.json" --out "$out/result.json" --baseline "$baseline" --runner-class "$SLO_RUNNER_CLASS" --seconds "$k6_seconds"
+  python3 -I perf/ci_slo.py --summary "$out/k6-summary.json" --out "$out/result.json" --baseline "$baseline" --runner-class "$SLO_RUNNER_CLASS" --seconds "$k6_seconds" --expected-requests $((RATE * DURATION_S))
 fi

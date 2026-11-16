@@ -179,43 +179,6 @@ jobs:
           path: nightly-summary/
           if-no-files-found: error
 
-  # Gate B3: perf/ci-slo.sh runs Compose on the runner and 20 req/s x 20 events for 120 s (ADR-0049 amendment, ticket 08).
-  # Fails on any bad request or p95 > 2x perf/ci-slo-baseline.json. The baseline is for the runner class in SLO_RUNNER_CLASS:
-  # change both when `runs-on` changes, and measure a new baseline with `perf/ci-slo.sh measure`.
-  ingest-slo:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    env:
-      SLO_RUNNER_CLASS: ubuntu-latest
-    steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        with:
-          persist-credentials: false
-      - name: ci-slo.sh
-        run: perf/ci-slo.sh
-      - name: Summary (gate Q2)
-        if: always()
-        env:
-          JOB_STATUS: ${{ job.status }}
-        run: |
-          args=()
-          if [ -n "${SLO_P95_MS:-}" ]; then args+=(--number "p95Ms=$SLO_P95_MS"); fi
-          python3 -I scripts/nightly-summary.py --job ingest-slo --gate B3 --status "$JOB_STATUS" --cases perf/work/ci-slo/cases.json "${args[@]}"
-      - name: Upload summary
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: nightly-summary-ingest-slo
-          path: nightly-summary/
-          if-no-files-found: error
-      - name: Upload k6 result and Compose logs
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: ingest-slo-result
-          path: perf/work/ci-slo/
-          if-no-files-found: ignore
-
   # ---- Add jobs below this line, one ticket at a time, after the PR of ticket 05 has merged. ----
   # Planned (spec "Tickets"): 11 OSV-Scanner on main and the ruleset drift check (R2, R3), and the Lighthouse run (W5).
   # Copy the summary and upload steps of `e2e-delivery`; `python3 -I scripts/nightly-summary.py` documents its flags.
@@ -254,4 +217,41 @@ jobs:
         with:
           name: ios-durability-logs
           path: build/simulator-durability/
+          if-no-files-found: ignore
+
+  # Gate B3: perf/ci-slo.sh runs Compose on the runner and 20 req/s x 20 events for 120 s (ADR-0049 amendment, ticket 08).
+  # Fails on any bad request or p95 > 2x perf/ci-slo-baseline.json. The baseline is for the runner class in SLO_RUNNER_CLASS:
+  # change both when `runs-on` changes, and measure a new baseline with `perf/ci-slo.sh measure`.
+  ingest-slo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SLO_RUNNER_CLASS: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - name: ci-slo.sh
+        run: perf/ci-slo.sh
+      - name: Summary (gate Q2)
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          args=()
+          if [ -n "${SLO_P95_MS:-}" ]; then args+=(--number "p95Ms=$SLO_P95_MS"); fi
+          python3 -I scripts/nightly-summary.py --job ingest-slo --gate B3 --status "$JOB_STATUS" --cases perf/work/ci-slo/cases.json "${args[@]}"
+      - name: Upload summary
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: nightly-summary-ingest-slo
+          path: nightly-summary/
+          if-no-files-found: error
+      - name: Upload k6 result and Compose logs
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ingest-slo-result
+          path: perf/work/ci-slo/
           if-no-files-found: ignore

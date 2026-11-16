@@ -41,6 +41,11 @@ def verdict(summary, baseline, runner_class, expected_requests):
             "requests": reqs, "bad": bad, "dropped": dropped, "runnerClass": runner_class}
 
 
+def runner_facts(env):
+    """What the job ran on. The class label itself is the --runner-class value; these fields let a reader see when it moved."""
+    return {k: env.get(k, "") for k in ("ImageOS", "ImageVersion", "RUNNER_ARCH")}
+
+
 def main(argv, env):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--summary", required=True)
@@ -60,6 +65,7 @@ def main(argv, env):
         with open(a.baseline, encoding="utf-8") as f:
             baseline = json.load(f)
     r = verdict(summary, baseline, a.runner_class, a.expected_requests)
+    r["runner"] = runner_facts(env)
     with open(a.out, "w", encoding="utf-8") as f:
         json.dump(r, f, indent=2)
         f.write("\n")
