@@ -79,20 +79,21 @@ def static_errors(ruleset, workflows):
             errors.append(f"{c.get('context')}: integration_id must be {GITHUB_ACTIONS_APP_ID} (GitHub Actions)")
 
     expected = []
-    for path in (".github/workflows/repo-rules.yml", ".github/workflows/pr-description.yml"):
+    codeql = ".github/workflows/codeql.yml"
+    for path in (".github/workflows/repo-rules.yml", ".github/workflows/pr-description.yml", codeql):
         text = workflows.get(path)
         if text is None:
             errors.append(f"{path} is missing")
             continue
         if re.search(r"^\s+paths(-ignore)?:", text, re.M):
             errors.append(f"{path} has a paths filter; a required job must run on every PR")
+        if path == codeql:
+            continue
         jobs, errs = job_contexts(text, path)
         errors += errs
         expected += jobs
-    text = workflows.get(".github/workflows/codeql.yml")
-    if text is None:
-        errors.append(".github/workflows/codeql.yml is missing")
-    else:
+    text = workflows.get(codeql)
+    if text is not None:
         langs, named = codeql_languages(text)
         if not named or not langs:
             errors.append("codeql.yml: the job must be named `analyze (${{ matrix.language }})` with matrix languages")
@@ -141,9 +142,10 @@ def drift_errors(file_rs, live_rs):
             continue
         errors += subset(r.get("parameters", {}), live_rules[t].get("parameters", {}), f"rules.{t}")
         if t == "required_status_checks":
-            want = {c["context"] for c in r["parameters"]["required_status_checks"]}
-            have = {c["context"] for c in live_rules[t].get("parameters", {}).get("required_status_checks", [])}
-            errors += [f"required context {c} is live but not in the file" for c in sorted(have - want)]
+            pair = lambda c: (c["context"], c.get("integration_id"))
+            want = {pair(c) for c in r["parameters"]["required_status_checks"]}
+            have = {pair(c) for c in live_rules[t].get("parameters", {}).get("required_status_checks", [])}
+            errors += [f"required context {c} (integration_id {i}) is live but not in the file" for c, i in sorted(have - want, key=str)]
     return errors
 
 

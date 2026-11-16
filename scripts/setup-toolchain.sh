@@ -18,6 +18,8 @@ OASDIFF="$TOOLS/oasdiff"
 SHELLCHECK="$TOOLS/shellcheck"
 ACTIONLINT="$TOOLS/actionlint"
 OSV_SCANNER="$TOOLS/osv-scanner"
+# The only place of the OSV-Scanner version; scripts/osv-scan.sh reads it from here.
+OSV_VERSION=2.7.1
 GEN_JAR="$TOOLS/openapi-generator-cli-7.26.0.jar"
 
 OS="$(uname -s)"
@@ -76,7 +78,7 @@ esac
 # SHA-256 of shellcheck: the GitHub release asset digest (`gh api repos/koalaman/shellcheck/releases/tags/v0.11.0`);
 #   the publisher ships no checksums file. Recorded after downloading each tarball and hashing it.
 # SHA-256 of actionlint: https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_checksums.txt
-# SHA-256 of osv-scanner: the GitHub release asset digest (`gh api repos/google/osv-scanner/releases/tags/v2.7.1`);
+# SHA-256 of osv-scanner: the GitHub release asset digest (`gh api repos/google/osv-scanner/releases/tags/v$OSV_VERSION`);
 #   the release also has osv-scanner_SHA256SUMS. The asset is the binary itself, not an archive.
 # openapi-generator-cli: Maven Central publishes no SHA-256 (only SHA-1/MD5).
 #   SHA-1 from https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/7.26.0/openapi-generator-cli-7.26.0.jar.sha1
@@ -85,7 +87,7 @@ JDK_URL="https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21
 OAS_URL="https://github.com/oasdiff/oasdiff/releases/download/v1.33.0/$OAS_FILE"
 SC_URL="https://github.com/koalaman/shellcheck/releases/download/v0.11.0/$SC_FILE"
 AL_URL="https://github.com/rhysd/actionlint/releases/download/v1.7.12/$AL_FILE"
-OSV_URL="https://github.com/google/osv-scanner/releases/download/v2.7.1/$OSV_FILE"
+OSV_URL="https://github.com/google/osv-scanner/releases/download/v$OSV_VERSION/$OSV_FILE"
 GEN_URL="https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/7.26.0/openapi-generator-cli-7.26.0.jar"
 GEN_SHA256=1760050094997b9cc790cc1350be095f15da8c08a996b184d3eadc4ccda5e35e
 GEN_SHA1=b96b148fcf482808037f68fbad99cb4d7e65d40b
@@ -133,14 +135,14 @@ fi
 
 if [ "$MODE" = lint ]; then exit 0; fi
 
-if [ -x "$OSV_SCANNER" ] && "$OSV_SCANNER" --version 2>/dev/null | head -1 | grep -q '^osv-scanner version: 2\.7\.1$'; then
-  echo "skip: osv-scanner 2.7.1 already at $OSV_SCANNER"
+if [ -x "$OSV_SCANNER" ] && "$OSV_SCANNER" --version 2>/dev/null | head -1 | grep -qxF "osv-scanner version: $OSV_VERSION"; then
+  echo "skip: osv-scanner $OSV_VERSION already at $OSV_SCANNER"
 else
   curl -fsSL -o "$TMP/osv-scanner" "$OSV_URL"
   check "$TMP/osv-scanner" 256 "$OSV_SHA"
   chmod +x "$TMP/osv-scanner"
   mv "$TMP/osv-scanner" "$OSV_SCANNER"
-  echo "installed: osv-scanner v2.7.1 -> $OSV_SCANNER"
+  echo "installed: osv-scanner v$OSV_VERSION -> $OSV_SCANNER"
 fi
 if [ "$MODE" = osv ]; then exit 0; fi
 

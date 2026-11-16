@@ -294,87 +294,15 @@ else
   echo "error: $nf is missing; ADR-0049 decision 1 needs the nightly tier" >&2; fail=1
 fi
 
-# Every osv-scanner.toml (ADR-0049 decision 9, gate R2): only [[IgnoredVulns]] tables (no package-wide override), and each has
-# an id, a reason, and an `ignoreUntil` date at most 30 days after today (UTC; for a new entry that is the commit date).
-# A date in the past is allowed: OSV-Scanner then reports the finding again. The file is read line by line (python3 of
-# a developer machine may lack tomllib); a line that is not a comment, a table header, or `key = value` is an error.
-# Every tracked npm lockfile and Gradle verification-metadata.xml must be listed in scripts/osv-scan.sh.
-if ! python3 -I - <<'PY'
-import datetime, re, subprocess, sys
-
-def show(path):
-    r = subprocess.run(["git", "show", ":" + path], capture_output=True, text=True)
-    return r.stdout if r.returncode == 0 else None
-
-def check(text, today):
-    errors, entries, cur = [], [], None
-    for n, raw in enumerate(text.splitlines(), 1):
-        line = raw.strip()
-        if not line or line.startswith("#"):
-            continue
-        if line == "[[IgnoredVulns]]":
-            cur = {"line": n}
-            entries.append(cur)
-        elif re.match(r"^\[", line):
-            errors.append(f"line {n}: only [[IgnoredVulns]] is allowed, found {line}")
-            cur = None
-        elif cur is not None and (m := re.match(r"^(id|reason|ignoreUntil)\s*=\s*(.+)$", line)):
-            cur[m.group(1)] = m.group(2).strip()
-        else:
-            errors.append(f"line {n}: not a comment, an [[IgnoredVulns]] header, or an id, reason, or ignoreUntil assignment")
-    for e in entries:
-        where = f"entry at line {e['line']}"
-        if not re.fullmatch(r'"[A-Za-z0-9._-]+"', e.get("id", "")):
-            errors.append(f"{where}: needs id = \"...\"")
-        reason = e.get("reason", "")
-        if not re.fullmatch(r'"[^"]{15,}"', reason):
-            errors.append(f"{where}: needs a reason of at least 15 characters")
-        until = e.get("ignoreUntil", "")
-        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", until):
-            errors.append(f"{where}: needs ignoreUntil = YYYY-MM-DD")
-        else:
-            try:
-                d = datetime.date.fromisoformat(until)
-            except ValueError:
-                errors.append(f"{where}: ignoreUntil {until} is not a date")
-            else:
-                if d > today + datetime.timedelta(days=30):
-                    errors.append(f"{where}: ignoreUntil {until} is more than 30 days after {today}")
-    return errors
-
-# Regression samples: a good file passes; each bad one fails.
-T = datetime.date(2026, 11, 16)
-GOOD = '[[IgnoredVulns]]\nid = "GHSA-aaaa"\nignoreUntil = 2026-12-16\nreason = "build tool, not shipped"\n'
-assert not check(GOOD, T), "osv-scanner.toml check: the good sample fails"
-for bad in (GOOD.replace("2026-12-16", "2026-12-17"), GOOD.replace("reason = ", "why = "), GOOD.replace('"build tool, not shipped"', '"later"'),
-            GOOD.replace("ignoreUntil = 2026-12-16\n", ""), GOOD + '[[PackageOverrides]]\nname = "x"\nignore = true\n'):
-    assert check(bad, T), "osv-scanner.toml check: a bad sample passes: " + bad
-
-def tracked_files(*patterns):
-    out = subprocess.run(["git", "ls-files", "-z", "--", *patterns], capture_output=True, text=True, check=True).stdout
-    return [f for f in out.split("\0") if f]
-
-failed = False
-scan = show("scripts/osv-scan.sh") or ""
-today_utc = datetime.datetime.now(datetime.timezone.utc).date()
-# scripts/osv-scan.sh gives each lockfile the osv-scanner.toml of its own folder (a finding is ignored in one tree only),
-# so every tracked config must sit next to a lockfile that the script lists; any other one would be ignored silently.
-for cfg in tracked_files("osv-scanner.toml", "*/osv-scanner.toml"):
-    folder = cfg.rsplit("/", 1)[0] + "/" if "/" in cfg else ""
-    if not re.search(r"^\s*" + re.escape(folder) + r"[^/\s]+\s*$", scan, re.M):
-        print(f"error: {cfg} is next to no file in LOCKFILES of scripts/osv-scan.sh, so it has no effect (ADR-0049 decision 9)", file=sys.stderr)
-        failed = True
-    for e in check(show(cfg) or "", today_utc):
-        print(f"error: {cfg} {e}", file=sys.stderr)
-        failed = True
-for f in tracked_files("package-lock.json", "*/package-lock.json", "gradle/verification-metadata.xml", "*/gradle/verification-metadata.xml"):
-    if not re.search(r"^\s*" + re.escape(f) + r"\s*$", scan, re.M):
-        print(f"error: {f} is tracked but not listed in LOCKFILES of scripts/osv-scan.sh (ADR-0049 decision 9)", file=sys.stderr)
-        failed = True
-sys.exit(1 if failed else 0)
-PY
-then
-  fail=1
+# Every osv-scanner.toml (ADR-0049 decision 9, gate R2): valid entries, and next to a lockfile listed in scripts/osv-scan.sh;
+# every tracked lockfile is listed there. Tests: scripts/test_check_osv_config.py.
+python3 -I scripts/check_osv_config.py || fail=1
+# The OSV-Scanner version has one source: the `OSV_VERSION=` line of scripts/setup-toolchain.sh (ADR-0049 decision 9).
+osv_version="$(git show :scripts/setup-toolchain.sh | sed -n 's/^OSV_VERSION=//p')"
+if [ "$(printf '%s\n' "$osv_version" | grep -c .)" != 1 ]; then
+  echo "error: scripts/setup-toolchain.sh must have exactly one OSV_VERSION= line (ADR-0049 decision 9)" >&2; fail=1
+elif git show :scripts/osv-scan.sh | grep -qF -- "$osv_version"; then
+  echo "error: scripts/osv-scan.sh repeats the OSV-Scanner version $osv_version; read it from scripts/setup-toolchain.sh (ADR-0049 decision 9)" >&2; fail=1
 fi
 
 # .github/rulesets/main.json (ADR-0049 decision 9, gate R3): the required contexts are exactly the PR jobs of the workflows.

@@ -1,6 +1,6 @@
 # 18. Ticket 11 review findings left open (Minor and lower)
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 
 Found by the review of PR 295 (ticket 11, ADR-0049 R1 to R3), plus notes of the author. None blocks a gate.
@@ -12,3 +12,7 @@ Found by the review of PR 295 (ticket 11, ADR-0049 R1 to R3), plus notes of the 
 5. `check_ruleset.py drift`: the subset check does not see an extra live `required_status_checks` entry that has the same context and another `integration_id`.
 6. `nightly.yml` job `ruleset-drift` is red until the owner applies `.github/rulesets/main.json` (documented in `docs/releases/README.md`). Device and iOS contexts may flake and, with no retry (decision 5), block a merge; watch it after the apply.
 7. After the apply, the `osv-scan` expiry on 2026-12-15 blocks every PR merge unless issue 15 is done first.
+
+## Comments
+
+- 2026-11-16: items 1 to 5 are fixed in one PR, each with a test that fails before the fix. Item 6 is done: the owner applied `.github/rulesets/main.json` (ruleset id 27347104) and `ruleset-drift` is green. Item 7 moves to issue 15, which another session does; this issue does not change the `osv-scanner.toml` entries.
