@@ -1,6 +1,6 @@
 # 08. Server ingest load SLO and container image scan
 
-Status: claimed
+Status: resolved
 Type: task
 
 ## Scope and completion criteria
@@ -13,4 +13,4 @@ Spec gates B3, B4. ADR-0049 decisions 2, 5, 7, 10; ADR-0013; ADR-0045 item 6.
 4. Proof: each gate fails on a bad sample and passes on the real input; run IDs in an ADR-0049 amendment.
 5. `AGENTS.md` "Enforced rules" rows for both gates; `docs/design-index.md` entries.
 
-Execution: (set when the PR merges)
+Execution: Done (merged in PR #296, 2026-11-16 UTC)
