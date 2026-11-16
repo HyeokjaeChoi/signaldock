@@ -4,8 +4,10 @@
 # scripts/check-repo-rules.sh fails otherwise, and it rejects every table except [[IgnoredVulns]]
 # (no package-wide override). When a date passes, the finding fails the PR and the nightly run again:
 # fix it (update the dependency) or renew the entry in a PR that says why.
-# Triage 2026-11-16 (issue 15): stale entries pruned from verification-metadata.xml; each entry below is in the
-# current resolved tree, and no stable AGP release fixes it (AGP 9.5.1 resolves the same versions).
+# Triage 2026-11-16 (issue 15): stale entries pruned from verification-metadata.xml. Each entry below is still
+# listed in that file, and no stable release of the tool that pulls it has the fixed version yet.
+# Renew an entry only if its reason is still true.
+# The okio entry is only a .module file; see its reason.
 # Renew only if the reason is still true.
 
 # guava: Google Guava: CompactHashMap/CompactHashSet/MapMakerInternalMap deserialization
@@ -54,7 +56,7 @@ reason = "Bouncy Castle 1.80.2 from the AGP 9.4.1 plugin classpath (APK signing)
 [[IgnoredVulns]]
 id = "GHSA-2363-cqg2-863c"
 ignoreUntil = 2026-12-16
-reason = "jdom2 2.0.6 from the AGP 9.4.1 plugin classpath. Build tool only. It parses repo XML (manifests, resources), not untrusted XML."
+reason = "jdom2 2.0.6 from the AGP 9.4.1 plugin classpath (jetifier-processor). Build tool only. Jetifier is off (no android.enableJetifier in gradle.properties), so jdom2 does not run; it would parse only repo files."
 
 # okio: Okio Signed to Unsigned Conversion Error vulnerability
 [[IgnoredVulns]]
