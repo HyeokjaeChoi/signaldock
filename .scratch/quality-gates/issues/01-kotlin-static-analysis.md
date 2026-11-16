@@ -1,7 +1,8 @@
 # 01. Kotlin static analysis: Android Lint, detekt with ktlint rules
 
-Status: claimed
+Status: resolved
 Type: task
+Execution: Done (PR #284, 2026-11-16 UTC)
 
 ## Scope and completion criteria
 
