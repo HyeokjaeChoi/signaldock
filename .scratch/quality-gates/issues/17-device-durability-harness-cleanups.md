@@ -1,7 +1,7 @@
 # 17. device-durability.sh harness cleanups (from the review of ticket 06)
 
-Status: claimed
-Type: task
+Status: resolved
+Type: task Execution: Done (PR #302, 2026-11-17 UTC). Items 1 to 5 fixed. Item 6: `restore` passed on API 24 and 37.0 in nightly 43881303501; the earlier failure did not recur, and its cause stays unknown. The case prints the `bmgr` output if it fails again.
 
 Minor findings of the no-context review of PR 291. No gate is affected.
 
