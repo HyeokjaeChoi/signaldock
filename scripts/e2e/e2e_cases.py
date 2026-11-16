@@ -284,27 +284,35 @@ def burst_events(n):
         lines = [l for l in adb("logcat", "-d", "-s", "SignalDockHostCost").splitlines() if re.search(r"burst_(done|failed)", l)]
         return lines[-1] if lines else None
 
-    line = wait_for(f"burst_done n={n}", done, 60)
+    try:
+        line = wait_for(f"burst_done n={n}", done, 60)
+    except AssertionError as e:
+        # An init failure shows on screen ("init failed: ...") but is not logged.
+        try:
+            texts = [t for t in (x.get("text", "") for x in ui_nodes()) if t.startswith(("init failed", "track:", "diagnostics:"))]
+        except Exception:
+            raise e
+        raise AssertionError(f"{e}; screen: {texts}") from e
     if f"burst_done n={n}" not in line:
         raise AssertionError(f"track() failed during the burst: {line}")
 
 
-def mutated_batch(events=3):
-    """Makes events with one track() burst (burst_events) in proxy mode mutate: the proxy corrupts event index 1 of the
-    batch, so the server rejects it. `events` is the minimum number of events the batch must hold (case 5 needs only 2:
-    index 1 exists). Fails at once, with no retry, when the events are not in one batch (ADR-0049 decision 5).
+def mutated_batch():
+    """Makes 3 events with one track() burst (burst_events) in proxy mode mutate: the proxy corrupts event index 1 of the
+    batch, so the server rejects it. Fails at once, with no retry, when the 3 events are not in exactly one batch of
+    exactly 3 eventIds (ADR-0049 decision 5).
     Returns (device diagnostics after the ACK, batch eventIds, rejected eventId, proxy log entry)."""
     proxy_mode("pass")
     before_log = len(proxy_log())
     proxy_mode("mutate")
     burst_events(3)
-    say(f"  3 events from one track() burst (consumer app --ei burst 3, ADR-0020 hook); batch needs >= {events} events (proxy mode mutate: event index 1 of the batch gets a leading space in its name)")
+    say("  3 events from one track() burst (consumer app --ei burst 3, ADR-0020 hook); the batch must hold exactly 3 events (proxy mode mutate: event index 1 of the batch gets a leading space in its name)")
     d = wait_for("ACK on device", lambda: (lambda x: x if x["queued"] == 0 and x["ack"] else None)(diagnostics()), 120)
     proxy_mode("pass")
     batches = [e for e in proxy_log()[before_log:] if e.get("mutatedEventId")]
     sent_ids = batches[0]["eventIds"] if batches else []
-    if len(batches) != 1 or len(sent_ids) < events:
-        raise AssertionError(f"the burst events were not in one batch of >= {events} events: {[e.get('eventIds') for e in proxy_log()[before_log:]]}")
+    if len(batches) != 1 or len(sent_ids) != 3:
+        raise AssertionError(f"the burst events were not in one batch of exactly 3 events: {[e.get('eventIds') for e in proxy_log()[before_log:]]}")
     check(True, f"the burst events went out in one batch: {sent_ids}")
     return d, sent_ids, batches[0]["mutatedEventId"], batches[0]
 
@@ -350,7 +358,7 @@ def case5_client_report():
     r0 = dropped_count("server_rejected")
     rows0 = int(sql("select count(*) from client_reports")[0])
     say(f"  before: Dashboard client-report-counts server_rejected={r0}, client_reports rows={rows0}")
-    d, sent_ids, bad, batch = mutated_batch(events=2)
+    d, sent_ids, bad, batch = mutated_batch()
     # The SDK sends the report after the batch of the same send cycle (a few seconds, no extra event).
     mine = wait_for("client report of this batch", lambda: reports_after(batch["t"]), 120)
     wait_for("client report on the server", lambda: dropped_count("server_rejected") > r0, 30)
