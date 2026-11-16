@@ -291,7 +291,7 @@ else
   echo "error: $nf is missing; ADR-0049 decision 1 needs the nightly tier" >&2; fail=1
 fi
 
-# osv-scanner.toml (ADR-0049 decision 9, gate R2): only [[IgnoredVulns]] tables (no package-wide override), and each has
+# Every osv-scanner.toml (ADR-0049 decision 9, gate R2): only [[IgnoredVulns]] tables (no package-wide override), and each has
 # an id, a reason, and an `ignoreUntil` date at most 30 days after today (UTC; for a new entry that is the commit date).
 # A date in the past is allowed: OSV-Scanner then reports the finding again. The file is read line by line (python3 of
 # a developer machine may lack tomllib); a line that is not a comment, a table header, or `key = value` is an error.
@@ -347,19 +347,24 @@ for bad in (GOOD.replace("2026-12-16", "2026-12-17"), GOOD.replace("reason = ", 
             GOOD.replace("ignoreUntil = 2026-12-16\n", ""), GOOD + '[[PackageOverrides]]\nname = "x"\nignore = true\n'):
     assert check(bad, T), "osv-scanner.toml check: a bad sample passes: " + bad
 
-text = show("osv-scanner.toml")
+def tracked_files(*patterns):
+    out = subprocess.run(["git", "ls-files", "-z", "--", *patterns], capture_output=True, text=True, check=True).stdout
+    return [f for f in out.split("\0") if f]
+
 failed = False
-if text is None:
-    print("error: osv-scanner.toml is missing; scripts/osv-scan.sh needs it (ADR-0049 decision 9)", file=sys.stderr)
-    failed = True
-else:
-    for e in check(text, datetime.datetime.now(datetime.timezone.utc).date()):
-        print(f"error: osv-scanner.toml {e}", file=sys.stderr)
-        failed = True
 scan = show("scripts/osv-scan.sh") or ""
-tracked = subprocess.run(["git", "ls-files", "-z", "--", "package-lock.json", "*/package-lock.json", "gradle/verification-metadata.xml", "*/gradle/verification-metadata.xml"],
-                         capture_output=True, text=True, check=True).stdout.split("\0")
-for f in filter(None, tracked):
+today_utc = datetime.datetime.now(datetime.timezone.utc).date()
+# scripts/osv-scan.sh gives each lockfile the osv-scanner.toml of its own folder (a finding is ignored in one tree only),
+# so every tracked config must sit next to a lockfile that the script lists; any other one would be ignored silently.
+for cfg in tracked_files("osv-scanner.toml", "*/osv-scanner.toml"):
+    folder = cfg.rsplit("/", 1)[0] + "/" if "/" in cfg else ""
+    if not re.search(r"^\s*" + re.escape(folder) + r"[^/\s]+\s*$", scan, re.M):
+        print(f"error: {cfg} is next to no file in LOCKFILES of scripts/osv-scan.sh, so it has no effect (ADR-0049 decision 9)", file=sys.stderr)
+        failed = True
+    for e in check(show(cfg) or "", today_utc):
+        print(f"error: {cfg} {e}", file=sys.stderr)
+        failed = True
+for f in tracked_files("package-lock.json", "*/package-lock.json", "gradle/verification-metadata.xml", "*/gradle/verification-metadata.xml"):
     if not re.search(r"^\s*" + re.escape(f) + r"\s*$", scan, re.M):
         print(f"error: {f} is tracked but not listed in LOCKFILES of scripts/osv-scan.sh (ADR-0049 decision 9)", file=sys.stderr)
         failed = True

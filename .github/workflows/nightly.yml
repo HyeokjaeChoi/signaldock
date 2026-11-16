@@ -184,7 +184,7 @@ jobs:
   # Copy the summary and upload steps of `e2e-delivery`; `python3 -I scripts/nightly-summary.py` documents its flags.
 
   # Gate R2 on main (ADR-0049 decision 9): the PR job of the same name checks a change; this one catches an advisory that
-  # appeared since. An ignore in osv-scanner.toml expires after 30 days at most, so an expired entry fails here too.
+  # appeared since. An ignore in an osv-scanner.toml expires after 30 days at most, so an expired entry fails here too.
   osv-scan:
     runs-on: ubuntu-latest
     timeout-minutes: 10
