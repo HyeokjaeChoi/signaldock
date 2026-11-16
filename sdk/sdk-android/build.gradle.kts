@@ -35,10 +35,23 @@ android {
     // The measurement phases are shared with the R8 release measure app (issue 33, ADR-0018).
     // (added to the androidTest variant sources in `androidComponents` below)
 
+    // JaCoCo for the coverage ratchet (ADR-0049 Q3): `createDebugUnitTestCoverageReport` writes the XML that
+    // scripts/check-coverage.py reads.
+    buildTypes {
+        debug { enableUnitTestCoverage = true }
+    }
+
     testOptions {
         unitTests.isIncludeAndroidResources = true
         // Robolectric SDK 36 runs on JDK 21 and reads FileDescriptor internals.
-        unitTests.all { it.jvmArgs("--add-exports=java.base/jdk.internal.access=ALL-UNNAMED") }
+        unitTests.all {
+            it.jvmArgs("--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
+            // Robolectric loads the SDK classes through its own class loader; without these two lines JaCoCo sees almost none of them.
+            it.extensions.configure<JacocoTaskExtension> {
+                isIncludeNoLocationClasses = true
+                excludes = listOf("jdk.internal.*")
+            }
+        }
     }
 }
 

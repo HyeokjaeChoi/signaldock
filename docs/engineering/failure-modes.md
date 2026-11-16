@@ -41,12 +41,12 @@ Excluded on purpose, not forgotten ([ADR-0028](../adr/0028-server-production-fea
 - No server rate limit and no `429` (row 5).
 
 Still open:
-1. Power loss is not observed. The semantics are documented and the setting is pinned (rows 2, 9, ADR-0029). The cost of `synchronous=FULL` is not measured.
+1. Power loss is observed only as a SIGKILL of the emulator, which loses the guest page cache, not as a real power cut. The nightly case `powerloss` checks integrity, no duplicate or conflict on resend, and no loss before a forced checkpoint (rows 2, 9, ADR-0029, [ADR-0049](../adr/0049-production-quality-gates.md) decision 6). Loss after the checkpoint is recorded, not gated. API 24 reports `synchronous=FULL`, so the gate checks loss on API 37 only. The cost of `synchronous=FULL` is not measured.
 2. No monotonic clock; a forward clock jump sends one batch early; a WorkManager request made before a jump is not tested on a device (row 6).
 3. The Compose restart policy was not shown to trigger. No alert and no metrics endpoint (rows 4, 11).
 4. A request-level 400 still holds the entire queue. This is intended for contract bugs, but a third-party client or a JSON syntax error can still cause it (row 10).
 5. No separate ingest and query budgets (row 17).
 6. `Retry-After` is a fixed 1 second (row 4).
 7. The contract retirement policy is not built on the server: no `Deprecation` or `Sunset` headers, no traffic count, no threshold value (row 13).
-8. The device fault tests ran on one emulator image and CI does not run them (rows 1, 9, 14).
+8. The device fault tests run on emulators only: the nightly job `device-durability` runs them at API 24 and API 37.0 (x86_64 `google_apis`), and the `device-test` job runs the in-process tests at API 34. No physical device, no ARM image, no vendor ROM (rows 1, 9, 14).
 9. Rejected options for Room and the Worker path are not recorded ([design-review.md](design-review.md)).

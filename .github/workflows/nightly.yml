@@ -1,6 +1,6 @@
 # Nightly tier of the quality gates (ADR-0049 decision 1; plan: .scratch/quality-gates/spec.md).
 # A failure here blocks no PR. It fails the run, and the owner triages it into .scratch/. The release workflows
-# need the last run of this file on the tagged commit to be `success` (gate D4, ticket 12).
+# need the last run of this file on the tagged commit to be `success` (gate D4, scripts/check-nightly-green.sh).
 # No retry anywhere (ADR-0049 decision 5): a flaky gate is fixed at its cause.
 #
 # Rules for every job in this file (checked by scripts/check-repo-rules.sh):
