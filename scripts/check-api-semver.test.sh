@@ -97,6 +97,22 @@ hasnot err "not the canonical" "ssh URL: no canonical error"
 has err "warning: cannot list tags" "ssh URL: ls-remote warning"
 EXTRA_ENV=""
 
+# URL with userinfo: accepted as canonical, and no message prints the credential.
+git remote set-url origin https://user:secret@github.com/HyeokjaeChoi/signaldock.git
+EXTRA_ENV="-u SEMVER_CANONICAL GIT_ALLOW_PROTOCOL=file" # https and ssh fail at once: no network call
+expect 0 "https URL with userinfo of the canonical repository" android
+hasnot err "not the canonical" "https userinfo: no canonical error"
+has err "warning: cannot list tags" "https userinfo: ls-remote warning"
+hasnot err secret "https userinfo: warning has no credential"
+git remote set-url origin ssh://git@github.com/HyeokjaeChoi/signaldock
+expect 0 "ssh:// URL of the canonical repository" android
+hasnot err "not the canonical" "ssh:// URL: no canonical error"
+git remote set-url origin https://user:pw0rd@github.com/someone/signaldock.git
+expect 1 "fork https URL with a password" android
+has err "is not the canonical" "fork userinfo: canonical error"
+hasnot err pw0rd "fork userinfo: error has no credential"
+EXTRA_ENV=""
+
 # ls-remote failure: warning, then local tags.
 git remote set-url origin "$T/missing.git"
 SEMVER_CANONICAL="$T/missing.git" expect 0 "ls-remote failure uses local tags" android

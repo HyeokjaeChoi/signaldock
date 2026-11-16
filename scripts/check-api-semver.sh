@@ -1,7 +1,7 @@
 #!/bin/bash
 # Semver check of a public API dump (ADR-0049 A7, I3; docs/versioning.md).
 # Usage: scripts/check-api-semver.sh android|ios
-# Fails when the dump has a removed or changed line against the last release tag and the version did not break:
+# Fails when the dump has a removed or changed line against the nearest release tag that is an ancestor of HEAD, and the version did not break:
 # MAJOR must change, and before 1.0 the MINOR must change. A pure addition always passes.
 # android: sdk/sdk-android/api/sdk-android.api against the nearest `v*` tag; version = sdkVersion.
 # ios: sdk-ios/api/SignalDock.swiftinterface against the nearest `ios-v*` tag; version = SignalDockSDK.version.
@@ -39,14 +39,16 @@ cur="$(sed -n "$VERSION_SED" "$VERSION_FILE" | head -1)"
 
 REMOTE="${SEMVER_REMOTE:-origin}"
 CANONICAL="${SEMVER_CANONICAL:-https://github.com/HyeokjaeChoi/signaldock}"
-norm() { # lowercase, no scheme or user, `host:path` as `host/path`, no trailing `/` or `.git`
-  printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | sed -e 's|^https://||;s|^http://||;s|^ssh://git@||;s|^git://||;s|^git@||' \
+norm() { # lowercase, no scheme or userinfo, `host:path` as `host/path`, no trailing `/` or `.git`
+  printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | sed -e 's|^[a-z+]*://||' -e 's|^[^@/]*@||' \
     -e 's|github\.com:|github.com/|' -e 's|/*$||' -e 's|\.git$||'
 }
+nocred() { sed -E 's|//[^/@]*@|//|'; } # no userinfo (a token) in messages
 url="$(git remote get-url "$REMOTE" 2> /dev/null || true)"
+shown="$(printf '%s' "${url:-none}" | nocred)"
 if [ -z "$url" ] || [ "$(norm "$url")" != "$(norm "$CANONICAL")" ]; then
   {
-    echo "error: remote '$REMOTE' ('${url:-none}') is not the canonical repository ($CANONICAL)."
+    echo "error: remote '$REMOTE' ('$shown') is not the canonical repository ($CANONICAL)."
     echo "A fork can have old tags, so the check could compare with an old release."
     echo "Set SEMVER_REMOTE to the remote of the canonical repository (for example: SEMVER_REMOTE=upstream)."
   } >&2
@@ -56,7 +58,7 @@ fi
 if listed="$(git ls-remote --tags --refs "$REMOTE" "refs/tags/${PREFIX}[0-9]*" 2> /dev/null)"; then
   tags="$(printf '%s\n' "$listed" | sed 's|.*refs/tags/||')"
 else
-  echo "warning: cannot list tags of $REMOTE ($url); using local tags, which can be old" >&2
+  echo "warning: cannot list tags of $REMOTE ($shown); using local tags, which can be old" >&2
   tags=""
 fi
 [ -n "$tags" ] || tags="$(git tag -l "${PREFIX}[0-9]*")"
@@ -70,10 +72,13 @@ while IFS= read -r t; do
   if ! git rev-parse -q --verify "refs/tags/$t^{commit}" > /dev/null; then
     git fetch -q --no-tags "$REMOTE" "+refs/tags/$t:refs/tags/$t" < /dev/null || { echo "error: cannot fetch tag $t from $REMOTE" >&2; exit 1; }
   fi
-  if git merge-base --is-ancestor "refs/tags/$t^{commit}" HEAD; then
-    tag="$t"
-    break
-  fi
+  rc=0
+  git merge-base --is-ancestor "refs/tags/$t^{commit}" HEAD || rc=$?
+  case "$rc" in
+    0) tag="$t"; break ;;
+    1) ;; # not an ancestor: try the next tag
+    *) echo "error: cannot test whether $t is an ancestor of HEAD" >&2; exit 1 ;;
+  esac
 done <<< "$candidates"
 [ -n "$tag" ] || { echo "error: no '$PREFIX*' release tag is an ancestor of HEAD" >&2; exit 1; }
 
