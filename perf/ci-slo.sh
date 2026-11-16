@@ -38,6 +38,10 @@ rand() { od -An -N12 -tx1 /dev/urandom | tr -d ' \n'; }
 ckey=perf-c-$(rand)
 envfile=perf/work/env
 if [[ -e $envfile ]]; then echo "error: $envfile exists (a perf/*.py run); remove it and its volumes first" >&2; exit 1; fi
+# Same refusal as perf/common.py ensure_env(): the cleanup below runs `down --volumes`, which would delete a seeded perf volume.
+if [[ -n $(docker volume ls -q --filter label=com.docker.compose.project=signaldock-perf) ]]; then
+  echo "error: signaldock-perf volumes exist (a seeded perf/*.py run); remove them yourself first: docker compose -p signaldock-perf down --volumes" >&2; exit 1
+fi
 cat > "$envfile" <<ENV
 SIGNALDOCK_COLLECTION_KEY=$ckey
 SIGNALDOCK_QUERY_KEY=perf-q-$(rand)
