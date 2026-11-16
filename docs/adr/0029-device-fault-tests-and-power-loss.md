@@ -35,6 +35,6 @@ The semantics of item 4 stay: `synchronous=NORMAL` is the intended setting, and 
 
 Item 4 says "NORMAL is the Android default for WAL". That holds for new releases only. The API 24 platform default is FULL, so there every commit syncs. This is safer for power loss: the A6 gate cannot lose data on API 24, and nothing needs a fix. The SDK sets no sync mode of its own. The intended behavior is "use the platform WAL default".
 
-Item 5 changes. `PowerLossSemanticsDeviceTest` now asserts that the SDK connection uses the platform's WAL sync mode (the system resource `db_wal_sync_mode`) and that the mode is NORMAL or FULL, never OFF. A change that makes the SDK set its own mode, different from the platform, still fails it. It no longer fails when a device default is FULL.
+Item 5 changes. `PowerLossSemanticsDeviceTest` now asserts that the SDK connection uses the platform's WAL sync mode (the system property `debug.sqlite.wal.syncmode` if set, else the system resource `db_wal_sync_mode`) and that the mode is NORMAL or FULL, never OFF. A change that makes the SDK set its own mode, different from the platform, still fails it. It no longer fails when a device default is FULL.
 
 The case `powerloss` of `scripts/device-durability.sh` now reports the mode of the SDK connection: it prints it and records the number `powerlossSynchronous` (1 NORMAL, 2 FULL).

@@ -257,7 +257,10 @@ emulator_kill_and_cold_boot() {
   sleep 5
 }
 
-record() { [ -z "${DURABILITY_NUMBERS:-}" ] || echo "$1=$2" >>"$DURABILITY_NUMBERS"; }
+record() {
+  [ -n "$2" ] || { echo "no value for $1" >&2; exit 1; }
+  [ -z "${DURABILITY_NUMBERS:-}" ] || echo "$1=$2" >>"$DURABILITY_NUMBERS"
+}
 
 case_powerloss() {
   echo "== powerloss: checkpoint, more events, SIGKILL of the emulator process, cold boot, integrity and server checks"
@@ -276,14 +279,15 @@ case_powerloss() {
   local armed=0
   for _ in $(seq 1 1800); do  # 3 minutes
     if grep -q 'status=invalid' "$wlog"; then cat "$wlog" >&2; echo "invalid powerloss_write" >"$invalid_marker"; exit 1; fi
-    if grep -q 'status=armed' "$wlog"; then armed=1; break; fi
+    # The instrumentation prints the keys sorted: dbSynchronous comes before status, so both are there when status is.
+    if grep -q 'status=armed' "$wlog" && grep -q 'dbSynchronous=' "$wlog"; then armed=1; break; fi
     kill -0 "$writer_pid" 2>/dev/null || break
     sleep 0.1
   done
   [ "$armed" = 1 ] || { echo "powerloss_write did not report 'armed':" >&2; cat "$wlog" >&2; exit 1; }
   echo "  $(grep -o 'checkpoint=[^ ]* [^ ]* [^ ]*' "$wlog" | head -1)"
   local sync
-  sync="$(sed -n 's/.*INSTRUMENTATION_STATUS: synchronous=//p' "$wlog" | head -1 | tr -d '\r')"
+  sync="$(sed -n 's/.*INSTRUMENTATION_STATUS: dbSynchronous=//p' "$wlog" | head -1 | tr -d '\r')"
   case "$sync" in
     2) echo "  synchronous=2 (FULL: every commit syncs; loss after the checkpoint is expected to be 0)" ;;
     1) echo "  synchronous=1 (NORMAL: commits after the checkpoint can be lost)" ;;
@@ -321,7 +325,9 @@ case_maincost() {
 }
 
 for c in "${cases[@]}"; do
-  case " ${all_cases[*]} " in *" $c "*) ;; *) echo "unknown case '$c'" >&2; exit 2 ;; esac
+  known=0
+  for k in "${all_cases[@]}"; do [ "$k" = "$c" ] && known=1; done
+  [ "$known" = 1 ] || { echo "unknown case '$c'" >&2; exit 2; }
 done
 results=() failed=0
 for c in "${cases[@]}"; do

@@ -117,7 +117,7 @@ class PowerLossPhases {
             report(
                 "phase", "powerloss_write", "status", "armed",
                 "checkpoint", "busy=$busy log=$log checkpointed=$checkpointed",
-                "synchronous", sdk.sqlite().query("PRAGMA synchronous").use { it.moveToFirst(); it.getString(0) },
+                "dbSynchronous", sdk.sqlite().query("PRAGMA synchronous").use { it.moveToFirst(); it.getString(0) },
                 "pid", android.os.Process.myPid().toString(),
             )
         }
