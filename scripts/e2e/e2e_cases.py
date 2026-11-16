@@ -309,6 +309,14 @@ def mutated_batch():
     say("  3 events from one track() burst (consumer app --ei burst 3, ADR-0020 hook); the batch must hold exactly 3 events (proxy mode mutate: event index 1 of the batch gets a leading space in its name)")
     d = wait_for("ACK on device", lambda: (lambda x: x if x["queued"] == 0 and x["ack"] else None)(diagnostics()), 120)
     proxy_mode("pass")
+    # DIAG: when did the Worker / foreground drain run relative to the track() calls?
+    log = adb("logcat", "-d", "-v", "threadtime")
+    keep = [l for l in log.splitlines() if re.search(r"WM-|SignalDock|signaldock|consumer|JobScheduler|ActivityTaskManager: (START|Displayed)", l)]
+    say("  DIAG logcat (filtered, last 150):\n    " + "\n    ".join(keep[-150:]))
+    say(f"  DIAG proxy entries (path, ids, t): {[(e.get('path'), e.get('eventIds'), e.get('t')) for e in proxy_log()[before_log:]]}")
+    say(f"  DIAG host time now: {time.time()}")
+    with open(os.path.join(ROOT, f"diag-logcat-{int(time.time())}.txt"), "w") as f:
+        f.write(log)
     batches = [e for e in proxy_log()[before_log:] if e.get("mutatedEventId")]
     sent_ids = batches[0]["eventIds"] if batches else []
     if len(batches) != 1 or len(sent_ids) != 3:
