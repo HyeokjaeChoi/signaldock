@@ -239,7 +239,7 @@ Architecture (`architecture.md`):
 - DB time budgets and queries
 
 ADRs:
-- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), decision 7, for k6 thresholds in `perf/load.js` and `perf/overload.js` and how `perf/run_one.py` and `perf/overload.py` handle k6 exit 99 (amends ADR-0013); the nightly load SLO (gate B3)
+- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), decision 7, for k6 thresholds in `perf/load.js` and `perf/overload.js` and how `perf/run_one.py` and `perf/overload.py` handle k6 exit 99 (amends ADR-0013); the nightly load SLO (gate B3: `perf/ci-slo.sh`, `perf/ci-slo.js`, `perf/ci_slo.py`, `perf/ci-slo-baseline.json`; amendment of ticket 08)
 - ADR-0004
 - ADR-0007
 - ADR-0008
@@ -285,7 +285,7 @@ ADRs:
 - ADR-0038 (`docs/adr/0038-gradle-dependency-verification.md`), for `*/gradle/verification-metadata.xml` and `scripts/update-gradle-verification.sh` (issue 68)
 - ADR-0039 (`docs/adr/0039-release-provenance-attestation.md`), for the attestation step and job permissions of `publish` in `.github/workflows/release.yml`, and the attestation section of `docs/releases/README.md` (issue 69)
 - ADR-0041 (`docs/adr/0041-claude-code-pr-review.md`), for `.github/workflows/claude-review.yml` and its `CLAUDE_CODE_VERSION` entry in `.github/renovate.json5` (issues 83 and 90)
-- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), for the PR, nightly, and release gate tiers, static-analysis baselines (`scripts/check-baselines.py` and `scripts/test_check_baselines.py`, called by `scripts/check-repo-rules.sh`; the `lint` and `detekt` steps of `sdk-test` and `server-test`), the coverage ratchet, and `.github/workflows/nightly.yml` (plan: `.scratch/quality-gates/spec.md`); `docs/engineering/nightly-summary.md` and `scripts/nightly-summary.py` for the summary file of each nightly job (gate Q2)
+- ADR-0049 (`docs/adr/0049-production-quality-gates.md`), for the PR, nightly, and release gate tiers, static-analysis baselines (`scripts/check-baselines.py` and `scripts/test_check_baselines.py`, called by `scripts/check-repo-rules.sh`; the `lint` and `detekt` steps of `sdk-test` and `server-test`), the coverage ratchet, and `.github/workflows/nightly.yml` (plan: `.scratch/quality-gates/spec.md`); `docs/engineering/nightly-summary.md` and `scripts/nightly-summary.py` for the summary file of each nightly job (gate Q2); `.github/workflows/image-scan.yml` (gate B4, ticket 08 amendment)
 - ADR-0042 (`docs/adr/0042-measurement-on-a-physical-device.md`), for the `SIGNALDOCK_PHYSICAL_DEVICE` opt-in of `scripts/device-measure.sh` and `scripts/host-cost-measure.sh`
 - ADR-0043 (`docs/adr/0043-cloud-demo-hosting-and-deploy.md`), for `scripts/demo-seed.py` (cloud-demo ticket 02) and the checks in `scripts/check-repo-rules.sh` (ticket 06)
 

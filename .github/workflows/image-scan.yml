@@ -1,0 +1,53 @@
+# Gate B4 (ADR-0049 amendment, ticket 08): Trivy on the server and Dashboard images, only when something that goes into them changes.
+# Same rule and same pinned Trivy as `demo-deploy.yml`: fail on a CRITICAL or HIGH finding that has a fix. Nothing is pushed.
+# Not a required check on purpose: a path-filtered workflow that does not run would block the merge forever (ADR-0049 decision 9, ruleset).
+name: image-scan
+
+on:
+  pull_request:
+    paths:
+      - server/Dockerfile
+      - dashboard/Dockerfile
+      - server/**/build.gradle.kts
+      - server/gradle/**
+      - gradle/libs.versions.toml
+      - dashboard/package.json
+      - dashboard/package-lock.json
+      - dashboard/nginx.conf.template
+      - .dockerignore
+      - .github/workflows/image-scan.yml
+
+permissions:
+  contents: read
+
+jobs:
+  trivy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      # load: true keeps the image in the local Docker store.
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: server/Dockerfile
+          load: true
+          tags: signaldock-server:scan
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: dashboard/Dockerfile
+          load: true
+          tags: signaldock-dashboard:scan
+      # Trivy runs from the official image, pinned by index digest (v0.76.1), as in demo-deploy.yml. No token, no registry credential.
+      - name: Trivy scan, server image
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c \
+            image --ignore-unfixed --severity CRITICAL,HIGH --exit-code 1 --no-progress signaldock-server:scan
+      - name: Trivy scan, Dashboard image
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c \
+            image --ignore-unfixed --severity CRITICAL,HIGH --exit-code 1 --no-progress signaldock-dashboard:scan
