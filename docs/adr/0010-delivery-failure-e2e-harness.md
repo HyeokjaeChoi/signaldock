@@ -22,3 +22,19 @@ The design sources fix the four cases (spec section 7 rows "Normal E2E", "ACK lo
 ## Amendment (2026-11-15, nightly run)
 
 Decision 3 says the script is not part of CI because there is no emulator in CI. [ADR-0023](0023-ci-device-tests-and-size-budget.md) added an emulator to CI, and [ADR-0049](0049-production-quality-gates.md) gate Q1 runs cases 1 to 5 every night: job `e2e-delivery` of `.github/workflows/nightly.yml` starts the Compose stack (`.env` from `.env.example`) and an API 34 `google_apis` x86_64 emulator, then runs `scripts/e2e-delivery.sh 1 2 3 4 5`. A failed case fails the job. There is no retry (ADR-0049 decision 5). The script gains the env settings `E2E_AVD` (only named in an error message) and `E2E_RESULT_JSON` (a file for the per-case results, which `scripts/nightly-summary.py` reads). Local use is unchanged; the rest of this ADR is unchanged.
+
+## Amendment (2026-11-16, case 3 lost tap)
+
+Symptom: job `e2e-delivery` failed case 3 at random with "in 3 attempts of three taps each, no batch held the required events" (nightly run 43752097047; 2 of the last 9 nightly runs). Passing runs also needed 3 attempts (run 43858155307).
+
+Evidence, from an instrumented run ([43879822305](https://github.com/HyeokjaeChoi/signaldock/actions/runs/43879822305), 11 attempts):
+
+- In 8 of 11 attempts the device queue held only 2 events right after the three taps, before any send (diagnostics read about 9 s after the first tap, `ack=None`). In 3 attempts it held 3, and the batch held 3.
+- Batching, the flush interval, and WorkManager are not the cause: the single batch (sent by `DeliveryWorker` at init + 10 s, about 7.7 s after the first tap) held the whole queue every time.
+- The logcat of each failed attempt shows that all three DOWN and UP pairs reached the device input pipeline, but in one burst of 100 to 130 ms (10 to 25 ms apart) right after a stall of the app main thread of 2.5 to 2.7 s (`EGL_emulation app_time_stats max=2512..2682ms`). The three `input tap` commands were issued over 2.1 s. One tap of the burst gave no click, so `track()` ran only twice.
+
+Cause: the harness needed each of three bursted UI taps to become a click. That is not deterministic on a loaded emulator. The retry of the 2026-10 change (`retry_split`, 3 attempts) only hid this. It is an automatic retry, which ADR-0049 decision 5 forbids.
+
+Decision: cases 3 and 5 make their events with `am start ... --ei burst 3` (the hook of ADR-0020 item 2, also used by `scripts/host-cost-measure.sh`): the consumer app calls `track()` three times in one coroutine, and the script waits for `burst_done n=3` in logcat (tag `SignalDockHostCost`; a `burst_failed` line fails the case). Decision 2 "driven through the UI" still holds for case 1, case 2, and for reading the diagnostics. The retry is removed: when the events are not in one batch, the case fails at once and names the event IDs of the proxy log. No product code changed.
+
+Not covered: the exact framework reason why one bursted tap gives no click was not isolated. The harness no longer depends on it. The proof run of this change is the first nightly run after the merge.

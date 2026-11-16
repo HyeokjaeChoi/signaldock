@@ -113,10 +113,9 @@ def button_xy(label):
     raise RuntimeError(f"button not found: {label}")
 
 
-def tap(label, times=1):
+def tap(label):
     x, y = button_xy(label)
-    # One shell command: the taps are well inside the SDK's 10 s foreground window.
-    adb("shell", "; ".join([f"input tap {x} {y}"] * times))
+    adb("shell", "input", "tap", x, y)
 
 
 def screen_text(prefix, timeout=20, not_equal=None):
@@ -273,52 +272,51 @@ def case2_ack_loss():
     check(status == 200 and detail["receivedAt"].startswith(received1[:19].replace(" ", "T")), "Dashboard detail still shows the first receivedAt")
 
 
-class Split(Exception):
-    """The taps did not land in one batch (slow emulator); the case starts over."""
+def burst_events(n):
+    """Fresh app start that makes n events with n track() calls in one coroutine (consumer app `--ei burst n`,
+    ADR-0020 item 2; the same hook as scripts/host-cost-measure.sh). Waits for its `burst_done` log line.
+    No UI tap: a bursted tap on a loaded emulator can give no click (ADR-0010 amendment 2026-11-16)."""
+    adb("logcat", "-c")
+    adb("shell", "pm", "clear", PKG)
+    adb("shell", "am", "start", "-n", f"{PKG}/.MainActivity", "--ei", "burst", str(n))
 
+    def done():
+        lines = [l for l in adb("logcat", "-d", "-s", "SignalDockHostCost").splitlines() if re.search(r"burst_(done|failed)", l)]
+        return lines[-1] if lines else None
 
-def retry_split(once):
-    """Run once() until the taps land in one batch (a slow emulator can split them)."""
-    for attempt in range(1, 4):
-        try:
-            return once()
-        except Split as e:
-            say(f"  attempt {attempt}: {e}; starting over with a fresh app")
-    raise AssertionError("in 3 attempts of three taps each, no batch held the required events")
+    line = wait_for(f"burst_done n={n}", done, 60)
+    if f"burst_done n={n}" not in line:
+        raise AssertionError(f"track() failed during the burst: {line}")
 
 
 def mutated_batch(events=3):
-    """Each attempt taps three times in proxy mode mutate: the proxy corrupts event index 1, so the server rejects it.
-    `events` is the minimum number of events the batch must hold (case 5 needs only 2: index 1 exists).
-    Returns (device diagnostics after the ACK, tapped eventIds, rejected eventId, proxy log entry)."""
+    """Makes events with one track() burst (burst_events) in proxy mode mutate: the proxy corrupts event index 1 of the
+    batch, so the server rejects it. `events` is the minimum number of events the batch must hold (case 5 needs only 2:
+    index 1 exists). Fails at once, with no retry, when the events are not in one batch (ADR-0049 decision 5).
+    Returns (device diagnostics after the ACK, batch eventIds, rejected eventId, proxy log entry)."""
     proxy_mode("pass")
     before_log = len(proxy_log())
     proxy_mode("mutate")
-    fresh_app()
-    tap("Track consumer_ping", times=3)
-    say(f"  3 taps on device, batch needs >= {events} events (proxy mode mutate: event index 1 of the batch gets a leading space in its name)")
+    burst_events(3)
+    say(f"  3 events from one track() burst (consumer app --ei burst 3, ADR-0020 hook); batch needs >= {events} events (proxy mode mutate: event index 1 of the batch gets a leading space in its name)")
     d = wait_for("ACK on device", lambda: (lambda x: x if x["queued"] == 0 and x["ack"] else None)(diagnostics()), 120)
     proxy_mode("pass")
     batches = [e for e in proxy_log()[before_log:] if e.get("mutatedEventId")]
-    tapped = batches[0]["eventIds"] if batches else []
-    if len(batches) != 1 or len(tapped) < events:
-        raise Split(f"the tapped events were split across batches: {[e.get('eventIds') for e in proxy_log()[before_log:]]}")
-    check(True, f"the tapped events went out in one batch: {tapped}")
-    return d, tapped, batches[0]["mutatedEventId"], batches[0]
+    sent_ids = batches[0]["eventIds"] if batches else []
+    if len(batches) != 1 or len(sent_ids) < events:
+        raise AssertionError(f"the burst events were not in one batch of >= {events} events: {[e.get('eventIds') for e in proxy_log()[before_log:]]}")
+    check(True, f"the burst events went out in one batch: {sent_ids}")
+    return d, sent_ids, batches[0]["mutatedEventId"], batches[0]
 
 
 def case3_partial():
-    retry_split(case3_once)
-
-
-def case3_once():
     ids0 = event_ids()
-    d, tapped, bad, batch = mutated_batch()
+    d, sent_ids, bad, batch = mutated_batch()
     say(f"  proxy: upstream status {batch['upstreamStatus']} body={batch['upstreamBody']}")
     say(f"  device diagnostics: queued={d['queued']} lastAck(accepted,duplicate,rejected)={d['ack']} recentRejections={d['rejections']} retryFailureCount={d['failures']}")
-    check(len(tapped) == 3 and bad == tapped[1], f"three events in the batch; rejected eventId is {bad} (index 1)")
+    check(len(sent_ids) == 3 and bad == sent_ids[1], f"three events in the batch; rejected eventId is {bad} (index 1)")
     new = event_ids() - ids0
-    check(new == {tapped[0], tapped[2]}, f"server stored the two valid events {sorted(new)} and not {bad}")
+    check(new == {sent_ids[0], sent_ids[2]}, f"server stored the two valid events {sorted(new)} and not {bad}")
     check(d["ack"] == (2, 0, 1), "device lastAck is accepted=2 rejected=1")
     check(d["rejections"] == [(bad, "INVALID_TEXT")], "device recentRejections lists only the invalid eventId with its code")
     check(d["queued"] == 0 and d["failures"] == 0, "device queue is empty and the failure count is 0")
@@ -336,7 +334,7 @@ def reports_after(t):
 
 
 def settle_reports():
-    """Wait until the last rejecting batch (case 3 or a failed attempt) has its report, so a late report cannot count for case 5."""
+    """Wait until the last rejecting batch (case 3) has its report, so a late report cannot count for case 5."""
     def done():
         log = proxy_log()
         mutated = [e["t"] for e in log if e.get("mutatedEventId")]
@@ -347,19 +345,13 @@ def settle_reports():
 def case5_client_report():
     """ADR-0036 client reports: a counted drop on the device reaches the Dashboard query.
     The drop is server_rejected (the SDK counts each per-item rejection in the ACK), caused as in case 3."""
-    state = {}
-
-    def attempt():
-        proxy_mode("pass")
-        settle_reports()
-        state["r0"] = dropped_count("server_rejected")
-        state["rows0"] = int(sql("select count(*) from client_reports")[0])
-        say(f"  before: Dashboard client-report-counts server_rejected={state['r0']}, client_reports rows={state['rows0']}")
-        return mutated_batch(events=2)
-
-    d, tapped, bad, batch = retry_split(attempt)
-    r0, rows0 = state["r0"], state["rows0"]
-    # The SDK sends the report after the batch of the same send cycle (a few seconds, no extra tap).
+    proxy_mode("pass")
+    settle_reports()
+    r0 = dropped_count("server_rejected")
+    rows0 = int(sql("select count(*) from client_reports")[0])
+    say(f"  before: Dashboard client-report-counts server_rejected={r0}, client_reports rows={rows0}")
+    d, sent_ids, bad, batch = mutated_batch(events=2)
+    # The SDK sends the report after the batch of the same send cycle (a few seconds, no extra event).
     mine = wait_for("client report of this batch", lambda: reports_after(batch["t"]), 120)
     wait_for("client report on the server", lambda: dropped_count("server_rejected") > r0, 30)
     r1 = dropped_count("server_rejected")
