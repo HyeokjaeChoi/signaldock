@@ -161,6 +161,9 @@ fi
 # scripts/test_check_baselines.py (the tests add an entry and expect a failure).
 if [ "$HAVE_MAIN" = 1 ]; then
   python3 -I scripts/check-baselines.py origin/main || fail=1
+  # The committed coverage value may only rise (ADR-0049 decision 4) unless the same diff sets `lowered: {from, reason}`.
+  # Logic and tests: scripts/check-coverage.py, scripts/test_check_coverage.py.
+  python3 -I scripts/check-coverage.py ratchet origin/main || fail=1
 fi
 
 # Workflow security (cloud-demo spec D9, ADR-0043 item 4). Reads the index. `wf` prints a workflow

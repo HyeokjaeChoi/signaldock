@@ -1,5 +1,5 @@
 #!/bin/bash
-# iOS SDK gates (ADR-0047 D13). Usage: scripts/verify-ios.sh [all|lint|tsan|asan|analyze|manifest|api|api-update [artifact-dir]|available]
+# iOS SDK gates (ADR-0047 D13). Usage: scripts/verify-ios.sh [all|lint|tsan|coverage|asan|analyze|manifest|api|api-update [artifact-dir]|available]
 # `available` exits 0 only with full Xcode (Swift 6, `swift format`) and a Simulator runtime that pick_simulator can select
 # (iOS 15 or later, with an iPhone); a Command Line Tools shim of xcodebuild is not enough.
 # `simulator` prints the UDID that the tests use (scripts/simulator-durability-ci.sh runs on the same one).
@@ -8,6 +8,8 @@
 # tests, and it only writes "Main Thread Checker: UI API called on a background thread" to the log; the run stays green.
 # run_tests therefore reads the log and fails on that line. Parallel testing is off (it runs the tests on Simulator clones,
 # whose console output does not reach this log, so the check would see nothing).
+# Coverage ratchet (ADR-0049 gate Q3): the `tsan` run writes line coverage to $XCRESULT, and `coverage` checks it against
+# scripts/coverage-baseline.json (scripts/check-coverage.py).
 # CI sets IOS_WERROR=1 (warnings as errors in CI only). The tests run on the oldest iOS Simulator runtime
 # that is installed, because the GitHub runner has no iOS 15 runtime (spec section 5; ADR-0047 "iOS 15 Simulator fallback").
 set -euo pipefail
@@ -15,6 +17,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PKG="$ROOT/sdk-ios"
 DERIVED="$PKG/build/DerivedData" # build/ is git-ignored
+XCRESULT="$PKG/build/tsan.xcresult"
 WERROR=()
 if [ "${IOS_WERROR:-0}" = 1 ]; then
   WERROR=(SWIFT_TREAT_WARNINGS_AS_ERRORS=YES GCC_TREAT_WARNINGS_AS_ERRORS=YES)
@@ -72,6 +75,16 @@ run_tests() { # arguments: sanitizer flags
     exit 1
   fi
   [ "$status" -eq 0 ] || exit "$status"
+}
+
+run_coverage() {
+  echo "=== iOS: line coverage against scripts/coverage-baseline.json ==="
+  [ -d "$XCRESULT" ] || { echo "error: no $XCRESULT; run 'scripts/verify-ios.sh tsan' first" >&2; exit 1; }
+  local json
+  json="$(mktemp)"
+  xcrun xccov view --report --json "$XCRESULT" > "$json"
+  (cd "$ROOT" && python3 -I scripts/check-coverage.py ios "$json") || { rm -f "$json"; exit 1; }
+  rm -f "$json"
 }
 
 run_analyze() {
@@ -195,14 +208,18 @@ run_api_update() {
 
 case "${1:-all}" in
   lint) run_lint ;;
-  tsan) echo "=== iOS: Simulator tests, Thread Sanitizer ==="; run_tests -enableThreadSanitizer YES ;;
+  tsan)
+    echo "=== iOS: Simulator tests, Thread Sanitizer ==="
+    rm -rf "$XCRESULT" # xcodebuild refuses an existing result bundle
+    run_tests -enableThreadSanitizer YES -enableCodeCoverage YES -resultBundlePath "$XCRESULT" ;;
+  coverage) run_coverage ;;
   asan) echo "=== iOS: Simulator tests, ASan + UBSan ==="; run_tests -enableAddressSanitizer YES -enableUndefinedBehaviorSanitizer YES ;;
   analyze) run_analyze ;;
   manifest) run_manifest ;;
   api) run_api ;;
   api-update) run_api_update "$@" ;;
-  all) run_lint; "$0" tsan; "$0" asan; run_analyze; run_manifest; run_api ;;
+  all) run_lint; "$0" tsan; run_coverage; "$0" asan; run_analyze; run_manifest; run_api ;;
   available) available ;;
   simulator) pick_simulator ;;
-  *) echo "usage: $0 [all|lint|tsan|asan|analyze|manifest|api|api-update [artifact-dir]|available|simulator]" >&2; exit 2 ;;
+  *) echo "usage: $0 [all|lint|tsan|coverage|asan|analyze|manifest|api|api-update [artifact-dir]|available|simulator]" >&2; exit 2 ;;
 esac

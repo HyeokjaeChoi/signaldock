@@ -74,6 +74,14 @@ jobs:
           sdk/gradlew -p sdk :sdk-android:testDebugUnitTest :demo:feature:shop:testDebugUnitTest :demo:feature:diagnostics:testDebugUnitTest :demo:core:data:testDebugUnitTest --no-daemon
           # Compile only: the `device-test` job runs the instrumented tests on an emulator (ADR-0023).
           sdk/gradlew -p sdk :sdk-android:assembleDebugAndroidTest --no-daemon
+      # Coverage ratchet (ADR-0049 gate Q3): line coverage of the JVM unit tests of sdk-android against scripts/coverage-baseline.json.
+      # The tests above already ran with JaCoCo on, so this step only writes the report from their results.
+      - name: Coverage ratchet
+        run: |
+          jdks=("$PWD"/.tools/jdk-*)
+          export JAVA_HOME="${jdks[0]}"
+          sdk/gradlew -p sdk :sdk-android:createDebugUnitTestCoverageReport --no-daemon
+          python3 -I scripts/check-coverage.py android sdk/sdk-android/build/reports/coverage/test/debug/report.xml
       # Static analysis of every module of the SDK build (ADR-0049): Android Lint with warnings as errors, and detekt with
       # the ktlint rules. Each module has a baseline that may only shrink (scripts/check-baselines.py, run by `check`).
       - name: Android Lint and detekt
@@ -207,6 +215,8 @@ jobs:
       - run: sudo xcode-select -s /Applications/Xcode_26.6.app # ADR-0047: the default of macos-26
       - run: scripts/verify-ios.sh lint
       - run: scripts/verify-ios.sh tsan
+      # Coverage ratchet (ADR-0049 gate Q3), read from the result bundle of the tsan run; the Xcode of this job is the source of truth.
+      - run: scripts/verify-ios.sh coverage
       - run: scripts/verify-ios.sh analyze
       - run: scripts/verify-ios.sh manifest
       # Public API against sdk-ios/api/SignalDock.swiftinterface (ADR-0047 D13 item 7). The compiler of this job is the

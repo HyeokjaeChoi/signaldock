@@ -15,6 +15,7 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read
+      actions: read # gate D4: list the nightly runs of this commit
     env:
       TAG: ${{ github.ref_name }}
       GH_TOKEN: ${{ github.token }}
@@ -23,6 +24,12 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      # Gate D4 (ADR-0049 decisions 1 and 8): release only a commit whose last nightly run is green. This job has `actions: read`
+      # for it; `publish` keeps its permissions and runs no project code.
+      - name: Nightly is green on this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/check-nightly-green.sh
       - name: Verify tag
         run: |
           if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then

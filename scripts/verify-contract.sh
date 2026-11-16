@@ -72,6 +72,7 @@ echo "=== 4. web packages: lint, format, type check, tests with axe-core, bundle
 (cd "$ROOT/perf/report" && npm run typecheck && npm test && npm run check-bundle-budget)
 node --test "$ROOT/scripts/check-bundle-budget.test.mjs"
 "$ROOT/scripts/check-api-semver.test.sh"
+"$ROOT/scripts/check-nightly-green.test.sh"
 
 echo "=== 5. independent sdk/ and server/ builds ==="
 (cd "$ROOT/sdk" && ./gradlew help --no-daemon -q)

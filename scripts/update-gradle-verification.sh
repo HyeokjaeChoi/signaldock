@@ -40,7 +40,7 @@ echo "=== sdk ==="
 # connected tasks. `generateBaselineProfile` and the benchmark run need an emulator and are not run here.
 gw "$ROOT/sdk" build -x :sdk-android:dependencyGuard :sdk-android:assembleDebugAndroidTest \
   :sdk-android:signaldockMavenZip :measure-app:assembleRelease :demo:app:assembleRelease \
-  :sdk-android:apiCheck :sdk-android:dependencyGuardBaseline
+  :sdk-android:apiCheck :sdk-android:dependencyGuardBaseline :sdk-android:createDebugUnitTestCoverageReport
 
 echo "=== server ==="
 gw "$ROOT/server" build verifyJooq
