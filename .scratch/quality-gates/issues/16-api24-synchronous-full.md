@@ -1,6 +1,6 @@
 # 16. API 24 gives the SDK queue `synchronous=FULL`: the pin test fails there
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 
 Found by ticket 06 (ADR-0049 amendment 2026-11-15). On the API 24 emulator, `PowerLossSemanticsDeviceTest` fails: the SDK connection reports `PRAGMA synchronous` = 2 (FULL), not 1. The Android platform default for WAL on that release is FULL. CI `device-test` runs API 34, where the test passes, so no job is red.

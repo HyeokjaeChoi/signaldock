@@ -38,7 +38,13 @@ import java.util.concurrent.TimeUnit
 class PowerLossPhases {
     private fun phase(name: String) = assumeTrue("phase $name not selected", instrumentationArg("phase") == name)
 
-    private fun count(name: String) = instrumentationArg(name)!!.toInt()
+    /** The four set sizes travel together; the script passes them as `-e pre`, `-e lostack`, `-e pending`, `-e tail`. */
+    private data class Sets(val pre: Int, val lostack: Int, val pending: Int, val tail: Int)
+
+    private fun sets(): Sets {
+        fun count(name: String) = instrumentationArg(name)!!.toInt()
+        return Sets(count("pre"), count("lostack"), count("pending"), count("tail"))
+    }
 
     private val endpoint get() = instrumentationArg("endpoint")!!
 
@@ -70,28 +76,26 @@ class PowerLossPhases {
     @Test
     fun powerloss_write() {
         phase("powerloss_write")
-        val counts = listOf("pre", "lostack", "pending", "tail").map(::count)
-        val (pre, lostack, pending) = counts
-        val tail = counts[3]
+        val n = sets()
         val sdk = runBlocking { rig().initialize() }
         runBlocking {
             assertEquals("the prepared queue is empty", 0, sdk.diagnostics().queuedEvents)
             serverMode("ok")
-            sdk.trackSet("pl_pre", pre)
+            sdk.trackSet("pl_pre", n.pre)
             sdk.delivery.drainForeground()
             assertEquals("the pre events were delivered and deleted", 0, sdk.diagnostics().queuedEvents)
 
             serverMode("drop")
-            sdk.trackSet("pl_lostack", lostack)
+            sdk.trackSet("pl_lostack", n.lostack)
             sdk.delivery.drainForeground() // the server stores them; the SDK gets no answer and keeps them
             serverMode("ok")
-            assertEquals("the lost-ACK events stay queued", lostack, sdk.diagnostics().queuedEvents)
+            assertEquals("the lost-ACK events stay queued", n.lostack, sdk.diagnostics().queuedEvents)
 
             WorkManager.getInstance(targetContext).cancelAllWork().result.get(20, TimeUnit.SECONDS)
-            sdk.trackSet("pl_pending", pending)
+            sdk.trackSet("pl_pending", n.pending)
             assertEquals(
                 "only the lostack and pending events are queued, in order",
-                (0 until lostack).map { "pl_lostack_$it" } + (0 until pending).map { "pl_pending_$it" }, queuedNames(sdk),
+                (0 until n.lostack).map { "pl_lostack_$it" } + (0 until n.pending).map { "pl_pending_$it" }, queuedNames(sdk),
             )
             // The sync point: nothing else writes now, so a checkpoint that cannot finish is a harness error, not a product failure.
             // `-e skipCheckpoint 1` is the negative control of the gate: without the sync point, the check must find lost events.
@@ -109,10 +113,11 @@ class PowerLossPhases {
                 throw AssertionError("invalid run: checkpoint busy=$busy log=$log checkpointed=$checkpointed")
             }
 
-            sdk.trackSet("pl_tail", tail)
+            sdk.trackSet("pl_tail", n.tail)
             report(
                 "phase", "powerloss_write", "status", "armed",
                 "checkpoint", "busy=$busy log=$log checkpointed=$checkpointed",
+                "synchronous", sdk.sqlite().query("PRAGMA synchronous").use { it.moveToFirst(); it.getString(0) },
                 "pid", android.os.Process.myPid().toString(),
             )
         }
@@ -124,11 +129,10 @@ class PowerLossPhases {
     @Test
     fun powerloss_check() {
         phase("powerloss_check")
-        val counts = listOf("pre", "lostack", "pending", "tail").map(::count)
-        val (pre, lostack, pending) = counts
-        val tail = counts[3]
+        val n = sets()
         val file = File(targetContext.noBackupFilesDir, "$DIR/signaldock/queue.db")
         assertTrue("the queue file survived: ${file.path}", file.exists())
+        // Not sdk.sqlite(): integrity is checked before the SDK opens the queue.
         // A no-op error handler: the default one deletes a corrupt database, which would hide the failure.
         val sql = SQLiteDatabase.openDatabase(file.path, null, SQLiteDatabase.OPEN_READWRITE, DatabaseErrorHandler { })
         val integrity: String
@@ -142,7 +146,7 @@ class PowerLossPhases {
         val wal = File(file.path + "-wal")
         val facts = "queue.db ${file.length()} bytes, -wal ${if (wal.exists()) wal.length() else -1} bytes, ${names.size} rows"
         assertEquals("PRAGMA integrity_check ($facts)", "ok", integrity)
-        val lost = ((0 until lostack).map { "pl_lostack_$it" } + (0 until pending).map { "pl_pending_$it" }) - names.toSet()
+        val lost = ((0 until n.lostack).map { "pl_lostack_$it" } + (0 until n.pending).map { "pl_pending_$it" }) - names.toSet()
         assertEquals("events committed before the checkpoint are lost ($facts)", emptyList<String>(), lost)
 
         val kept = fun(prefix: String) = names.count { it.startsWith(prefix) }
@@ -159,8 +163,8 @@ class PowerLossPhases {
         report(
             "phase", "powerloss_check", "status", "pass", "integrity", integrity, "queuedAtBoot", "${names.size}",
             "lostackKept", "${kept("pl_lostack_")}", "pendingKept", "${kept("pl_pending_")}", "preBack", "${kept("pl_pre_")}",
-            "tailKept", "${kept("pl_tail_")}", "tailLost", "${tail - kept("pl_tail_")}",
-            "expected", "pre=$pre lostack=$lostack pending=$pending tail=$tail", "pid", android.os.Process.myPid().toString(),
+            "tailKept", "${kept("pl_tail_")}", "tailLost", "${n.tail - kept("pl_tail_")}",
+            "expected", "pre=${n.pre} lostack=${n.lostack} pending=${n.pending} tail=${n.tail}", "pid", android.os.Process.myPid().toString(),
         )
     }
 

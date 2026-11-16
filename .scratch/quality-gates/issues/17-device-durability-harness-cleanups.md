@@ -1,6 +1,6 @@
 # 17. device-durability.sh harness cleanups (from the review of ticket 06)
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 
 Minor findings of the no-context review of PR 291. No gate is affected.
