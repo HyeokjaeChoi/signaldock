@@ -2,11 +2,11 @@
 # Gate B3 (ADR-0049 amendment, ticket 08): ingest load SLO on the runner. Runs from .github/workflows/nightly.yml.
 #   perf/ci-slo.sh           fails on any bad request, or when p95 > 2 x the committed baseline of the same runner class
 #   perf/ci-slo.sh measure   no p95 rule; writes the numbers to measure a new baseline (decision 2: from a real CI run)
-# Compose project signaldock-perf (perf/compose.perf.yml: DB 2 CPUs / 2 GiB, server 2 CPUs / 1 GiB), an empty database,
+# Compose project signaldock-perf (perf/compose.perf.yml: DB 2 CPUs / 2 GiB, server 2 CPUs / 1 GiB; perf/compose.ci-slo.yml: DB volume in RAM), an empty database,
 # 20 req/s x 20 events for 120 s (after a 15 s warm-up that p95 ignores) with perf/ci-slo.js. Needs docker and k6; without k6 on PATH it downloads the pinned
 # linux-amd64 release and checks its SHA-256.
 # Inputs: SLO_RUNNER_CLASS (required: the `runs-on` label of the job), SLO_BASELINE (default perf/ci-slo-baseline.json),
-# SLO_OUT (default perf/work/ci-slo). Output: $SLO_OUT/{k6-summary.json,result.json,cases.json,compose.log}. No retry.
+# SLO_OUT (default perf/work/ci-slo). Output: $SLO_OUT/{k6-summary.json,result.json,cases.json,compose.log,server-gc.log,vmstat.txt}. No retry.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -53,16 +53,22 @@ SIGNALDOCK_SERVER_PORT=18080
 SIGNALDOCK_TIME_ZONE=Asia/Seoul
 ENV
 chmod 600 "$envfile"
-dc() { docker compose -p signaldock-perf --env-file "$envfile" -f docker-compose.yml -f perf/compose.perf.yml "$@"; }
+dc() { docker compose -p signaldock-perf --env-file "$envfile" -f docker-compose.yml -f perf/compose.perf.yml -f perf/compose.ci-slo.yml "$@"; }
 cleanup() {
+  docker cp "$(dc ps -aq server)":/tmp/gc.log "$out/server-gc.log" >/dev/null 2>&1 || true
   dc logs --no-color --tail=300 > "$out/compose.log" 2>&1 || true
   dc down --volumes --remove-orphans >/dev/null 2>&1 || true
   rm -f "$envfile"
+  kill "${vmstat_pid:-}" 2>/dev/null || true
   rm -rf "${tmp:-}"
 }
 trap cleanup EXIT
 
 dc up -d --build --wait db server
+
+# Evidence for a later noisy run: CPU, steal and io-wait of the runner once per second (vmstat -t). Not a gate input.
+vmstat -t 1 > "$out/vmstat.txt" 2>&1 &
+vmstat_pid=$!
 
 k6_exit=0
 k6_start=$SECONDS
