@@ -1,7 +1,8 @@
 # 19. Ticket 10 review findings left open (Minor and lower)
 
-Status: ready-for-agent
+Status: resolved
 Type: task
+Execution: Done (PR #301)
 
 Found by the review of PR 299 (ticket 10, ADR-0049 Q3, D4). None blocks a gate.
 

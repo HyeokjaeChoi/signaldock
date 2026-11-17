@@ -4,9 +4,11 @@ Each test builds a throwaway git repository: a base commit (the ref `base`) and 
 check reads. The cases that add an entry are the proof that the check fails when a baseline grows.
 """
 import importlib.util
+import os
 import subprocess
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -31,6 +33,12 @@ def detekt_xml(*ids):
 
 class BaselineCheck(unittest.TestCase):
     def setUp(self):
+        # A git hook exports GIT_DIR and more; without this, `git init` here would act on the real repository.
+        patch = mock.patch.dict(os.environ)
+        patch.start()
+        self.addCleanup(patch.stop)
+        for key in [k for k in os.environ if k.startswith("GIT_")]:
+            del os.environ[key]
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
