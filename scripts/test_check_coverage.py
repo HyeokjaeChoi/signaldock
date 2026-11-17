@@ -5,10 +5,12 @@ the check reads. The cases that lower the value are the proof that the check fai
 """
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -53,6 +55,12 @@ class Ratchet(unittest.TestCase):
 
 class Cli(unittest.TestCase):
     def setUp(self):
+        # A git hook exports GIT_DIR and more; without this, `git init` here would act on the real repository.
+        patch = mock.patch.dict(os.environ)
+        patch.start()
+        self.addCleanup(patch.stop)
+        for key in [k for k in os.environ if k.startswith("GIT_")]:
+            del os.environ[key]
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)

@@ -24,7 +24,7 @@ The design sources leave the test harness open (spec section 7 "Offline recovery
 - The update case installs the same build over itself. It shows that data survives a package replace, but not an update that changes the SDK version or the Room schema (no schema migration exists yet, ADR-0003 decision 7).
 - The `offline` case uses a refused connection to `127.0.0.1:9`, not an airplane-mode switch. The SDK sees `NETWORK` failures either way (ADR-0006 decision 5). ADR-0029 adds a real airplane-mode case.
 - Auto Backup was exercised through the local transport, not the Google transport, device-to-device transfer or manufacturer tools (ADR-0001: not guaranteed).
-- `SIGKILL` through `am force-stop` does not test power loss. SQLite in WAL mode with the default `synchronous=NORMAL` is durable against process death but not against power loss. ADR-0029 documents this and pins the setting with a test.
+- `SIGKILL` through `am force-stop` does not test power loss. SQLite in WAL mode with the platform WAL default (NORMAL on new releases, FULL on API 24; ADR-0029 amendment 2026-11-16) is durable against process death but not against power loss. ADR-0029 documents this and pins the setting with a test.
 - The suites ran on two emulator images (API 24 `google_apis` arm64 and API 37.2), not on a physical device.
 
 ## Amendment (2026-10-27)

@@ -3,8 +3,7 @@
 # emulators as the job `device-durability` of .github/workflows/nightly.yml (ADR-0049 gates A5, A6, A4).
 #
 # Usage: scripts/device-durability.sh <adb-serial> [case ...]
-# Cases: offline kill restart update clear reinstall restore airplane fulldisk workmanager optout powerloss maincost
-#        (default: all). Each case runs in its own subshell: one failing case does not stop the others. The exit code is 1
+# Cases: the list `all_cases` below (default: all). Each case runs in its own subshell: one failing case does not stop the others. The exit code is 1
 #        if any case did not pass. `powerloss` (ADR-0049 decision 6) SIGKILLs the emulator process and cold-boots it again from
 #        the same data partition, so the serial must be `emulator-<console port>` of an emulator that this script may restart
 #        (needs `lsof`; EMULATOR_OPTS overrides the options of the restart). POWERLOSS_SKIP_CHECKPOINT=1 skips the checkpoint:
@@ -24,8 +23,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 serial="${1:?usage: scripts/device-durability.sh <adb-serial> [case ...]}"
 shift || true
+all_cases=(offline kill restart update clear reinstall restore airplane fulldisk workmanager optout powerloss maincost)
 cases=("$@")
-[ ${#cases[@]} -gt 0 ] || cases=(offline kill restart update clear reinstall restore airplane fulldisk workmanager optout powerloss maincost)
+[ ${#cases[@]} -gt 0 ] || cases=("${all_cases[@]}")
 
 # The cases switch Backup Manager off and select the local transport: that must never touch a physical device.
 case "$serial" in emulator-*) ;; *) echo "refusing $serial: emulators only (backup settings are changed)" >&2; exit 1 ;; esac
@@ -51,16 +51,22 @@ echo "device: $serial  $(adb shell getprop ro.product.model | tr -d '\r')  API $
 backup_off() { adb shell bmgr enable false >/dev/null 2>&1 || true; }
 backup_off
 # Restore every global state that a case may have changed, however the script ends.
-host_server_pid=""
+host_server_pid="" writer_pid="" tmp_files=()
 restore_device() {
   [ -z "$host_server_pid" ] || kill "$host_server_pid" 2>/dev/null || true
+  [ -z "$writer_pid" ] || { kill "$writer_pid" 2>/dev/null || true; wait "$writer_pid" 2>/dev/null || true; }
+  rm -f ${tmp_files[@]+"${tmp_files[@]}"}
   backup_off
   adb shell cmd connectivity airplane-mode disable >/dev/null 2>&1 || true
   adb shell svc data enable >/dev/null 2>&1 || true
   adb shell svc wifi enable >/dev/null 2>&1 || true
   adb shell run-as "$PKG" rm -f files/filler.bin >/dev/null 2>&1 || true
 }
-trap restore_device EXIT
+# A run that is not valid (a harness error, not a product failure) writes its reason here and exits 1; the main loop reads it.
+invalid_marker="$(mktemp)"
+# restore_device is also the trap of each case subshell, which must not remove the marker: only this outer trap does.
+outer_exit() { restore_device; rm -f "$invalid_marker"; }
+trap outer_exit EXIT
 
 fresh_install() {
   adb uninstall "$PKG" >/dev/null 2>&1 || true
@@ -75,7 +81,7 @@ phase() {
     echo "FAILED phase $name:" >&2
     echo "$out" >&2
     # A harness error (for example a checkpoint that stayed busy) makes the run invalid, not a product failure.
-    if grep -q 'INSTRUMENTATION_STATUS: status=invalid' <<<"$out"; then exit 3; fi
+    if grep -q 'INSTRUMENTATION_STATUS: status=invalid' <<<"$out"; then echo "invalid phase $name" >"$invalid_marker"; fi
     exit 1
   fi
   echo "  phase $name: $(grep -o 'INSTRUMENTATION_STATUS: [a-zA-Z]*=[^ ]*' <<<"$out" | grep -v 'eventIds\|phase=\|status=' | sed 's/INSTRUMENTATION_STATUS: //' | tr '\n' ' ')"
@@ -190,7 +196,7 @@ case_airplane() {
   fresh_install
   # The server runs on the host: the emulator reaches it at 10.0.2.2, a route that airplane mode removes.
   local port=18099 log
-  log="$(mktemp)"
+  log="$(mktemp)"; tmp_files+=("$log")
   python3 scripts/ack-server.py "$port" "$log" &
   host_server_pid=$! # the trap kills it if a phase fails
   sleep 1
@@ -251,13 +257,16 @@ emulator_kill_and_cold_boot() {
   sleep 5
 }
 
-record() { [ -z "${DURABILITY_NUMBERS:-}" ] || echo "$1=$2" >>"$DURABILITY_NUMBERS"; }
+record() {
+  [ -n "$2" ] || { echo "no value for $1" >&2; exit 1; }
+  [ -z "${DURABILITY_NUMBERS:-}" ] || echo "$1=$2" >>"$DURABILITY_NUMBERS"
+}
 
 case_powerloss() {
   echo "== powerloss: checkpoint, more events, SIGKILL of the emulator process, cold boot, integrity and server checks"
   fresh_install
   local port=18098 log wlog
-  log="$(mktemp)"; wlog="$(mktemp)"
+  log="$(mktemp)"; wlog="$(mktemp)"; tmp_files+=("$log" "$wlog")
   python3 scripts/ack-server.py "$port" "$log" &
   host_server_pid=$!
   sleep 1
@@ -266,24 +275,34 @@ case_powerloss() {
   powerloss powerloss_prepare "${args[@]}"
   adb shell sync # the installation and the empty queue are durable: only what powerloss_write writes can be lost
   adb shell am instrument -w -e class local.signaldock.device.PowerLossPhases -e phase powerloss_write "${args[@]}" "$RUNNER" >"$wlog" 2>&1 &
-  local writer=$! armed=0
+  writer_pid=$!
+  local armed=0
   for _ in $(seq 1 1800); do  # 3 minutes
-    if grep -q 'status=invalid' "$wlog"; then cat "$wlog" >&2; exit 3; fi
-    if grep -q 'status=armed' "$wlog"; then armed=1; break; fi
-    kill -0 "$writer" 2>/dev/null || break
+    if grep -q 'status=invalid' "$wlog"; then cat "$wlog" >&2; echo "invalid powerloss_write" >"$invalid_marker"; exit 1; fi
+    # The instrumentation prints the keys sorted: dbSynchronous comes before status, so both are there when status is.
+    if grep -q 'status=armed' "$wlog" && grep -q 'dbSynchronous=' "$wlog"; then armed=1; break; fi
+    kill -0 "$writer_pid" 2>/dev/null || break
     sleep 0.1
   done
   [ "$armed" = 1 ] || { echo "powerloss_write did not report 'armed':" >&2; cat "$wlog" >&2; exit 1; }
   echo "  $(grep -o 'checkpoint=[^ ]* [^ ]* [^ ]*' "$wlog" | head -1)"
+  local sync
+  sync="$(sed -n 's/.*INSTRUMENTATION_STATUS: dbSynchronous=//p' "$wlog" | head -1 | tr -d '\r')"
+  case "$sync" in
+    2) echo "  synchronous=2 (FULL: every commit syncs; loss after the checkpoint is expected to be 0)" ;;
+    1) echo "  synchronous=1 (NORMAL: commits after the checkpoint can be lost)" ;;
+    *) echo "  synchronous=${sync:-?} (unexpected)" ;;
+  esac
+  record powerlossSynchronous "$sync"
   emulator_kill_and_cold_boot
-  wait "$writer" 2>/dev/null || true
+  wait "$writer_pid" 2>/dev/null || true
+  writer_pid=""
   powerloss powerloss_check "${args[@]}"
   kill "$host_server_pid" 2>/dev/null || true
   wait "$host_server_pid" 2>/dev/null || true
   host_server_pid=""
   local numbers
-  numbers="$(python3 scripts/powerloss-verify.py "$log" "$PL_PRE" "$PL_LOSTACK" "$PL_PENDING" "$PL_TAIL")" || { rm -f "$log" "$wlog"; exit 1; }
-  rm -f "$log" "$wlog"
+  numbers="$(python3 scripts/powerloss-verify.py "$log" "$PL_PRE" "$PL_LOSTACK" "$PL_PENDING" "$PL_TAIL")" || exit 1
   echo "  server: $(echo "$numbers" | tr '\n' ' ')(counted, not gated)"
   record lostAfterCheckpoint "$(sed -n 's/^lostAfterCheckpoint=//p' <<<"$numbers")"
   record resends "$(sed -n 's/^resends=//p' <<<"$numbers")"
@@ -306,18 +325,22 @@ case_maincost() {
 }
 
 for c in "${cases[@]}"; do
-  case "$c" in offline|kill|restart|update|clear|reinstall|restore|airplane|fulldisk|workmanager|optout|powerloss|maincost) ;;
-    *) echo "unknown case '$c'" >&2; exit 2 ;; esac
+  known=0
+  for k in "${all_cases[@]}"; do [ "$k" = "$c" ] && known=1; done
+  [ "$known" = 1 ] || { echo "unknown case '$c'" >&2; exit 2; }
 done
 results=() failed=0
 for c in "${cases[@]}"; do
   started="$(date +%s)"
+  : >"$invalid_marker"
   set +e
   ( set -e; trap restore_device EXIT; "case_$c" )
   rc=$?
   set -e
   secs=$(( $(date +%s) - started ))
-  case "$rc" in 0) result=pass ;; 3) result=invalid; failed=1 ;; *) result=fail; failed=1 ;; esac
+  if [ "$rc" = 0 ]; then result=pass
+  elif [ -s "$invalid_marker" ]; then result=invalid; failed=1
+  else result=fail; failed=1; fi
   echo "-> $c: $result (${secs} s)"
   results+=("{\"name\":\"$c\",\"result\":\"$result\",\"seconds\":$secs}")
 done
