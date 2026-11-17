@@ -7,7 +7,7 @@
   "p95Ms": 10.53,
   "measuredIn": {
     "workflowRun": "https://github.com/HyeokjaeChoi/signaldock/actions/runs/44091979947",
-    "commit": "060908c",
+    "commit": "060908c (probe branch, deleted)",
     "p95MsPerRun": [
       7.11,
       10.53,

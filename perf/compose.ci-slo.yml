@@ -7,3 +7,4 @@ volumes:
     driver_opts:
       type: tmpfs
       device: tmpfs
+      o: size=1g  # counts against the 2 GiB of the db container; the run writes about 100 MB

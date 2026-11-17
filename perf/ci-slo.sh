@@ -55,7 +55,7 @@ ENV
 chmod 600 "$envfile"
 dc() { docker compose -p signaldock-perf --env-file "$envfile" -f docker-compose.yml -f perf/compose.perf.yml -f perf/compose.ci-slo.yml "$@"; }
 cleanup() {
-  docker cp "$(dc ps -q server)":/tmp/gc.log "$out/server-gc.log" >/dev/null 2>&1 || true
+  docker cp "$(dc ps -aq server)":/tmp/gc.log "$out/server-gc.log" >/dev/null 2>&1 || true
   dc logs --no-color --tail=300 > "$out/compose.log" 2>&1 || true
   dc down --volumes --remove-orphans >/dev/null 2>&1 || true
   rm -f "$envfile"
