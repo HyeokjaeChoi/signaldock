@@ -41,6 +41,14 @@ for f in $(git ls-files -- '.scratch/*/issues/*.md'); do
   fi
 done
 
+# A test that creates a temporary git repository must drop the hook variables (GIT_DIR and more); in a git hook they
+# point to the real repository (issue 14, item 5).
+for f in $(git ls-files -- 'scripts/test_*.py' 'scripts/*.test.sh'); do
+  if git show ":$f" | grep -qE 'git init|"init"' && ! git show ":$f" | grep -q 'GIT_DIR'; then
+    echo "error: $f creates a git repository but does not drop GIT_DIR (hook environment)" >&2; fail=1
+  fi
+done
+
 # Dashboard, perf report, and web-shared render free text from key holders. React escaping is the only
 # protection, so raw HTML sinks are not allowed there (issue 46, threat model). Tests are exempt.
 if git grep --cached -nE 'dangerouslySetInnerHTML|innerHTML|outerHTML|insertAdjacentHTML' -- 'dashboard/src' 'perf/report/src' 'web-shared' ':!*.test.*' >&2; then
