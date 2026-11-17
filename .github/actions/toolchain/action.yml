@@ -1,0 +1,24 @@
+name: Toolchain
+description: Install the pinned toolchain with scripts/setup-toolchain.sh and cache .tools (ADR-0049 amendment, ticket 12)
+inputs:
+  mode:
+    description: Argument of scripts/setup-toolchain.sh (all, lint, or osv)
+    default: all
+runs:
+  using: composite
+  steps:
+    - id: cache
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: .tools
+        key: tools-${{ inputs.mode }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/setup-toolchain.sh') }}
+    - run: scripts/setup-toolchain.sh "$MODE"
+      shell: bash
+      env:
+        MODE: ${{ inputs.mode }}
+    # Save right after the install, so a later test failure does not lose the cache.
+    - if: steps.cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: .tools
+        key: ${{ steps.cache.outputs.cache-primary-key }}

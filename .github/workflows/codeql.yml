@@ -54,7 +54,7 @@ jobs:
           config-file: ./.github/codeql/codeql-config.yml
       - name: Toolchain
         if: matrix.language == 'java-kotlin'
-        run: scripts/setup-toolchain.sh
+        uses: ./.github/actions/toolchain
       # Main source sets of the three Gradle builds. ubuntu-latest ships an Android SDK at $ANDROID_HOME.
       # --no-daemon: CodeQL cannot trace a build that an existing daemon runs.
       # --no-build-cache: a cache hit skips compile tasks, and then CodeQL sees no source.

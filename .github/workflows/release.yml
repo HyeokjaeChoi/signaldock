@@ -46,7 +46,7 @@ jobs:
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "error: a release for $TAG already exists; the workflow never overwrites one" >&2; exit 1
           fi
-      - run: scripts/setup-toolchain.sh
+      - uses: ./.github/actions/toolchain
       # ubuntu-latest ships an Android SDK at $ANDROID_HOME.
       - name: Build ZIP and checksum
         run: |
