@@ -9,7 +9,8 @@
 # run_tests therefore reads the log and fails on that line. Parallel testing is off (it runs the tests on Simulator clones,
 # whose console output does not reach this log, so the check would see nothing).
 # Coverage ratchet (ADR-0049 gate Q3): the `tsan` run writes line coverage to $XCRESULT, and `coverage` checks it against
-# scripts/coverage-baseline.json (scripts/check-coverage.py).
+# scripts/coverage-baseline.json (scripts/check-coverage.py). Outside CI, `coverage` skips with a compiler other than
+# sdk-ios/api/compiler-version, as `api` does.
 # CI sets IOS_WERROR=1 (warnings as errors in CI only). The tests run on the oldest iOS Simulator runtime
 # that is installed, because the GitHub runner has no iOS 15 runtime (spec section 5; ADR-0047 "iOS 15 Simulator fallback").
 set -euo pipefail
@@ -79,6 +80,7 @@ run_tests() { # arguments: sanitizer flags
 
 run_coverage() {
   echo "=== iOS: line coverage against scripts/coverage-baseline.json ==="
+  skip_other_compiler "the coverage value in scripts/coverage-baseline.json" && return 0
   [ -d "$XCRESULT" ] || { echo "error: no $XCRESULT; run 'scripts/verify-ios.sh tsan' first" >&2; exit 1; }
   local json
   json="$(mktemp)"
@@ -136,6 +138,20 @@ compiler_version() { # major.minor of the selected Swift compiler
   xcrun swiftc --version 2> /dev/null | sed -n 's/.*Apple Swift version \([0-9][0-9]*\.[0-9][0-9]*\).*/\1/p' | head -1
 }
 
+# The CI compiler (sdk-ios/api/compiler-version) is the source of truth for the API file and the coverage value.
+# Outside CI (CI is not true), a different local compiler prints a skip message and returns 0; else returns 1.
+skip_other_compiler() { # argument: what comes from the compiler of CI
+  local expected actual
+  expected="$(tr -d '[:space:]' < "$API_COMPILER_FILE")"
+  actual="$(compiler_version)"
+  if [ "$actual" != "$expected" ] && [ "${CI:-}" != true ]; then
+    echo "skip: $1 comes from Swift $expected (the compiler of CI) and this Mac has Swift ${actual:-unknown};" \
+      "the check runs in CI (ios-test)"
+    return 0
+  fi
+  return 1
+}
+
 build_api() { # prints the normalized interface
   local derived="$PKG/build/ApiDerived" log interface
   log="$(mktemp)"
@@ -165,11 +181,7 @@ run_api() {
   local expected actual
   expected="$(tr -d '[:space:]' < "$API_COMPILER_FILE")"
   actual="$(compiler_version)"
-  if [ "$actual" != "$expected" ] && [ "${CI:-}" != true ]; then
-    echo "skip: the API file comes from Swift $expected (the compiler of CI) and this Mac has Swift ${actual:-unknown};" \
-      "the check runs in CI (ios-test)"
-    return 0
-  fi
+  skip_other_compiler "the API file" && return 0
   local out="$API_ACTUAL_DIR"
   mkdir -p "$out"
   build_api > "$out/SignalDock.swiftinterface" || exit 1
