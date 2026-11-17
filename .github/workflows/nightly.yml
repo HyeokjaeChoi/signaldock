@@ -98,8 +98,8 @@ jobs:
           if-no-files-found: ignore
 
   # Gates A5, A6, A4 (ADR-0049 decisions 2, 5, 6): scripts/device-durability.sh, all cases, on x86_64 google_apis emulators at
-  # API 24 and 37.0 (the newest stable x86_64 image). `powerloss` kills the emulator process and cold-boots it. Every case
-  # starts from a cold boot, as `powerloss` does (no AVD cache, no snapshot).
+  # API 24 and 37.0 (the newest stable x86_64 image). `powerloss` kills the emulator process and cold-boots it. The emulator
+  # boots cold (no AVD cache, no snapshot), as the `powerloss` restart does.
   device-durability:
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -130,9 +130,8 @@ jobs:
           target: google_apis
           arch: x86_64
           force-avd-creation: false
-          # Cold boot, no AVD cache: a guest resumed from a quickboot snapshot answered `sys.boot_completed` before it was
-          # ready, and the action's own `input keyevent 82` came back with exit 137 (the guest killed the process) in
-          # runs 43997379252 and 44006752645, before any case ran. `powerloss` cold-boots too.
+          # Cold boot: a snapshot-resumed guest failed the action's `input keyevent 82` with exit 137 before any case ran
+          # (ADR-0049, amendment of 2026-11-17).
           emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           disable-animations: true
           script: scripts/device-durability.sh emulator-5554
