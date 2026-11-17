@@ -47,6 +47,8 @@ jobs:
             echo "error: a release for $TAG already exists; the workflow never overwrites one" >&2; exit 1
           fi
       - uses: ./.github/actions/toolchain
+        with:
+          cache: 'false'
       # ubuntu-latest ships an Android SDK at $ANDROID_HOME.
       - name: Build ZIP and checksum
         run: |

@@ -4,10 +4,14 @@ inputs:
   mode:
     description: Argument of scripts/setup-toolchain.sh (all, lint, or osv)
     default: all
+  cache:
+    description: 'false installs without .tools cache (release: the script checks only some tools by hash)'
+    default: 'true'
 runs:
   using: composite
   steps:
     - id: cache
+      if: inputs.cache == 'true'
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: .tools
@@ -17,7 +21,7 @@ runs:
       env:
         MODE: ${{ inputs.mode }}
     # Save right after the install, so a later test failure does not lose the cache.
-    - if: steps.cache.outputs.cache-hit != 'true'
+    - if: inputs.cache == 'true' && steps.cache.outputs.cache-hit != 'true'
       uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: .tools
