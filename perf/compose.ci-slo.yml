@@ -1,0 +1,10 @@
+# Gate B3 only (perf/ci-slo.sh), added after perf/compose.perf.yml. The database volume is RAM (tmpfs), not the runner disk.
+# Why: on 3 of 16 probe runs (2026-11-17) the shared runner disk stalled (vmstat io-wait up to 17% for 54 s); every fsync of the
+# DB waited, all in-flight requests stalled together (up to 1.2 s), and p95 went from 6-12 ms to 17-112 ms. No such run had io-wait
+# and a good p95 together. The gate watches the ingest code path, not the disk of a shared VM. ADR-0049 amendment of 2026-11-17.
+volumes:
+  signaldock-db:
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: size=1g  # counts against the 2 GiB of the db container; the run writes about 100 MB
