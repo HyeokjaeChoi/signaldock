@@ -25,3 +25,9 @@ Found by the local review of the issue 15 branch. None blocks a gate.
 | `sdk/gradle/` | okio 2.10.0 .module, wire-runtime 6.4.0 | stable Macrobenchmark with moshi/wire at fixed versions |
 
 Renew an entry on 2026-12-16 only if its reason is still true.
+
+## picomatch (found 2026-11-18)
+
+GHSA-fc5q-39xc-vjpf (ReDoS in extglobs, High) hits `picomatch` 4.0.7 (dev) in the three npm lockfiles. It affects every version through 4.0.7, and npm has no newer release, so there is no upgrade. Triaged in this PR: one `[[IgnoredVulns]]` entry in each of `osv-scanner.toml`, `dashboard/osv-scanner.toml`, `perf/report/osv-scanner.toml`, `ignoreUntil = 2026-12-17`. Fix path: a picomatch release after 4.0.7 (it comes through `tinyglobby`, vite, vitest). Remove the entries then.
+
+Follow-up (not done): OSV-Scanner warns that `ignoreUntil` is deprecated in favor of `effectiveUntil`. `scripts/check_osv_config.py` accepts only `ignoreUntil`, so the repo stays on it until a PR changes the check and the config files together.
