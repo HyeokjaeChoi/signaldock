@@ -152,6 +152,8 @@ Proof, by a temporary `push` trigger on the branch of the PR (removed before mer
 
 The AVD cache hit in both runs. The spec estimate for Q1 was about 20 minutes; the measured job time is about 12 minutes, so the 60-minute `timeout-minutes` has a wide margin. The times are measurements of two runs, not a threshold. A failing case was not forced in CI: the job fails through the non-zero exit of `scripts/e2e-delivery.sh` (`e2e_cases.py` exits 1 when a case fails), and `scripts/test_nightly_summary.py` checks that a failed case or job gives `result: fail`.
 
+First fix under decision 5 for `e2e-delivery`: case 3 failed at random because one of three bursted UI taps gave no click on a loaded emulator, and a hidden 3-attempt retry (`retry_split`) covered it. The retry is removed. Cases 3 and 5 now make their events with one `track()` burst (`--ei burst 3`) and fail at once when the batch is wrong. Evidence and scope: [ADR-0010](0010-delivery-failure-e2e-harness.md), amendment of 2026-11-16.
+
 ## Amendment (2026-11-16, ticket 09, semver gates A7 and I3)
 
 Spec gates A7 and I3 run in `scripts/verify-contract.sh` (step 6 and step 8, CI job `verify-contract`) through `scripts/check-api-semver.sh android|ios`.
