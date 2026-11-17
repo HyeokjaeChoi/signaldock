@@ -230,16 +230,19 @@ case_kill_store() {
   wait_for=started launch burst "$OFFLINE" 0 dur_kill_store
   local bpid="$pid" acked s1 s2
   acked="$(data)/Documents/acked.log"
-  # The burst ends by itself when the queue is full (10,000 events, ADR-0049 decision 5 amendment 2026-11-17), so the
-  # kill must not wait on a fixed delay: a stalled runner ran that check after the burst had ended. Wait for 100
-  # reported events (37 bytes each), then kill after one short growth check.
+  # The burst ends by itself when the queue is full (10,000 events, at least 100 s; ADR-0049 amendment 2026-11-17), so
+  # the kill must not wait on a fixed delay: a stalled runner once ran that check after the burst had ended. Wait for
+  # 1,000 reported events (37 bytes each), then for growth, then kill at once.
   local deadline=$((SECONDS + 60))
-  until [ "$(wc -c <"$acked" 2>/dev/null | tr -d ' ' || echo 0)" -ge 3700 ]; do
-    [ $SECONDS -lt $deadline ] || fail "burst reported fewer than 100 events in 60 s"
+  until s1="$(wc -c 2>/dev/null <"$acked" | tr -d ' ')"; [ "${s1:-0}" -ge 37000 ]; do
+    [ $SECONDS -lt $deadline ] || fail "burst reported fewer than 1000 events in 60 s"
     sleep 0.2
   done
-  s1="$(wc -c <"$acked" | tr -d ' ')"; sleep 0.3; s2="$(wc -c <"$acked" | tr -d ' ')"
-  [ "$s2" -gt "$s1" ] || fail "burst was not collecting at kill time (acked.log $s1 -> $s2 bytes)"
+  deadline=$((SECONDS + 10))
+  until s2="$(wc -c <"$acked" | tr -d ' ')"; [ "$s2" -gt "$s1" ]; do
+    [ $SECONDS -lt $deadline ] || fail "burst was not collecting at kill time (acked.log $s1 -> $s2 bytes)"
+    sleep 0.1
+  done
   echo "  collecting before kill: pid $bpid, acked.log $s1 -> $s2 bytes"
   kill9 "$bpid"
   verify_burst
