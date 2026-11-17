@@ -2,12 +2,18 @@
   "schema": 1,
   "gate": "B3",
   "runnerClass": "ubuntu-latest",
-  "load": "20 req/s x 20 events for 120 s after a 15 s warm-up, empty database, perf/compose.perf.yml",
+  "load": "20 req/s x 20 events for 120 s after a 15 s warm-up, empty database, DB volume in RAM, perf/compose.perf.yml + perf/compose.ci-slo.yml",
   "rule": "perf/ci-slo.sh fails when the p95 of the measure phase is more than 2 x p95Ms; p95Ms is the highest p95 of the five runs in `measuredIn`",
-  "p95Ms": 11.61,
+  "p95Ms": 10.53,
   "measuredIn": {
-    "workflowRun": "https://github.com/HyeokjaeChoi/signaldock/actions/runs/43777563219",
-    "commit": "4116d09",
-    "p95MsPerRun": [7.25, 6.49, 10.67, 11.61, 8.77]
+    "workflowRun": "https://github.com/HyeokjaeChoi/signaldock/actions/runs/44091979947",
+    "commit": "060908c (probe branch, deleted)",
+    "p95MsPerRun": [
+      7.11,
+      10.53,
+      10.35,
+      7.33,
+      8.41
+    ]
   }
 }
