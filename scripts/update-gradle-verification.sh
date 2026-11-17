@@ -5,8 +5,8 @@
 # Run it after you change gradle/libs.versions.toml, a plugin, or a dependency, and commit the result.
 # It runs the same tasks that CI runs, with `--write-verification-metadata sha256`, so every
 # configuration that CI resolves is covered. It uses an empty Gradle home, so it downloads everything again.
-# Gradle only adds entries: to drop stale entries, delete the <components> block of one file and run
-# the script again.
+# Gradle only adds entries, so the script first empties the <components> block of the four files (the
+# <configuration> block, with its trusted-artifacts, stays). Stale entries go; the run writes back what CI resolves.
 # Check the diff: a new entry for an artifact you did not change is a reason to stop and ask.
 # It runs `:sdk-android:dependencyGuardBaseline` in place of `dependencyGuard`: the two tasks resolve the same
 # configurations, and a stale baseline (ADR-0033) does not stop the run. It rewrites sdk/sdk-android/dependencies/
@@ -21,6 +21,16 @@ if [ -z "${JAVA_HOME:-}" ]; then
 fi
 [ -x "$JAVA_HOME/bin/java" ] || { echo "error: no JDK at $JAVA_HOME; run scripts/setup-toolchain.sh or set JAVA_HOME" >&2; exit 1; }
 [ -n "${ANDROID_HOME:-}${ANDROID_SDK_ROOT:-}" ] || { echo "error: set ANDROID_HOME to the Android SDK (platforms android-36 and android-37; the demo app builds at 37)" >&2; exit 1; }
+
+python3 -I - "$ROOT"/{sdk,server,contract-check,compatibility/consumer-android}/gradle/verification-metadata.xml <<'EOF'
+import re, sys
+
+for path in sys.argv[1:]:
+    text = open(path).read()
+    text, n = re.subn(r"(<components>\n).*?(\n? *</components>)", r"\1   \2", text, flags=re.S)
+    assert n == 1, f"{path}: expected one <components> block"
+    open(path, "w").write(text)
+EOF
 
 # Each Gradle run gets its own empty Gradle home. Gradle records only the files that it downloads: with a warm
 # cache it skips files such as BOMs and parent POMs that an earlier run cached, and CI (a cold cache) fails on them.
