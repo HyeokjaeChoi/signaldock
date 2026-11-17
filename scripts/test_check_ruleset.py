@@ -59,6 +59,12 @@ class Static(unittest.TestCase):
             "  pull_request:\n", "  pull_request:\n    paths: ['sdk/**']\n", 1)
         self.assertTrue(any("paths filter" in e for e in self.errors(workflows=wf)))
 
+    def test_a_paths_filter_in_codeql_fails(self):
+        wf = dict(WORKFLOWS)
+        wf[".github/workflows/codeql.yml"] = wf[".github/workflows/codeql.yml"].replace(
+            "  pull_request:\n", "  pull_request:\n    paths: ['sdk/**']\n", 1)
+        self.assertTrue(any("paths filter" in e for e in self.errors(workflows=wf)))
+
     def test_rule_set_merge_method_and_strict_policy(self):
         for mutate, text in (
             (lambda r: rule(r, "pull_request")["parameters"].update(allowed_merge_methods=["squash", "merge"]), "squash"),
@@ -82,6 +88,9 @@ class Drift(unittest.TestCase):
             (lambda l: rule(l, "required_status_checks")["parameters"].update(strict_required_status_checks_policy=False), "strict"),
             (lambda l: rule(l, "required_status_checks")["parameters"]["required_status_checks"].pop(), "is not in the live"),
             (lambda l: rule(l, "required_status_checks")["parameters"]["required_status_checks"].append({"context": "extra"}), "live but not in the file"),
+            (lambda l: rule(l, "required_status_checks")["parameters"]["required_status_checks"].append(
+                {"context": rule(RULESET, "required_status_checks")["parameters"]["required_status_checks"][0]["context"], "integration_id": 999}),
+             "live but not in the file"),
             (lambda l: l["rules"].remove(rule(l, "non_fast_forward")), "non_fast_forward is not in the live"),
             (lambda l: l["rules"].append({"type": "creation"}), "extra rule creation"),
             (lambda l: l.update(enforcement="disabled"), "enforcement"),

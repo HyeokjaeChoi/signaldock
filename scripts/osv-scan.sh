@@ -9,9 +9,12 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# The version is set only in scripts/setup-toolchain.sh.
+OSV_VERSION="$(sed -n 's/^OSV_VERSION=//p' scripts/setup-toolchain.sh)"
+[ -n "$OSV_VERSION" ] || { echo "error: no OSV_VERSION= line in scripts/setup-toolchain.sh" >&2; exit 1; }
 OSV=.tools/osv-scanner
-if ! [ -x "$OSV" ] || ! "$OSV" --version 2>/dev/null | head -1 | grep -qx 'osv-scanner version: 2\.7\.1'; then
-  echo "error: osv-scanner 2.7.1 is not at $OSV; run scripts/setup-toolchain.sh osv" >&2
+if ! [ -x "$OSV" ] || ! "$OSV" --version 2>/dev/null | head -1 | grep -qxF "osv-scanner version: $OSV_VERSION"; then
+  echo "error: osv-scanner $OSV_VERSION is not at $OSV; run scripts/setup-toolchain.sh osv" >&2
   exit 1
 fi
 
