@@ -1,6 +1,6 @@
 # 15. Triage of the first OSV-Scanner run (55 ignored advisories)
 
-Status: ready-for-agent
+Status: claimed
 Type: task
 
 Ticket 11 (ADR-0049 decision 9, gate R2) ignores 55 advisories in three `osv-scanner.toml` files (root, `sdk/gradle/`, `compatibility/consumer-android/gradle/`; one per tree, review finding of PR 295) until **2026-12-15** (30 days). Every entry fails the PR and nightly gate again on that date.
