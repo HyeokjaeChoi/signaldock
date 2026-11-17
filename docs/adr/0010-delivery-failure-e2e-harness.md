@@ -37,4 +37,12 @@ Cause: the harness needed each of three bursted UI taps to become a click. That 
 
 Decision: cases 3 and 5 make their events with `am start ... --ei burst 3` (the hook of ADR-0020 item 2, also used by `scripts/host-cost-measure.sh`): the consumer app calls `track()` three times in one coroutine, and the script waits for `burst_done n=3` in logcat (tag `SignalDockHostCost`; a `burst_failed` line fails the case). Decision 2 "driven through the UI" still holds for case 1, case 2, and for reading the diagnostics. The retry is removed: when the events are not in one batch, the case fails at once and names the event IDs of the proxy log. No product code changed.
 
-Not covered: the exact framework reason why one bursted tap gives no click was not isolated. The harness no longer depends on it. The proof run of this change is the first nightly run after the merge.
+Not covered: the exact framework reason why one bursted tap gives no click was not isolated. The harness no longer depends on it. Proof runs are listed in the PR description.
+
+### Second cause (2026-11-17)
+
+Symptom: the proof runs 43884626839, 43884642370, and 43884658223 of PR 305 failed. In 4 of 6 burst attempts the 3 events went out as two batches (2+1 or 1+2).
+
+Cause: the app starts after `pm clear`, so `SignalDock.initialize()` enqueues a new periodic `DeliveryWorker`. Its first run has no delay. In run 43896997848 the logcat shows: 23.405 init success, 23.414 `WM-WorkerWrapper` Starting work, 23.423 `burst_done n=3`. The Worker started 9 ms after init and before the burst ended. It sent the first stored event alone, then the other two: batches [1] and [2]. The SDK is correct. The assumption "one batch of 3" was not guaranteed by the harness.
+
+Decision: `burst_events` runs the burst with airplane mode on, so no send can start before all events are stored. The Worker has a `NetworkType.CONNECTED` constraint. The only other send path, `ForegroundTrigger`, waits 10 s after the first stored event. After `burst_done`, a `finally` block turns airplane mode off and waits for a default network. The no-retry rule stays (ADR-0049 decision 5). No product code changed.

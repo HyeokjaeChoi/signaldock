@@ -272,12 +272,36 @@ def case2_ack_loss():
     check(status == 200 and detail["receivedAt"].startswith(received1[:19].replace(" ", "T")), "Dashboard detail still shows the first receivedAt")
 
 
+def airplane(on):
+    """Airplane mode on or off; waits until the device has no default network (on) or has one (off)."""
+    adb("shell", "cmd", "connectivity", "airplane-mode", "enable" if on else "disable")
+
+    def settled():
+        for l in adb("shell", "dumpsys", "connectivity").splitlines():
+            if l.startswith("Active default network:"):
+                return (l.split(":", 1)[1].strip() == "none") == on
+        return False
+
+    wait_for(f"airplane mode {'on' if on else 'off'}", settled, 30 if on else 60)
+
+
 def burst_events(n):
     """Fresh app start that makes n events with n track() calls in one coroutine (consumer app `--ei burst n`,
     ADR-0020 item 2; the same hook as scripts/host-cost-measure.sh). Waits for its `burst_done` log line.
-    No UI tap: a bursted tap on a loaded emulator can give no click (ADR-0010 amendment 2026-11-16)."""
+    No UI tap: a bursted tap on a loaded emulator can give no click (ADR-0010 amendment 2026-11-16).
+    The device is offline (airplane mode) during the burst: after `pm clear`, init enqueues a DeliveryWorker
+    with no delay, and it could send the first event alone before the rest are stored. Offline, no send starts
+    before all n events are stored. Network is back on after `burst_done` (ADR-0010 amendment 2026-11-17)."""
     adb("logcat", "-c")
     adb("shell", "pm", "clear", PKG)
+    try:
+        airplane(True)  # inside try: a timeout here must not leave the device offline for the next case
+        _burst(n)
+    finally:
+        airplane(False)
+
+
+def _burst(n):
     adb("shell", "am", "start", "-n", f"{PKG}/.MainActivity", "--ei", "burst", str(n))
 
     def done():
@@ -299,8 +323,9 @@ def burst_events(n):
 
 def mutated_batch():
     """Makes 3 events with one track() burst (burst_events) in proxy mode mutate: the proxy corrupts event index 1 of the
-    batch, so the server rejects it. Fails at once, with no retry, when the 3 events are not in exactly one batch of
-    exactly 3 eventIds (ADR-0049 decision 5).
+    batch, so the server rejects it. The burst runs offline (burst_events), so no send starts before all 3 events are
+    stored and one batch of 3 is guaranteed. Fails at once, with no retry, when the 3 events are not in exactly one
+    batch of exactly 3 eventIds (ADR-0049 decision 5).
     Returns (device diagnostics after the ACK, batch eventIds, rejected eventId, proxy log entry)."""
     proxy_mode("pass")
     before_log = len(proxy_log())
