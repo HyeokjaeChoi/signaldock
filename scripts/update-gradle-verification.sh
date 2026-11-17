@@ -6,7 +6,7 @@
 # It runs the same tasks that CI runs, with `--write-verification-metadata sha256`, so every
 # configuration that CI resolves is covered. It uses an empty Gradle home, so it downloads everything again.
 # Gradle only adds entries, so the script first empties the <components> block of the four files (the
-# <configuration> block, with its trusted-artifacts, stays). Stale entries go; the run writes back what CI resolves.
+# <configuration> block stays). Stale entries go; the run writes back what CI resolves.
 # Check the diff: a new entry for an artifact you did not change is a reason to stop and ask.
 # It runs `:sdk-android:dependencyGuardBaseline` in place of `dependencyGuard`: the two tasks resolve the same
 # configurations, and a stale baseline (ADR-0033) does not stop the run. It rewrites sdk/sdk-android/dependencies/
@@ -22,7 +22,20 @@ fi
 [ -x "$JAVA_HOME/bin/java" ] || { echo "error: no JDK at $JAVA_HOME; run scripts/setup-toolchain.sh or set JAVA_HOME" >&2; exit 1; }
 [ -n "${ANDROID_HOME:-}${ANDROID_SDK_ROOT:-}" ] || { echo "error: set ANDROID_HOME to the Android SDK (platforms android-36 and android-37; the demo app builds at 37)" >&2; exit 1; }
 
-python3 -I - "$ROOT"/{sdk,server,contract-check,compatibility/consumer-android}/gradle/verification-metadata.xml <<'EOF'
+# A failed run puts the four files back, so they never stay empty.
+META=("$ROOT"/{sdk,server,contract-check,compatibility/consumer-android}/gradle/verification-metadata.xml)
+BAK="$(mktemp -d)"
+for i in "${!META[@]}"; do cp "${META[$i]}" "$BAK/$i"; done
+restore() {
+  local rc=$?
+  if [ $rc -ne 0 ]; then
+    for i in "${!META[@]}"; do cp "$BAK/$i" "${META[$i]}"; done
+    echo "failed: the four verification-metadata.xml files are restored" >&2
+  fi
+  rm -rf "$BAK" "${GUH_ROOT:-}" "${REPO:+$(dirname "$REPO")}"
+}
+trap restore EXIT
+python3 -I - "${META[@]}" <<'EOF'
 import re, sys
 
 for path in sys.argv[1:]:
@@ -35,7 +48,6 @@ EOF
 # Each Gradle run gets its own empty Gradle home. Gradle records only the files that it downloads: with a warm
 # cache it skips files such as BOMs and parent POMs that an earlier run cached, and CI (a cold cache) fails on them.
 GUH_ROOT="$(mktemp -d)"
-trap 'rm -rf "$GUH_ROOT" "${REPO:+$(dirname "$REPO")}"' EXIT
 W="--write-verification-metadata sha256 --no-daemon --no-build-cache -q"
 gw() { # gw <build dir> <gradle arguments>
   local dir="$1"; shift
