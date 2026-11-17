@@ -1,7 +1,8 @@
 # 20. Issue 15 review findings left open (Nit)
 
-Status: claimed
+Status: resolved
 Type: task
+Execution: Done (PR #312)
 
 Found by the local review of the issue 15 branch. None blocks a gate.
 
