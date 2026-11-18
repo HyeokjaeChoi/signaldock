@@ -28,7 +28,7 @@ jobs:
     env:
       E2E_RESULT_JSON: ${{ github.workspace }}/e2e-cases.json
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           persist-credentials: false
       - uses: ./.github/actions/toolchain
@@ -113,7 +113,7 @@ jobs:
       # The options of the emulator restart in case `powerloss`: those of the run step, without the snapshot options.
       EMULATOR_OPTS: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           persist-credentials: false
       - uses: ./.github/actions/toolchain
@@ -162,7 +162,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           persist-credentials: false
       - uses: ./.github/actions/toolchain
@@ -192,7 +192,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           persist-credentials: false
       - name: Compare the live ruleset with the file
@@ -225,7 +225,7 @@ jobs:
     env:
       SIMULATOR_DURABILITY_RESULT_JSON: ${{ github.workspace }}/simulator-durability.json
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           persist-credentials: false
       - run: sudo xcode-select -s /Applications/Xcode_26.6.app # ADR-0047: the default of macos-26
@@ -262,7 +262,7 @@ jobs:
     env:
       SLO_RUNNER_CLASS: ubuntu-latest
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           persist-credentials: false
       - name: ci-slo.sh
