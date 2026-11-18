@@ -4,6 +4,18 @@ All notable changes to SignalDock are listed here. The format follows [Keep a Ch
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-18
+
+Patch release of the Android SDK. The public API and the runtime dependency tree are the same as in 0.4.0. It also proves the release gate of [ADR-0049](docs/adr/0049-production-quality-gates.md) (a release build fails unless the last `nightly.yml` run on the tagged commit is green). See the [release notes](docs/releases/v0.4.1.md).
+
+### Changed
+
+- SDK source: Kotlin import order and one unused import, from the ktlint rule set of detekt (ADR-0049 A2). No behavior change.
+
+### Added
+
+- Quality gates for CI (ADR-0049): nightly workflow, Android Lint and detekt with baselines, StrictMode and power-loss device checks, semver check of the public API dumps, coverage ratchet, OSV-Scanner, Renovate validation, `main` ruleset as code, ingest load SLO, image scan, and a release gate on a green nightly run. None of them ships in the AAR.
+
 ## [0.4.0] - 2026-10-29
 
 Fourth tagged release of the Android SDK. It has breaking changes before 1.0: see "Changed" and the upgrade steps in the [release notes](docs/releases/v0.4.0.md). The public API and the runtime dependency tree are the same as in 0.3.0. It sends the new field `sdkPlatform`, so deploy a server with `sdkPlatform` support first.
