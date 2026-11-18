@@ -10,14 +10,14 @@ Run once per clone:
 
 ```sh
 git config core.hooksPath .githooks
-scripts/setup-toolchain.sh     # JDK 21, oasdiff, OpenAPI generator -> .tools/
+scripts/setup-toolchain.sh     # JDK 21, oasdiff, OpenAPI generator, shellcheck, actionlint, osv-scanner -> .tools/
 ```
 
 You also need Docker with Compose, Python 3, Node (see [TOOLCHAIN.md](TOOLCHAIN.md)), and an Android SDK with platform `android-36` (`ANDROID_HOME`). The demo app and `scripts/update-gradle-verification.sh` also need platform `android-37`. The [README](README.md#reproduce-from-a-clean-clone) lists the run commands.
 
 ## What the hooks run
 
-- `pre-commit` runs `scripts/check-repo-rules.sh` (static checks: file modes, issue status lines, README sync, design index, no raw HTML sinks in the Dashboard and report apps, frozen Room schema files, `SDK_VERSION` equal to `sdkVersion`, Android Lint and detekt baselines that gain no entry).
+- `pre-commit` runs `scripts/check-repo-rules.sh` and `scripts/check-shell-lint.sh` (shellcheck and actionlint from `.tools/`). The first one checks (static checks: file modes, issue status lines, README sync, design index, no raw HTML sinks in the Dashboard and report apps, frozen Room schema files, `SDK_VERSION` equal to `sdkVersion`, Android Lint and detekt baselines that gain no entry).
 - `pre-push` always runs `scripts/check-repo-rules.sh`, so it can reject a docs-only push too. When code changed, it also runs `scripts/verify-contract.sh`.
 
 ## Change a Gradle dependency

@@ -1,7 +1,8 @@
 # 12. Docs name the lint tools that pre-commit needs
 
-Status: ready-for-agent
+Status: resolved
 Type: task
+Execution: Done (PR #314, 2026-11-18 UTC)
 
 Found by the `claude-review.yml` round of PR #282 (Minor, AGENTS.md rule 7).
 

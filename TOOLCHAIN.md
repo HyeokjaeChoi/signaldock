@@ -19,6 +19,8 @@ Linux, on arm64 and x64.
 
 `scripts/setup-toolchain.sh osv` installs only osv-scanner 2.7.1 (SHA-256 per platform). `scripts/osv-scan.sh` runs it (CI job `osv-scan`, ADR-0049 R2). The CI job `check` also runs `renovate-config-validator --strict` from `renovate@44.239.1` through `npx`; npm checks the package integrity, and this repo pins no hash for it (ADR-0049 amendment, ticket 11).
 
+CI jobs install the tools through the composite action `.github/actions/toolchain`. It runs `scripts/setup-toolchain.sh` with a mode (`all`, `lint`, or `osv`) and caches `.tools/` by runner, mode, and the hash of the script, so a run does not download from Maven Central again (ADR-0049 amendment, ticket 12). The release workflow sets `cache: 'false'`.
+
 If a tool that `scripts/setup-toolchain.sh` installs is missing, a script stops with a setup message. Scripts use the installed oasdiff and openapi-generator-cli. They use the bundled JDK unless `JAVA_HOME` is set. Node and npm come from PATH; 24.20.0 is the verified Node version.
 
 Lockfiles are committed. Verification runs `npm ci`.
@@ -111,7 +113,7 @@ Docker 29.4.0 and Compose v5.1.2 (OrbStack) ran `docker compose up -d --build`.
 | Compose BOM | 2026.09.00 | Demo app build (issue 16, ADR-0006 decision 1) |
 | Ktor | 3.6.0 | Server tests and the Docker server image (issues 02 and 15) |
 | Flyway | 13.10.0 | Server migrations and `SchemaUpgradeTest` (issues 02 and 22, ADR-0012) |
-| Trivy | `aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c` (multi-arch index digest) | CI image scan in `.github/workflows/demo-deploy.yml` (ADR-0045 item 6). Official Docker Hub image, run with `docker run`; no token, no registry credential. Renovate does not read this `docker run` line, so the digest is updated by hand |
+| Trivy | `aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c` (multi-arch index digest) | CI image scan in `.github/workflows/demo-deploy.yml` (ADR-0045 item 6) and in `.github/workflows/image-scan.yml` (ADR-0049 B4). Official Docker Hub image, run with `docker run`; no token, no registry credential. Renovate does not read this `docker run` line, so the digest is updated by hand |
 | Terraform and providers (cloud demo) | Terraform `>= 1.9` (`infra/terraform/versions.tf`); providers locked in `infra/terraform/.terraform.lock.hcl`: `hashicorp/google` 7.46.2, `cloudflare/cloudflare` 5.28.1; VM image `ubuntu-os-cloud/ubuntu-2404-lts-amd64` (`infra/terraform/main.tf` line 69) | ADR-0043. Used for the first cloud setup on 2026-10-25 UTC ([runbook section 3](docs/runbook-demo.md)) |
 | compileSdk 36 / targetSdk 36 / minSdk 24 | minSdk 24 per spec agreement | The SDK builds at compileSdk 36 (issue 03). The demo app uses compileSdk 37 (`demo-compileSdk`, issue 16); it needs platform `android-37` |
 
@@ -128,6 +130,7 @@ Docker 29.4.0 and Compose v5.1.2 (OrbStack) ran `docker compose up -d --build`.
 - Dependency updates: Renovate (`.github/renovate.json5`, ADR-0031). It proposes no new major for the JDK 21, Node 24, and nginx images, the PostgreSQL image, or `@types/node`; those pins change by hand
 - Public API check: `org.jetbrains.kotlinx.binary-compatibility-validator` 0.18.2 (ADR-0019). The dump is `sdk/sdk-android/api/sdk-android.api`
 - Dependency baseline: `com.dropbox.dependency-guard` 0.5.0 (ADR-0033). Baselines are in `sdk/sdk-android/dependencies/`
+- Vulnerability scan: OSV-Scanner 2.7.1 (`scripts/osv-scan.sh`, CI and nightly job `osv-scan`; ignores only in `osv-scanner.toml` files, ADR-0049 R2)
 - Code scanning: CodeQL advanced setup, `.github/workflows/codeql.yml` (ADR-0032)
 - Gradle wrapper validation: CI job `gradle-wrapper` in `.github/workflows/repo-rules.yml` (Q162)
 - Gradle dependency verification: SHA-256 checksums in `sdk/`, `server/`, `contract-check/`, and `compatibility/consumer-android/` `gradle/verification-metadata.xml` (Q166, ADR-0038). After a dependency change run `scripts/update-gradle-verification.sh`

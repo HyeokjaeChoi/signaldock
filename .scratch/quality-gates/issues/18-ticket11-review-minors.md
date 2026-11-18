@@ -1,7 +1,8 @@
 # 18. Ticket 11 review findings left open (Minor and lower)
 
-Status: claimed
+Status: resolved
 Type: task
+Execution: Done (PR #303, 2026-11-17 UTC). Items 1 to 6 done; item 7 moved to issue 15.
 
 Found by the review of PR 295 (ticket 11, ADR-0049 R1 to R3), plus notes of the author. None blocks a gate.
 
