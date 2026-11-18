@@ -28,6 +28,10 @@ The opt-out phases (`optout_set`, `optout_check`, `optout_off`) add 3 methods to
 
 Decision 3 counts changed again: 38 methods start, 20 skip themselves without `-e phase`, and 18 run. New: `StrictModeDeviceTest` (runs; it fails the job when the SDK touches the disk or the network on the main thread), three phases of `PowerLossPhases`, and `MeasurePhases.main_thread` (these four skip). The `device-test` job and its API 34 emulator do not change. The nightly tier will run the process-boundary cases at API 24 and 37 (ADR-0049 gate A5) once its job is in `nightly.yml`.
 
+## Amendment (2026-11-18, API 24 in the nightly tier)
+
+API 24 (minSdk) now runs every night in the job `device-durability` of `nightly.yml` ([ADR-0029](0029-device-fault-tests-and-power-loss.md), ADR-0049 A5). The PR tier job `device-test` still does not run API 24.
+
 ## Limits
 
 - GitHub Actions cannot run here. The workflow was checked by YAML parsing only (`actionlint` is not installed on the author's machine). Whether the emulator boots, the 26 tests pass on API 34 x86_64, the AVD cache hits on the second run, and the Linux APK delta is inside the budget can be shown only by CI.
