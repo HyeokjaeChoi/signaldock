@@ -9,7 +9,7 @@ Short paths used below: `SDK tests` = `sdk/sdk-android/src/test/kotlin/local/sig
 
 Analysis: mobile apps lose network and get killed. An analytics SDK should not lose events then and should not count one event twice. The spec turns this into goals (spec 4, 5, 7).
 SignalDock is one monorepo with an Android SDK, an ingest server (Ktor, PostgreSQL), a read-only Dashboard, and an OpenAPI contract between them ([architecture.md](../../architecture.md) "Components and responsibilities").
-It is an open-source release from Stackline ([spec](../../.scratch/signaldock/spec.md) section 1).
+It is an open-source release ([spec](../../.scratch/signaldock/spec.md) section 1).
 Scope: one local project, synthetic data, no login (spec 1).
 
 ## Goals and non-goals
