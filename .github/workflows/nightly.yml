@@ -98,8 +98,8 @@ jobs:
           if-no-files-found: ignore
 
   # Gates A5, A6, A4 (ADR-0049 decisions 2, 5, 6): scripts/device-durability.sh, all cases, on x86_64 google_apis emulators at
-  # API 24 and 37.0 (the newest stable x86_64 image). `powerloss` kills the emulator process and cold-boots it. The AVD setup is
-  # the one of `device-test` with the API level in the cache key.
+  # API 24 and 37.0 (the newest stable x86_64 image). `powerloss` kills the emulator process and cold-boots it. The emulator
+  # boots cold (no AVD cache, no snapshot), as the `powerloss` restart does.
   device-durability:
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -123,35 +123,6 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      # Restore only: the save step below runs right after the AVD is created, before `powerloss` kills and cold-boots the
-      # emulator, so the cached snapshot is never one of a cold-booted AVD.
-      - name: AVD cache
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        id: avd-cache
-        with:
-          path: |
-            ~/.android/avd/*
-            ~/.android/adb*
-          key: avd-${{ matrix.api }}-google_apis-x86_64-v1
-      - name: Create AVD and snapshot (cache miss)
-        if: steps.avd-cache.outputs.cache-hit != 'true'
-        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
-        with:
-          api-level: ${{ matrix.api }}
-          target: google_apis
-          arch: x86_64
-          force-avd-creation: false
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
-          disable-animations: false
-          script: echo "Generated AVD snapshot for caching."
-      - name: Save AVD cache (cache miss)
-        if: steps.avd-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/.android/avd/*
-            ~/.android/adb*
-          key: avd-${{ matrix.api }}-google_apis-x86_64-v1
       - name: device-durability.sh
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
@@ -159,7 +130,9 @@ jobs:
           target: google_apis
           arch: x86_64
           force-avd-creation: false
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          # Cold boot: a snapshot-resumed guest failed the action's `input keyevent 82` with exit 137 before any case ran
+          # (ADR-0049, amendment of 2026-11-17).
+          emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           disable-animations: true
           script: scripts/device-durability.sh emulator-5554
       - name: Summary (gate Q2)
