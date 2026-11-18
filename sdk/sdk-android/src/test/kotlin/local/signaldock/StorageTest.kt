@@ -7,6 +7,7 @@ import local.signaldock.internal.init.RandomUuidV4
 import local.signaldock.internal.storage.InstallationIdStore
 import local.signaldock.internal.storage.RejectionEntity
 import local.signaldock.internal.storage.RetryStateEntity
+import local.signaldock.internal.transport.SDK_VERSION
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -99,7 +100,7 @@ class StorageTest {
     @Test
     fun `diagnostics reports queue, last ACK and next retry`() = runBlocking {
         val sdk = newSdk(nowMillis = 5_000)
-        assertEquals(Diagnostics("0.4.0", 0, 0, null, emptyList(), null, null, 0, null), sdk.diagnostics())
+        assertEquals(Diagnostics(SDK_VERSION, 0, 0, null, emptyList(), null, null, 0, null), sdk.diagnostics())
         sdk.track("e")
         sdk.dao.saveRetryState(RetryStateEntity(failureCount = 3, nextAttemptAtMillis = 9_000, lastAckAtMillis = 7_000, lastAckAccepted = 2, lastAckDuplicate = 1, lastAckRejected = 4, lastErrorKind = "TIMEOUT", lastErrorHttpStatus = null, lastErrorAtMillis = 8_000))
         val d = sdk.diagnostics()

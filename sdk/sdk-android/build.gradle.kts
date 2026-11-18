@@ -80,7 +80,7 @@ androidComponents {
 // Local Maven folder repository and ZIP (issue 06, spec Q126). Not Maven Central.
 //   sdk/gradlew -p sdk :sdk-android:signaldockMavenZip
 // writes sdk-android/build/distributions/signaldock-sdk-android-<version>-maven.zip.
-val sdkVersion = "0.4.0"
+val sdkVersion = "0.4.1"
 val mavenFolder = layout.buildDirectory.dir("maven-repo")
 publishing {
     publications {
