@@ -1,7 +1,7 @@
 #!/bin/bash
 # Gate R2 (ADR-0049 decision 9): scan the npm lockfiles and the four Gradle verification-metadata files with the pinned
 # OSV-Scanner (scripts/setup-toolchain.sh osv). A finding that no osv-scanner.toml ignores fails the run.
-# An ignore covers one tree only (see the loop below): server/, contract-check/, dashboard/, and perf/report/ have none.
+# An ignore covers one tree only (see the loop below): server/ and contract-check/ have none.
 # Gradle: OSV-Scanner reads gradle/verification-metadata.xml as a lockfile, so the whole resolved tree is scanned,
 # including the Gradle plugin classpath, which the SDK and the server do not ship. An ignore needs a reason and an
 # `ignoreUntil` at most 30 days ahead (checked by scripts/check-repo-rules.sh).

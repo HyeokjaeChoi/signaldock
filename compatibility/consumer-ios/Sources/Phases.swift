@@ -40,7 +40,7 @@
             try log.write(contentsOf: Data((id + "\n").utf8))
             try log.synchronize()
             i += 1
-            try await Task.sleep(nanoseconds: 2_000_000)
+            try await Task.sleep(nanoseconds: 10_000_000)  // 10,000 events (the queue limit) last at least 100 s
           }
           result["status"] = "fail"
           result["reason"] = "track stopped storing"

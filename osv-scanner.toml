@@ -1,0 +1,11 @@
+# OSV-Scanner ignores for package-lock.json (ADR-0049 decision 9, gate R2). Run: scripts/osv-scan.sh.
+# scripts/osv-scan.sh passes the nearest osv-scanner.toml to each lockfile, so an ignore here covers only this file.
+# Each entry needs a `reason` and an `ignoreUntil` at most 30 days after the day it is written;
+# scripts/check-repo-rules.sh fails otherwise, and it rejects every table except [[IgnoredVulns]].
+# Renew an entry only if its reason is still true. Remove it when picomatch has a release after 4.0.7.
+
+# picomatch: ReDoS through single-branch repeated extglobs (affected through 4.0.7, no fixed version on 2026-11-17)
+[[IgnoredVulns]]
+id = "GHSA-fc5q-39xc-vjpf"
+ignoreUntil = 2026-12-17
+reason = "picomatch 4.0.7 (dev) from tinyglobby, used by typescript-estree (typescript-eslint 8.73.0). Build and lint tool only, not shipped. The flaw needs an attacker-written extglob such as +(*); these tools match only the static globs of this repo's own config files and sources. npm has no release after 4.0.7."

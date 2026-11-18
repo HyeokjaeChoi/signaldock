@@ -21,7 +21,9 @@ jobs:
       - run: git fetch --no-tags --depth=1 origin main:refs/remotes/origin/main
       - run: scripts/check-repo-rules.sh
       # Pinned shellcheck and actionlint (ADR-0049 D1, D2); `lint` skips the JDK download.
-      - run: scripts/setup-toolchain.sh lint
+      - uses: ./.github/actions/toolchain
+        with:
+          mode: lint
       - run: scripts/check-shell-lint.sh
       # Gate R1 (ADR-0049 decision 9): a Renovate config error silently stops all update and security PRs. No argument: the
       # validator then checks .github/renovate.json5 as a repo config (a file argument is read as global config).
@@ -42,7 +44,9 @@ jobs:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
-      - run: scripts/setup-toolchain.sh osv
+      - uses: ./.github/actions/toolchain
+        with:
+          mode: osv
       - run: scripts/osv-scan.sh
 
   verify-contract:
@@ -52,7 +56,7 @@ jobs:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
-      - run: scripts/setup-toolchain.sh
+      - uses: ./.github/actions/toolchain
       - run: scripts/verify-contract.sh
       - if: failure()
         run: echo "::notice::If the log says 'Dependency verification failed', run scripts/update-gradle-verification.sh and commit the changed gradle/verification-metadata.xml files (ADR-0038)."
@@ -66,7 +70,7 @@ jobs:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
-      - run: scripts/setup-toolchain.sh
+      - uses: ./.github/actions/toolchain
       # ubuntu-latest ships an Android SDK at $ANDROID_HOME.
       - run: |
           jdks=("$PWD"/.tools/jdk-*)
@@ -101,7 +105,7 @@ jobs:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
-      - run: scripts/setup-toolchain.sh
+      - uses: ./.github/actions/toolchain
       - run: scripts/verify-consumer.sh
       - if: failure()
         run: echo "::notice::If the log says 'Dependency verification failed', run scripts/update-gradle-verification.sh and commit the changed gradle/verification-metadata.xml files (ADR-0038)."
@@ -113,7 +117,7 @@ jobs:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
-      - run: scripts/setup-toolchain.sh
+      - uses: ./.github/actions/toolchain
       # Testcontainers uses the runner's Docker for PostgreSQL.
       - run: |
           jdks=("$PWD"/.tools/jdk-*)
@@ -137,7 +141,7 @@ jobs:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
-      - run: scripts/setup-toolchain.sh
+      - uses: ./.github/actions/toolchain
       - run: |
           jdks=("$PWD"/.tools/jdk-*)
           echo "JAVA_HOME=${jdks[0]}" >> "$GITHUB_ENV"
@@ -195,7 +199,7 @@ jobs:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
-      - run: scripts/setup-toolchain.sh
+      - uses: ./.github/actions/toolchain
       - run: scripts/check-size-budget.sh
       - if: failure()
         run: echo "::notice::If the log says 'Dependency verification failed', run scripts/update-gradle-verification.sh and commit the changed gradle/verification-metadata.xml files (ADR-0038)."
