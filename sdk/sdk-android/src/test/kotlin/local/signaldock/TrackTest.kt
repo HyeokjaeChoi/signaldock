@@ -9,6 +9,7 @@ import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import local.signaldock.internal.storage.QueueLimits
+import local.signaldock.internal.transport.SDK_VERSION
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -40,7 +41,7 @@ class TrackTest {
         assertEquals(id, o["eventId"]!!.jsonPrimitive.content)
         assertEquals("product_viewed", o["name"]!!.jsonPrimitive.content)
         assertEquals("2025-10-09T08:53:20.123Z", o["occurredAt"]!!.jsonPrimitive.content)
-        assertEquals("0.4.0", o["sdkVersion"]!!.jsonPrimitive.content)
+        assertEquals(SDK_VERSION, o["sdkVersion"]!!.jsonPrimitive.content)
         assertEquals("android", o["sdkPlatform"]!!.jsonPrimitive.content)
         assertEquals("1", o["contractVersion"]!!.jsonPrimitive.content)
         val p = o["properties"] as JsonObject

@@ -14,6 +14,7 @@ import local.signaldock.internal.delivery.dropReason
 import local.signaldock.internal.storage.DroppedCountEntity
 import local.signaldock.internal.storage.MAX_DROPPED_COUNT
 import local.signaldock.internal.storage.QueueLimits
+import local.signaldock.internal.transport.SDK_VERSION
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -124,7 +125,7 @@ class ClientReportTest {
         assertEquals("1", report.contractVersion)
         val root = Json.parseToJsonElement(String(report.body, Charsets.UTF_8)).jsonObject
         assertEquals(setOf("sdkVersion", "sdkPlatform", "discardedEvents"), root.keys)
-        assertEquals("0.4.0", root["sdkVersion"]!!.jsonPrimitive.content)
+        assertEquals(SDK_VERSION, root["sdkVersion"]!!.jsonPrimitive.content)
         assertEquals("android", root["sdkPlatform"]!!.jsonPrimitive.content)
         assertEquals(mapOf("queue_full" to 3, "storage_error" to 1), reportEntries(report))
         // Nothing left to report: the next cycle sends no second report.
@@ -163,7 +164,7 @@ class ClientReportTest {
         val body = Json.parseToJsonElement(String(buildClientReport(rows)!!.body, Charsets.UTF_8)).jsonObject
         val fixture = Json.parseToJsonElement(File("../../fixtures/roundtrip/client-report-request.json").readText()).jsonObject
         fun entries(o: JsonObject) = o["discardedEvents"]!!.jsonArray.map { it.jsonObject["reason"]!!.jsonPrimitive.content to it.jsonObject["count"]!!.jsonPrimitive.int }.toSet()
-        assertEquals("0.4.0", body["sdkVersion"]!!.jsonPrimitive.content) // the fixture keeps the 0.3.0 value
+        assertEquals(SDK_VERSION, body["sdkVersion"]!!.jsonPrimitive.content)
         assertEquals(entries(fixture), entries(body))
         // The fixture is the 0.3.0 form (no platform, still valid for old SDKs); 0.4.0 adds sdkPlatform (ADR-0046).
         assertEquals(fixture.keys + "sdkPlatform", body.keys)
