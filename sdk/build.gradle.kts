@@ -24,6 +24,7 @@ subprojects {
     // Android Lint: warnings are errors. `lint-baseline.xml` is committed in each Android module.
     plugins.withType<com.android.build.gradle.api.AndroidBasePlugin> {
         extensions.configure<com.android.build.api.dsl.CommonExtension> {
+            ndkVersion = rootProject.libs.versions.ndk.get()
             lint.warningsAsErrors = true
             lint.abortOnError = true
             lint.textReport = true
