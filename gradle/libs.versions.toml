@@ -2,7 +2,7 @@
 # Toolchain (verified by build in issue #1 unless noted)
 jdk = "21"
 gradle = "9.8.2"
-agp = "9.4.1"
+agp = "9.5.2"
 kotlin = "2.4.21"
 kotlinx-serialization = "1.11.0"
 openapi-generator = "7.26.0"
@@ -11,7 +11,7 @@ oasdiff = "1.33.0"
 # KSP has no 2.4.x release as of 2026-10-09 (latest is 2.3.12; KSP 2.3+ is
 # versioned independently of Kotlin). Pinned in issue 03 and verified with
 # Kotlin 2.4.21 + Room 2.8.5 (see docs/adr/0003-sdk-storage-decisions.md).
-ksp = "2.3.12"
+ksp = "2.3.14"
 
 # Public API check (issue 35, ADR-0019). The Kotlin built-in abiValidation dumps nothing for an AGP library.
 binary-compatibility-validator = "0.18.2"
@@ -27,7 +27,7 @@ detekt = "2.0.0-alpha.6"
 # the profile app only; the SDK does not depend on it.
 baselineprofile = "1.5.0"
 benchmark-macro = "1.5.0"
-androidx-uiautomator = "2.4.0"
+androidx-uiautomator = "2.4.1"
 profileinstaller = "1.4.1"
 
 # Android (doc-pinned; full AGP compilation verified in later issues)
@@ -39,16 +39,16 @@ workmanager = "2.12.0"
 retrofit = "3.0.0"
 # 5.5.0 AAR requires compileSdk 37; 5.4.0 builds at 36 (ADR-0006 decision 1).
 okhttp = "5.4.0"
-compose-bom = "2026.09.00"
+compose-bom = "2026.11.01"
 # Demo app only (issue 16, ADR-0006 decision 1). The demo keeps targetSdk 36 (Play requirement, no API 37 deadline).
 # Versions below: latest stable on Google Maven, 2026-10-12.
 demo-compileSdk = "37"
 androidx-activity = "1.13.0"
-androidx-lifecycle = "2.11.0"
+androidx-lifecycle = "2.11.1"
 androidx-navigation = "2.10.2"
 coroutines = "1.11.0"
 # SDK JVM tests (no emulator)
-robolectric = "4.17"
+robolectric = "4.18.1"
 junit = "4.13.2"
 androidx-test-core = "1.7.0"
 # Instrumented tests on emulators (issue 20, ADR-0011). Latest stable on Google Maven, 2026-10-12.
