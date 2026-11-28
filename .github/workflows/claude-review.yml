@@ -71,7 +71,7 @@ jobs:
         so in the summary. Only post GitHub comments.
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           fetch-depth: 1
           # The head SHA is the tree that inline comments refer to, not the merge commit.
@@ -136,7 +136,7 @@ jobs:
 
       - name: Review (subscription fallback)
         if: steps.posted.outputs.count == '0' && (steps.api.outputs.reason == 'quota' || steps.api.outputs.reason == 'no-key')
-        uses: anthropics/claude-code-action@16f9f71ab9c490faf367f94dd294897edc25be33 # v1
+        uses: anthropics/claude-code-action@4411a9e9b0283becf4b924f7bce360fd7756c78c # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
